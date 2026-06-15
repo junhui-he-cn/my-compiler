@@ -1,3 +1,5 @@
+#include "IRCompiler.hpp"
+#include "IRInterpreter.hpp"
 #include "Lexer.hpp"
 #include "Parser.hpp"
 
@@ -27,7 +29,7 @@ std::string readFile(const std::string& path)
 
 void printUsage(const char* executable)
 {
-    std::cerr << "Usage: " << executable << " [--tokens] [file]\n"
+    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--run] [file]\n"
               << "If file is omitted, source is read from stdin.\n";
 }
 
@@ -36,12 +38,18 @@ void printUsage(const char* executable)
 int main(int argc, char** argv)
 {
     bool showTokens = false;
+    bool showIr = false;
+    bool runIr = false;
     std::string inputPath;
 
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
         if (arg == "--tokens") {
             showTokens = true;
+        } else if (arg == "--ir") {
+            showIr = true;
+        } else if (arg == "--run") {
+            runIr = true;
         } else if (arg == "--help" || arg == "-h") {
             printUsage(argv[0]);
             return 0;
@@ -70,7 +78,26 @@ int main(int argc, char** argv)
 
         Parser parser(tokens);
         Program program = parser.parse();
-        program.print(std::cout);
+        if (!showIr && !runIr) {
+            program.print(std::cout);
+        }
+
+        if (showIr || runIr) {
+            IRCompiler compiler;
+            IRProgram ir = compiler.compile(program);
+
+            if (showIr) {
+                ir.print(std::cout);
+                if (runIr) {
+                    std::cout << '\n';
+                }
+            }
+
+            if (runIr) {
+                IRInterpreter interpreter(std::cout);
+                interpreter.execute(ir);
+            }
+        }
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

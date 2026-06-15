@@ -12,8 +12,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(compiler_demo
     src/Ast.cpp
+    src/IR.cpp
+    src/IRCompiler.cpp
+    src/IRInterpreter.cpp
     src/Lexer.cpp
     src/Parser.cpp
+    src/Value.cpp
     src/main.cpp
 )
 
