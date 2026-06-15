@@ -1,0 +1,7 @@
+// Tiny compiler demo source.
+let answer = 40 + 2;
+let ok = answer == 42;
+print "answer:";
+print answer;
+print ok;
+

@@ -1,0 +1,47 @@
+#pragma once
+
+#include <ostream>
+#include <string>
+
+// TokenType describes every syntactic atom the lexer can emit.
+enum class TokenType {
+    LeftParen,
+    RightParen,
+    Semicolon,
+
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+
+    Identifier,
+    Number,
+    String,
+
+    Let,
+    Print,
+    True,
+    False,
+    Nil,
+
+    EndOfFile,
+};
+
+struct Token {
+    TokenType type;
+    std::string lexeme;
+    // 1-based source location for diagnostics.
+    int line;
+    int column;
+};
+
+std::string tokenTypeName(TokenType type);
+std::ostream& operator<<(std::ostream& out, const Token& token);
