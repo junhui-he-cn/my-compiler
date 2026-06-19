@@ -36,11 +36,50 @@ bool isBinary(IROp op)
     return false;
 }
 
+void printEscapedStringLiteral(std::ostream& out, const std::string& value)
+{
+    out << '"';
+    for (char ch : value) {
+        switch (ch) {
+        case '\\':
+            out << "\\\\";
+            break;
+        case '"':
+            out << "\\\"";
+            break;
+        case '\n':
+            out << "\\n";
+            break;
+        case '\r':
+            out << "\\r";
+            break;
+        case '\t':
+            out << "\\t";
+            break;
+        default:
+            out << ch;
+            break;
+        }
+    }
+    out << '"';
+}
+
+void printIRConstantValue(std::ostream& out, const Value& value)
+{
+    if (value.type() == Value::Type::String) {
+        printEscapedStringLiteral(out, value.asString());
+        return;
+    }
+
+    out << value;
+}
+
 void printConstantOperand(std::ostream& out, const IRProgram& program, std::size_t operand)
 {
     out << " #" << operand;
     if (operand < program.constants().size()) {
-        out << " " << program.constants()[operand];
+        out << " ";
+        printIRConstantValue(out, program.constants()[operand]);
     }
 }
 

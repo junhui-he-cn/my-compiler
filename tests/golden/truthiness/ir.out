@@ -11,6 +11,6 @@ IR
 0009  v6 = constant #3 0
 0010  v7 = not v6
 0011  print v7
-0012  v8 = constant #4 
+0012  v8 = constant #4 ""
 0013  v9 = not v8
 0014  print v9
