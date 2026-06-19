@@ -22,3 +22,9 @@ add_executable(compiler_demo
 )
 
 target_include_directories(compiler_demo PRIVATE include)
+
+enable_testing()
+add_test(
+    NAME smoke_register_ir
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tests/smoke_register_ir.sh $<TARGET_FILE:compiler_demo>
+)
