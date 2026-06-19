@@ -129,6 +129,17 @@ def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[Che
     return results
 
 
+def unexpected_runtime_stdout_result(case_name: str, stdout: str) -> CheckResult:
+    return CheckResult(
+        case_name,
+        False,
+        (
+            f"FAIL {case_name} produced unexpected stdout for runtime error\n\n"
+            f"STDOUT:\n{stdout}"
+        ),
+    )
+
+
 def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list[CheckResult]:
     stem = source.with_suffix("")
     err_path = stem.with_suffix(".run.err")
@@ -140,9 +151,14 @@ def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list
     if update:
         write_text(err_path, completed.stderr)
         write_text(exit_path, f"{completed.returncode}\n")
+        if completed.stdout:
+            return [unexpected_runtime_stdout_result(case_name, completed.stdout)]
         return [CheckResult(case_name, True)]
 
     results: list[CheckResult] = []
+
+    if completed.stdout:
+        results.append(unexpected_runtime_stdout_result(case_name, completed.stdout))
 
     if not err_path.exists():
         results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))

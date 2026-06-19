@@ -78,6 +78,29 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertIn("unexpected stderr", results[0].message)
         self.assertIn("warning", results[0].message)
 
+    def test_runtime_error_case_with_unexpected_stdout_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            runtime_dir = golden_dir / "runtime_errors"
+            runtime_dir.mkdir(parents=True)
+            (runtime_dir / "stdout_leak.cd").write_text("1 / 0;\n", encoding="utf-8")
+            (runtime_dir / "stdout_leak.run.err").write_text("runtime error\n", encoding="utf-8")
+            (runtime_dir / "stdout_leak.exit").write_text("70\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stdout="unexpected output\n",
+                stderr="runtime error\n",
+                returncode=70,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("unexpected stdout", results[0].message)
+        self.assertIn("unexpected output", results[0].message)
+
 
 if __name__ == "__main__":
     raise SystemExit(unittest.main())
