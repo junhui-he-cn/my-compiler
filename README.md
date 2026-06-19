@@ -33,6 +33,22 @@ cmake -S . -B build
 cmake --build build
 ```
 
+## Test
+
+```sh
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, or `run.out` files to cover new syntax.
+
+To refresh golden files after an intentional output change:
+
+```sh
+python3 tests/run_golden_tests.py ./build/compiler_demo --update
+```
+
 ## Run
 
 ```sh
