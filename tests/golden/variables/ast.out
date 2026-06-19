@@ -1,0 +1,5 @@
+Program
+  Let answer = (+ 40 2)
+  Let ok = (== answer 42)
+  Print answer
+  Print ok

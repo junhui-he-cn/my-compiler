@@ -1,0 +1,4 @@
+print "a" + "b";
+print "hello";
+print "hello" == "hello";
+print "hello" != "world";

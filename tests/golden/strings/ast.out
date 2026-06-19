@@ -1,0 +1,5 @@
+Program
+  Print (+ "a" "b")
+  Print "hello"
+  Print (== "hello" "hello")
+  Print (!= "hello" "world")

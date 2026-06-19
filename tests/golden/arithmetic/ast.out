@@ -1,0 +1,5 @@
+Program
+  Print (+ 1 (* 2 3))
+  Print (* (group (+ 1 2)) 3)
+  Print (+ (- 5) 10)
+  Print (/ 8 2)

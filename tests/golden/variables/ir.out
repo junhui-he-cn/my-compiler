@@ -1,0 +1,13 @@
+IR
+0000  v0 = constant #0 40
+0001  v1 = constant #1 2
+0002  v2 = add v0, v1
+0003  store_var @0 answer, v2
+0004  v3 = load_var @1 answer
+0005  v4 = constant #2 42
+0006  v5 = equal v3, v4
+0007  store_var @2 ok, v5
+0008  v6 = load_var @3 answer
+0009  print v6
+0010  v7 = load_var @4 ok
+0011  print v7

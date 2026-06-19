@@ -1,0 +1,6 @@
+Program
+  Print (! nil)
+  Print (! false)
+  Print (! true)
+  Print (! 0)
+  Print (! "")
