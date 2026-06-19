@@ -25,6 +25,6 @@ target_include_directories(compiler_demo PRIVATE include)
 
 enable_testing()
 add_test(
-    NAME smoke_register_ir
-    COMMAND bash ${CMAKE_SOURCE_DIR}/tests/smoke_register_ir.sh $<TARGET_FILE:compiler_demo>
+    NAME golden
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/run_golden_tests.py $<TARGET_FILE:compiler_demo>
 )

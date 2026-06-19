@@ -1,0 +1,11 @@
+IR
+0000  v0 = constant #0 nil
+0001  print v0
+0002  v1 = constant #1 true
+0003  print v1
+0004  v2 = constant #2 false
+0005  print v2
+0006  v3 = constant #3 123
+0007  print v3
+0008  v4 = constant #4 hello
+0009  print v4

@@ -1,0 +1,6 @@
+Program
+  Print nil
+  Print true
+  Print false
+  Print 123
+  Print "hello"
