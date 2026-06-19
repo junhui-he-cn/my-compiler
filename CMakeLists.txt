@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(compiler_demo LANGUAGES CXX)
 
+find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
+
 # Keep the demo portable by requiring only standard C++17 facilities.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -25,6 +27,11 @@ target_include_directories(compiler_demo PRIVATE include)
 
 enable_testing()
 add_test(
+    NAME golden_runner_selftest
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_golden_tests_selftest.py
+)
+
+add_test(
     NAME golden
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/run_golden_tests.py $<TARGET_FILE:compiler_demo>
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_golden_tests.py $<TARGET_FILE:compiler_demo>
 )

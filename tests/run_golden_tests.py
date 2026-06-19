@@ -66,6 +66,21 @@ def discover_runtime_error_cases(golden_dir: Path) -> list[Path]:
 def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[CheckResult]:
     source = case_dir / "input.cd"
     results: list[CheckResult] = []
+    expected_golden_names = tuple(golden_name for _, _, golden_name in SUCCESS_MODES)
+
+    if not update and not any(
+        (case_dir / golden_name).exists() for golden_name in expected_golden_names
+    ):
+        return [
+            CheckResult(
+                case_dir.name,
+                False,
+                (
+                    f"FAIL {case_dir.name} has no expected files; "
+                    f"expected at least one of: {', '.join(expected_golden_names)}"
+                ),
+            )
+        ]
 
     for mode_name, args, golden_name in SUCCESS_MODES:
         golden_path = case_dir / golden_name
@@ -81,6 +96,19 @@ def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[Che
                     check_name,
                     False,
                     f"FAIL {check_name} exited with {completed.returncode}\n\nSTDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}",
+                )
+            )
+            continue
+
+        if completed.stderr:
+            results.append(
+                CheckResult(
+                    check_name,
+                    False,
+                    (
+                        f"FAIL {check_name} produced unexpected stderr with exit code 0\n\n"
+                        f"STDERR:\n{completed.stderr}"
+                    ),
                 )
             )
             continue
@@ -153,6 +181,9 @@ def run_all(compiler: Path, golden_dir: Path, update: bool) -> list[CheckResult]
 
     for source in discover_runtime_error_cases(golden_dir):
         results.extend(check_runtime_error_case(compiler, source, update))
+
+    if not results:
+        results.append(CheckResult("golden", False, "FAIL golden tests found no golden test checks/results"))
 
     return results
 
