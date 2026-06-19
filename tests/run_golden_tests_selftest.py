@@ -78,6 +78,23 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertIn("unexpected stderr", results[0].message)
         self.assertIn("warning", results[0].message)
 
+    def test_default_ast_check_name_does_not_look_like_missing_cli_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "default_ast_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("1;\n", encoding="utf-8")
+            (case_dir / "ast.out").write_text("expected\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(root, stdout="actual\n")
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("default_ast_case default(ast)", results[0].message)
+        self.assertNotIn("--ast", results[0].message)
+
     def test_runtime_error_case_with_unexpected_stdout_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

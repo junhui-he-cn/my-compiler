@@ -15,10 +15,10 @@ class CheckResult:
     message: str = ""
 
 
-SUCCESS_MODES = (
-    ("ast", (), "ast.out"),
-    ("ir", ("--ir",), "ir.out"),
-    ("run", ("--run",), "run.out"),
+SUCCESS_CHECKS = (
+    ("default(ast)", (), "ast.out"),
+    ("--ir", ("--ir",), "ir.out"),
+    ("--run", ("--run",), "run.out"),
 )
 
 
@@ -66,7 +66,7 @@ def discover_runtime_error_cases(golden_dir: Path) -> list[Path]:
 def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[CheckResult]:
     source = case_dir / "input.cd"
     results: list[CheckResult] = []
-    expected_golden_names = tuple(golden_name for _, _, golden_name in SUCCESS_MODES)
+    expected_golden_names = tuple(golden_name for _, _, golden_name in SUCCESS_CHECKS)
 
     if not update and not any(
         (case_dir / golden_name).exists() for golden_name in expected_golden_names
@@ -82,13 +82,13 @@ def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[Che
             )
         ]
 
-    for mode_name, args, golden_name in SUCCESS_MODES:
+    for display_name, args, golden_name in SUCCESS_CHECKS:
         golden_path = case_dir / golden_name
         if not update and not golden_path.exists():
             continue
 
         completed = run_compiler(compiler, args, source)
-        check_name = f"{case_dir.name} --{mode_name}"
+        check_name = f"{case_dir.name} {display_name}"
 
         if completed.returncode != 0:
             results.append(
