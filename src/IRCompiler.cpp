@@ -1,6 +1,7 @@
 #include "IRCompiler.hpp"
 
 #include <cstdlib>
+#include <utility>
 
 namespace {
 
@@ -40,116 +41,96 @@ IRProgram IRCompiler::compile(const Program& program)
     for (const auto& statement : program.statements) {
         compileStatement(*statement);
     }
-    return ir_;
+    return std::move(ir_);
 }
 
 void IRCompiler::compileStatement(const Stmt& statement)
 {
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
-        if (let->initializer) {
-            compileExpression(*let->initializer);
-        } else {
-            ir_.emit(IROp::Constant, ir_.addConstant(Value::nil()));
-        }
-        ir_.emit(IROp::StoreVar, ir_.addName(let->name.lexeme));
+        const IRRegister value = let->initializer
+            ? compileExpression(*let->initializer)
+            : ir_.emitConstant(Value::nil());
+        ir_.emitStoreVar(let->name.lexeme, value);
         return;
     }
 
     if (const auto* print = dynamic_cast<const PrintStmt*>(&statement)) {
-        compileExpression(*print->expression);
-        ir_.emit(IROp::Print);
+        const IRRegister value = compileExpression(*print->expression);
+        ir_.emitPrint(value);
         return;
     }
 
     if (const auto* expression = dynamic_cast<const ExpressionStmt*>(&statement)) {
         compileExpression(*expression->expression);
-        ir_.emit(IROp::Pop);
         return;
     }
 
     throw IRCompileError("unsupported statement node");
 }
 
-void IRCompiler::compileExpression(const Expr& expression)
+IRRegister IRCompiler::compileExpression(const Expr& expression)
 {
     if (const auto* literal = dynamic_cast<const LiteralExpr*>(&expression)) {
-        ir_.emit(IROp::Constant, ir_.addConstant(literalValue(literal->value)));
-        return;
+        return ir_.emitConstant(literalValue(literal->value));
     }
 
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
-        ir_.emit(IROp::LoadVar, ir_.addName(variable->name.lexeme));
-        return;
+        return ir_.emitLoadVar(variable->name.lexeme);
     }
 
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {
-        compileExpression(*grouping->expression);
-        return;
+        return compileExpression(*grouping->expression);
     }
 
     if (const auto* unary = dynamic_cast<const UnaryExpr*>(&expression)) {
-        compileExpression(*unary->right);
-        emitUnary(unary->op.type);
-        return;
+        const IRRegister value = compileExpression(*unary->right);
+        return emitUnary(unary->op.type, value);
     }
 
     if (const auto* binary = dynamic_cast<const BinaryExpr*>(&expression)) {
-        compileExpression(*binary->left);
-        compileExpression(*binary->right);
-        emitBinary(binary->op.type);
-        return;
+        const IRRegister left = compileExpression(*binary->left);
+        const IRRegister right = compileExpression(*binary->right);
+        return emitBinary(binary->op.type, left, right);
     }
 
     throw IRCompileError("unsupported expression node");
 }
 
-void IRCompiler::emitUnary(TokenType op)
+IRRegister IRCompiler::emitUnary(TokenType op, IRRegister value)
 {
     switch (op) {
     case TokenType::Bang:
-        ir_.emit(IROp::Not);
-        return;
+        return ir_.emitUnary(IROp::Not, value);
     case TokenType::Minus:
-        ir_.emit(IROp::Negate);
-        return;
+        return ir_.emitUnary(IROp::Negate, value);
     default:
         throw IRCompileError("unsupported unary operator: " + tokenTypeName(op));
     }
 }
 
-void IRCompiler::emitBinary(TokenType op)
+IRRegister IRCompiler::emitBinary(TokenType op, IRRegister left, IRRegister right)
 {
     switch (op) {
     case TokenType::Plus:
-        ir_.emit(IROp::Add);
-        return;
+        return ir_.emitBinary(IROp::Add, left, right);
     case TokenType::Minus:
-        ir_.emit(IROp::Subtract);
-        return;
+        return ir_.emitBinary(IROp::Subtract, left, right);
     case TokenType::Star:
-        ir_.emit(IROp::Multiply);
-        return;
+        return ir_.emitBinary(IROp::Multiply, left, right);
     case TokenType::Slash:
-        ir_.emit(IROp::Divide);
-        return;
+        return ir_.emitBinary(IROp::Divide, left, right);
     case TokenType::EqualEqual:
-        ir_.emit(IROp::Equal);
-        return;
+        return ir_.emitBinary(IROp::Equal, left, right);
     case TokenType::BangEqual:
-        ir_.emit(IROp::NotEqual);
-        return;
+        return ir_.emitBinary(IROp::NotEqual, left, right);
     case TokenType::Greater:
-        ir_.emit(IROp::Greater);
-        return;
+        return ir_.emitBinary(IROp::Greater, left, right);
     case TokenType::GreaterEqual:
-        ir_.emit(IROp::GreaterEqual);
-        return;
+        return ir_.emitBinary(IROp::GreaterEqual, left, right);
     case TokenType::Less:
-        ir_.emit(IROp::Less);
-        return;
+        return ir_.emitBinary(IROp::Less, left, right);
     case TokenType::LessEqual:
-        ir_.emit(IROp::LessEqual);
-        return;
+        return ir_.emitBinary(IROp::LessEqual, left, right);
     default:
         throw IRCompileError("unsupported binary operator: " + tokenTypeName(op));
     }

@@ -83,7 +83,7 @@ IRInterpreter::IRInterpreter(std::ostream& output)
 
 void IRInterpreter::execute(const IRProgram& program)
 {
-    stack_.clear();
+    registers_.assign(program.registerCount(), Value::nil());
     globals_.clear();
 
     const auto& instructions = program.instructions();
@@ -91,7 +91,7 @@ void IRInterpreter::execute(const IRProgram& program)
         const IRInstruction& instruction = instructions[ip];
         switch (instruction.op) {
         case IROp::Constant:
-            push(readConstant(program, instruction.operand));
+            writeRegister(readDest(instruction), readConstant(program, instruction.operand));
             break;
         case IROp::LoadVar: {
             const std::string name = readName(program, instruction.operand);
@@ -99,63 +99,54 @@ void IRInterpreter::execute(const IRProgram& program)
             if (found == globals_.end()) {
                 throw IRRuntimeError("undefined variable `" + name + "`");
             }
-            push(found->second);
+            writeRegister(readDest(instruction), found->second);
             break;
         }
         case IROp::StoreVar: {
             const std::string name = readName(program, instruction.operand);
-            globals_.insert_or_assign(name, pop());
+            globals_.insert_or_assign(name, readRegister(readLeft(instruction)));
             break;
         }
-        case IROp::Pop:
-            pop();
-            break;
         case IROp::Print:
-            output_ << valueToString(pop()) << '\n';
+            output_ << valueToString(readRegister(readLeft(instruction))) << '\n';
             break;
         case IROp::Negate:
-            executeUnaryNumber("negate", [](double value) {
+            writeRegister(readDest(instruction), executeUnaryNumber("negate", readLeft(instruction), [](double value) {
                 return makeNumber(-value);
-            });
+            }));
             break;
         case IROp::Not:
-            push(Value::boolean(!isTruthy(pop())));
+            writeRegister(readDest(instruction), Value::boolean(!isTruthy(readRegister(readLeft(instruction)))));
             break;
         case IROp::Add:
-            executeAdd();
+            writeRegister(readDest(instruction), executeAdd(readLeft(instruction), readRight(instruction)));
             break;
         case IROp::Subtract:
-            executeBinaryNumber("subtract", subtractNumber);
+            writeRegister(readDest(instruction), executeBinaryNumber("subtract", readLeft(instruction), readRight(instruction), subtractNumber));
             break;
         case IROp::Multiply:
-            executeBinaryNumber("multiply", multiplyNumber);
+            writeRegister(readDest(instruction), executeBinaryNumber("multiply", readLeft(instruction), readRight(instruction), multiplyNumber));
             break;
         case IROp::Divide:
-            executeBinaryNumber("divide", divideNumber);
+            writeRegister(readDest(instruction), executeBinaryNumber("divide", readLeft(instruction), readRight(instruction), divideNumber));
             break;
-        case IROp::Equal: {
-            const Value right = pop();
-            const Value left = pop();
-            push(Value::boolean(valuesEqual(left, right)));
+        case IROp::Equal:
+            writeRegister(readDest(instruction), Value::boolean(valuesEqual(readRegister(readLeft(instruction)), readRegister(readRight(instruction)))));
             break;
-        }
-        case IROp::NotEqual: {
-            const Value right = pop();
-            const Value left = pop();
-            push(Value::boolean(!valuesEqual(left, right)));
+        case IROp::NotEqual:
+            writeRegister(readDest(instruction), Value::boolean(!valuesEqual(readRegister(readLeft(instruction)), readRegister(readRight(instruction)))));
             break;
-        }
         case IROp::Greater:
-            executeBinaryComparison("greater", greaterNumber);
+            writeRegister(readDest(instruction), executeBinaryComparison("greater", readLeft(instruction), readRight(instruction), greaterNumber));
             break;
         case IROp::GreaterEqual:
-            executeBinaryComparison("greater_equal", greaterEqualNumber);
+            writeRegister(readDest(instruction), executeBinaryComparison("greater_equal", readLeft(instruction), readRight(instruction), greaterEqualNumber));
             break;
         case IROp::Less:
-            executeBinaryComparison("less", lessNumber);
+            writeRegister(readDest(instruction), executeBinaryComparison("less", readLeft(instruction), readRight(instruction), lessNumber));
             break;
         case IROp::LessEqual:
-            executeBinaryComparison("less_equal", lessEqualNumber);
+            writeRegister(readDest(instruction), executeBinaryComparison("less_equal", readLeft(instruction), readRight(instruction), lessEqualNumber));
             break;
         }
     }
@@ -164,30 +155,6 @@ void IRInterpreter::execute(const IRProgram& program)
 const std::unordered_map<std::string, Value>& IRInterpreter::globals() const
 {
     return globals_;
-}
-
-void IRInterpreter::push(Value value)
-{
-    stack_.push_back(std::move(value));
-}
-
-Value IRInterpreter::pop()
-{
-    if (stack_.empty()) {
-        throw IRRuntimeError("stack underflow");
-    }
-
-    Value value = std::move(stack_.back());
-    stack_.pop_back();
-    return value;
-}
-
-const Value& IRInterpreter::peek() const
-{
-    if (stack_.empty()) {
-        throw IRRuntimeError("stack underflow");
-    }
-    return stack_.back();
 }
 
 Value IRInterpreter::readConstant(const IRProgram& program, std::size_t index) const
@@ -206,43 +173,81 @@ std::string IRInterpreter::readName(const IRProgram& program, std::size_t index)
     return program.names()[index];
 }
 
-void IRInterpreter::executeUnaryNumber(const std::string& opName, Value (*operation)(double))
+IRRegister IRInterpreter::readDest(const IRInstruction& instruction) const
 {
-    const Value value = pop();
-    if (value.type() != Value::Type::Number) {
-        throw IRRuntimeError(opName + " expects number, got " + typeName(value.type()));
+    if (!instruction.dest) {
+        throw IRRuntimeError(irOpName(instruction.op) + " missing destination register");
     }
-    push(operation(value.asNumber()));
+    return *instruction.dest;
 }
 
-void IRInterpreter::executeBinaryNumber(const std::string& opName, Value (*operation)(double, double))
+IRRegister IRInterpreter::readLeft(const IRInstruction& instruction) const
 {
-    const Value right = pop();
-    const Value left = pop();
-    if (left.type() != Value::Type::Number || right.type() != Value::Type::Number) {
+    if (!instruction.left) {
+        throw IRRuntimeError(irOpName(instruction.op) + " missing left register");
+    }
+    return *instruction.left;
+}
+
+IRRegister IRInterpreter::readRight(const IRInstruction& instruction) const
+{
+    if (!instruction.right) {
+        throw IRRuntimeError(irOpName(instruction.op) + " missing right register");
+    }
+    return *instruction.right;
+}
+
+const Value& IRInterpreter::readRegister(IRRegister reg) const
+{
+    if (reg.index >= registers_.size()) {
+        throw IRRuntimeError("register index out of range");
+    }
+    return registers_[reg.index];
+}
+
+void IRInterpreter::writeRegister(IRRegister reg, Value value)
+{
+    if (reg.index >= registers_.size()) {
+        throw IRRuntimeError("register index out of range");
+    }
+    registers_[reg.index] = std::move(value);
+}
+
+Value IRInterpreter::executeUnaryNumber(const std::string& opName, IRRegister value, Value (*operation)(double))
+{
+    const Value& input = readRegister(value);
+    if (input.type() != Value::Type::Number) {
+        throw IRRuntimeError(opName + " expects number, got " + typeName(input.type()));
+    }
+    return operation(input.asNumber());
+}
+
+Value IRInterpreter::executeBinaryNumber(const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double))
+{
+    const Value& leftValue = readRegister(left);
+    const Value& rightValue = readRegister(right);
+    if (leftValue.type() != Value::Type::Number || rightValue.type() != Value::Type::Number) {
         throw IRRuntimeError(opName + " expects numbers");
     }
-    push(operation(left.asNumber(), right.asNumber()));
+    return operation(leftValue.asNumber(), rightValue.asNumber());
 }
 
-void IRInterpreter::executeBinaryComparison(const std::string& opName, Value (*operation)(double, double))
+Value IRInterpreter::executeBinaryComparison(const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double))
 {
-    executeBinaryNumber(opName, operation);
+    return executeBinaryNumber(opName, left, right, operation);
 }
 
-void IRInterpreter::executeAdd()
+Value IRInterpreter::executeAdd(IRRegister left, IRRegister right)
 {
-    const Value right = pop();
-    const Value left = pop();
+    const Value& leftValue = readRegister(left);
+    const Value& rightValue = readRegister(right);
 
-    if (left.type() == Value::Type::Number && right.type() == Value::Type::Number) {
-        push(addNumber(left.asNumber(), right.asNumber()));
-        return;
+    if (leftValue.type() == Value::Type::Number && rightValue.type() == Value::Type::Number) {
+        return addNumber(leftValue.asNumber(), rightValue.asNumber());
     }
 
-    if (left.type() == Value::Type::String && right.type() == Value::Type::String) {
-        push(Value::string(left.asString() + right.asString()));
-        return;
+    if (leftValue.type() == Value::Type::String && rightValue.type() == Value::Type::String) {
+        return Value::string(leftValue.asString() + rightValue.asString());
     }
 
     throw IRRuntimeError("add expects two numbers or two strings");

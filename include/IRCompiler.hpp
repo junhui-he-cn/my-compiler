@@ -17,9 +17,9 @@ public:
 
 private:
     void compileStatement(const Stmt& statement);
-    void compileExpression(const Expr& expression);
-    void emitUnary(TokenType op);
-    void emitBinary(TokenType op);
+    IRRegister compileExpression(const Expr& expression);
+    IRRegister emitUnary(TokenType op, IRRegister value);
+    IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
 
     IRProgram ir_;
 };

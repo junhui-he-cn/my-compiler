@@ -21,19 +21,20 @@ public:
     const std::unordered_map<std::string, Value>& globals() const;
 
 private:
-    void push(Value value);
-    Value pop();
-    const Value& peek() const;
-
     Value readConstant(const IRProgram& program, std::size_t index) const;
     std::string readName(const IRProgram& program, std::size_t index) const;
+    IRRegister readDest(const IRInstruction& instruction) const;
+    IRRegister readLeft(const IRInstruction& instruction) const;
+    IRRegister readRight(const IRInstruction& instruction) const;
+    const Value& readRegister(IRRegister reg) const;
+    void writeRegister(IRRegister reg, Value value);
 
-    void executeUnaryNumber(const std::string& opName, Value (*operation)(double));
-    void executeBinaryNumber(const std::string& opName, Value (*operation)(double, double));
-    void executeBinaryComparison(const std::string& opName, Value (*operation)(double, double));
-    void executeAdd();
+    Value executeUnaryNumber(const std::string& opName, IRRegister value, Value (*operation)(double));
+    Value executeBinaryNumber(const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double));
+    Value executeBinaryComparison(const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double));
+    Value executeAdd(IRRegister left, IRRegister right);
 
     std::ostream& output_;
-    std::vector<Value> stack_;
+    std::vector<Value> registers_;
     std::unordered_map<std::string, Value> globals_;
 };
