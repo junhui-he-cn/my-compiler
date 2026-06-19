@@ -4,8 +4,8 @@ A small C++17 compiler front-end demo. It currently implements:
 
 - Lexer: turns source text into tokens.
 - Parser: builds a simple AST from tokens.
-- IR compiler: lowers the AST to a small stack-based intermediate representation.
-- IR interpreter: executes that IR directly.
+- IR compiler: lowers the AST to a small three-address intermediate representation with virtual registers.
+- IR interpreter: executes that virtual-register IR directly.
 - AST printer: prints the parsed program in prefix form.
 
 ## Language
