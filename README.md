@@ -14,9 +14,14 @@ Supported statements:
 
 ```text
 let name = expression;
+let name: type = expression;
 print expression;
+if expression { statement* } else { statement* }
+{ statement* }
 expression;
 ```
+
+Type annotations on `let` declarations are currently syntax-only: they are parsed and shown in the AST, but they are not type-checked yet. Blocks group statements for control flow but do not introduce lexical scope yet.
 
 Supported expressions:
 

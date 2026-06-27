@@ -6,11 +6,18 @@ declaration = letDecl
             | statement ;
 
 statement   = printStmt
+            | ifStmt
+            | block
             | exprStmt ;
 
 letDecl     = "let", identifier,
-              [ "=", expression ],
-              ";" ;
+              [ ":", typeName ],
+              "=", expression, ";" ;
+
+ifStmt      = "if", expression, block,
+              [ "else", block ] ;
+
+block       = "{", { declaration }, "}" ;
 
 printStmt   = "print", expression, ";" ;
 
@@ -41,18 +48,7 @@ primary     = "false"
             | identifier
             | "(", expression, ")" ;
 
+typeName    = identifier ;
 identifier  = letter, { letter | digit | "_" } ;
 number      = digit, { digit }, [ ".", digit, { digit } ] ;
 string      = "\"", { character }, "\"" ;
-
-(* Not implemented yet:
-
-ifStmt      = "if", expression, block,
-              [ "else", block ] ;
-
-block       = "{", { statement }, "}" ;
-
-typedLet    = "let", identifier,
-              [ ":", typeName ],
-              "=", expression, ";" ;
-*)
