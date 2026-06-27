@@ -51,7 +51,7 @@ def discover_success_cases(golden_dir: Path) -> list[Path]:
         case_dir
         for case_dir in golden_dir.iterdir()
         if case_dir.is_dir()
-        and case_dir.name != "runtime_errors"
+        and case_dir.name not in {"runtime_errors", "parse_errors"}
         and (case_dir / "input.cd").is_file()
     )
 
