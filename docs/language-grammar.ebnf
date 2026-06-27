@@ -1,0 +1,58 @@
+(* Current language grammar implemented by Parser.cpp. *)
+
+program     = { declaration } ;
+
+declaration = letDecl
+            | statement ;
+
+statement   = printStmt
+            | exprStmt ;
+
+letDecl     = "let", identifier,
+              [ "=", expression ],
+              ";" ;
+
+printStmt   = "print", expression, ";" ;
+
+exprStmt    = expression, ";" ;
+
+expression  = equality ;
+
+equality    = comparison,
+              { ( "==" | "!=" ), comparison } ;
+
+comparison  = term,
+              { ( "<" | "<=" | ">" | ">=" ), term } ;
+
+term        = factor,
+              { ( "+" | "-" ), factor } ;
+
+factor      = unary,
+              { ( "*" | "/" ), unary } ;
+
+unary       = ( "!" | "-" ), unary
+            | primary ;
+
+primary     = "false"
+            | "true"
+            | "nil"
+            | number
+            | string
+            | identifier
+            | "(", expression, ")" ;
+
+identifier  = letter, { letter | digit | "_" } ;
+number      = digit, { digit }, [ ".", digit, { digit } ] ;
+string      = "\"", { character }, "\"" ;
+
+(* Not implemented yet:
+
+ifStmt      = "if", expression, block,
+              [ "else", block ] ;
+
+block       = "{", { statement }, "}" ;
+
+typedLet    = "let", identifier,
+              [ ":", typeName ],
+              "=", expression, ";" ;
+*)
