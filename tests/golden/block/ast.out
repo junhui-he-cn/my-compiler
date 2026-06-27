@@ -1,0 +1,5 @@
+Program
+  Block
+    Let x = 10
+    Print x
+  Print x

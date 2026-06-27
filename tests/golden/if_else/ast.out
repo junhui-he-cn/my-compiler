@@ -1,0 +1,16 @@
+Program
+  Let ok = true
+  If ok
+    Then
+      Block
+        Print "then"
+    Else
+      Block
+        Print "else"
+  If false
+    Then
+      Block
+        Print "bad"
+    Else
+      Block
+        Print "fallback"

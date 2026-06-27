@@ -1,0 +1,5 @@
+Program
+  Let answer: number = 42
+  Let label: string = "answer"
+  Print label
+  Print answer

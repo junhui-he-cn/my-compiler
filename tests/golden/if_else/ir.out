@@ -1,0 +1,17 @@
+IR
+0000  v0 = constant #0 true
+0001  store_var @0 ok, v0
+0002  v1 = load_var @1 ok
+0003  jump_if_false v1, 0007
+0004  v2 = constant #1 "then"
+0005  print v2
+0006  jump 0009
+0007  v3 = constant #2 "else"
+0008  print v3
+0009  v4 = constant #3 false
+0010  jump_if_false v4, 0014
+0011  v5 = constant #4 "bad"
+0012  print v5
+0013  jump 0016
+0014  v6 = constant #5 "fallback"
+0015  print v6
