@@ -29,6 +29,8 @@ enum class IROp {
     GreaterEqual,
     Less,
     LessEqual,
+    Jump,
+    JumpIfFalse,
 };
 
 struct IRInstruction {
@@ -51,6 +53,10 @@ public:
     void emitPrint(IRRegister value);
     IRRegister emitUnary(IROp op, IRRegister value);
     IRRegister emitBinary(IROp op, IRRegister left, IRRegister right);
+    std::size_t emitJump();
+    std::size_t emitJumpIfFalse(IRRegister condition);
+    void patchJump(std::size_t jumpInstruction);
+    std::size_t instructionCount() const;
 
     const std::vector<Value>& constants() const;
     const std::vector<std::string>& names() const;

@@ -69,6 +69,13 @@ std::string typeName(Value::Type type)
     return "unknown";
 }
 
+void validateJumpTarget(std::size_t target, std::size_t instructionCount)
+{
+    if (target > instructionCount) {
+        throw IRRuntimeError("jump target out of range");
+    }
+}
+
 } // namespace
 
 IRRuntimeError::IRRuntimeError(const std::string& message)
@@ -87,7 +94,8 @@ void IRInterpreter::execute(const IRProgram& program)
     globals_.clear();
 
     const auto& instructions = program.instructions();
-    for (std::size_t ip = 0; ip < instructions.size(); ++ip) {
+    std::size_t ip = 0;
+    while (ip < instructions.size()) {
         const IRInstruction& instruction = instructions[ip];
         switch (instruction.op) {
         case IROp::Constant:
@@ -148,7 +156,20 @@ void IRInterpreter::execute(const IRProgram& program)
         case IROp::LessEqual:
             writeRegister(readDest(instruction), executeBinaryComparison("less_equal", readLeft(instruction), readRight(instruction), lessEqualNumber));
             break;
+        case IROp::Jump:
+            validateJumpTarget(instruction.operand, instructions.size());
+            ip = instruction.operand;
+            continue;
+        case IROp::JumpIfFalse:
+            validateJumpTarget(instruction.operand, instructions.size());
+            if (!isTruthy(readRegister(readLeft(instruction)))) {
+                ip = instruction.operand;
+                continue;
+            }
+            break;
         }
+
+        ++ip;
     }
 }
 

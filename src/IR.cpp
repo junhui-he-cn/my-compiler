@@ -30,6 +30,8 @@ bool isBinary(IROp op)
     case IROp::Print:
     case IROp::Negate:
     case IROp::Not:
+    case IROp::Jump:
+    case IROp::JumpIfFalse:
         return false;
     }
 
@@ -148,6 +150,29 @@ IRRegister IRProgram::emitBinary(IROp op, IRRegister left, IRRegister right)
     return dest;
 }
 
+std::size_t IRProgram::emitJump()
+{
+    const std::size_t instruction = instructions_.size();
+    emit(IRInstruction{IROp::Jump, std::nullopt, std::nullopt, std::nullopt, 0});
+    return instruction;
+}
+
+std::size_t IRProgram::emitJumpIfFalse(IRRegister condition)
+{
+    const std::size_t instruction = instructions_.size();
+    emit(IRInstruction{IROp::JumpIfFalse, std::nullopt, condition, std::nullopt, 0});
+    return instruction;
+}
+
+void IRProgram::patchJump(std::size_t jumpInstruction)
+{
+    if (jumpInstruction >= instructions_.size()) {
+        return;
+    }
+
+    instructions_[jumpInstruction].operand = instructions_.size();
+}
+
 const std::vector<Value>& IRProgram::constants() const
 {
     return constants_;
@@ -166,6 +191,11 @@ const std::vector<IRInstruction>& IRProgram::instructions() const
 std::size_t IRProgram::registerCount() const
 {
     return registerCount_;
+}
+
+std::size_t IRProgram::instructionCount() const
+{
+    return instructions_.size();
 }
 
 void IRProgram::print(std::ostream& out) const
@@ -205,6 +235,15 @@ void IRProgram::print(std::ostream& out) const
             if (instruction.right) {
                 out << ", " << *instruction.right;
             }
+        } else if (instruction.op == IROp::Jump) {
+            out << " " << std::setw(4) << std::setfill('0') << instruction.operand << std::setfill(' ');
+        } else if (instruction.op == IROp::JumpIfFalse) {
+            if (instruction.left) {
+                out << " " << *instruction.left << ", ";
+            } else {
+                out << " ";
+            }
+            out << std::setw(4) << std::setfill('0') << instruction.operand << std::setfill(' ');
         }
 
         out << '\n';
@@ -251,6 +290,10 @@ std::string irOpName(IROp op)
         return "less";
     case IROp::LessEqual:
         return "less_equal";
+    case IROp::Jump:
+        return "jump";
+    case IROp::JumpIfFalse:
+        return "jump_if_false";
     }
 
     return "unknown";
