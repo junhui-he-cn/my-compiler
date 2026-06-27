@@ -27,6 +27,7 @@ Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Variables: `name`
+- Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Grouping: `(expression)`
 - Unary operators: `!`, `-`
 - Binary operators: `*`, `/`, `+`, `-`, `<`, `<=`, `>`, `>=`, `==`, `!=`
@@ -46,7 +47,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, or `run.out` files to cover new syntax. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files.
+Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, or `run.out` files to cover successful syntax. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
 
 To refresh golden files after an intentional output change:
 
