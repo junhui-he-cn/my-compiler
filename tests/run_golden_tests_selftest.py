@@ -119,5 +119,30 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertIn("unexpected output", results[0].message)
 
 
+    def test_parse_error_case_checks_default_mode_stderr_exit_and_stdout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            parse_dir = golden_dir / "parse_errors"
+            parse_dir.mkdir(parents=True)
+            (parse_dir / "bad_assignment.cd").write_text("(x + 1) = 2;\n", encoding="utf-8")
+            (parse_dir / "bad_assignment.err").write_text("parse error\n", encoding="utf-8")
+            (parse_dir / "bad_assignment.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stdout="unexpected output\n",
+                stderr="parse error\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("parse_errors/bad_assignment default(ast)", results[0].message)
+        self.assertIn("unexpected stdout", results[0].message)
+        self.assertIn("unexpected output", results[0].message)
+
+
 if __name__ == "__main__":
     raise SystemExit(unittest.main())
