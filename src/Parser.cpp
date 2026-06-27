@@ -107,7 +107,25 @@ StmtPtr Parser::expressionStatement()
 
 ExprPtr Parser::expression()
 {
-    return equality();
+    return assignment();
+}
+
+ExprPtr Parser::assignment()
+{
+    ExprPtr expr = equality();
+
+    if (match(TokenType::Equal)) {
+        Token equals = previous();
+        ExprPtr value = assignment();
+
+        if (const auto* variable = dynamic_cast<const VariableExpr*>(expr.get())) {
+            return std::make_unique<AssignExpr>(variable->name, std::move(value));
+        }
+
+        throw ParseError(equals, "invalid assignment target");
+    }
+
+    return expr;
 }
 
 ExprPtr Parser::equality()

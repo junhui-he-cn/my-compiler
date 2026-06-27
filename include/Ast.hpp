@@ -31,6 +31,14 @@ struct VariableExpr final : Expr {
     Token name;
 };
 
+struct AssignExpr final : Expr {
+    AssignExpr(Token name, ExprPtr value);
+    void print(std::ostream& out) const override;
+
+    Token name;
+    ExprPtr value;
+};
+
 struct UnaryExpr final : Expr {
     UnaryExpr(Token op, ExprPtr right);
     void print(std::ostream& out) const override;

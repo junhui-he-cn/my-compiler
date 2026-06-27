@@ -31,6 +31,7 @@ private:
 
     // Recursive descent expression grammar, ordered from lowest to highest precedence.
     ExprPtr expression();
+    ExprPtr assignment();
     ExprPtr equality();
     ExprPtr comparison();
     ExprPtr term();

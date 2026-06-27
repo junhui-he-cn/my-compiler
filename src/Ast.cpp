@@ -1,6 +1,7 @@
 #include "Ast.hpp"
 
 #include <string>
+#include <utility>
 
 namespace {
 
@@ -40,6 +41,19 @@ VariableExpr::VariableExpr(Token name)
 void VariableExpr::print(std::ostream& out) const
 {
     out << name.lexeme;
+}
+
+AssignExpr::AssignExpr(Token name, ExprPtr value)
+    : name(std::move(name))
+    , value(std::move(value))
+{
+}
+
+void AssignExpr::print(std::ostream& out) const
+{
+    out << "(= " << name.lexeme << ' ';
+    writeExpr(out, value);
+    out << ')';
 }
 
 UnaryExpr::UnaryExpr(Token op, ExprPtr right)
