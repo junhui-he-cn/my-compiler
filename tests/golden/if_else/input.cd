@@ -10,3 +10,12 @@ if false {
 } else {
   print "fallback";
 }
+
+if true {
+  print "no else";
+}
+
+if false {
+  print "bad no else";
+}
+print "after no else";

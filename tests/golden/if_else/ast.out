@@ -14,3 +14,12 @@ Program
     Else
       Block
         Print "fallback"
+  If true
+    Then
+      Block
+        Print "no else"
+  If false
+    Then
+      Block
+        Print "bad no else"
+  Print "after no else"

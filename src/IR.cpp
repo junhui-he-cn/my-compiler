@@ -1,6 +1,7 @@
 #include "IR.hpp"
 
 #include <iomanip>
+#include <stdexcept>
 #include <utility>
 
 namespace {
@@ -167,10 +168,15 @@ std::size_t IRProgram::emitJumpIfFalse(IRRegister condition)
 void IRProgram::patchJump(std::size_t jumpInstruction)
 {
     if (jumpInstruction >= instructions_.size()) {
-        return;
+        throw std::logic_error("jump instruction index out of range");
     }
 
-    instructions_[jumpInstruction].operand = instructions_.size();
+    auto& instruction = instructions_[jumpInstruction];
+    if (instruction.op != IROp::Jump && instruction.op != IROp::JumpIfFalse) {
+        throw std::logic_error("cannot patch non-jump instruction");
+    }
+
+    instruction.operand = instructions_.size();
 }
 
 const std::vector<Value>& IRProgram::constants() const

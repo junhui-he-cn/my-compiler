@@ -16,8 +16,8 @@ Supported statements:
 let name = expression;
 let name: type = expression;
 print expression;
-if expression { statement* } else { statement* }
-{ statement* }
+if expression { declaration* } else { declaration* }
+{ declaration* }
 expression;
 ```
 

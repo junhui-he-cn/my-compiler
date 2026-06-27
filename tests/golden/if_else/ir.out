@@ -15,3 +15,13 @@ IR
 0013  jump 0016
 0014  v6 = constant #5 "fallback"
 0015  print v6
+0016  v7 = constant #6 true
+0017  jump_if_false v7, 0020
+0018  v8 = constant #7 "no else"
+0019  print v8
+0020  v9 = constant #8 false
+0021  jump_if_false v9, 0024
+0022  v10 = constant #9 "bad no else"
+0023  print v10
+0024  v11 = constant #10 "after no else"
+0025  print v11
