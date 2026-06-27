@@ -46,10 +46,32 @@ IRProgram IRCompiler::compile(const Program& program)
 
 void IRCompiler::compileStatement(const Stmt& statement)
 {
+    if (const auto* block = dynamic_cast<const BlockStmt*>(&statement)) {
+        for (const auto& child : block->statements) {
+            compileStatement(*child);
+        }
+        return;
+    }
+
+    if (const auto* ifStmt = dynamic_cast<const IfStmt*>(&statement)) {
+        const IRRegister condition = compileExpression(*ifStmt->condition);
+        const std::size_t jumpIfFalse = ir_.emitJumpIfFalse(condition);
+
+        compileStatement(*ifStmt->thenBranch);
+
+        if (ifStmt->elseBranch) {
+            const std::size_t jumpOverElse = ir_.emitJump();
+            ir_.patchJump(jumpIfFalse);
+            compileStatement(*ifStmt->elseBranch);
+            ir_.patchJump(jumpOverElse);
+        } else {
+            ir_.patchJump(jumpIfFalse);
+        }
+        return;
+    }
+
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
-        const IRRegister value = let->initializer
-            ? compileExpression(*let->initializer)
-            : ir_.emitConstant(Value::nil());
+        const IRRegister value = compileExpression(*let->initializer);
         ir_.emitStoreVar(let->name.lexeme, value);
         return;
     }
