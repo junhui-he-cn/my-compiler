@@ -1,0 +1,12 @@
+let ok = true;
+if ok {
+  print "then";
+} else {
+  print "else";
+}
+
+if false {
+  print "bad";
+} else {
+  print "fallback";
+}
