@@ -100,6 +100,12 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return ir_.emitLoadVar(variable->name.lexeme);
     }
 
+    if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
+        const IRRegister value = compileExpression(*assign->value);
+        ir_.emitAssignVar(assign->name.lexeme, value);
+        return value;
+    }
+
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {
         return compileExpression(*grouping->expression);
     }

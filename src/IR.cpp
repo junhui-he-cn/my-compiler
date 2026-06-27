@@ -28,6 +28,7 @@ bool isBinary(IROp op)
     case IROp::Constant:
     case IROp::LoadVar:
     case IROp::StoreVar:
+    case IROp::AssignVar:
     case IROp::Print:
     case IROp::Negate:
     case IROp::Not:
@@ -132,6 +133,11 @@ void IRProgram::emitStoreVar(std::string name, IRRegister value)
     emit(IRInstruction{IROp::StoreVar, std::nullopt, value, std::nullopt, addName(std::move(name))});
 }
 
+void IRProgram::emitAssignVar(std::string name, IRRegister value)
+{
+    emit(IRInstruction{IROp::AssignVar, std::nullopt, value, std::nullopt, addName(std::move(name))});
+}
+
 void IRProgram::emitPrint(IRRegister value)
 {
     emit(IRInstruction{IROp::Print, std::nullopt, value, std::nullopt, 0});
@@ -221,7 +227,7 @@ void IRProgram::print(std::ostream& out) const
             printConstantOperand(out, *this, instruction.operand);
         } else if (instruction.op == IROp::LoadVar) {
             printNameOperand(out, *this, instruction.operand);
-        } else if (instruction.op == IROp::StoreVar) {
+        } else if (instruction.op == IROp::StoreVar || instruction.op == IROp::AssignVar) {
             printNameOperand(out, *this, instruction.operand);
             if (instruction.left) {
                 out << ", " << *instruction.left;
@@ -270,6 +276,8 @@ std::string irOpName(IROp op)
         return "load_var";
     case IROp::StoreVar:
         return "store_var";
+    case IROp::AssignVar:
+        return "assign_var";
     case IROp::Print:
         return "print";
     case IROp::Negate:

@@ -115,6 +115,15 @@ void IRInterpreter::execute(const IRProgram& program)
             globals_.insert_or_assign(name, readRegister(readLeft(instruction)));
             break;
         }
+        case IROp::AssignVar: {
+            const std::string name = readName(program, instruction.operand);
+            auto found = globals_.find(name);
+            if (found == globals_.end()) {
+                throw IRRuntimeError("undefined variable `" + name + "`");
+            }
+            found->second = readRegister(readLeft(instruction));
+            break;
+        }
         case IROp::Print:
             output_ << valueToString(readRegister(readLeft(instruction))) << '\n';
             break;

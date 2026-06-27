@@ -16,6 +16,7 @@ enum class IROp {
     Constant,
     LoadVar,
     StoreVar,
+    AssignVar,
     Print,
     Negate,
     Not,
@@ -50,6 +51,7 @@ public:
     IRRegister emitConstant(Value value);
     IRRegister emitLoadVar(std::string name);
     void emitStoreVar(std::string name, IRRegister value);
+    void emitAssignVar(std::string name, IRRegister value);
     void emitPrint(IRRegister value);
     IRRegister emitUnary(IROp op, IRRegister value);
     IRRegister emitBinary(IROp op, IRRegister left, IRRegister right);
