@@ -87,6 +87,15 @@ void Lexer::scanToken()
     case ')':
         addToken(TokenType::RightParen);
         break;
+    case '{':
+        addToken(TokenType::LeftBrace);
+        break;
+    case '}':
+        addToken(TokenType::RightBrace);
+        break;
+    case ':':
+        addToken(TokenType::Colon);
+        break;
     case ';':
         addToken(TokenType::Semicolon);
         break;
@@ -192,6 +201,8 @@ void Lexer::identifier()
     // Keyword lookup happens after the full identifier has been consumed,
     // which lets names such as `printable` remain identifiers.
     static const std::unordered_map<std::string, TokenType> keywords = {
+        {"if", TokenType::If},
+        {"else", TokenType::Else},
         {"let", TokenType::Let},
         {"print", TokenType::Print},
         {"true", TokenType::True},
@@ -215,6 +226,12 @@ std::string tokenTypeName(TokenType type)
         return "LeftParen";
     case TokenType::RightParen:
         return "RightParen";
+    case TokenType::LeftBrace:
+        return "LeftBrace";
+    case TokenType::RightBrace:
+        return "RightBrace";
+    case TokenType::Colon:
+        return "Colon";
     case TokenType::Semicolon:
         return "Semicolon";
     case TokenType::Plus:
@@ -247,6 +264,10 @@ std::string tokenTypeName(TokenType type)
         return "Number";
     case TokenType::String:
         return "String";
+    case TokenType::If:
+        return "If";
+    case TokenType::Else:
+        return "Else";
     case TokenType::Let:
         return "Let";
     case TokenType::Print:

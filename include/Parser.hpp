@@ -23,6 +23,9 @@ private:
     StmtPtr declaration();
     StmtPtr letDeclaration();
     StmtPtr statement();
+    StmtPtr ifStatement();
+    StmtPtr blockStatement();
+    std::vector<StmtPtr> blockStatements();
     StmtPtr printStatement();
     StmtPtr expressionStatement();
 

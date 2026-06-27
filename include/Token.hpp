@@ -7,6 +7,9 @@
 enum class TokenType {
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
+    Colon,
     Semicolon,
 
     Plus,
@@ -26,6 +29,8 @@ enum class TokenType {
     Number,
     String,
 
+    If,
+    Else,
     Let,
     Print,
     True,

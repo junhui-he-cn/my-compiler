@@ -83,8 +83,9 @@ void GroupingExpr::print(std::ostream& out) const
     out << ')';
 }
 
-LetStmt::LetStmt(Token name, ExprPtr initializer)
+LetStmt::LetStmt(Token name, std::optional<Token> typeName, ExprPtr initializer)
     : name(std::move(name))
+    , typeName(std::move(typeName))
     , initializer(std::move(initializer))
 {
 }
@@ -93,10 +94,11 @@ void LetStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
     out << "Let " << name.lexeme;
-    if (initializer) {
-        out << " = ";
-        initializer->print(out);
+    if (typeName) {
+        out << ": " << typeName->lexeme;
     }
+    out << " = ";
+    writeExpr(out, initializer);
     out << '\n';
 }
 
@@ -126,6 +128,47 @@ void ExpressionStmt::print(std::ostream& out, int indent) const
     out << '\n';
 }
 
+BlockStmt::BlockStmt(std::vector<StmtPtr> statements)
+    : statements(std::move(statements))
+{
+}
+
+void BlockStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Block\n";
+    for (const auto& statement : statements) {
+        statement->print(out, indent + 1);
+    }
+}
+
+IfStmt::IfStmt(ExprPtr condition, StmtPtr thenBranch, StmtPtr elseBranch)
+    : condition(std::move(condition))
+    , thenBranch(std::move(thenBranch))
+    , elseBranch(std::move(elseBranch))
+{
+}
+
+void IfStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "If ";
+    writeExpr(out, condition);
+    out << '\n';
+
+    writeIndent(out, indent + 1);
+    out << "Then\n";
+    if (thenBranch) {
+        thenBranch->print(out, indent + 2);
+    }
+
+    if (elseBranch) {
+        writeIndent(out, indent + 1);
+        out << "Else\n";
+        elseBranch->print(out, indent + 2);
+    }
+}
+
 void Program::print(std::ostream& out) const
 {
     out << "Program\n";
@@ -133,4 +176,3 @@ void Program::print(std::ostream& out) const
         statement->print(out, 1);
     }
 }
-

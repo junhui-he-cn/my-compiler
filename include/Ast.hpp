@@ -3,6 +3,7 @@
 #include "Token.hpp"
 
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -62,10 +63,11 @@ struct Stmt {
 using StmtPtr = std::unique_ptr<Stmt>;
 
 struct LetStmt final : Stmt {
-    LetStmt(Token name, ExprPtr initializer);
+    LetStmt(Token name, std::optional<Token> typeName, ExprPtr initializer);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
+    std::optional<Token> typeName;
     ExprPtr initializer;
 };
 
@@ -81,6 +83,22 @@ struct ExpressionStmt final : Stmt {
     void print(std::ostream& out, int indent) const override;
 
     ExprPtr expression;
+};
+
+struct BlockStmt final : Stmt {
+    explicit BlockStmt(std::vector<StmtPtr> statements);
+    void print(std::ostream& out, int indent) const override;
+
+    std::vector<StmtPtr> statements;
+};
+
+struct IfStmt final : Stmt {
+    IfStmt(ExprPtr condition, StmtPtr thenBranch, StmtPtr elseBranch);
+    void print(std::ostream& out, int indent) const override;
+
+    ExprPtr condition;
+    StmtPtr thenBranch;
+    StmtPtr elseBranch;
 };
 
 struct Program {

@@ -1,5 +1,6 @@
 #include "Parser.hpp"
 
+#include <optional>
 #include <sstream>
 
 ParseError::ParseError(const Token& token, const std::string& message)
@@ -34,13 +35,16 @@ StmtPtr Parser::letDeclaration()
 {
     Token name = consume(TokenType::Identifier, "expected variable name after `let`");
 
-    ExprPtr initializer;
-    if (match(TokenType::Equal)) {
-        initializer = expression();
+    std::optional<Token> typeName;
+    if (match(TokenType::Colon)) {
+        typeName = consume(TokenType::Identifier, "expected type name after `:`");
     }
 
+    consume(TokenType::Equal, "expected `=` after variable declaration");
+    ExprPtr initializer = expression();
+
     consume(TokenType::Semicolon, "expected `;` after variable declaration");
-    return std::make_unique<LetStmt>(std::move(name), std::move(initializer));
+    return std::make_unique<LetStmt>(std::move(name), std::move(typeName), std::move(initializer));
 }
 
 StmtPtr Parser::statement()
@@ -48,7 +52,43 @@ StmtPtr Parser::statement()
     if (match(TokenType::Print)) {
         return printStatement();
     }
+    if (match(TokenType::If)) {
+        return ifStatement();
+    }
+    if (match(TokenType::LeftBrace)) {
+        return blockStatement();
+    }
     return expressionStatement();
+}
+
+StmtPtr Parser::ifStatement()
+{
+    ExprPtr condition = expression();
+    consume(TokenType::LeftBrace, "expected `{` after if condition");
+    StmtPtr thenBranch = blockStatement();
+
+    StmtPtr elseBranch;
+    if (match(TokenType::Else)) {
+        consume(TokenType::LeftBrace, "expected `{` after `else`");
+        elseBranch = blockStatement();
+    }
+
+    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+StmtPtr Parser::blockStatement()
+{
+    return std::make_unique<BlockStmt>(blockStatements());
+}
+
+std::vector<StmtPtr> Parser::blockStatements()
+{
+    std::vector<StmtPtr> statements;
+    while (!check(TokenType::RightBrace) && !isAtEnd()) {
+        statements.push_back(declaration());
+    }
+    consume(TokenType::RightBrace, "expected `}` after block");
+    return statements;
 }
 
 StmtPtr Parser::printStatement()
