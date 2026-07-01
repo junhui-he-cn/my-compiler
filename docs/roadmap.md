@@ -27,6 +27,8 @@ This roadmap captures a practical development sequence for growing the compiler 
 
 Status: implemented. Blocks now introduce real variable scopes.
 
+Implementation note: lexical names are resolved during type checking; generated IR uses unique internal variable names rather than runtime scope operations.
+
 Suggested behavior:
 
 - `{ ... }` creates a nested scope.

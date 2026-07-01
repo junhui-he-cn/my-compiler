@@ -139,9 +139,9 @@ Runtime-error, parse-error, and type-error fixtures should not produce stdout. T
 - Supported statements include `let`, `print`, `if`/`else`, blocks, and expression statements.
 - Supported expressions include literals, variables, grouping, unary operators, binary operators, and assignment expressions.
 - `let name: type = expression;` checks explicit annotations for `number`, `bool`, `string`, and `nil`; unannotated variables are accepted without full inference.
-- Blocks introduce lexical scope: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
-- Assignment has the form `name = expression`, is right-associative, updates an existing variable, and evaluates to the assigned value.
-- Assigning to an undefined variable is a runtime error.
+- Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
+- Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
+- Reading or assigning an undefined variable is a type error before IR compilation.
 - Runtime values currently include nil, numbers, booleans, and strings.
 
 ## Roadmap Hints
