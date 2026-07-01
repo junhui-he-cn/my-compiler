@@ -85,13 +85,15 @@ IRRuntimeError::IRRuntimeError(const std::string& message)
 
 IRInterpreter::IRInterpreter(std::ostream& output)
     : output_(output)
+    , scopes_(1)
 {
 }
 
 void IRInterpreter::execute(const IRProgram& program)
 {
     registers_.assign(program.registerCount(), Value::nil());
-    globals_.clear();
+    scopes_.clear();
+    scopes_.emplace_back();
 
     const auto& instructions = program.instructions();
     std::size_t ip = 0;
@@ -103,27 +105,28 @@ void IRInterpreter::execute(const IRProgram& program)
             break;
         case IROp::LoadVar: {
             const std::string name = readName(program, instruction.operand);
-            const auto found = globals_.find(name);
-            if (found == globals_.end()) {
-                throw IRRuntimeError("undefined variable `" + name + "`");
-            }
-            writeRegister(readDest(instruction), found->second);
+            writeRegister(readDest(instruction), loadVariable(name));
             break;
         }
         case IROp::StoreVar: {
             const std::string name = readName(program, instruction.operand);
-            globals_.insert_or_assign(name, readRegister(readLeft(instruction)));
+            declareVariable(name, readRegister(readLeft(instruction)));
             break;
         }
         case IROp::AssignVar: {
             const std::string name = readName(program, instruction.operand);
-            auto found = globals_.find(name);
-            if (found == globals_.end()) {
-                throw IRRuntimeError("undefined variable `" + name + "`");
-            }
-            found->second = readRegister(readLeft(instruction));
+            assignVariable(name, readRegister(readLeft(instruction)));
             break;
         }
+        case IROp::BeginScope:
+            scopes_.emplace_back();
+            break;
+        case IROp::EndScope:
+            if (scopes_.size() <= 1) {
+                throw IRRuntimeError("cannot end global scope");
+            }
+            scopes_.pop_back();
+            break;
         case IROp::Print:
             output_ << valueToString(readRegister(readLeft(instruction))) << '\n';
             break;
@@ -184,7 +187,10 @@ void IRInterpreter::execute(const IRProgram& program)
 
 const std::unordered_map<std::string, Value>& IRInterpreter::globals() const
 {
-    return globals_;
+    if (scopes_.empty()) {
+        throw IRRuntimeError("scope stack is empty");
+    }
+    return scopes_.front();
 }
 
 Value IRInterpreter::readConstant(const IRProgram& program, std::size_t index) const
@@ -241,6 +247,70 @@ void IRInterpreter::writeRegister(IRRegister reg, Value value)
         throw IRRuntimeError("register index out of range");
     }
     registers_[reg.index] = std::move(value);
+}
+
+std::unordered_map<std::string, Value>& IRInterpreter::currentScope()
+{
+    if (scopes_.empty()) {
+        throw IRRuntimeError("scope stack is empty");
+    }
+    return scopes_.back();
+}
+
+const std::unordered_map<std::string, Value>& IRInterpreter::currentScope() const
+{
+    if (scopes_.empty()) {
+        throw IRRuntimeError("scope stack is empty");
+    }
+    return scopes_.back();
+}
+
+std::unordered_map<std::string, Value>* IRInterpreter::findScopeContaining(const std::string& name)
+{
+    for (auto scope = scopes_.rbegin(); scope != scopes_.rend(); ++scope) {
+        if (scope->find(name) != scope->end()) {
+            return &*scope;
+        }
+    }
+    return nullptr;
+}
+
+const std::unordered_map<std::string, Value>* IRInterpreter::findScopeContaining(const std::string& name) const
+{
+    for (auto scope = scopes_.rbegin(); scope != scopes_.rend(); ++scope) {
+        if (scope->find(name) != scope->end()) {
+            return &*scope;
+        }
+    }
+    return nullptr;
+}
+
+const Value& IRInterpreter::loadVariable(const std::string& name) const
+{
+    const auto* scope = findScopeContaining(name);
+    if (!scope) {
+        throw IRRuntimeError("undefined variable `" + name + "`");
+    }
+    return scope->at(name);
+}
+
+void IRInterpreter::declareVariable(const std::string& name, Value value)
+{
+    auto& scope = currentScope();
+    if (scope.find(name) != scope.end()) {
+        throw IRRuntimeError("variable `" + name + "` already declared in this scope");
+    }
+    scope.emplace(name, std::move(value));
+}
+
+void IRInterpreter::assignVariable(const std::string& name, Value value)
+{
+    auto* scope = findScopeContaining(name);
+    if (!scope) {
+        throw IRRuntimeError("undefined variable `" + name + "`");
+    }
+    auto found = scope->find(name);
+    found->second = std::move(value);
 }
 
 Value IRInterpreter::executeUnaryNumber(const std::string& opName, IRRegister value, Value (*operation)(double))

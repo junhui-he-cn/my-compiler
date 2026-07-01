@@ -47,9 +47,11 @@ IRProgram IRCompiler::compile(const Program& program)
 void IRCompiler::compileStatement(const Stmt& statement)
 {
     if (const auto* block = dynamic_cast<const BlockStmt*>(&statement)) {
+        ir_.emitBeginScope();
         for (const auto& child : block->statements) {
             compileStatement(*child);
         }
+        ir_.emitEndScope();
         return;
     }
 
