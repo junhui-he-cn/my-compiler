@@ -109,7 +109,15 @@ tests/golden/parse_errors/<case>.err
 tests/golden/parse_errors/<case>.exit
 ```
 
-Runtime-error and parse-error fixtures should not produce stdout. The runner checks stderr and exit code.
+Type-error fixtures live under `tests/golden/type_errors`:
+
+```text
+tests/golden/type_errors/<case>.cd
+tests/golden/type_errors/<case>.err
+tests/golden/type_errors/<case>.exit
+```
+
+Runtime-error, parse-error, and type-error fixtures should not produce stdout. The runner checks stderr and exit code.
 
 ## Documentation Update Rules
 
@@ -130,12 +138,12 @@ Runtime-error and parse-error fixtures should not produce stdout. The runner che
 
 - Supported statements include `let`, `print`, `if`/`else`, blocks, and expression statements.
 - Supported expressions include literals, variables, grouping, unary operators, binary operators, and assignment expressions.
-- `let name: type = expression;` parses and prints type annotations, but annotations are syntax-only and are not type-checked yet.
-- Blocks introduce lexical scope: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are runtime errors.
+- `let name: type = expression;` checks explicit annotations for `number`, `bool`, `string`, and `nil`; unannotated variables are accepted without full inference.
+- Blocks introduce lexical scope: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
 - Assignment has the form `name = expression`, is right-associative, updates an existing variable, and evaluates to the assigned value.
 - Assigning to an undefined variable is a runtime error.
 - Runtime values currently include nil, numbers, booleans, and strings.
 
 ## Roadmap Hints
 
-Likely future work includes lexical scope, type checking for annotations, richer statements such as loops/functions, more operators, and a more complete backend. When adding these, prefer vertical slices that update parser, AST, IR, interpreter, docs, and goldens together.
+Likely future work includes richer statements such as loops/functions, more operators, fuller type inference/checking, and a more complete backend. When adding these, prefer vertical slices that update parser, AST, IR, interpreter, docs, and goldens together.

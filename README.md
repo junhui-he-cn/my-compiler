@@ -21,7 +21,7 @@ if expression { declaration* } [else { declaration* }]
 expression;
 ```
 
-Type annotations on `let` declarations are currently syntax-only: they are parsed and shown in the AST, but they are not type-checked yet. Blocks introduce lexical scope: variables declared inside a block are not visible outside it, and inner blocks may shadow outer variables. Re-declaring a variable in the same scope is a runtime error.
+Type annotations on `let` declarations are checked for the built-in annotation names `number`, `bool`, `string`, and `nil`. Unannotated variables are still accepted and are not fully inferred yet. Blocks introduce lexical scope: variables declared inside a block are not visible outside it, and inner blocks may shadow outer variables. Re-declaring a variable in the same scope is a type error.
 
 Supported expressions:
 
@@ -47,7 +47,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, or `run.out` files to cover successful syntax. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
+Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, or `run.out` files to cover successful syntax. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files. Type-error fixtures live in `tests/golden/type_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
 
 To refresh golden files after an intentional output change:
 

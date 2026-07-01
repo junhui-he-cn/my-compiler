@@ -47,9 +47,9 @@ Likely touch points:
 
 Why this first: functions, closures, type checking, and block-local variables all depend on clear scope semantics.
 
-## Phase 2: Basic Type Checker
+## Phase 2: Basic Type Checker — Implemented
 
-Goal: make `let name: type = expression;` meaningful instead of syntax-only.
+Status: implemented for explicit `let` annotations. Unannotated variables are still accepted without full inference.
 
 Start with these types:
 
