@@ -19,6 +19,7 @@ add_executable(compiler_demo
     src/IRInterpreter.cpp
     src/Lexer.cpp
     src/Parser.cpp
+    src/TypeChecker.cpp
     src/Value.cpp
     src/main.cpp
 )

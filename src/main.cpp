@@ -2,6 +2,7 @@
 #include "IRInterpreter.hpp"
 #include "Lexer.hpp"
 #include "Parser.hpp"
+#include "TypeChecker.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -78,6 +79,10 @@ int main(int argc, char** argv)
 
         Parser parser(tokens);
         Program program = parser.parse();
+
+        TypeChecker typeChecker;
+        typeChecker.check(program);
+
         if (!showIr && !runIr) {
             program.print(std::cout);
         }
