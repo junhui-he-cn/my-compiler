@@ -21,7 +21,7 @@ if expression { declaration* } [else { declaration* }]
 expression;
 ```
 
-Type annotations on `let` declarations are currently syntax-only: they are parsed and shown in the AST, but they are not type-checked yet. Blocks group statements for control flow but do not introduce lexical scope yet.
+Type annotations on `let` declarations are currently syntax-only: they are parsed and shown in the AST, but they are not type-checked yet. Blocks introduce lexical scope: variables declared inside a block are not visible outside it, and inner blocks may shadow outer variables. Re-declaring a variable in the same scope is a runtime error.
 
 Supported expressions:
 

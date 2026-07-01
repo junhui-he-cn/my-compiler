@@ -23,9 +23,9 @@ This roadmap captures a practical development sequence for growing the compiler 
 8. Bytecode VM or backend expansion
 ```
 
-## Phase 1: Lexical Scope
+## Phase 1: Lexical Scope — Implemented
 
-Goal: make blocks introduce real variable scopes.
+Status: implemented. Blocks now introduce real variable scopes.
 
 Suggested behavior:
 
