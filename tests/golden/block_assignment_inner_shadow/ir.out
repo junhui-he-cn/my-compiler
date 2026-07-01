@@ -1,13 +1,11 @@
 IR
 0000  v0 = constant #0 1
-0001  store_var @0 x, v0
-0002  begin_scope
-0003  v1 = constant #1 10
-0004  store_var @1 x, v1
-0005  v2 = constant #2 20
-0006  assign_var @2 x, v2
-0007  v3 = load_var @3 x
-0008  print v3
-0009  end_scope
-0010  v4 = load_var @4 x
-0011  print v4
+0001  store_var @0 x#0, v0
+0002  v1 = constant #1 10
+0003  store_var @1 x#1, v1
+0004  v2 = constant #2 20
+0005  assign_var @2 x#1, v2
+0006  v3 = load_var @3 x#1
+0007  print v3
+0008  v4 = load_var @4 x#0
+0009  print v4

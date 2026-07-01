@@ -1,9 +1,9 @@
 IR
 0000  v0 = constant #0 42
-0001  store_var @0 answer, v0
+0001  store_var @0 answer#0, v0
 0002  v1 = constant #1 "answer"
-0003  store_var @1 label, v1
-0004  v2 = load_var @2 label
+0003  store_var @1 label#1, v1
+0004  v2 = load_var @2 label#1
 0005  print v2
-0006  v3 = load_var @3 answer
+0006  v3 = load_var @3 answer#0
 0007  print v3

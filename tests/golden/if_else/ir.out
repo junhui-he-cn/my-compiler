@@ -1,39 +1,27 @@
 IR
 0000  v0 = constant #0 true
-0001  store_var @0 ok, v0
-0002  v1 = load_var @1 ok
-0003  jump_if_false v1, 0009
-0004  begin_scope
-0005  v2 = constant #1 "then"
-0006  print v2
-0007  end_scope
-0008  jump 0013
-0009  begin_scope
-0010  v3 = constant #2 "else"
-0011  print v3
-0012  end_scope
-0013  v4 = constant #3 false
-0014  jump_if_false v4, 0020
-0015  begin_scope
-0016  v5 = constant #4 "bad"
-0017  print v5
-0018  end_scope
-0019  jump 0024
-0020  begin_scope
-0021  v6 = constant #5 "fallback"
-0022  print v6
-0023  end_scope
-0024  v7 = constant #6 true
-0025  jump_if_false v7, 0030
-0026  begin_scope
-0027  v8 = constant #7 "no else"
-0028  print v8
-0029  end_scope
-0030  v9 = constant #8 false
-0031  jump_if_false v9, 0036
-0032  begin_scope
-0033  v10 = constant #9 "bad no else"
-0034  print v10
-0035  end_scope
-0036  v11 = constant #10 "after no else"
-0037  print v11
+0001  store_var @0 ok#0, v0
+0002  v1 = load_var @1 ok#0
+0003  jump_if_false v1, 0007
+0004  v2 = constant #1 "then"
+0005  print v2
+0006  jump 0009
+0007  v3 = constant #2 "else"
+0008  print v3
+0009  v4 = constant #3 false
+0010  jump_if_false v4, 0014
+0011  v5 = constant #4 "bad"
+0012  print v5
+0013  jump 0016
+0014  v6 = constant #5 "fallback"
+0015  print v6
+0016  v7 = constant #6 true
+0017  jump_if_false v7, 0020
+0018  v8 = constant #7 "no else"
+0019  print v8
+0020  v9 = constant #8 false
+0021  jump_if_false v9, 0024
+0022  v10 = constant #9 "bad no else"
+0023  print v10
+0024  v11 = constant #10 "after no else"
+0025  print v11
