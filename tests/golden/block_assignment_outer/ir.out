@@ -1,0 +1,9 @@
+IR
+0000  v0 = constant #0 1
+0001  store_var @0 x, v0
+0002  begin_scope
+0003  v1 = constant #1 2
+0004  assign_var @1 x, v1
+0005  end_scope
+0006  v2 = load_var @2 x
+0007  print v2

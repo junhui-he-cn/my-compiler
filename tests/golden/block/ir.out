@@ -1,7 +1,11 @@
 IR
-0000  v0 = constant #0 10
+0000  v0 = constant #0 "global"
 0001  store_var @0 x, v0
-0002  v1 = load_var @1 x
-0003  print v1
-0004  v2 = load_var @2 x
-0005  print v2
+0002  begin_scope
+0003  v1 = constant #1 "inner"
+0004  store_var @1 x, v1
+0005  v2 = load_var @2 x
+0006  print v2
+0007  end_scope
+0008  v3 = load_var @3 x
+0009  print v3
