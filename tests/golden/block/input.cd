@@ -1,5 +1,6 @@
+let x = "global";
 {
-  let x = 10;
+  let x = "inner";
   print x;
 }
 print x;
