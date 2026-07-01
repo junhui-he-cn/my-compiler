@@ -35,23 +35,23 @@ IRCompileError::IRCompileError(const std::string& message)
 {
 }
 
-IRProgram IRCompiler::compile(const Program& program)
+IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resolvedNames)
 {
     ir_ = IRProgram();
+    resolvedNames_ = &resolvedNames;
     for (const auto& statement : program.statements) {
         compileStatement(*statement);
     }
+    resolvedNames_ = nullptr;
     return std::move(ir_);
 }
 
 void IRCompiler::compileStatement(const Stmt& statement)
 {
     if (const auto* block = dynamic_cast<const BlockStmt*>(&statement)) {
-        ir_.emitBeginScope();
         for (const auto& child : block->statements) {
             compileStatement(*child);
         }
-        ir_.emitEndScope();
         return;
     }
 
@@ -74,7 +74,7 @@ void IRCompiler::compileStatement(const Stmt& statement)
 
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const IRRegister value = compileExpression(*let->initializer);
-        ir_.emitStoreVar(let->name.lexeme, value);
+        ir_.emitStoreVar(resolvedNames_->letName(*let), value);
         return;
     }
 
@@ -99,12 +99,12 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
     }
 
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
-        return ir_.emitLoadVar(variable->name.lexeme);
+        return ir_.emitLoadVar(resolvedNames_->variableName(*variable));
     }
 
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
         const IRRegister value = compileExpression(*assign->value);
-        ir_.emitAssignVar(assign->name.lexeme, value);
+        ir_.emitAssignVar(resolvedNames_->assignmentName(*assign), value);
         return value;
     }
 

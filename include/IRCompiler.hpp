@@ -2,6 +2,7 @@
 
 #include "Ast.hpp"
 #include "IR.hpp"
+#include "TypeChecker.hpp"
 
 #include <stdexcept>
 #include <string>
@@ -13,7 +14,7 @@ public:
 
 class IRCompiler {
 public:
-    IRProgram compile(const Program& program);
+    IRProgram compile(const Program& program, const ResolvedNames& resolvedNames);
 
 private:
     void compileStatement(const Stmt& statement);
@@ -22,4 +23,5 @@ private:
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
 
     IRProgram ir_;
+    const ResolvedNames* resolvedNames_ = nullptr;
 };

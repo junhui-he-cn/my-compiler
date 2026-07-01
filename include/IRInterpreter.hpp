@@ -28,13 +28,6 @@ private:
     IRRegister readRight(const IRInstruction& instruction) const;
     const Value& readRegister(IRRegister reg) const;
     void writeRegister(IRRegister reg, Value value);
-    std::unordered_map<std::string, Value>& currentScope();
-    const std::unordered_map<std::string, Value>& currentScope() const;
-    std::unordered_map<std::string, Value>* findScopeContaining(const std::string& name);
-    const std::unordered_map<std::string, Value>* findScopeContaining(const std::string& name) const;
-    const Value& loadVariable(const std::string& name) const;
-    void declareVariable(const std::string& name, Value value);
-    void assignVariable(const std::string& name, Value value);
 
     Value executeUnaryNumber(const std::string& opName, IRRegister value, Value (*operation)(double));
     Value executeBinaryNumber(const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double));
@@ -43,5 +36,5 @@ private:
 
     std::ostream& output_;
     std::vector<Value> registers_;
-    std::vector<std::unordered_map<std::string, Value>> scopes_;
+    std::unordered_map<std::string, Value> globals_;
 };

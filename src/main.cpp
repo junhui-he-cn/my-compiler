@@ -81,7 +81,7 @@ int main(int argc, char** argv)
         Program program = parser.parse();
 
         TypeChecker typeChecker;
-        typeChecker.check(program);
+        const ResolvedNames& resolvedNames = typeChecker.check(program);
 
         if (!showIr && !runIr) {
             program.print(std::cout);
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 
         if (showIr || runIr) {
             IRCompiler compiler;
-            IRProgram ir = compiler.compile(program);
+            IRProgram ir = compiler.compile(program, resolvedNames);
 
             if (showIr) {
                 ir.print(std::cout);

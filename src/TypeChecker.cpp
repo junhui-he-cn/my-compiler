@@ -1,5 +1,6 @@
 #include "TypeChecker.hpp"
 
+#include <stdexcept>
 #include <utility>
 
 namespace {
@@ -45,14 +46,67 @@ std::string staticTypeName(StaticType type)
     return "unknown";
 }
 
-void TypeChecker::check(const Program& program)
+
+const std::string& ResolvedNames::letName(const LetStmt& statement) const
+{
+    const auto found = letNames_.find(&statement);
+    if (found == letNames_.end()) {
+        throw std::logic_error("missing resolved let name");
+    }
+    return found->second;
+}
+
+const std::string& ResolvedNames::variableName(const VariableExpr& expression) const
+{
+    const auto found = variableNames_.find(&expression);
+    if (found == variableNames_.end()) {
+        throw std::logic_error("missing resolved variable name");
+    }
+    return found->second;
+}
+
+const std::string& ResolvedNames::assignmentName(const AssignExpr& expression) const
+{
+    const auto found = assignmentNames_.find(&expression);
+    if (found == assignmentNames_.end()) {
+        throw std::logic_error("missing resolved assignment name");
+    }
+    return found->second;
+}
+
+void ResolvedNames::clear()
+{
+    letNames_.clear();
+    variableNames_.clear();
+    assignmentNames_.clear();
+}
+
+void ResolvedNames::recordLet(const LetStmt& statement, std::string name)
+{
+    letNames_.emplace(&statement, std::move(name));
+}
+
+void ResolvedNames::recordVariable(const VariableExpr& expression, std::string name)
+{
+    variableNames_.emplace(&expression, std::move(name));
+}
+
+void ResolvedNames::recordAssignment(const AssignExpr& expression, std::string name)
+{
+    assignmentNames_.emplace(&expression, std::move(name));
+}
+
+const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
+    resolvedNames_.clear();
+    nextResolvedName_ = 0;
     beginScope();
     for (const auto& statement : program.statements) {
         checkStatement(*statement);
     }
     endScope();
+    return resolvedNames_;
 }
 
 void TypeChecker::beginScope()
@@ -84,7 +138,7 @@ const TypeChecker::Scope& TypeChecker::currentScope() const
     return scopes_.back();
 }
 
-StaticType* TypeChecker::findVariable(const std::string& name)
+TypeChecker::Binding* TypeChecker::findVariable(const std::string& name)
 {
     for (auto scope = scopes_.rbegin(); scope != scopes_.rend(); ++scope) {
         auto found = scope->find(name);
@@ -95,7 +149,7 @@ StaticType* TypeChecker::findVariable(const std::string& name)
     return nullptr;
 }
 
-const StaticType* TypeChecker::findVariable(const std::string& name) const
+const TypeChecker::Binding* TypeChecker::findVariable(const std::string& name) const
 {
     for (auto scope = scopes_.rbegin(); scope != scopes_.rend(); ++scope) {
         auto found = scope->find(name);
@@ -106,13 +160,22 @@ const StaticType* TypeChecker::findVariable(const std::string& name) const
     return nullptr;
 }
 
-void TypeChecker::declareVariable(const Token& name, StaticType type)
+TypeChecker::Binding TypeChecker::declareVariable(const LetStmt& statement, StaticType type)
 {
     auto& scope = currentScope();
-    if (scope.find(name.lexeme) != scope.end()) {
-        throw TypeError("variable `" + name.lexeme + "` already declared in this scope");
+    if (scope.find(statement.name.lexeme) != scope.end()) {
+        throw TypeError("variable `" + statement.name.lexeme + "` already declared in this scope");
     }
-    scope.emplace(name.lexeme, type);
+
+    Binding binding{type, makeResolvedName(statement.name.lexeme)};
+    resolvedNames_.recordLet(statement, binding.resolvedName);
+    scope.emplace(statement.name.lexeme, binding);
+    return binding;
+}
+
+std::string TypeChecker::makeResolvedName(const std::string& sourceName)
+{
+    return sourceName + "#" + std::to_string(nextResolvedName_++);
 }
 
 void TypeChecker::checkStatement(const Stmt& statement)
@@ -137,7 +200,7 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const StaticType declared = checkLetInitializer(*let);
-        declareVariable(let->name, declared);
+        declareVariable(*let, declared);
         return;
     }
 
@@ -186,21 +249,26 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
     }
 
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
-        const StaticType* type = findVariable(variable->name.lexeme);
-        return type ? *type : StaticType::Unknown;
+        const Binding* binding = findVariable(variable->name.lexeme);
+        if (!binding) {
+            throw TypeError("undefined variable `" + variable->name.lexeme + "`");
+        }
+        resolvedNames_.recordVariable(*variable, binding->resolvedName);
+        return binding->type;
     }
 
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
         const StaticType value = checkExpression(*assign->value);
-        StaticType* target = findVariable(assign->name.lexeme);
+        Binding* target = findVariable(assign->name.lexeme);
         if (!target) {
-            return value;
+            throw TypeError("undefined variable `" + assign->name.lexeme + "`");
         }
-        if (isKnown(*target) && isKnown(value) && *target != value) {
+        if (isKnown(target->type) && isKnown(value) && target->type != value) {
             throw TypeError("cannot assign " + staticTypeName(value) + " to `" + assign->name.lexeme
-                + "` of type " + staticTypeName(*target));
+                + "` of type " + staticTypeName(target->type));
         }
-        return isKnown(*target) ? *target : value;
+        resolvedNames_.recordAssignment(*assign, target->resolvedName);
+        return isKnown(target->type) ? target->type : value;
     }
 
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {

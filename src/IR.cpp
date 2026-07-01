@@ -29,8 +29,6 @@ bool isBinary(IROp op)
     case IROp::LoadVar:
     case IROp::StoreVar:
     case IROp::AssignVar:
-    case IROp::BeginScope:
-    case IROp::EndScope:
     case IROp::Print:
     case IROp::Negate:
     case IROp::Not:
@@ -140,15 +138,6 @@ void IRProgram::emitAssignVar(std::string name, IRRegister value)
     emit(IRInstruction{IROp::AssignVar, std::nullopt, value, std::nullopt, addName(std::move(name))});
 }
 
-void IRProgram::emitBeginScope()
-{
-    emit(IRInstruction{IROp::BeginScope, std::nullopt, std::nullopt, std::nullopt, 0});
-}
-
-void IRProgram::emitEndScope()
-{
-    emit(IRInstruction{IROp::EndScope, std::nullopt, std::nullopt, std::nullopt, 0});
-}
 
 void IRProgram::emitPrint(IRRegister value)
 {
@@ -290,10 +279,6 @@ std::string irOpName(IROp op)
         return "store_var";
     case IROp::AssignVar:
         return "assign_var";
-    case IROp::BeginScope:
-        return "begin_scope";
-    case IROp::EndScope:
-        return "end_scope";
     case IROp::Print:
         return "print";
     case IROp::Negate:
