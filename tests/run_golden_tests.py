@@ -51,7 +51,7 @@ def discover_success_cases(golden_dir: Path) -> list[Path]:
         case_dir
         for case_dir in golden_dir.iterdir()
         if case_dir.is_dir()
-        and case_dir.name not in {"runtime_errors", "parse_errors"}
+        and case_dir.name not in {"runtime_errors", "parse_errors", "type_errors"}
         and (case_dir / "input.cd").is_file()
     )
 
@@ -68,6 +68,13 @@ def discover_parse_error_cases(golden_dir: Path) -> list[Path]:
     if not parse_dir.is_dir():
         return []
     return sorted(parse_dir.glob("*.cd"))
+
+
+def discover_type_error_cases(golden_dir: Path) -> list[Path]:
+    type_dir = golden_dir / "type_errors"
+    if not type_dir.is_dir():
+        return []
+    return sorted(type_dir.glob("*.cd"))
 
 
 def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[CheckResult]:
@@ -153,6 +160,17 @@ def unexpected_parse_stdout_result(case_name: str, stdout: str) -> CheckResult:
         False,
         (
             f"FAIL {case_name} produced unexpected stdout for parse error\n\n"
+            f"STDOUT:\n{stdout}"
+        ),
+    )
+
+
+def unexpected_type_stdout_result(case_name: str, stdout: str) -> CheckResult:
+    return CheckResult(
+        case_name,
+        False,
+        (
+            f"FAIL {case_name} produced unexpected stdout for type error\n\n"
             f"STDOUT:\n{stdout}"
         ),
     )
@@ -256,6 +274,56 @@ def check_parse_error_case(compiler: Path, source: Path, update: bool) -> list[C
     return results
 
 
+
+def check_type_error_case(compiler: Path, source: Path, update: bool) -> list[CheckResult]:
+    stem = source.with_suffix("")
+    err_path = stem.with_suffix(".err")
+    exit_path = stem.with_suffix(".exit")
+    case_name = f"type_errors/{source.stem} default(ast)"
+
+    completed = run_compiler(compiler, (), source)
+
+    if update:
+        write_text(err_path, completed.stderr)
+        write_text(exit_path, f"{completed.returncode}\n")
+        if completed.stdout:
+            return [unexpected_type_stdout_result(case_name, completed.stdout)]
+        return [CheckResult(case_name, True)]
+
+    results: list[CheckResult] = []
+
+    if completed.stdout:
+        results.append(unexpected_type_stdout_result(case_name, completed.stdout))
+
+    if not err_path.exists():
+        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
+    else:
+        expected_err = read_text(err_path)
+        actual_err = completed.stderr
+        if actual_err != expected_err:
+            diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
+            results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
+
+    if not exit_path.exists():
+        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected exit file: {exit_path}"))
+    else:
+        expected_exit_text = read_text(exit_path).strip()
+        actual_exit_text = str(completed.returncode)
+        if actual_exit_text != expected_exit_text:
+            results.append(
+                CheckResult(
+                    case_name,
+                    False,
+                    f"FAIL {case_name} exit code mismatch\nexpected: {expected_exit_text}\nactual: {actual_exit_text}",
+                )
+            )
+
+    if not results:
+        results.append(CheckResult(case_name, True))
+
+    return results
+
+
 def run_all(compiler: Path, golden_dir: Path, update: bool) -> list[CheckResult]:
     results: list[CheckResult] = []
 
@@ -267,6 +335,9 @@ def run_all(compiler: Path, golden_dir: Path, update: bool) -> list[CheckResult]
 
     for source in discover_parse_error_cases(golden_dir):
         results.extend(check_parse_error_case(compiler, source, update))
+
+    for source in discover_type_error_cases(golden_dir):
+        results.extend(check_type_error_case(compiler, source, update))
 
     if not results:
         results.append(CheckResult("golden", False, "FAIL golden tests found no golden test checks/results"))

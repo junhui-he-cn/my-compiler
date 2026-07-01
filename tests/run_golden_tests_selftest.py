@@ -165,5 +165,52 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertEqual(results[0].name, "parse_errors/input default(ast)")
 
 
+    def test_type_error_case_checks_default_mode_stderr_exit_and_stdout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            type_dir = golden_dir / "type_errors"
+            type_dir.mkdir(parents=True)
+            (type_dir / "bad_type.cd").write_text('let x: number = "bad";\n', encoding="utf-8")
+            (type_dir / "bad_type.err").write_text("type error\n", encoding="utf-8")
+            (type_dir / "bad_type.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stdout="unexpected output\n",
+                stderr="type error\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("type_errors/bad_type default(ast)", results[0].message)
+        self.assertIn("unexpected stdout", results[0].message)
+        self.assertIn("unexpected output", results[0].message)
+
+    def test_type_error_input_cd_is_not_discovered_as_success_case(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            type_dir = golden_dir / "type_errors"
+            type_dir.mkdir(parents=True)
+            (type_dir / "input.cd").write_text('let x: number = "bad";\n', encoding="utf-8")
+            (type_dir / "input.err").write_text("type error\n", encoding="utf-8")
+            (type_dir / "input.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="type error\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "type_errors/input default(ast)")
+
+
+
 if __name__ == "__main__":
     raise SystemExit(unittest.main())
