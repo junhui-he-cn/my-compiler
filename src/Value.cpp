@@ -107,7 +107,7 @@ bool valuesEqual(const Value& left, const Value& right)
     case Value::Type::String:
         return left.asString() == right.asString();
     case Value::Type::Function:
-        return left.asFunction().functionIndex == right.asFunction().functionIndex;
+        return left.asFunction().identity == right.asFunction().identity;
     }
 
     return false;
