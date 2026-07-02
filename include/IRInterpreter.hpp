@@ -3,6 +3,7 @@
 #include "Diagnostic.hpp"
 #include "IR.hpp"
 
+#include <memory>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -23,7 +24,8 @@ public:
 private:
     struct Frame {
         std::vector<Value> registers;
-        std::unordered_map<std::string, Value> locals;
+        std::shared_ptr<Environment> locals = std::make_shared<Environment>();
+        std::shared_ptr<Environment> closure = std::make_shared<Environment>();
     };
 
     struct ExecutionResult {
@@ -40,8 +42,12 @@ private:
     Value callFunction(const IRProgram& program, const FunctionValue& function, const std::vector<Value>& arguments);
     const Value& readRegister(const Frame& frame, IRRegister reg) const;
     void writeRegister(Frame& frame, IRRegister reg, Value value);
+    std::shared_ptr<Cell> findCell(const Frame& frame, const std::string& name) const;
     Value loadVariable(const Frame& frame, const std::string& name) const;
+    void storeVariable(Frame& frame, const std::string& name, Value value, bool isMain);
     void assignVariable(Frame& frame, const std::string& name, Value value);
+    std::shared_ptr<Environment> captureEnvironment(const Frame& frame) const;
+    void refreshGlobalsView() const;
 
     Value executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double));
     Value executeBinaryNumber(const Frame& frame, const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double));
@@ -49,5 +55,7 @@ private:
     Value executeAdd(const Frame& frame, IRRegister left, IRRegister right);
 
     std::ostream& output_;
-    std::unordered_map<std::string, Value> globals_;
+    std::shared_ptr<Environment> globals_ = std::make_shared<Environment>();
+    mutable std::unordered_map<std::string, Value> globalsView_;
+    std::size_t nextFunctionIdentity_ = 1;
 };

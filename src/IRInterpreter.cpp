@@ -92,7 +92,9 @@ IRInterpreter::IRInterpreter(std::ostream& output)
 
 void IRInterpreter::execute(const IRProgram& program)
 {
-    globals_.clear();
+    globals_ = std::make_shared<Environment>();
+    globalsView_.clear();
+    nextFunctionIdentity_ = 1;
     Frame mainFrame;
     mainFrame.registers.assign(program.registerCount(), Value::nil());
     executeInstructions(program, program.instructions(), mainFrame, true);
@@ -118,7 +120,13 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
             }
             const IRFunction& function = program.functions()[instruction.operand];
             writeRegister(frame, readDest(instruction),
-                Value::function(FunctionValue{function.name, instruction.operand, function.parameters.size()}));
+                Value::function(FunctionValue{
+                    function.name,
+                    instruction.operand,
+                    function.parameters.size(),
+                    nextFunctionIdentity_++,
+                    captureEnvironment(frame),
+                }));
             break;
         }
         case IROp::Copy:
@@ -131,11 +139,7 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
         }
         case IROp::StoreVar: {
             const std::string name = readName(program, instruction.operand);
-            if (isMain) {
-                globals_.insert_or_assign(name, readRegister(frame, readLeft(instruction)));
-            } else {
-                frame.locals.insert_or_assign(name, readRegister(frame, readLeft(instruction)));
-            }
+            storeVariable(frame, name, readRegister(frame, readLeft(instruction)), isMain);
             break;
         }
         case IROp::AssignVar: {
@@ -226,7 +230,8 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
 
 const std::unordered_map<std::string, Value>& IRInterpreter::globals() const
 {
-    return globals_;
+    refreshGlobalsView();
+    return globalsView_;
 }
 
 Value IRInterpreter::readConstant(const IRProgram& program, std::size_t index) const
@@ -285,32 +290,88 @@ void IRInterpreter::writeRegister(Frame& frame, IRRegister reg, Value value)
     frame.registers[reg.index] = std::move(value);
 }
 
+std::shared_ptr<Cell> IRInterpreter::findCell(const Frame& frame, const std::string& name) const
+{
+    if (frame.locals) {
+        const auto local = frame.locals->values.find(name);
+        if (local != frame.locals->values.end()) {
+            return local->second;
+        }
+    }
+
+    if (frame.closure) {
+        const auto captured = frame.closure->values.find(name);
+        if (captured != frame.closure->values.end()) {
+            return captured->second;
+        }
+    }
+
+    if (globals_) {
+        const auto global = globals_->values.find(name);
+        if (global != globals_->values.end()) {
+            return global->second;
+        }
+    }
+
+    return nullptr;
+}
+
 Value IRInterpreter::loadVariable(const Frame& frame, const std::string& name) const
 {
-    const auto local = frame.locals.find(name);
-    if (local != frame.locals.end()) {
-        return local->second;
+    std::shared_ptr<Cell> cell = findCell(frame, name);
+    if (!cell) {
+        throw IRRuntimeError("undefined variable `" + name + "`");
     }
-    const auto global = globals_.find(name);
-    if (global != globals_.end()) {
-        return global->second;
+    return cell->value;
+}
+
+void IRInterpreter::storeVariable(Frame& frame, const std::string& name, Value value, bool isMain)
+{
+    std::shared_ptr<Cell> cell = std::make_shared<Cell>(std::move(value));
+    if (isMain) {
+        globals_->values.insert_or_assign(name, std::move(cell));
+        return;
     }
-    throw IRRuntimeError("undefined variable `" + name + "`");
+    frame.locals->values.insert_or_assign(name, std::move(cell));
 }
 
 void IRInterpreter::assignVariable(Frame& frame, const std::string& name, Value value)
 {
-    auto local = frame.locals.find(name);
-    if (local != frame.locals.end()) {
-        local->second = std::move(value);
+    std::shared_ptr<Cell> cell = findCell(frame, name);
+    if (!cell) {
+        throw IRRuntimeError("undefined variable `" + name + "`");
+    }
+    cell->value = std::move(value);
+}
+
+std::shared_ptr<Environment> IRInterpreter::captureEnvironment(const Frame& frame) const
+{
+    auto captured = std::make_shared<Environment>();
+
+    if (frame.closure) {
+        for (const auto& [name, cell] : frame.closure->values) {
+            captured->values.insert_or_assign(name, cell);
+        }
+    }
+
+    if (frame.locals) {
+        for (const auto& [name, cell] : frame.locals->values) {
+            captured->values.insert_or_assign(name, cell);
+        }
+    }
+
+    return captured;
+}
+
+void IRInterpreter::refreshGlobalsView() const
+{
+    globalsView_.clear();
+    if (!globals_) {
         return;
     }
-    auto global = globals_.find(name);
-    if (global != globals_.end()) {
-        global->second = std::move(value);
-        return;
+    for (const auto& [name, cell] : globals_->values) {
+        globalsView_.emplace(name, cell->value);
     }
-    throw IRRuntimeError("undefined variable `" + name + "`");
 }
 
 Value IRInterpreter::callFunction(const IRProgram& program, const FunctionValue& function, const std::vector<Value>& arguments)
@@ -325,9 +386,10 @@ Value IRInterpreter::callFunction(const IRProgram& program, const FunctionValue&
     }
 
     Frame frame;
+    frame.closure = function.closure ? function.closure : std::make_shared<Environment>();
     frame.registers.assign(irFunction.registerCount, Value::nil());
     for (std::size_t i = 0; i < arguments.size(); ++i) {
-        frame.locals.emplace(irFunction.parameters[i], arguments[i]);
+        frame.locals->values.emplace(irFunction.parameters[i], std::make_shared<Cell>(arguments[i]));
     }
 
     ExecutionResult result = executeInstructions(program, irFunction.instructions, frame, false);
