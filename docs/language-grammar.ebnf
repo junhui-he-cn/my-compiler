@@ -7,6 +7,7 @@ declaration = letDecl
 
 statement   = printStmt
             | ifStmt
+            | whileStmt
             | block
             | exprStmt ;
 
@@ -16,6 +17,8 @@ letDecl     = "let", identifier,
 
 ifStmt      = "if", expression, block,
               [ "else", block ] ;
+
+whileStmt   = "while", expression, block ;
 
 block       = "{", { declaration }, "}" ;
 

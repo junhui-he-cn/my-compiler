@@ -17,11 +17,14 @@ let name = expression;
 let name: type = expression;
 print expression;
 if expression { declaration* } [else { declaration* }]
+while expression { declaration* }
 { declaration* }
 expression;
 ```
 
 Type annotations on `let` declarations are checked for the built-in annotation names `number`, `bool`, `string`, and `nil`. Unannotated variables are still accepted and are not fully inferred yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
+
+`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break` and `continue` are not implemented yet.
 
 Supported expressions:
 

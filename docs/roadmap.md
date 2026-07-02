@@ -112,7 +112,9 @@ Likely touch points:
 - AST/IR/run golden fixtures
 - parse-error fixtures for malformed logical expressions
 
-## Phase 4: While Loops
+## Phase 4: While Loops — Implemented
+
+Status: implemented. The language supports block-bodied `while` loops with truthy conditions. `break` and `continue` are not implemented yet.
 
 Goal: support basic repeated control flow.
 
