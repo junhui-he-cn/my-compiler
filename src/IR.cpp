@@ -45,6 +45,27 @@ bool isBinary(IROp op)
     return false;
 }
 
+bool hasActiveFunction(const std::vector<IRFunction>& functionStack)
+{
+    return !functionStack.empty();
+}
+
+IRFunction& activeFunction(std::vector<IRFunction>& functionStack)
+{
+    if (functionStack.empty()) {
+        throw std::logic_error("no active IR function");
+    }
+    return functionStack.back();
+}
+
+const IRFunction& activeFunction(const std::vector<IRFunction>& functionStack)
+{
+    if (functionStack.empty()) {
+        throw std::logic_error("no active IR function");
+    }
+    return functionStack.back();
+}
+
 void printEscapedStringLiteral(std::ostream& out, const std::string& value)
 {
     out << '"';
@@ -189,29 +210,25 @@ std::size_t IRProgram::addName(std::string name)
 
 IRRegister IRProgram::makeRegister()
 {
-    if (buildingFunction_) {
-        return IRRegister{currentFunction_.registerCount++};
+    if (hasActiveFunction(functionStack_)) {
+        return IRRegister{activeFunction(functionStack_).registerCount++};
     }
     return IRRegister{registerCount_++};
 }
 
 void IRProgram::beginFunction(std::string name, std::vector<std::string> parameters)
 {
-    if (buildingFunction_) {
-        throw std::logic_error("nested IR function build");
-    }
-    buildingFunction_ = true;
-    currentFunction_ = IRFunction{std::move(name), std::move(parameters), {}, 0};
+    functionStack_.push_back(IRFunction{std::move(name), std::move(parameters), {}, 0});
 }
 
 std::size_t IRProgram::endFunction()
 {
-    if (!buildingFunction_) {
+    if (!hasActiveFunction(functionStack_)) {
         throw std::logic_error("not building IR function");
     }
-    buildingFunction_ = false;
-    functions_.push_back(std::move(currentFunction_));
-    currentFunction_ = IRFunction{};
+    IRFunction function = std::move(functionStack_.back());
+    functionStack_.pop_back();
+    functions_.push_back(std::move(function));
     return functions_.size() - 1;
 }
 
@@ -317,7 +334,9 @@ std::size_t IRProgram::emitJumpIfTrue(IRRegister condition)
 
 void IRProgram::patchJump(std::size_t jumpInstruction)
 {
-    auto& instructions = buildingFunction_ ? currentFunction_.instructions : instructions_;
+    auto& instructions = hasActiveFunction(functionStack_)
+        ? activeFunction(functionStack_).instructions
+        : instructions_;
     if (jumpInstruction >= instructions.size()) {
         throw std::logic_error("jump instruction index out of range");
     }
@@ -358,8 +377,8 @@ std::size_t IRProgram::registerCount() const
 
 std::size_t IRProgram::instructionCount() const
 {
-    if (buildingFunction_) {
-        return currentFunction_.instructions.size();
+    if (hasActiveFunction(functionStack_)) {
+        return activeFunction(functionStack_).instructions.size();
     }
     return instructions_.size();
 }
@@ -389,8 +408,8 @@ void IRProgram::print(std::ostream& out) const
 
 void IRProgram::emit(IRInstruction instruction)
 {
-    if (buildingFunction_) {
-        currentFunction_.instructions.push_back(std::move(instruction));
+    if (hasActiveFunction(functionStack_)) {
+        activeFunction(functionStack_).instructions.push_back(std::move(instruction));
         return;
     }
     instructions_.push_back(std::move(instruction));

@@ -98,8 +98,7 @@ private:
     std::vector<std::string> names_;
     std::vector<IRInstruction> instructions_;
     std::size_t registerCount_ = 0;
-    bool buildingFunction_ = false;
-    IRFunction currentFunction_;
+    std::vector<IRFunction> functionStack_;
     std::vector<IRFunction> functions_;
 };
 
