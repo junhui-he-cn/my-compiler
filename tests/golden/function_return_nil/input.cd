@@ -1,0 +1,4 @@
+fun noop() {
+  print "hi";
+}
+print noop();

@@ -64,6 +64,8 @@ std::string typeName(Value::Type type)
         return "bool";
     case Value::Type::String:
         return "string";
+    case Value::Type::Function:
+        return "function";
     }
 
     return "unknown";
@@ -90,83 +92,112 @@ IRInterpreter::IRInterpreter(std::ostream& output)
 
 void IRInterpreter::execute(const IRProgram& program)
 {
-    registers_.assign(program.registerCount(), Value::nil());
     globals_.clear();
+    Frame mainFrame;
+    mainFrame.registers.assign(program.registerCount(), Value::nil());
+    executeInstructions(program, program.instructions(), mainFrame, true);
+}
 
-    const auto& instructions = program.instructions();
+IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
+    const IRProgram& program,
+    const std::vector<IRInstruction>& instructions,
+    Frame& frame,
+    bool isMain)
+{
+
     std::size_t ip = 0;
     while (ip < instructions.size()) {
         const IRInstruction& instruction = instructions[ip];
         switch (instruction.op) {
         case IROp::Constant:
-            writeRegister(readDest(instruction), readConstant(program, instruction.operand));
+            writeRegister(frame, readDest(instruction), readConstant(program, instruction.operand));
             break;
+        case IROp::MakeFunction: {
+            if (instruction.operand >= program.functions().size()) {
+                throw IRRuntimeError("function index out of range");
+            }
+            const IRFunction& function = program.functions()[instruction.operand];
+            writeRegister(frame, readDest(instruction),
+                Value::function(FunctionValue{function.name, instruction.operand, function.parameters.size()}));
+            break;
+        }
         case IROp::Copy:
-            writeRegister(readDest(instruction), readRegister(readLeft(instruction)));
+            writeRegister(frame, readDest(instruction), readRegister(frame, readLeft(instruction)));
             break;
         case IROp::LoadVar: {
             const std::string name = readName(program, instruction.operand);
-            const auto found = globals_.find(name);
-            if (found == globals_.end()) {
-                throw IRRuntimeError("undefined variable `" + name + "`");
-            }
-            writeRegister(readDest(instruction), found->second);
+            writeRegister(frame, readDest(instruction), loadVariable(frame, name));
             break;
         }
         case IROp::StoreVar: {
             const std::string name = readName(program, instruction.operand);
-            globals_.insert_or_assign(name, readRegister(readLeft(instruction)));
+            if (isMain) {
+                globals_.insert_or_assign(name, readRegister(frame, readLeft(instruction)));
+            } else {
+                frame.locals.insert_or_assign(name, readRegister(frame, readLeft(instruction)));
+            }
             break;
         }
         case IROp::AssignVar: {
             const std::string name = readName(program, instruction.operand);
-            auto found = globals_.find(name);
-            if (found == globals_.end()) {
-                throw IRRuntimeError("undefined variable `" + name + "`");
+            assignVariable(frame, name, readRegister(frame, readLeft(instruction)));
+            break;
+        }
+        case IROp::Call: {
+            const Value& callee = readRegister(frame, readLeft(instruction));
+            if (callee.type() != Value::Type::Function) {
+                throw IRRuntimeError("can only call functions");
             }
-            found->second = readRegister(readLeft(instruction));
+            std::vector<Value> arguments;
+            for (IRRegister argument : instruction.arguments) {
+                arguments.push_back(readRegister(frame, argument));
+            }
+            writeRegister(frame, readDest(instruction), callFunction(program, callee.asFunction(), arguments));
             break;
         }
         case IROp::Print:
-            output_ << valueToString(readRegister(readLeft(instruction))) << '\n';
+            output_ << valueToString(readRegister(frame, readLeft(instruction))) << '\n';
+            break;
+        case IROp::Return:
+            return ExecutionResult{true, readRegister(frame, readLeft(instruction))};
             break;
         case IROp::Negate:
-            writeRegister(readDest(instruction), executeUnaryNumber("negate", readLeft(instruction), [](double value) {
+            writeRegister(frame, readDest(instruction), executeUnaryNumber(frame, "negate", readLeft(instruction), [](double value) {
                 return makeNumber(-value);
             }));
             break;
         case IROp::Not:
-            writeRegister(readDest(instruction), Value::boolean(!isTruthy(readRegister(readLeft(instruction)))));
+            writeRegister(frame, readDest(instruction), Value::boolean(!isTruthy(readRegister(frame, readLeft(instruction)))));
             break;
         case IROp::Add:
-            writeRegister(readDest(instruction), executeAdd(readLeft(instruction), readRight(instruction)));
+            writeRegister(frame, readDest(instruction), executeAdd(frame, readLeft(instruction), readRight(instruction)));
             break;
         case IROp::Subtract:
-            writeRegister(readDest(instruction), executeBinaryNumber("subtract", readLeft(instruction), readRight(instruction), subtractNumber));
+            writeRegister(frame, readDest(instruction), executeBinaryNumber(frame, "subtract", readLeft(instruction), readRight(instruction), subtractNumber));
             break;
         case IROp::Multiply:
-            writeRegister(readDest(instruction), executeBinaryNumber("multiply", readLeft(instruction), readRight(instruction), multiplyNumber));
+            writeRegister(frame, readDest(instruction), executeBinaryNumber(frame, "multiply", readLeft(instruction), readRight(instruction), multiplyNumber));
             break;
         case IROp::Divide:
-            writeRegister(readDest(instruction), executeBinaryNumber("divide", readLeft(instruction), readRight(instruction), divideNumber));
+            writeRegister(frame, readDest(instruction), executeBinaryNumber(frame, "divide", readLeft(instruction), readRight(instruction), divideNumber));
             break;
         case IROp::Equal:
-            writeRegister(readDest(instruction), Value::boolean(valuesEqual(readRegister(readLeft(instruction)), readRegister(readRight(instruction)))));
+            writeRegister(frame, readDest(instruction), Value::boolean(valuesEqual(readRegister(frame, readLeft(instruction)), readRegister(frame, readRight(instruction)))));
             break;
         case IROp::NotEqual:
-            writeRegister(readDest(instruction), Value::boolean(!valuesEqual(readRegister(readLeft(instruction)), readRegister(readRight(instruction)))));
+            writeRegister(frame, readDest(instruction), Value::boolean(!valuesEqual(readRegister(frame, readLeft(instruction)), readRegister(frame, readRight(instruction)))));
             break;
         case IROp::Greater:
-            writeRegister(readDest(instruction), executeBinaryComparison("greater", readLeft(instruction), readRight(instruction), greaterNumber));
+            writeRegister(frame, readDest(instruction), executeBinaryComparison(frame, "greater", readLeft(instruction), readRight(instruction), greaterNumber));
             break;
         case IROp::GreaterEqual:
-            writeRegister(readDest(instruction), executeBinaryComparison("greater_equal", readLeft(instruction), readRight(instruction), greaterEqualNumber));
+            writeRegister(frame, readDest(instruction), executeBinaryComparison(frame, "greater_equal", readLeft(instruction), readRight(instruction), greaterEqualNumber));
             break;
         case IROp::Less:
-            writeRegister(readDest(instruction), executeBinaryComparison("less", readLeft(instruction), readRight(instruction), lessNumber));
+            writeRegister(frame, readDest(instruction), executeBinaryComparison(frame, "less", readLeft(instruction), readRight(instruction), lessNumber));
             break;
         case IROp::LessEqual:
-            writeRegister(readDest(instruction), executeBinaryComparison("less_equal", readLeft(instruction), readRight(instruction), lessEqualNumber));
+            writeRegister(frame, readDest(instruction), executeBinaryComparison(frame, "less_equal", readLeft(instruction), readRight(instruction), lessEqualNumber));
             break;
         case IROp::Jump:
             validateJumpTarget(instruction.operand, instructions.size());
@@ -174,14 +205,14 @@ void IRInterpreter::execute(const IRProgram& program)
             continue;
         case IROp::JumpIfFalse:
             validateJumpTarget(instruction.operand, instructions.size());
-            if (!isTruthy(readRegister(readLeft(instruction)))) {
+            if (!isTruthy(readRegister(frame, readLeft(instruction)))) {
                 ip = instruction.operand;
                 continue;
             }
             break;
         case IROp::JumpIfTrue:
             validateJumpTarget(instruction.operand, instructions.size());
-            if (isTruthy(readRegister(readLeft(instruction)))) {
+            if (isTruthy(readRegister(frame, readLeft(instruction)))) {
                 ip = instruction.operand;
                 continue;
             }
@@ -190,6 +221,7 @@ void IRInterpreter::execute(const IRProgram& program)
 
         ++ip;
     }
+    return ExecutionResult{};
 }
 
 const std::unordered_map<std::string, Value>& IRInterpreter::globals() const
@@ -237,51 +269,99 @@ IRRegister IRInterpreter::readRight(const IRInstruction& instruction) const
     return *instruction.right;
 }
 
-const Value& IRInterpreter::readRegister(IRRegister reg) const
+const Value& IRInterpreter::readRegister(const Frame& frame, IRRegister reg) const
 {
-    if (reg.index >= registers_.size()) {
+    if (reg.index >= frame.registers.size()) {
         throw IRRuntimeError("register index out of range");
     }
-    return registers_[reg.index];
+    return frame.registers[reg.index];
 }
 
-void IRInterpreter::writeRegister(IRRegister reg, Value value)
+void IRInterpreter::writeRegister(Frame& frame, IRRegister reg, Value value)
 {
-    if (reg.index >= registers_.size()) {
+    if (reg.index >= frame.registers.size()) {
         throw IRRuntimeError("register index out of range");
     }
-    registers_[reg.index] = std::move(value);
+    frame.registers[reg.index] = std::move(value);
 }
 
-
-Value IRInterpreter::executeUnaryNumber(const std::string& opName, IRRegister value, Value (*operation)(double))
+Value IRInterpreter::loadVariable(const Frame& frame, const std::string& name) const
 {
-    const Value& input = readRegister(value);
+    const auto local = frame.locals.find(name);
+    if (local != frame.locals.end()) {
+        return local->second;
+    }
+    const auto global = globals_.find(name);
+    if (global != globals_.end()) {
+        return global->second;
+    }
+    throw IRRuntimeError("undefined variable `" + name + "`");
+}
+
+void IRInterpreter::assignVariable(Frame& frame, const std::string& name, Value value)
+{
+    auto local = frame.locals.find(name);
+    if (local != frame.locals.end()) {
+        local->second = std::move(value);
+        return;
+    }
+    auto global = globals_.find(name);
+    if (global != globals_.end()) {
+        global->second = std::move(value);
+        return;
+    }
+    throw IRRuntimeError("undefined variable `" + name + "`");
+}
+
+Value IRInterpreter::callFunction(const IRProgram& program, const FunctionValue& function, const std::vector<Value>& arguments)
+{
+    if (function.functionIndex >= program.functions().size()) {
+        throw IRRuntimeError("function index out of range");
+    }
+    const IRFunction& irFunction = program.functions()[function.functionIndex];
+    if (arguments.size() != irFunction.parameters.size()) {
+        throw IRRuntimeError("expected " + std::to_string(irFunction.parameters.size())
+            + " arguments but got " + std::to_string(arguments.size()));
+    }
+
+    Frame frame;
+    frame.registers.assign(irFunction.registerCount, Value::nil());
+    for (std::size_t i = 0; i < arguments.size(); ++i) {
+        frame.locals.emplace(irFunction.parameters[i], arguments[i]);
+    }
+
+    ExecutionResult result = executeInstructions(program, irFunction.instructions, frame, false);
+    return result.returned ? result.value : Value::nil();
+}
+
+Value IRInterpreter::executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double))
+{
+    const Value& input = readRegister(frame, value);
     if (input.type() != Value::Type::Number) {
         throw IRRuntimeError(opName + " expects number, got " + typeName(input.type()));
     }
     return operation(input.asNumber());
 }
 
-Value IRInterpreter::executeBinaryNumber(const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double))
+Value IRInterpreter::executeBinaryNumber(const Frame& frame, const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double))
 {
-    const Value& leftValue = readRegister(left);
-    const Value& rightValue = readRegister(right);
+    const Value& leftValue = readRegister(frame, left);
+    const Value& rightValue = readRegister(frame, right);
     if (leftValue.type() != Value::Type::Number || rightValue.type() != Value::Type::Number) {
         throw IRRuntimeError(opName + " expects numbers");
     }
     return operation(leftValue.asNumber(), rightValue.asNumber());
 }
 
-Value IRInterpreter::executeBinaryComparison(const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double))
+Value IRInterpreter::executeBinaryComparison(const Frame& frame, const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double))
 {
-    return executeBinaryNumber(opName, left, right, operation);
+    return executeBinaryNumber(frame, opName, left, right, operation);
 }
 
-Value IRInterpreter::executeAdd(IRRegister left, IRRegister right)
+Value IRInterpreter::executeAdd(const Frame& frame, IRRegister left, IRRegister right)
 {
-    const Value& leftValue = readRegister(left);
-    const Value& rightValue = readRegister(right);
+    const Value& leftValue = readRegister(frame, left);
+    const Value& rightValue = readRegister(frame, right);
 
     if (leftValue.type() == Value::Type::Number && rightValue.type() == Value::Type::Number) {
         return addNumber(leftValue.asNumber(), rightValue.asNumber());

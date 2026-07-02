@@ -1,0 +1,5 @@
+let g = "global";
+fun show() {
+  print g;
+}
+show();
