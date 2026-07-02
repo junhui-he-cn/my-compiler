@@ -179,6 +179,11 @@ std::size_t IRProgram::emitJump()
     return instruction;
 }
 
+void IRProgram::emitJumpTo(std::size_t target)
+{
+    emit(IRInstruction{IROp::Jump, std::nullopt, std::nullopt, std::nullopt, target});
+}
+
 std::size_t IRProgram::emitJumpIfFalse(IRRegister condition)
 {
     const std::size_t instruction = instructions_.size();

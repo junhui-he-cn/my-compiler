@@ -72,6 +72,16 @@ void IRCompiler::compileStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* whileStmt = dynamic_cast<const WhileStmt*>(&statement)) {
+        const std::size_t loopStart = ir_.instructionCount();
+        const IRRegister condition = compileExpression(*whileStmt->condition);
+        const std::size_t exitJump = ir_.emitJumpIfFalse(condition);
+        compileStatement(*whileStmt->body);
+        ir_.emitJumpTo(loopStart);
+        ir_.patchJump(exitJump);
+        return;
+    }
+
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const IRRegister value = compileExpression(*let->initializer);
         ir_.emitStoreVar(resolvedNames_->letName(*let), value);
