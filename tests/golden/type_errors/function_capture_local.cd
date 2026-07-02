@@ -1,0 +1,6 @@
+{
+  let x = 1;
+  fun f() {
+    print x;
+  }
+}
