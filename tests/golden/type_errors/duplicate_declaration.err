@@ -1,1 +1,1 @@
-Type error: variable `x` already declared in this scope
+Type error at 2:5: variable `x` already declared in this scope

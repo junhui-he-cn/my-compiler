@@ -1,1 +1,1 @@
-Type error: undefined variable `missing`
+Type error at 1:1: undefined variable `missing`

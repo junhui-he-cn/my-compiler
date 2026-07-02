@@ -1,1 +1,1 @@
-Type error: unary `-` expects number, got string
+Type error at 1:17: unary `-` expects number, got string

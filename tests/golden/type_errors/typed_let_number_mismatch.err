@@ -1,1 +1,1 @@
-Type error: cannot initialize `x` of type number with string
+Type error at 1:5: cannot initialize `x` of type number with string

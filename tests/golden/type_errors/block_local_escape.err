@@ -1,1 +1,1 @@
-Type error: undefined variable `x`
+Type error at 4:7: undefined variable `x`

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Ast.hpp"
+#include "Diagnostic.hpp"
 #include "Token.hpp"
 
 #include <cstddef>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,9 +17,10 @@ enum class StaticType {
     String,
 };
 
-class TypeError final : public std::runtime_error {
+class TypeError final : public DiagnosticError {
 public:
-    explicit TypeError(const std::string& message);
+    explicit TypeError(std::string message);
+    TypeError(const Token& token, std::string message);
 };
 
 class ResolvedNames {
@@ -66,7 +67,7 @@ private:
     StaticType checkExpression(const Expr& expression);
     StaticType checkLetInitializer(const LetStmt& statement);
     StaticType resolveAnnotation(const Token& typeName) const;
-    void checkAssignable(const std::string& context, StaticType expected, StaticType actual) const;
+    void checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const;
     StaticType checkUnary(const UnaryExpr& expression);
     StaticType checkBinary(const BinaryExpr& expression);
 

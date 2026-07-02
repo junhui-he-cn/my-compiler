@@ -1,1 +1,1 @@
-Type error: unknown type `int`
+Type error at 1:8: unknown type `int`

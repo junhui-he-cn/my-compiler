@@ -34,8 +34,13 @@ std::string binaryTypesMessage(const BinaryExpr& expression, StaticType left, St
 
 } // namespace
 
-TypeError::TypeError(const std::string& message)
-    : std::runtime_error("Type error: " + message)
+TypeError::TypeError(std::string message)
+    : DiagnosticError(DiagnosticKind::Type, std::move(message))
+{
+}
+
+TypeError::TypeError(const Token& token, std::string message)
+    : DiagnosticError(DiagnosticKind::Type, SourceLocation{token.line, token.column}, std::move(message))
 {
 }
 
@@ -175,7 +180,7 @@ TypeChecker::Binding TypeChecker::declareVariable(const LetStmt& statement, Stat
 {
     auto& scope = currentScope();
     if (scope.find(statement.name.lexeme) != scope.end()) {
-        throw TypeError("variable `" + statement.name.lexeme + "` already declared in this scope");
+        throw TypeError(statement.name, "variable `" + statement.name.lexeme + "` already declared in this scope");
     }
 
     Binding binding{type, makeResolvedName(statement.name.lexeme)};
@@ -243,6 +248,7 @@ StaticType TypeChecker::checkLetInitializer(const LetStmt& statement)
 
     const StaticType declared = resolveAnnotation(*statement.typeName);
     checkAssignable(
+        statement.name,
         "cannot initialize `" + statement.name.lexeme + "` of type " + staticTypeName(declared)
             + " with " + staticTypeName(initializer),
         declared,
@@ -268,7 +274,7 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
         const Binding* binding = findVariable(variable->name.lexeme);
         if (!binding) {
-            throw TypeError("undefined variable `" + variable->name.lexeme + "`");
+            throw TypeError(variable->name, "undefined variable `" + variable->name.lexeme + "`");
         }
         resolvedNames_.recordVariable(*variable, binding->resolvedName);
         return binding->type;
@@ -278,10 +284,10 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
         const StaticType value = checkExpression(*assign->value);
         Binding* target = findVariable(assign->name.lexeme);
         if (!target) {
-            throw TypeError("undefined variable `" + assign->name.lexeme + "`");
+            throw TypeError(assign->name, "undefined variable `" + assign->name.lexeme + "`");
         }
         if (isKnown(target->type) && isKnown(value) && target->type != value) {
-            throw TypeError("cannot assign " + staticTypeName(value) + " to `" + assign->name.lexeme
+            throw TypeError(assign->name, "cannot assign " + staticTypeName(value) + " to `" + assign->name.lexeme
                 + "` of type " + staticTypeName(target->type));
         }
         resolvedNames_.recordAssignment(*assign, target->resolvedName);
@@ -323,13 +329,13 @@ StaticType TypeChecker::resolveAnnotation(const Token& typeName) const
     if (typeName.lexeme == "nil") {
         return StaticType::Nil;
     }
-    throw TypeError("unknown type `" + typeName.lexeme + "`");
+    throw TypeError(typeName, "unknown type `" + typeName.lexeme + "`");
 }
 
-void TypeChecker::checkAssignable(const std::string& context, StaticType expected, StaticType actual) const
+void TypeChecker::checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const
 {
     if (!compatible(expected, actual)) {
-        throw TypeError(context);
+        throw TypeError(token, context);
     }
 }
 
@@ -339,13 +345,13 @@ StaticType TypeChecker::checkUnary(const UnaryExpr& expression)
     switch (expression.op.type) {
     case TokenType::Minus:
         if (isKnown(right) && right != StaticType::Number) {
-            throw TypeError("unary `-` expects number, got " + staticTypeName(right));
+            throw TypeError(expression.op, "unary `-` expects number, got " + staticTypeName(right));
         }
         return StaticType::Number;
     case TokenType::Bang:
         return StaticType::Bool;
     default:
-        throw TypeError("unsupported unary operator `" + expression.op.lexeme + "`");
+        throw TypeError(expression.op, "unsupported unary operator `" + expression.op.lexeme + "`");
     }
 }
 
@@ -365,7 +371,7 @@ StaticType TypeChecker::checkBinary(const BinaryExpr& expression)
         if (left == StaticType::String && right == StaticType::String) {
             return StaticType::String;
         }
-        throw TypeError("binary `+` expects two numbers or two strings, got "
+        throw TypeError(expression.op, "binary `+` expects two numbers or two strings, got "
             + staticTypeName(left) + " and " + staticTypeName(right));
     case TokenType::Minus:
     case TokenType::Star:
@@ -374,7 +380,7 @@ StaticType TypeChecker::checkBinary(const BinaryExpr& expression)
             return StaticType::Number;
         }
         if (left != StaticType::Number || right != StaticType::Number) {
-            throw TypeError(binaryTypesMessage(expression, left, right));
+            throw TypeError(expression.op, binaryTypesMessage(expression, left, right));
         }
         return StaticType::Number;
     case TokenType::Greater:
@@ -385,13 +391,13 @@ StaticType TypeChecker::checkBinary(const BinaryExpr& expression)
             return StaticType::Bool;
         }
         if (left != StaticType::Number || right != StaticType::Number) {
-            throw TypeError(binaryTypesMessage(expression, left, right));
+            throw TypeError(expression.op, binaryTypesMessage(expression, left, right));
         }
         return StaticType::Bool;
     case TokenType::EqualEqual:
     case TokenType::BangEqual:
         return StaticType::Bool;
     default:
-        throw TypeError("unsupported binary operator `" + expression.op.lexeme + "`");
+        throw TypeError(expression.op, "unsupported binary operator `" + expression.op.lexeme + "`");
     }
 }

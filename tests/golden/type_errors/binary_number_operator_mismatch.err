@@ -1,1 +1,1 @@
-Type error: binary `*` expects numbers, got number and string
+Type error at 1:19: binary `*` expects numbers, got number and string
