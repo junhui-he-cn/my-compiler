@@ -14,11 +14,14 @@ struct IRRegister {
 
 enum class IROp {
     Constant,
+    MakeFunction,
     Copy,
     LoadVar,
     StoreVar,
     AssignVar,
+    Call,
     Print,
+    Return,
     Negate,
     Not,
     Add,
@@ -41,7 +44,15 @@ struct IRInstruction {
     std::optional<IRRegister> dest;
     std::optional<IRRegister> left;
     std::optional<IRRegister> right;
+    std::vector<IRRegister> arguments;
     std::size_t operand = 0;
+};
+
+struct IRFunction {
+    std::string name;
+    std::vector<std::string> parameters;
+    std::vector<IRInstruction> instructions;
+    std::size_t registerCount = 0;
 };
 
 class IRProgram {
@@ -49,14 +60,19 @@ public:
     std::size_t addConstant(Value value);
     std::size_t addName(std::string name);
     IRRegister makeRegister();
+    void beginFunction(std::string name, std::vector<std::string> parameters);
+    std::size_t endFunction();
 
     IRRegister emitConstant(Value value);
+    IRRegister emitMakeFunction(std::size_t functionIndex);
     IRRegister emitCopy(IRRegister value);
     void emitCopyTo(IRRegister dest, IRRegister value);
     IRRegister emitLoadVar(std::string name);
     void emitStoreVar(std::string name, IRRegister value);
     void emitAssignVar(std::string name, IRRegister value);
+    IRRegister emitCall(IRRegister callee, std::vector<IRRegister> arguments);
     void emitPrint(IRRegister value);
+    void emitReturn(IRRegister value);
     IRRegister emitUnary(IROp op, IRRegister value);
     IRRegister emitBinary(IROp op, IRRegister left, IRRegister right);
     std::size_t emitJump();
@@ -69,6 +85,7 @@ public:
     const std::vector<Value>& constants() const;
     const std::vector<std::string>& names() const;
     const std::vector<IRInstruction>& instructions() const;
+    const std::vector<IRFunction>& functions() const;
     std::size_t registerCount() const;
 
     // Print a compact, assembly-like view of the generated register IR.
@@ -81,6 +98,9 @@ private:
     std::vector<std::string> names_;
     std::vector<IRInstruction> instructions_;
     std::size_t registerCount_ = 0;
+    bool buildingFunction_ = false;
+    IRFunction currentFunction_;
+    std::vector<IRFunction> functions_;
 };
 
 std::string irOpName(IROp op);
