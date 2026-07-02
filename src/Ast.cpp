@@ -113,6 +113,24 @@ void GroupingExpr::print(std::ostream& out) const
     out << ')';
 }
 
+CallExpr::CallExpr(ExprPtr callee, Token paren, std::vector<ExprPtr> arguments)
+    : callee(std::move(callee))
+    , paren(std::move(paren))
+    , arguments(std::move(arguments))
+{
+}
+
+void CallExpr::print(std::ostream& out) const
+{
+    out << "(call ";
+    writeExpr(out, callee);
+    for (const auto& argument : arguments) {
+        out << ' ';
+        writeExpr(out, argument);
+    }
+    out << ')';
+}
+
 LetStmt::LetStmt(Token name, std::optional<Token> typeName, ExprPtr initializer)
     : name(std::move(name))
     , typeName(std::move(typeName))
@@ -217,6 +235,43 @@ void WhileStmt::print(std::ostream& out, int indent) const
     if (body) {
         body->print(out, indent + 2);
     }
+}
+
+FunctionStmt::FunctionStmt(Token name, std::vector<Token> parameters, std::vector<StmtPtr> body)
+    : name(std::move(name))
+    , parameters(std::move(parameters))
+    , body(std::move(body))
+{
+}
+
+void FunctionStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Fun " << name.lexeme << '(';
+    for (std::size_t i = 0; i < parameters.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        out << parameters[i].lexeme;
+    }
+    out << ")\n";
+    for (const auto& statement : body) {
+        statement->print(out, indent + 1);
+    }
+}
+
+ReturnStmt::ReturnStmt(Token keyword, ExprPtr value)
+    : keyword(std::move(keyword))
+    , value(std::move(value))
+{
+}
+
+void ReturnStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Return ";
+    writeExpr(out, value);
+    out << '\n';
 }
 
 void Program::print(std::ostream& out) const

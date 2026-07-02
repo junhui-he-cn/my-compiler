@@ -21,6 +21,7 @@ public:
 
 private:
     StmtPtr declaration();
+    StmtPtr functionDeclaration();
     StmtPtr letDeclaration();
     StmtPtr statement();
     StmtPtr ifStatement();
@@ -28,6 +29,7 @@ private:
     StmtPtr blockStatement();
     std::vector<StmtPtr> blockStatements();
     StmtPtr printStatement();
+    StmtPtr returnStatement();
     StmtPtr expressionStatement();
 
     // Recursive descent expression grammar, ordered from lowest to highest precedence.
@@ -40,6 +42,8 @@ private:
     ExprPtr term();
     ExprPtr factor();
     ExprPtr unary();
+    ExprPtr call();
+    ExprPtr finishCall(ExprPtr callee);
     ExprPtr primary();
 
     bool match(TokenType type);

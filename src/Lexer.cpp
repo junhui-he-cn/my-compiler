@@ -100,6 +100,9 @@ void Lexer::scanToken()
     case ';':
         addToken(TokenType::Semicolon);
         break;
+    case ',':
+        addToken(TokenType::Comma);
+        break;
     case '+':
         addToken(TokenType::Plus);
         break;
@@ -219,8 +222,10 @@ void Lexer::identifier()
     static const std::unordered_map<std::string, TokenType> keywords = {
         {"if", TokenType::If},
         {"else", TokenType::Else},
+        {"fun", TokenType::Fun},
         {"let", TokenType::Let},
         {"print", TokenType::Print},
+        {"return", TokenType::Return},
         {"while", TokenType::While},
         {"true", TokenType::True},
         {"false", TokenType::False},
@@ -251,6 +256,8 @@ std::string tokenTypeName(TokenType type)
         return "Colon";
     case TokenType::Semicolon:
         return "Semicolon";
+    case TokenType::Comma:
+        return "Comma";
     case TokenType::Plus:
         return "Plus";
     case TokenType::Minus:
@@ -289,10 +296,14 @@ std::string tokenTypeName(TokenType type)
         return "If";
     case TokenType::Else:
         return "Else";
+    case TokenType::Fun:
+        return "Fun";
     case TokenType::Let:
         return "Let";
     case TokenType::Print:
         return "Print";
+    case TokenType::Return:
+        return "Return";
     case TokenType::While:
         return "While";
     case TokenType::True:

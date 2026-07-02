@@ -72,6 +72,15 @@ struct GroupingExpr final : Expr {
     ExprPtr expression;
 };
 
+struct CallExpr final : Expr {
+    CallExpr(ExprPtr callee, Token paren, std::vector<ExprPtr> arguments);
+    void print(std::ostream& out) const override;
+
+    ExprPtr callee;
+    Token paren;
+    std::vector<ExprPtr> arguments;
+};
+
 struct Stmt {
     virtual ~Stmt() = default;
     virtual void print(std::ostream& out, int indent) const = 0;
@@ -124,6 +133,23 @@ struct WhileStmt final : Stmt {
 
     ExprPtr condition;
     StmtPtr body;
+};
+
+struct FunctionStmt final : Stmt {
+    FunctionStmt(Token name, std::vector<Token> parameters, std::vector<StmtPtr> body);
+    void print(std::ostream& out, int indent) const override;
+
+    Token name;
+    std::vector<Token> parameters;
+    std::vector<StmtPtr> body;
+};
+
+struct ReturnStmt final : Stmt {
+    ReturnStmt(Token keyword, ExprPtr value);
+    void print(std::ostream& out, int indent) const override;
+
+    Token keyword;
+    ExprPtr value;
 };
 
 struct Program {

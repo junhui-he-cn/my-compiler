@@ -11,6 +11,7 @@ enum class TokenType {
     RightBrace,
     Colon,
     Semicolon,
+    Comma,
 
     Plus,
     Minus,
@@ -33,8 +34,10 @@ enum class TokenType {
 
     If,
     Else,
+    Fun,
     Let,
     Print,
+    Return,
     While,
     True,
     False,
