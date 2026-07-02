@@ -353,9 +353,6 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
         if (!binding) {
             throw TypeError(variable->name, "undefined variable `" + variable->name.lexeme + "`");
         }
-        if (functionDepth_ > 0 && !isGlobalBinding(*binding) && !isCurrentFunctionBinding(*binding)) {
-            throw TypeError(variable->name, "cannot capture local variable `" + variable->name.lexeme + "`");
-        }
         resolvedNames_.recordVariable(*variable, binding->resolvedName);
         return binding->type;
     }
@@ -365,9 +362,6 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
         Binding* target = findVariable(assign->name.lexeme);
         if (!target) {
             throw TypeError(assign->name, "undefined variable `" + assign->name.lexeme + "`");
-        }
-        if (functionDepth_ > 0 && !isGlobalBinding(*target) && !isCurrentFunctionBinding(*target)) {
-            throw TypeError(assign->name, "cannot capture local variable `" + assign->name.lexeme + "`");
         }
         if (isKnown(target->type) && isKnown(value) && target->type != value) {
             throw TypeError(assign->name, "cannot assign " + staticTypeName(value) + " to `" + assign->name.lexeme
