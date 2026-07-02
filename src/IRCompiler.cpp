@@ -30,8 +30,8 @@ Value literalValue(const std::string& text)
 
 } // namespace
 
-IRCompileError::IRCompileError(const std::string& message)
-    : std::runtime_error("IR compile error: " + message)
+IRCompileError::IRCompileError(std::string message)
+    : DiagnosticError(DiagnosticKind::Compile, std::move(message))
 {
 }
 

@@ -78,8 +78,8 @@ void validateJumpTarget(std::size_t target, std::size_t instructionCount)
 
 } // namespace
 
-IRRuntimeError::IRRuntimeError(const std::string& message)
-    : std::runtime_error("IR runtime error: " + message)
+IRRuntimeError::IRRuntimeError(std::string message)
+    : DiagnosticError(DiagnosticKind::Runtime, std::move(message))
 {
 }
 

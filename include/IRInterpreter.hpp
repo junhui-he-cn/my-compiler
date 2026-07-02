@@ -1,16 +1,16 @@
 #pragma once
 
+#include "Diagnostic.hpp"
 #include "IR.hpp"
 
 #include <ostream>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-class IRRuntimeError final : public std::runtime_error {
+class IRRuntimeError final : public DiagnosticError {
 public:
-    explicit IRRuntimeError(const std::string& message);
+    explicit IRRuntimeError(std::string message);
 };
 
 class IRInterpreter {

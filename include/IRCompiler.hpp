@@ -1,15 +1,15 @@
 #pragma once
 
 #include "Ast.hpp"
+#include "Diagnostic.hpp"
 #include "IR.hpp"
 #include "TypeChecker.hpp"
 
-#include <stdexcept>
 #include <string>
 
-class IRCompileError final : public std::runtime_error {
+class IRCompileError final : public DiagnosticError {
 public:
-    explicit IRCompileError(const std::string& message);
+    explicit IRCompileError(std::string message);
 };
 
 class IRCompiler {
