@@ -1,0 +1,10 @@
+fun make() {
+  let x = "outer";
+  fun f() {
+    let x = "inner";
+    print x;
+  }
+  f();
+  print x;
+}
+make();

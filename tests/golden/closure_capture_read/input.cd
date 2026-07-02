@@ -1,0 +1,9 @@
+fun makePrinter() {
+  let x = "captured";
+  fun printX() {
+    print x;
+  }
+  return printX;
+}
+let f = makePrinter();
+f();

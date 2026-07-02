@@ -1,0 +1,12 @@
+fun makeCounter() {
+  let count = 0;
+  fun inc() {
+    count = count + 1;
+    return count;
+  }
+  return inc;
+}
+let c = makeCounter();
+print c();
+print c();
+print c();

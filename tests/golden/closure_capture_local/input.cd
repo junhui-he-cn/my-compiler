@@ -3,4 +3,5 @@
   fun f() {
     print x;
   }
+  f();
 }

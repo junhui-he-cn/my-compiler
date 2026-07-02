@@ -1,0 +1,16 @@
+fun makePair() {
+  let value = 10;
+  fun addOne() {
+    value = value + 1;
+    return value;
+  }
+  fun addTen() {
+    value = value + 10;
+    return value;
+  }
+  addOne();
+  return addTen;
+}
+let f = makePair();
+print f();
+print f();
