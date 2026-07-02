@@ -36,6 +36,17 @@ Supported expressions:
 - Unary operators: `!`, `-`
 - Binary operators: `*`, `/`, `+`, `-`, `<`, `<=`, `>`, `>=`, `==`, `!=`
 
+## Diagnostics
+
+Compiler errors are reported as `Lex`, `Parse`, `Type`, `Compile`, or `Runtime` errors. Front-end diagnostics include a `line:column` location when available, for example:
+
+```text
+Parse error at 1:15: expected expression
+Type error at 1:7: undefined variable `missing`
+```
+
+Runtime diagnostics currently do not include source locations.
+
 ## Build
 
 ```sh

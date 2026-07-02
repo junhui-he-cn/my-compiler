@@ -119,6 +119,17 @@ tests/golden/type_errors/<case>.exit
 
 Runtime-error, parse-error, and type-error fixtures should not produce stdout. The runner checks stderr and exit code.
 
+## Diagnostic Output Convention
+
+Language diagnostics use this stable shape:
+
+```text
+<Kind> error at <line>:<column>: <message>
+<Kind> error: <message>
+```
+
+Use locations for lexer, parser, and type errors when a source token/location is available. Compile and runtime diagnostics are currently locationless. After intentional diagnostic format changes, refresh and review parse/type/runtime error goldens. Lexer errors do not yet have a dedicated golden fixture category.
+
 ## Documentation Update Rules
 
 - Update `docs/language-grammar.ebnf` whenever the implemented parser grammar or precedence changes.

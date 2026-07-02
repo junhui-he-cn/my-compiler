@@ -142,7 +142,9 @@ Likely touch points:
 - grammar and README docs
 - golden tests for zero iterations, multiple iterations, and nested control flow
 
-## Phase 5: Diagnostic Cleanup
+## Phase 5: Diagnostic Cleanup — Implemented
+
+Status: implemented. Errors now use a shared diagnostic format with `Lex`, `Parse`, `Type`, `Compile`, and `Runtime` categories. Front-end diagnostics include `line:column` locations when available; snippets, carets, and multi-error recovery remain future improvements.
 
 Goal: make errors more compiler-like and easier to test.
 
