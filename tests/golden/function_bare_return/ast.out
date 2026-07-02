@@ -1,0 +1,5 @@
+Program
+  Fun f()
+    Return nil
+    Print "no"
+  Print (call f)
