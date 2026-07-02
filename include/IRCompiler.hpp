@@ -18,7 +18,10 @@ public:
 
 private:
     void compileStatement(const Stmt& statement);
+    void compileFunctionStatement(const FunctionStmt& function);
+    void compileReturn(const ReturnStmt& statement);
     IRRegister compileExpression(const Expr& expression);
+    IRRegister emitCall(const CallExpr& expression);
     IRRegister emitUnary(TokenType op, IRRegister value);
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
     IRRegister emitLogical(const LogicalExpr& expression);

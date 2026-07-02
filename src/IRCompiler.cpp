@@ -48,6 +48,16 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
 
 void IRCompiler::compileStatement(const Stmt& statement)
 {
+    if (const auto* function = dynamic_cast<const FunctionStmt*>(&statement)) {
+        compileFunctionStatement(*function);
+        return;
+    }
+
+    if (const auto* returnStmt = dynamic_cast<const ReturnStmt*>(&statement)) {
+        compileReturn(*returnStmt);
+        return;
+    }
+
     if (const auto* block = dynamic_cast<const BlockStmt*>(&statement)) {
         for (const auto& child : block->statements) {
             compileStatement(*child);
@@ -102,6 +112,28 @@ void IRCompiler::compileStatement(const Stmt& statement)
     throw IRCompileError("unsupported statement node");
 }
 
+void IRCompiler::compileFunctionStatement(const FunctionStmt& function)
+{
+    std::vector<std::string> parameters = resolvedNames_->parameterNames(function);
+    ir_.beginFunction(function.name.lexeme, std::move(parameters));
+
+    for (const auto& statement : function.body) {
+        compileStatement(*statement);
+    }
+    IRRegister nilValue = ir_.emitConstant(Value::nil());
+    ir_.emitReturn(nilValue);
+
+    const std::size_t functionIndex = ir_.endFunction();
+    IRRegister value = ir_.emitMakeFunction(functionIndex);
+    ir_.emitStoreVar(resolvedNames_->functionName(function), value);
+}
+
+void IRCompiler::compileReturn(const ReturnStmt& statement)
+{
+    IRRegister value = statement.value ? compileExpression(*statement.value) : ir_.emitConstant(Value::nil());
+    ir_.emitReturn(value);
+}
+
 IRRegister IRCompiler::compileExpression(const Expr& expression)
 {
     if (const auto* literal = dynamic_cast<const LiteralExpr*>(&expression)) {
@@ -137,7 +169,21 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitLogical(*logical);
     }
 
+    if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
+        return emitCall(*call);
+    }
+
     throw IRCompileError("unsupported expression node");
+}
+
+IRRegister IRCompiler::emitCall(const CallExpr& expression)
+{
+    IRRegister callee = compileExpression(*expression.callee);
+    std::vector<IRRegister> arguments;
+    for (const auto& argument : expression.arguments) {
+        arguments.push_back(compileExpression(*argument));
+    }
+    return ir_.emitCall(callee, std::move(arguments));
 }
 
 IRRegister IRCompiler::emitUnary(TokenType op, IRRegister value)
