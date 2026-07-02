@@ -1,0 +1,7 @@
+Program
+  Let i: number = 0
+  While (< i 3)
+    Body
+      Block
+        Print i
+        Expr (= i (+ i 1))
