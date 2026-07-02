@@ -1,0 +1,6 @@
+Program
+  While false
+    Body
+      Block
+        Print "skipped"
+  Print "done"
