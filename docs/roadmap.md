@@ -173,7 +173,9 @@ Goal: add reusable code and call frames.
 
 Recommended split:
 
-### Phase 6A: Function Declarations and Calls
+### Phase 6A: Function Declarations and Calls — Implemented
+
+Status: implemented. The language supports named functions, calls, explicit `return`, bare `return;`, implicit `nil` returns, and recursion. Closures are not implemented yet.
 
 Suggested syntax:
 

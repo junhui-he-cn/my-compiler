@@ -147,13 +147,14 @@ Use locations for lexer, parser, and type errors when a source token/location is
 
 ## Current Language Semantics and Limitations
 
-- Supported statements include `let`, `print`, `if`/`else`, blocks, and expression statements.
-- Supported expressions include literals, variables, grouping, unary operators, binary operators, and assignment expressions.
+- Supported statements include `let`, `print`, `if`/`else`, `while`, `fun`, `return`, blocks, and expression statements.
+- Supported expressions include literals, variables, calls, grouping, unary operators, binary/logical operators, and assignment expressions.
 - `let name: type = expression;` checks explicit annotations for `number`, `bool`, `string`, and `nil`; unannotated variables are accepted without full inference.
 - Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
 - Reading or assigning an undefined variable is a type error before IR compilation.
-- Runtime values currently include nil, numbers, booleans, and strings.
+- Runtime values currently include nil, numbers, booleans, strings, and functions.
+- Phase 6A functions compile to an IR function table. Closures are intentionally unsupported; function bodies may use parameters, locals, recursive/global bindings, but not non-global enclosing locals.
 
 ## Roadmap Hints
 

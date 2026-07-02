@@ -18,6 +18,8 @@ let name: type = expression;
 print expression;
 if expression { declaration* } [else { declaration* }]
 while expression { declaration* }
+fun name(parameter*) { declaration* }
+return [expression];
 { declaration* }
 expression;
 ```
@@ -26,11 +28,14 @@ Type annotations on `let` declarations are checked for the built-in annotation n
 
 `while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break` and `continue` are not implemented yet.
 
+Functions are named values declared with `fun`. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive calls are supported. Closures and function type annotations are not implemented yet.
+
 Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
+- Calls: `callee(argument*)`
 - Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`
 - Unary operators: `!`, `-`

@@ -2,14 +2,23 @@
 
 program     = { declaration } ;
 
-declaration = letDecl
+declaration = funDecl
+            | letDecl
             | statement ;
 
 statement   = printStmt
             | ifStmt
             | whileStmt
+            | returnStmt
             | block
             | exprStmt ;
+
+funDecl     = "fun", identifier,
+              "(", [ parameters ], ")",
+              block ;
+
+parameters  = identifier,
+              { ",", identifier } ;
 
 letDecl     = "let", identifier,
               [ ":", typeName ],
@@ -23,6 +32,8 @@ whileStmt   = "while", expression, block ;
 block       = "{", { declaration }, "}" ;
 
 printStmt   = "print", expression, ";" ;
+
+returnStmt  = "return", [ expression ], ";" ;
 
 exprStmt    = expression, ";" ;
 
@@ -50,7 +61,13 @@ factor      = unary,
               { ( "*" | "/" ), unary } ;
 
 unary       = ( "!" | "-" ), unary
-            | primary ;
+            | call ;
+
+call        = primary,
+              { "(", [ arguments ], ")" } ;
+
+arguments   = expression,
+              { ",", expression } ;
 
 primary     = "false"
             | "true"
