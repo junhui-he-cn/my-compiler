@@ -4,8 +4,7 @@
 #include <sstream>
 
 ParseError::ParseError(const Token& token, const std::string& message)
-    : std::runtime_error("Parse error at line " + std::to_string(token.line)
-          + ", column " + std::to_string(token.column) + ": " + message)
+    : DiagnosticError(DiagnosticKind::Parse, SourceLocation{token.line, token.column}, message)
 {
 }
 

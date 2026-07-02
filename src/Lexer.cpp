@@ -1,3 +1,4 @@
+#include "Diagnostic.hpp"
 #include "Lexer.hpp"
 
 #include <cctype>
@@ -135,18 +136,16 @@ void Lexer::scanToken()
         if (match('&')) {
             addToken(TokenType::AmpersandAmpersand);
         } else {
-            throw std::runtime_error("Unexpected character at line "
-                + std::to_string(line_) + ", column " + std::to_string(tokenColumn_)
-                + ": '&'");
+            throw DiagnosticError(DiagnosticKind::Lex, SourceLocation{line_, tokenColumn_},
+                "unexpected character `&`");
         }
         break;
     case '|':
         if (match('|')) {
             addToken(TokenType::PipePipe);
         } else {
-            throw std::runtime_error("Unexpected character at line "
-                + std::to_string(line_) + ", column " + std::to_string(tokenColumn_)
-                + ": '|'");
+            throw DiagnosticError(DiagnosticKind::Lex, SourceLocation{line_, tokenColumn_},
+                "unexpected character `|`");
         }
         break;
     case '"':
@@ -163,9 +162,8 @@ void Lexer::scanToken()
         } else if (isAlpha(c)) {
             identifier();
         } else {
-            throw std::runtime_error("Unexpected character at line "
-                + std::to_string(line_) + ", column " + std::to_string(tokenColumn_)
-                + ": '" + std::string(1, c) + "'");
+            throw DiagnosticError(DiagnosticKind::Lex, SourceLocation{line_, tokenColumn_},
+                "unexpected character `" + std::string(1, c) + "`");
         }
         break;
     }
@@ -188,8 +186,8 @@ void Lexer::stringLiteral()
     }
 
     if (isAtEnd()) {
-        throw std::runtime_error("Unterminated string at line "
-            + std::to_string(line_) + ", column " + std::to_string(tokenColumn_));
+        throw DiagnosticError(DiagnosticKind::Lex, SourceLocation{line_, tokenColumn_},
+            "unterminated string");
     }
 
     advance();

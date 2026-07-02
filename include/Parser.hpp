@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Ast.hpp"
+#include "Diagnostic.hpp"
 #include "Token.hpp"
 
-#include <stdexcept>
 #include <string>
 #include <vector>
 
-class ParseError final : public std::runtime_error {
+class ParseError final : public DiagnosticError {
 public:
     explicit ParseError(const Token& token, const std::string& message);
 };

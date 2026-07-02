@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(compiler_demo
     src/Ast.cpp
+    src/Diagnostic.cpp
     src/IR.cpp
     src/IRCompiler.cpp
     src/IRInterpreter.cpp
