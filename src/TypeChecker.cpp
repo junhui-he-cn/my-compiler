@@ -15,6 +15,17 @@ bool compatible(StaticType expected, StaticType actual)
     return !isKnown(expected) || !isKnown(actual) || expected == actual;
 }
 
+StaticType logicalResultType(StaticType left, StaticType right)
+{
+    if (!isKnown(left) || !isKnown(right)) {
+        return StaticType::Unknown;
+    }
+    if (left == right) {
+        return left;
+    }
+    return StaticType::Unknown;
+}
+
 std::string binaryTypesMessage(const BinaryExpr& expression, StaticType left, StaticType right)
 {
     return "binary `" + expression.op.lexeme + "` expects numbers, got "
@@ -281,6 +292,12 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
 
     if (const auto* binary = dynamic_cast<const BinaryExpr*>(&expression)) {
         return checkBinary(*binary);
+    }
+
+    if (const auto* logical = dynamic_cast<const LogicalExpr*>(&expression)) {
+        const StaticType left = checkExpression(*logical->left);
+        const StaticType right = checkExpression(*logical->right);
+        return logicalResultType(left, right);
     }
 
     throw TypeError("unsupported expression node");

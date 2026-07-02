@@ -131,6 +131,24 @@ void Lexer::scanToken()
     case '>':
         addToken(match('=') ? TokenType::GreaterEqual : TokenType::Greater);
         break;
+    case '&':
+        if (match('&')) {
+            addToken(TokenType::AmpersandAmpersand);
+        } else {
+            throw std::runtime_error("Unexpected character at line "
+                + std::to_string(line_) + ", column " + std::to_string(tokenColumn_)
+                + ": '&'");
+        }
+        break;
+    case '|':
+        if (match('|')) {
+            addToken(TokenType::PipePipe);
+        } else {
+            throw std::runtime_error("Unexpected character at line "
+                + std::to_string(line_) + ", column " + std::to_string(tokenColumn_)
+                + ": '|'");
+        }
+        break;
     case '"':
         stringLiteral();
         break;
@@ -258,6 +276,10 @@ std::string tokenTypeName(TokenType type)
         return "Greater";
     case TokenType::GreaterEqual:
         return "GreaterEqual";
+    case TokenType::AmpersandAmpersand:
+        return "AmpersandAmpersand";
+    case TokenType::PipePipe:
+        return "PipePipe";
     case TokenType::Identifier:
         return "Identifier";
     case TokenType::Number:

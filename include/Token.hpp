@@ -24,6 +24,8 @@ enum class TokenType {
     LessEqual,
     Greater,
     GreaterEqual,
+    AmpersandAmpersand,
+    PipePipe,
 
     Identifier,
     Number,

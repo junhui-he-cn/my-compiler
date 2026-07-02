@@ -85,6 +85,22 @@ void BinaryExpr::print(std::ostream& out) const
     out << ')';
 }
 
+LogicalExpr::LogicalExpr(ExprPtr left, Token op, ExprPtr right)
+    : left(std::move(left))
+    , op(std::move(op))
+    , right(std::move(right))
+{
+}
+
+void LogicalExpr::print(std::ostream& out) const
+{
+    out << '(' << op.lexeme << ' ';
+    writeExpr(out, left);
+    out << ' ';
+    writeExpr(out, right);
+    out << ')';
+}
+
 GroupingExpr::GroupingExpr(ExprPtr expression)
     : expression(std::move(expression))
 {

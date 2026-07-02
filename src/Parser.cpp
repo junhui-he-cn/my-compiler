@@ -112,7 +112,7 @@ ExprPtr Parser::expression()
 
 ExprPtr Parser::assignment()
 {
-    ExprPtr expr = equality();
+    ExprPtr expr = logicalOr();
 
     if (match(TokenType::Equal)) {
         Token equals = previous();
@@ -125,6 +125,28 @@ ExprPtr Parser::assignment()
         throw ParseError(equals, "invalid assignment target");
     }
 
+    return expr;
+}
+
+ExprPtr Parser::logicalOr()
+{
+    ExprPtr expr = logicalAnd();
+    while (match(TokenType::PipePipe)) {
+        Token op = previous();
+        ExprPtr right = logicalAnd();
+        expr = std::make_unique<LogicalExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+    return expr;
+}
+
+ExprPtr Parser::logicalAnd()
+{
+    ExprPtr expr = equality();
+    while (match(TokenType::AmpersandAmpersand)) {
+        Token op = previous();
+        ExprPtr right = equality();
+        expr = std::make_unique<LogicalExpr>(std::move(expr), std::move(op), std::move(right));
+    }
     return expr;
 }
 

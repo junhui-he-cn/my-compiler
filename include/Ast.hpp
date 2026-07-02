@@ -56,6 +56,15 @@ struct BinaryExpr final : Expr {
     ExprPtr right;
 };
 
+struct LogicalExpr final : Expr {
+    LogicalExpr(ExprPtr left, Token op, ExprPtr right);
+    void print(std::ostream& out) const override;
+
+    ExprPtr left;
+    Token op;
+    ExprPtr right;
+};
+
 struct GroupingExpr final : Expr {
     explicit GroupingExpr(ExprPtr expression);
     void print(std::ostream& out) const override;
