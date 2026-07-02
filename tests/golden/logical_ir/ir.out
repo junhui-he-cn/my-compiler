@@ -1,0 +1,13 @@
+IR
+0000  v0 = constant #0 true
+0001  v1 = copy v0
+0002  jump_if_true v1, 0005
+0003  v2 = constant #1 false
+0004  v1 = copy v2
+0005  print v1
+0006  v3 = constant #2 true
+0007  v4 = copy v3
+0008  jump_if_false v4, 0011
+0009  v5 = constant #3 false
+0010  v4 = copy v5
+0011  print v4

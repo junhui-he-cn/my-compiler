@@ -1,0 +1,3 @@
+print "fallback" || "x";
+print nil || "x";
+print "x" && 42;

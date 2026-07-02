@@ -1,0 +1,9 @@
+let x = "start";
+true || (x = "or-right");
+print x;
+false && (x = "and-right");
+print x;
+false || (x = "or-ran");
+print x;
+true && (x = "and-ran");
+print x;
