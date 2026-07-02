@@ -14,6 +14,7 @@ struct IRRegister {
 
 enum class IROp {
     Constant,
+    Copy,
     LoadVar,
     StoreVar,
     AssignVar,
@@ -32,6 +33,7 @@ enum class IROp {
     LessEqual,
     Jump,
     JumpIfFalse,
+    JumpIfTrue,
 };
 
 struct IRInstruction {
@@ -49,6 +51,8 @@ public:
     IRRegister makeRegister();
 
     IRRegister emitConstant(Value value);
+    IRRegister emitCopy(IRRegister value);
+    void emitCopyTo(IRRegister dest, IRRegister value);
     IRRegister emitLoadVar(std::string name);
     void emitStoreVar(std::string name, IRRegister value);
     void emitAssignVar(std::string name, IRRegister value);
@@ -57,6 +61,7 @@ public:
     IRRegister emitBinary(IROp op, IRRegister left, IRRegister right);
     std::size_t emitJump();
     std::size_t emitJumpIfFalse(IRRegister condition);
+    std::size_t emitJumpIfTrue(IRRegister condition);
     void patchJump(std::size_t jumpInstruction);
     std::size_t instructionCount() const;
 

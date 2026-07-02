@@ -101,6 +101,9 @@ void IRInterpreter::execute(const IRProgram& program)
         case IROp::Constant:
             writeRegister(readDest(instruction), readConstant(program, instruction.operand));
             break;
+        case IROp::Copy:
+            writeRegister(readDest(instruction), readRegister(readLeft(instruction)));
+            break;
         case IROp::LoadVar: {
             const std::string name = readName(program, instruction.operand);
             const auto found = globals_.find(name);
@@ -172,6 +175,13 @@ void IRInterpreter::execute(const IRProgram& program)
         case IROp::JumpIfFalse:
             validateJumpTarget(instruction.operand, instructions.size());
             if (!isTruthy(readRegister(readLeft(instruction)))) {
+                ip = instruction.operand;
+                continue;
+            }
+            break;
+        case IROp::JumpIfTrue:
+            validateJumpTarget(instruction.operand, instructions.size());
+            if (isTruthy(readRegister(readLeft(instruction)))) {
                 ip = instruction.operand;
                 continue;
             }

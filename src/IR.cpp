@@ -26,6 +26,7 @@ bool isBinary(IROp op)
     case IROp::LessEqual:
         return true;
     case IROp::Constant:
+    case IROp::Copy:
     case IROp::LoadVar:
     case IROp::StoreVar:
     case IROp::AssignVar:
@@ -34,6 +35,7 @@ bool isBinary(IROp op)
     case IROp::Not:
     case IROp::Jump:
     case IROp::JumpIfFalse:
+    case IROp::JumpIfTrue:
         return false;
     }
 
@@ -121,6 +123,18 @@ IRRegister IRProgram::emitConstant(Value value)
     return dest;
 }
 
+IRRegister IRProgram::emitCopy(IRRegister value)
+{
+    IRRegister dest = makeRegister();
+    emitCopyTo(dest, value);
+    return dest;
+}
+
+void IRProgram::emitCopyTo(IRRegister dest, IRRegister value)
+{
+    emit(IRInstruction{IROp::Copy, dest, value, std::nullopt, 0});
+}
+
 IRRegister IRProgram::emitLoadVar(std::string name)
 {
     IRRegister dest = makeRegister();
@@ -172,6 +186,13 @@ std::size_t IRProgram::emitJumpIfFalse(IRRegister condition)
     return instruction;
 }
 
+std::size_t IRProgram::emitJumpIfTrue(IRRegister condition)
+{
+    const std::size_t instruction = instructions_.size();
+    emit(IRInstruction{IROp::JumpIfTrue, std::nullopt, condition, std::nullopt, 0});
+    return instruction;
+}
+
 void IRProgram::patchJump(std::size_t jumpInstruction)
 {
     if (jumpInstruction >= instructions_.size()) {
@@ -179,7 +200,8 @@ void IRProgram::patchJump(std::size_t jumpInstruction)
     }
 
     auto& instruction = instructions_[jumpInstruction];
-    if (instruction.op != IROp::Jump && instruction.op != IROp::JumpIfFalse) {
+    if (instruction.op != IROp::Jump && instruction.op != IROp::JumpIfFalse
+        && instruction.op != IROp::JumpIfTrue) {
         throw std::logic_error("cannot patch non-jump instruction");
     }
 
@@ -226,6 +248,10 @@ void IRProgram::print(std::ostream& out) const
 
         if (instruction.op == IROp::Constant) {
             printConstantOperand(out, *this, instruction.operand);
+        } else if (instruction.op == IROp::Copy) {
+            if (instruction.left) {
+                out << " " << *instruction.left;
+            }
         } else if (instruction.op == IROp::LoadVar) {
             printNameOperand(out, *this, instruction.operand);
         } else if (instruction.op == IROp::StoreVar || instruction.op == IROp::AssignVar) {
@@ -250,7 +276,7 @@ void IRProgram::print(std::ostream& out) const
             }
         } else if (instruction.op == IROp::Jump) {
             out << " " << std::setw(4) << std::setfill('0') << instruction.operand << std::setfill(' ');
-        } else if (instruction.op == IROp::JumpIfFalse) {
+        } else if (instruction.op == IROp::JumpIfFalse || instruction.op == IROp::JumpIfTrue) {
             if (instruction.left) {
                 out << " " << *instruction.left << ", ";
             } else {
@@ -273,6 +299,8 @@ std::string irOpName(IROp op)
     switch (op) {
     case IROp::Constant:
         return "constant";
+    case IROp::Copy:
+        return "copy";
     case IROp::LoadVar:
         return "load_var";
     case IROp::StoreVar:
@@ -309,6 +337,8 @@ std::string irOpName(IROp op)
         return "jump";
     case IROp::JumpIfFalse:
         return "jump_if_false";
+    case IROp::JumpIfTrue:
+        return "jump_if_true";
     }
 
     return "unknown";

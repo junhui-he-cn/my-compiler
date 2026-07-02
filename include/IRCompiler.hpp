@@ -21,6 +21,7 @@ private:
     IRRegister compileExpression(const Expr& expression);
     IRRegister emitUnary(TokenType op, IRRegister value);
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
+    IRRegister emitLogical(const LogicalExpr& expression);
 
     IRProgram ir_;
     const ResolvedNames* resolvedNames_ = nullptr;

@@ -123,6 +123,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitBinary(binary->op.type, left, right);
     }
 
+    if (const auto* logical = dynamic_cast<const LogicalExpr*>(&expression)) {
+        return emitLogical(*logical);
+    }
+
     throw IRCompileError("unsupported expression node");
 }
 
@@ -164,4 +168,27 @@ IRRegister IRCompiler::emitBinary(TokenType op, IRRegister left, IRRegister righ
     default:
         throw IRCompileError("unsupported binary operator: " + tokenTypeName(op));
     }
+}
+
+IRRegister IRCompiler::emitLogical(const LogicalExpr& expression)
+{
+    const IRRegister left = compileExpression(*expression.left);
+    const IRRegister result = ir_.emitCopy(left);
+
+    std::size_t jump = 0;
+    switch (expression.op.type) {
+    case TokenType::PipePipe:
+        jump = ir_.emitJumpIfTrue(result);
+        break;
+    case TokenType::AmpersandAmpersand:
+        jump = ir_.emitJumpIfFalse(result);
+        break;
+    default:
+        throw IRCompileError("unsupported logical operator: " + tokenTypeName(expression.op.type));
+    }
+
+    const IRRegister right = compileExpression(*expression.right);
+    ir_.emitCopyTo(result, right);
+    ir_.patchJump(jump);
+    return result;
 }
