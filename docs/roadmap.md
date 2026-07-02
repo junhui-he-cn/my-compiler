@@ -82,22 +82,24 @@ Likely test additions:
 
 Important design choice: decide whether type errors get a new golden fixture category or reuse an existing compile-error path.
 
-## Phase 3: Logical Operators
+## Phase 3: Logical Operators — Implemented
+
+Status: implemented. The language supports `&&` and `||` short-circuit expressions using existing truthiness rules and returning the selected operand value.
 
 Goal: add common boolean/control-flow expression operators.
 
 Suggested syntax:
 
 ```text
-a and b
-a or b
+a && b
+a || b
 ```
 
 Suggested semantics:
 
-- `and` and `or` short-circuit.
-- `or` has lower precedence than `and`.
-- `and` has lower precedence than equality.
+- `&&` and `||` short-circuit.
+- `||` has lower precedence than `&&`.
+- `&&` has lower precedence than equality.
 - Result value follows the language's chosen truthiness/value rule.
 
 Likely touch points:

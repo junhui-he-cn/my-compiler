@@ -28,6 +28,7 @@ Supported expressions:
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
+- Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`
 - Unary operators: `!`, `-`
 - Binary operators: `*`, `/`, `+`, `-`, `<`, `<=`, `>`, `>=`, `==`, `!=`

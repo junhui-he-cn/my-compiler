@@ -26,7 +26,13 @@ exprStmt    = expression, ";" ;
 expression  = assignment ;
 
 assignment  = identifier, "=", assignment
-            | equality ;
+            | logicalOr ;
+
+logicalOr   = logicalAnd,
+              { "||", logicalAnd } ;
+
+logicalAnd  = equality,
+              { "&&", equality } ;
 
 equality    = comparison,
               { ( "==" | "!=" ), comparison } ;
