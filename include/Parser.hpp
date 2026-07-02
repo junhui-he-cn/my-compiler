@@ -24,6 +24,7 @@ private:
     StmtPtr letDeclaration();
     StmtPtr statement();
     StmtPtr ifStatement();
+    StmtPtr whileStatement();
     StmtPtr blockStatement();
     std::vector<StmtPtr> blockStatements();
     StmtPtr printStatement();

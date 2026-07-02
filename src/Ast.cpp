@@ -199,6 +199,26 @@ void IfStmt::print(std::ostream& out, int indent) const
     }
 }
 
+WhileStmt::WhileStmt(ExprPtr condition, StmtPtr body)
+    : condition(std::move(condition))
+    , body(std::move(body))
+{
+}
+
+void WhileStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "While ";
+    writeExpr(out, condition);
+    out << '\n';
+
+    writeIndent(out, indent + 1);
+    out << "Body\n";
+    if (body) {
+        body->print(out, indent + 2);
+    }
+}
+
 void Program::print(std::ostream& out) const
 {
     out << "Program\n";

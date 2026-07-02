@@ -209,6 +209,12 @@ void TypeChecker::checkStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* whileStmt = dynamic_cast<const WhileStmt*>(&statement)) {
+        checkExpression(*whileStmt->condition);
+        checkStatement(*whileStmt->body);
+        return;
+    }
+
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const StaticType declared = checkLetInitializer(*let);
         declareVariable(*let, declared);

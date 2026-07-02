@@ -35,6 +35,7 @@ enum class TokenType {
     Else,
     Let,
     Print,
+    While,
     True,
     False,
     Nil,

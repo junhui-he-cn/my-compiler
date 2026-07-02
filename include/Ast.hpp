@@ -118,6 +118,14 @@ struct IfStmt final : Stmt {
     StmtPtr elseBranch;
 };
 
+struct WhileStmt final : Stmt {
+    WhileStmt(ExprPtr condition, StmtPtr body);
+    void print(std::ostream& out, int indent) const override;
+
+    ExprPtr condition;
+    StmtPtr body;
+};
+
 struct Program {
     std::vector<StmtPtr> statements;
 

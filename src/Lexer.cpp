@@ -223,6 +223,7 @@ void Lexer::identifier()
         {"else", TokenType::Else},
         {"let", TokenType::Let},
         {"print", TokenType::Print},
+        {"while", TokenType::While},
         {"true", TokenType::True},
         {"false", TokenType::False},
         {"nil", TokenType::Nil},
@@ -294,6 +295,8 @@ std::string tokenTypeName(TokenType type)
         return "Let";
     case TokenType::Print:
         return "Print";
+    case TokenType::While:
+        return "While";
     case TokenType::True:
         return "True";
     case TokenType::False:
