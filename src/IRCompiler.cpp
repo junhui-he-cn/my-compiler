@@ -114,6 +114,10 @@ void IRCompiler::compileStatement(const Stmt& statement)
 
 void IRCompiler::compileFunctionStatement(const FunctionStmt& function)
 {
+    const std::string functionName = resolvedNames_->functionName(function);
+    IRRegister placeholder = ir_.emitConstant(Value::nil());
+    ir_.emitStoreVar(functionName, placeholder);
+
     std::vector<std::string> parameters = resolvedNames_->parameterNames(function);
     ir_.beginFunction(function.name.lexeme, std::move(parameters));
 
@@ -125,7 +129,7 @@ void IRCompiler::compileFunctionStatement(const FunctionStmt& function)
 
     const std::size_t functionIndex = ir_.endFunction();
     IRRegister value = ir_.emitMakeFunction(functionIndex);
-    ir_.emitStoreVar(resolvedNames_->functionName(function), value);
+    ir_.emitAssignVar(functionName, value);
 }
 
 void IRCompiler::compileReturn(const ReturnStmt& statement)
