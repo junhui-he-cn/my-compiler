@@ -154,7 +154,8 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
 - Reading or assigning an undefined variable is a type error before IR compilation.
 - Runtime values currently include nil, numbers, booleans, strings, and functions.
-- Phase 6A functions compile to an IR function table. Closures are intentionally unsupported; function bodies may use parameters, locals, recursive/global bindings, but not non-global enclosing locals.
+- Functions compile to an IR function table. Nested `fun` declarations are closures and capture enclosing local variables by reference through shared runtime cells.
+- Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.
 
 ## Roadmap Hints
 

@@ -196,15 +196,13 @@ Suggested features:
 - function values
 - runtime call frames
 
-### Phase 6B: Closures
+### Phase 6B: Closures — Implemented
 
-Add closures only after lexical scope and basic functions are stable.
+Status: implemented. Nested `fun` declarations capture enclosing local variables by reference. Captured variables stay alive through shared runtime cells, and closure reads/assignments observe the same cell.
 
-Likely requirements:
+### Phase 6C: Function Expressions / Lambdas
 
-- captured environments
-- lifetime rules for captured variables
-- tests for shadowing and mutation interactions
+Future work. Add expression-level function literals after closure semantics are stable. This phase should reuse the same by-reference closure capture model introduced in Phase 6B.
 
 ## Phase 7: Arrays and Indexing
 

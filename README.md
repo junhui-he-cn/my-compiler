@@ -28,7 +28,7 @@ Type annotations on `let` declarations are checked for the built-in annotation n
 
 `while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break` and `continue` are not implemented yet.
 
-Functions are named values declared with `fun`. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive calls are supported. Closures and function type annotations are not implemented yet.
+Functions are named values declared with `fun`. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive calls are supported. Nested functions are closures: they capture enclosing local variables by reference, so reads and assignments share the same variable cell even after the outer function returns. Lambda/function-expression syntax and function type annotations are not implemented yet.
 
 Supported expressions:
 
