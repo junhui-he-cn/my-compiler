@@ -36,6 +36,13 @@ Value Value::string(std::string value)
     return result;
 }
 
+Value Value::function(FunctionValue value)
+{
+    Value result(Type::Function);
+    result.function_ = std::move(value);
+    return result;
+}
+
 Value::Type Value::type() const
 {
     return type_;
@@ -65,6 +72,14 @@ const std::string& Value::asString() const
     return string_;
 }
 
+const FunctionValue& Value::asFunction() const
+{
+    if (type_ != Type::Function) {
+        throw std::runtime_error("value is not a function");
+    }
+    return function_;
+}
+
 bool isTruthy(const Value& value)
 {
     if (value.type() == Value::Type::Nil) {
@@ -91,6 +106,8 @@ bool valuesEqual(const Value& left, const Value& right)
         return left.asBool() == right.asBool();
     case Value::Type::String:
         return left.asString() == right.asString();
+    case Value::Type::Function:
+        return left.asFunction().functionIndex == right.asFunction().functionIndex;
     }
 
     return false;
@@ -110,6 +127,8 @@ std::string valueToString(const Value& value)
         return value.asBool() ? "true" : "false";
     case Value::Type::String:
         return value.asString();
+    case Value::Type::Function:
+        return "<fun " + value.asFunction().name + ">";
     }
 
     return "<unknown>";

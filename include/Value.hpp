@@ -1,7 +1,14 @@
 #pragma once
 
+#include <cstddef>
 #include <ostream>
 #include <string>
+
+struct FunctionValue {
+    std::string name;
+    std::size_t functionIndex = 0;
+    std::size_t arity = 0;
+};
 
 class Value {
 public:
@@ -10,17 +17,20 @@ public:
         Number,
         Bool,
         String,
+        Function,
     };
 
     static Value nil();
     static Value number(double value);
     static Value boolean(bool value);
     static Value string(std::string value);
+    static Value function(FunctionValue value);
 
     Type type() const;
     double asNumber() const;
     bool asBool() const;
     const std::string& asString() const;
+    const FunctionValue& asFunction() const;
 
 private:
     explicit Value(Type type);
@@ -29,6 +39,7 @@ private:
     double number_ = 0.0;
     bool boolean_ = false;
     std::string string_;
+    FunctionValue function_;
 };
 
 bool isTruthy(const Value& value);
