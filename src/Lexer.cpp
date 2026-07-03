@@ -88,6 +88,12 @@ void Lexer::scanToken()
     case ')':
         addToken(TokenType::RightParen);
         break;
+    case '[':
+        addToken(TokenType::LeftBracket);
+        break;
+    case ']':
+        addToken(TokenType::RightBracket);
+        break;
     case '{':
         addToken(TokenType::LeftBrace);
         break;
@@ -248,6 +254,10 @@ std::string tokenTypeName(TokenType type)
         return "LeftParen";
     case TokenType::RightParen:
         return "RightParen";
+    case TokenType::LeftBracket:
+        return "LeftBracket";
+    case TokenType::RightBracket:
+        return "RightBracket";
     case TokenType::LeftBrace:
         return "LeftBrace";
     case TokenType::RightBrace:

@@ -7,6 +7,8 @@
 enum class TokenType {
     LeftParen,
     RightParen,
+    LeftBracket,
+    RightBracket,
     LeftBrace,
     RightBrace,
     Colon,

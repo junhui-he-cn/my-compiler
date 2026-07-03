@@ -131,6 +131,37 @@ void CallExpr::print(std::ostream& out) const
     out << ')';
 }
 
+ArrayExpr::ArrayExpr(std::vector<ExprPtr> elements)
+    : elements(std::move(elements))
+{
+}
+
+void ArrayExpr::print(std::ostream& out) const
+{
+    out << "(array";
+    for (const auto& element : elements) {
+        out << ' ';
+        writeExpr(out, element);
+    }
+    out << ')';
+}
+
+IndexExpr::IndexExpr(ExprPtr collection, Token bracket, ExprPtr index)
+    : collection(std::move(collection))
+    , bracket(std::move(bracket))
+    , index(std::move(index))
+{
+}
+
+void IndexExpr::print(std::ostream& out) const
+{
+    out << "(index ";
+    writeExpr(out, collection);
+    out << ' ';
+    writeExpr(out, index);
+    out << ')';
+}
+
 LetStmt::LetStmt(Token name, std::optional<Token> typeName, ExprPtr initializer)
     : name(std::move(name))
     , typeName(std::move(typeName))

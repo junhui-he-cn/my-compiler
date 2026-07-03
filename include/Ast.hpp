@@ -81,6 +81,22 @@ struct CallExpr final : Expr {
     std::vector<ExprPtr> arguments;
 };
 
+struct ArrayExpr final : Expr {
+    explicit ArrayExpr(std::vector<ExprPtr> elements);
+    void print(std::ostream& out) const override;
+
+    std::vector<ExprPtr> elements;
+};
+
+struct IndexExpr final : Expr {
+    IndexExpr(ExprPtr collection, Token bracket, ExprPtr index);
+    void print(std::ostream& out) const override;
+
+    ExprPtr collection;
+    Token bracket;
+    ExprPtr index;
+};
+
 struct Stmt {
     virtual ~Stmt() = default;
     virtual void print(std::ostream& out, int indent) const = 0;

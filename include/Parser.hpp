@@ -44,6 +44,8 @@ private:
     ExprPtr unary();
     ExprPtr call();
     ExprPtr finishCall(ExprPtr callee);
+    ExprPtr finishIndex(ExprPtr collection);
+    ExprPtr arrayLiteral();
     ExprPtr primary();
 
     bool match(TokenType type);

@@ -258,6 +258,8 @@ ExprPtr Parser::call()
     while (true) {
         if (match(TokenType::LeftParen)) {
             expr = finishCall(std::move(expr));
+        } else if (match(TokenType::LeftBracket)) {
+            expr = finishIndex(std::move(expr));
         } else {
             break;
         }
@@ -277,6 +279,26 @@ ExprPtr Parser::finishCall(ExprPtr callee)
     return std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments));
 }
 
+ExprPtr Parser::finishIndex(ExprPtr collection)
+{
+    Token bracket = previous();
+    ExprPtr index = expression();
+    consume(TokenType::RightBracket, "expected `]` after index");
+    return std::make_unique<IndexExpr>(std::move(collection), std::move(bracket), std::move(index));
+}
+
+ExprPtr Parser::arrayLiteral()
+{
+    std::vector<ExprPtr> elements;
+    if (!check(TokenType::RightBracket)) {
+        do {
+            elements.push_back(expression());
+        } while (match(TokenType::Comma));
+    }
+    consume(TokenType::RightBracket, "expected `]` after array elements");
+    return std::make_unique<ArrayExpr>(std::move(elements));
+}
+
 ExprPtr Parser::primary()
 {
     if (match(TokenType::False)) {
@@ -290,6 +312,9 @@ ExprPtr Parser::primary()
     }
     if (match(TokenType::Number) || match(TokenType::String)) {
         return std::make_unique<LiteralExpr>(previous().lexeme);
+    }
+    if (match(TokenType::LeftBracket)) {
+        return arrayLiteral();
     }
     if (match(TokenType::Identifier)) {
         return std::make_unique<VariableExpr>(previous());
