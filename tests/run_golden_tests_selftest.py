@@ -119,6 +119,65 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertIn("unexpected output", results[0].message)
 
 
+    def test_runtime_error_case_without_run_err_fails_for_run_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            runtime_dir = golden_dir / "runtime_errors"
+            runtime_dir.mkdir(parents=True)
+            (runtime_dir / "missing_run_err.cd").write_text("1 / 0;\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="runtime error\n",
+                returncode=70,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("missing expected stderr file", results[0].message)
+        self.assertIn("runtime_errors/missing_run_err --run", results[0].message)
+
+    def test_runtime_error_case_without_run_bytecode_err_skips_run_bytecode_without_invoking_compiler(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            runtime_dir = golden_dir / "runtime_errors"
+            runtime_dir.mkdir(parents=True)
+            (runtime_dir / "run_only_error.cd").write_text("1 / 0;\n", encoding="utf-8")
+            (runtime_dir / "run_only_error.run.err").write_text("runtime error\n", encoding="utf-8")
+            (runtime_dir / "run_only_error.exit").write_text("70\n", encoding="utf-8")
+            invocation_log = root / "invocations.txt"
+            compiler = root / "fake_compiler.py"
+            compiler.write_text(
+                textwrap.dedent(
+                    f"""\
+                    #!/usr/bin/env python3
+                    import pathlib
+                    import sys
+
+                    pathlib.Path({str(invocation_log)!r}).write_text(" ".join(sys.argv[1:]) + "\\n")
+                    if "--run-bytecode" in sys.argv:
+                        sys.stderr.write("unexpected --run-bytecode invocation\\n")
+                        raise SystemExit(99)
+                    sys.stderr.write("runtime error\\n")
+                    raise SystemExit(70)
+                    """
+                ),
+                encoding="utf-8",
+            )
+            compiler.chmod(compiler.stat().st_mode | 0o111)
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+            invocations = invocation_log.read_text(encoding="utf-8")
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "runtime_errors/run_only_error --run")
+        self.assertNotIn("--run-bytecode", invocations)
+
+
     def test_parse_error_case_checks_default_mode_stderr_exit_and_stdout(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -280,6 +339,8 @@ class GoldenRunnerQualityTests(unittest.TestCase):
             runtime_dir = golden_dir / "runtime_errors"
             runtime_dir.mkdir(parents=True)
             (runtime_dir / "bytecode_error.cd").write_text("print 1 / 0;\n", encoding="utf-8")
+            (runtime_dir / "bytecode_error.run.err").write_text("Runtime error: division by zero\n", encoding="utf-8")
+            (runtime_dir / "bytecode_error.exit").write_text("1\n", encoding="utf-8")
             (runtime_dir / "bytecode_error.run_bytecode.err").write_text("Runtime error: division by zero\n", encoding="utf-8")
             (runtime_dir / "bytecode_error.run_bytecode.exit").write_text("1\n", encoding="utf-8")
             compiler = root / "fake_compiler.py"
@@ -289,8 +350,8 @@ class GoldenRunnerQualityTests(unittest.TestCase):
                     #!/usr/bin/env python3
                     import sys
 
-                    if "--run-bytecode" not in sys.argv:
-                        sys.stderr.write("missing --run-bytecode\\n")
+                    if "--run" not in sys.argv and "--run-bytecode" not in sys.argv:
+                        sys.stderr.write("missing runtime flag\\n")
                         raise SystemExit(1)
                     sys.stderr.write("Runtime error: division by zero\\n")
                     raise SystemExit(1)
@@ -302,9 +363,12 @@ class GoldenRunnerQualityTests(unittest.TestCase):
 
             results = run_golden_tests.run_all(compiler, golden_dir, update=False)
 
-        self.assertEqual(len(results), 1)
-        self.assertTrue(results[0].passed)
-        self.assertEqual(results[0].name, "runtime_errors/bytecode_error --run-bytecode")
+        self.assertEqual(len(results), 2)
+        self.assertTrue(all(result.passed for result in results))
+        self.assertEqual(
+            [result.name for result in results],
+            ["runtime_errors/bytecode_error --run", "runtime_errors/bytecode_error --run-bytecode"],
+        )
 
 
 if __name__ == "__main__":

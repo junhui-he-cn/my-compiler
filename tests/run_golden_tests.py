@@ -164,11 +164,15 @@ def check_runtime_error_execution(
     err_suffix: str,
     exit_suffix: str,
     display_name: str,
+    optional_when_missing: bool = False,
 ) -> list[CheckResult]:
     stem = source.with_suffix("")
     err_path = stem.with_suffix(err_suffix)
     exit_path = stem.with_suffix(exit_suffix)
     case_name = f"runtime_errors/{source.stem} {display_name}"
+
+    if not update and optional_when_missing and not err_path.exists():
+        return []
 
     completed = run_compiler(compiler, args, source)
 
@@ -185,7 +189,8 @@ def check_runtime_error_execution(
         results.append(unexpected_runtime_stdout_result(case_name, completed.stdout))
 
     if not err_path.exists():
-        return []
+        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
+        return results
 
     expected_err = read_text(err_path)
     actual_err = completed.stderr
@@ -245,6 +250,7 @@ def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list
         ".run.err",
         ".exit",
         "--run",
+        optional_when_missing=False,
     )
     bytecode_results = check_runtime_error_execution(
         compiler,
@@ -254,6 +260,7 @@ def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list
         ".run_bytecode.err",
         ".run_bytecode.exit",
         "--run-bytecode",
+        optional_when_missing=True,
     )
     results.extend(bytecode_results)
     return results
