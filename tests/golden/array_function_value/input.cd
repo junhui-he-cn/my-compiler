@@ -1,0 +1,9 @@
+fun makeAdder(base) {
+  fun add(x) {
+    return base + x;
+  }
+  return add;
+}
+let add10 = makeAdder(10);
+let functions = [add10];
+print functions[0](5);

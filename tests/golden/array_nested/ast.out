@@ -1,0 +1,3 @@
+Program
+  Let xs = (array (array 1 2) (array 3 4))
+  Print (index (index xs 1) 0)

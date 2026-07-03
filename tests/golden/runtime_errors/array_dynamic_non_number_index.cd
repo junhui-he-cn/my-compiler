@@ -1,0 +1,5 @@
+fun id(x) {
+  return x;
+}
+let xs = [1];
+print xs[id("0")];

@@ -1,0 +1,4 @@
+Program
+  Let xs = (array 10 20 30)
+  Print (index xs 0)
+  Print (index xs (+ 1 1))
