@@ -66,6 +66,8 @@ std::string typeName(Value::Type type)
         return "string";
     case Value::Type::Function:
         return "function";
+    case Value::Type::Array:
+        return "array";
     }
 
     return "unknown";
@@ -95,6 +97,7 @@ void IRInterpreter::execute(const IRProgram& program)
     globals_ = std::make_shared<Environment>();
     globalsView_.clear();
     nextFunctionIdentity_ = 1;
+    nextArrayIdentity_ = 1;
     Frame mainFrame;
     mainFrame.registers.assign(program.registerCount(), Value::nil());
     executeInstructions(program, program.instructions(), mainFrame, true);
@@ -129,6 +132,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
                 }));
             break;
         }
+        case IROp::Array:
+            writeRegister(frame, readDest(instruction), executeArray(instruction, frame));
+            break;
         case IROp::Copy:
             writeRegister(frame, readDest(instruction), readRegister(frame, readLeft(instruction)));
             break;
@@ -159,6 +165,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
             writeRegister(frame, readDest(instruction), callFunction(program, callee.asFunction(), arguments));
             break;
         }
+        case IROp::Index:
+            writeRegister(frame, readDest(instruction), executeIndex(frame, readLeft(instruction), readRight(instruction)));
+            break;
         case IROp::Print:
             output_ << valueToString(readRegister(frame, readLeft(instruction))) << '\n';
             break;
@@ -394,6 +403,46 @@ Value IRInterpreter::callFunction(const IRProgram& program, const FunctionValue&
 
     ExecutionResult result = executeInstructions(program, irFunction.instructions, frame, false);
     return result.returned ? result.value : Value::nil();
+}
+
+Value IRInterpreter::executeArray(const IRInstruction& instruction, const Frame& frame)
+{
+    auto elements = std::make_shared<std::vector<Value>>();
+    elements->reserve(instruction.arguments.size());
+    for (IRRegister argument : instruction.arguments) {
+        elements->push_back(readRegister(frame, argument));
+    }
+    return Value::array(ArrayValue{nextArrayIdentity_++, std::move(elements)});
+}
+
+Value IRInterpreter::executeIndex(const Frame& frame, IRRegister collection, IRRegister index)
+{
+    const Value& collectionValue = readRegister(frame, collection);
+    if (collectionValue.type() != Value::Type::Array) {
+        throw IRRuntimeError("can only index arrays");
+    }
+
+    const Value& indexValue = readRegister(frame, index);
+    if (indexValue.type() != Value::Type::Number) {
+        throw IRRuntimeError("array index must be number");
+    }
+
+    const double numericIndex = indexValue.asNumber();
+    const double integerIndex = std::trunc(numericIndex);
+    if (integerIndex != numericIndex) {
+        throw IRRuntimeError("array index must be integer");
+    }
+    if (integerIndex < 0) {
+        throw IRRuntimeError("array index out of range");
+    }
+
+    const auto& elements = *collectionValue.asArray().elements;
+    const auto position = static_cast<std::size_t>(integerIndex);
+    if (position >= elements.size()) {
+        throw IRRuntimeError("array index out of range");
+    }
+
+    return elements[position];
 }
 
 Value IRInterpreter::executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double))

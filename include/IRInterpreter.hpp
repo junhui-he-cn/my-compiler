@@ -53,9 +53,12 @@ private:
     Value executeBinaryNumber(const Frame& frame, const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double));
     Value executeBinaryComparison(const Frame& frame, const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double));
     Value executeAdd(const Frame& frame, IRRegister left, IRRegister right);
+    Value executeArray(const IRInstruction& instruction, const Frame& frame);
+    Value executeIndex(const Frame& frame, IRRegister collection, IRRegister index);
 
     std::ostream& output_;
     std::shared_ptr<Environment> globals_ = std::make_shared<Environment>();
     mutable std::unordered_map<std::string, Value> globalsView_;
     std::size_t nextFunctionIdentity_ = 1;
+    std::size_t nextArrayIdentity_ = 1;
 };
