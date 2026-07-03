@@ -27,11 +27,13 @@ bool isBinary(IROp op)
         return true;
     case IROp::Constant:
     case IROp::MakeFunction:
+    case IROp::Array:
     case IROp::Copy:
     case IROp::LoadVar:
     case IROp::StoreVar:
     case IROp::AssignVar:
     case IROp::Call:
+    case IROp::Index:
     case IROp::Print:
     case IROp::Return:
     case IROp::Negate:
@@ -139,6 +141,15 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
             const IRFunction& function = program.functions()[instruction.operand];
             out << " " << function.name << "/" << function.parameters.size();
         }
+    } else if (instruction.op == IROp::Array) {
+        out << " [";
+        for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            out << instruction.arguments[arg];
+        }
+        out << "]";
     } else if (instruction.op == IROp::Copy) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -160,6 +171,13 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
                 out << instruction.arguments[arg];
             }
             out << ")";
+        }
+    } else if (instruction.op == IROp::Index) {
+        if (instruction.left) {
+            out << " " << *instruction.left;
+        }
+        if (instruction.right) {
+            out << ", " << *instruction.right;
         }
     } else if (instruction.op == IROp::Print) {
         if (instruction.left) {
@@ -246,6 +264,13 @@ IRRegister IRProgram::emitMakeFunction(std::size_t functionIndex)
     return dest;
 }
 
+IRRegister IRProgram::emitArray(std::vector<IRRegister> elements)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::Array, dest, std::nullopt, std::nullopt, std::move(elements), 0});
+    return dest;
+}
+
 IRRegister IRProgram::emitCopy(IRRegister value)
 {
     IRRegister dest = makeRegister();
@@ -279,6 +304,13 @@ IRRegister IRProgram::emitCall(IRRegister callee, std::vector<IRRegister> argume
 {
     IRRegister dest = makeRegister();
     emit(IRInstruction{IROp::Call, dest, callee, std::nullopt, std::move(arguments), 0});
+    return dest;
+}
+
+IRRegister IRProgram::emitIndex(IRRegister collection, IRRegister index)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::Index, dest, collection, index, {}, 0});
     return dest;
 }
 
@@ -422,6 +454,8 @@ std::string irOpName(IROp op)
         return "constant";
     case IROp::MakeFunction:
         return "make_function";
+    case IROp::Array:
+        return "array";
     case IROp::Copy:
         return "copy";
     case IROp::LoadVar:
@@ -432,6 +466,8 @@ std::string irOpName(IROp op)
         return "assign_var";
     case IROp::Call:
         return "call";
+    case IROp::Index:
+        return "index";
     case IROp::Print:
         return "print";
     case IROp::Return:

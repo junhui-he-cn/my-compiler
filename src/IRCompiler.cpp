@@ -177,6 +177,14 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitCall(*call);
     }
 
+    if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
+        return emitArray(*array);
+    }
+
+    if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
+        return emitIndex(*index);
+    }
+
     throw IRCompileError("unsupported expression node");
 }
 
@@ -188,6 +196,22 @@ IRRegister IRCompiler::emitCall(const CallExpr& expression)
         arguments.push_back(compileExpression(*argument));
     }
     return ir_.emitCall(callee, std::move(arguments));
+}
+
+IRRegister IRCompiler::emitArray(const ArrayExpr& expression)
+{
+    std::vector<IRRegister> elements;
+    for (const auto& element : expression.elements) {
+        elements.push_back(compileExpression(*element));
+    }
+    return ir_.emitArray(std::move(elements));
+}
+
+IRRegister IRCompiler::emitIndex(const IndexExpr& expression)
+{
+    IRRegister collection = compileExpression(*expression.collection);
+    IRRegister index = compileExpression(*expression.index);
+    return ir_.emitIndex(collection, index);
 }
 
 IRRegister IRCompiler::emitUnary(TokenType op, IRRegister value)

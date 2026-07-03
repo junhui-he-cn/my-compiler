@@ -15,11 +15,13 @@ struct IRRegister {
 enum class IROp {
     Constant,
     MakeFunction,
+    Array,
     Copy,
     LoadVar,
     StoreVar,
     AssignVar,
     Call,
+    Index,
     Print,
     Return,
     Negate,
@@ -65,12 +67,14 @@ public:
 
     IRRegister emitConstant(Value value);
     IRRegister emitMakeFunction(std::size_t functionIndex);
+    IRRegister emitArray(std::vector<IRRegister> elements);
     IRRegister emitCopy(IRRegister value);
     void emitCopyTo(IRRegister dest, IRRegister value);
     IRRegister emitLoadVar(std::string name);
     void emitStoreVar(std::string name, IRRegister value);
     void emitAssignVar(std::string name, IRRegister value);
     IRRegister emitCall(IRRegister callee, std::vector<IRRegister> arguments);
+    IRRegister emitIndex(IRRegister collection, IRRegister index);
     void emitPrint(IRRegister value);
     void emitReturn(IRRegister value);
     IRRegister emitUnary(IROp op, IRRegister value);
