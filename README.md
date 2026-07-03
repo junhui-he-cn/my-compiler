@@ -6,6 +6,8 @@ A small C++17 compiler front-end demo. It currently implements:
 - Parser: builds a simple AST from tokens.
 - IR compiler: lowers the AST to a small three-address intermediate representation with virtual registers.
 - IR interpreter: executes that virtual-register IR directly.
+- Bytecode compiler: lowers register IR into a bytecode program.
+- Bytecode VM: executes the bytecode backend in parallel with the IR interpreter.
 - AST printer: prints the parsed program in prefix form.
 
 ## Language
@@ -69,7 +71,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, or `run.out` files to cover successful syntax. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files. Type-error fixtures live in `tests/golden/type_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
+Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, `bytecode.out`, `run.out`, or `run_bytecode.out` files to cover successful syntax and backend behavior. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files, and optionally `example.run_bytecode.err` and `example.run_bytecode.exit` files for bytecode VM diagnostics. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files. Type-error fixtures live in `tests/golden/type_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
 
 To refresh golden files after an intentional output change:
 
@@ -84,6 +86,10 @@ python3 tests/run_golden_tests.py ./build/compiler_demo --update
 ./build/compiler_demo --tokens examples/hello.cd
 ./build/compiler_demo --ir examples/hello.cd
 ./build/compiler_demo --run examples/hello.cd
+./build/compiler_demo --bytecode examples/hello.cd
+./build/compiler_demo --run-bytecode examples/hello.cd
 ```
+
+`--run` executes the existing IR interpreter. `--run-bytecode` executes the newer bytecode VM. They are expected to match for implemented language features.
 
 If no file is provided, source is read from stdin.

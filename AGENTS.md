@@ -22,6 +22,9 @@ This is a small C++17 compiler front-end/interpreter demo. It currently has:
 - `include/IR.hpp`, `src/IR.cpp`: IR opcodes, instructions, constants, names, registers, and IR printer output.
 - `include/IRCompiler.hpp`, `src/IRCompiler.cpp`: AST-to-IR lowering.
 - `include/IRInterpreter.hpp`, `src/IRInterpreter.cpp`: runtime execution of IR and runtime error behavior.
+- `include/Bytecode.hpp`, `src/Bytecode.cpp`: bytecode opcodes, program/function containers, and bytecode printer output.
+- `include/BytecodeCompiler.hpp`, `src/BytecodeCompiler.cpp`: IR-to-bytecode lowering.
+- `include/BytecodeVM.hpp`, `src/BytecodeVM.cpp`: bytecode VM execution, VM heap boundary, and VM thread/frame state.
 - `include/Value.hpp`, `src/Value.cpp`: runtime value representation and formatting.
 - `src/main.cpp`: CLI modes and top-level error handling.
 - `docs/language-grammar.ebnf`: implemented grammar and precedence reference.
@@ -80,6 +83,8 @@ When syntax affects runtime behavior or code generation:
 
 Use `StoreVar`-style operations for declarations/initialization and assignment-specific operations for updating existing bindings when the distinction matters.
 
+When IR behavior changes, update both the IR interpreter and the bytecode backend unless the change is intentionally IR-only. Bytecode lowering should preserve current IR semantics, and `--run-bytecode` should match `--run` for supported programs.
+
 ## Golden Test Conventions
 
 Successful program fixtures live in their own directories:
@@ -91,7 +96,7 @@ tests/golden/<case>/ir.out
 tests/golden/<case>/run.out
 ```
 
-A successful fixture may include one or more expected output files. In non-update mode, a success fixture with no expected files is a test failure.
+A successful fixture may include one or more expected output files. In non-update mode, a success fixture with no expected files is a test failure. Successful fixtures may include `bytecode.out` for `--bytecode` and `run_bytecode.out` for `--run-bytecode`.
 
 Runtime-error fixtures live under `tests/golden/runtime_errors`:
 
@@ -116,6 +121,8 @@ tests/golden/type_errors/<case>.cd
 tests/golden/type_errors/<case>.err
 tests/golden/type_errors/<case>.exit
 ```
+
+Runtime-error fixtures may include `.run_bytecode.err` and `.run_bytecode.exit` to check bytecode VM runtime diagnostics.
 
 Runtime-error, parse-error, and type-error fixtures should not produce stdout. The runner checks stderr and exit code.
 
@@ -154,6 +161,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
 - Reading or assigning an undefined variable is a type error before IR compilation.
 - Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
+- A parallel bytecode backend lowers register IR to bytecode; `--run-bytecode` should match `--run` for supported programs.
 - Arrays are immutable-length runtime values with mixed element types. Indexing is read-only and validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown.
 - Functions compile to an IR function table. Nested `fun` declarations are closures and capture enclosing local variables by reference through shared runtime cells.
 - Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.

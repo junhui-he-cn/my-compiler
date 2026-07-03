@@ -235,25 +235,17 @@ Likely touch points:
 
 ## Phase 8: Bytecode VM or Backend Expansion
 
-Goal: move beyond direct IR interpretation if desired.
+### Phase 8A: Bytecode VM — Implemented
 
-Recommended first backend step: a bytecode VM.
+Status: implemented. The compiler now has a parallel register-based bytecode backend. `--bytecode` prints lowered bytecode, and `--run-bytecode` executes it through the bytecode VM while preserving the existing `--ir` and `--run` paths.
 
-Possible work:
+The bytecode VM currently reuses the existing runtime `Value` representation. It includes VM heap and VM thread/frame boundaries so later phases can add GC, task scheduling, and JIT support without reworking the frontend.
 
-- define bytecode instructions
-- lower current IR or AST to bytecode
-- add bytecode printer mode
-- implement bytecode interpreter
-- compare behavior against existing IR interpreter via golden tests
+Future Phase 8 follow-ups:
 
-Alternative later backends:
-
-- C code generation
-- WebAssembly
-- LLVM-based native code generation
-
-Bytecode is the recommended next backend because it is smaller and easier to validate than a native backend.
+- GC: replace VM heap internals with tracing collection and explicit root scanning.
+- Task scheduling: make VM threads schedulable with instruction budgets, yield points, and blocked states.
+- JIT: compile hot `BytecodeFunction` units to native code using bytecode-level metadata.
 
 ## Near-Term Recommendation
 
