@@ -14,6 +14,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(compiler_demo
     src/Ast.cpp
+    src/Bytecode.cpp
+    src/BytecodeCompiler.cpp
     src/Diagnostic.cpp
     src/IR.cpp
     src/IRCompiler.cpp
