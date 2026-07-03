@@ -134,10 +134,12 @@ class GoldenRunnerQualityTests(unittest.TestCase):
 
             results = run_golden_tests.run_all(compiler, golden_dir, update=False)
 
-        self.assertEqual(len(results), 1)
-        self.assertFalse(results[0].passed)
-        self.assertIn("missing expected stderr file", results[0].message)
-        self.assertIn("runtime_errors/missing_run_err --run", results[0].message)
+        self.assertEqual(len(results), 2)
+        self.assertTrue(all(not result.passed for result in results))
+        combined_messages = "\n".join(result.message for result in results)
+        self.assertIn("missing expected stderr file", combined_messages)
+        self.assertIn("missing expected exit file", combined_messages)
+        self.assertIn("runtime_errors/missing_run_err --run", combined_messages)
 
     def test_runtime_error_case_without_run_bytecode_err_skips_run_bytecode_without_invoking_compiler(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -176,6 +178,32 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertTrue(results[0].passed)
         self.assertEqual(results[0].name, "runtime_errors/run_only_error --run")
         self.assertNotIn("--run-bytecode", invocations)
+
+
+    def test_runtime_error_case_with_orphan_run_bytecode_exit_fails_missing_stderr(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            runtime_dir = golden_dir / "runtime_errors"
+            runtime_dir.mkdir(parents=True)
+            (runtime_dir / "orphan_bytecode_exit.cd").write_text("1 / 0;\n", encoding="utf-8")
+            (runtime_dir / "orphan_bytecode_exit.run.err").write_text("runtime error\n", encoding="utf-8")
+            (runtime_dir / "orphan_bytecode_exit.exit").write_text("70\n", encoding="utf-8")
+            (runtime_dir / "orphan_bytecode_exit.run_bytecode.exit").write_text("70\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="runtime error\n",
+                returncode=70,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 2)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "runtime_errors/orphan_bytecode_exit --run")
+        self.assertFalse(results[1].passed)
+        self.assertIn("runtime_errors/orphan_bytecode_exit --run-bytecode", results[1].message)
+        self.assertIn("missing expected stderr file", results[1].message)
 
 
     def test_parse_error_case_checks_default_mode_stderr_exit_and_stdout(self) -> None:

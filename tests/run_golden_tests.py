@@ -172,7 +172,9 @@ def check_runtime_error_execution(
     case_name = f"runtime_errors/{source.stem} {display_name}"
 
     if not update and optional_when_missing and not err_path.exists():
-        return []
+        if not exit_path.exists():
+            return []
+        return [CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}")]
 
     completed = run_compiler(compiler, args, source)
 
@@ -190,13 +192,12 @@ def check_runtime_error_execution(
 
     if not err_path.exists():
         results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
-        return results
-
-    expected_err = read_text(err_path)
-    actual_err = completed.stderr
-    if actual_err != expected_err:
-        diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
-        results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
+    else:
+        expected_err = read_text(err_path)
+        actual_err = completed.stderr
+        if actual_err != expected_err:
+            diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
+            results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
 
     if not exit_path.exists():
         results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected exit file: {exit_path}"))
