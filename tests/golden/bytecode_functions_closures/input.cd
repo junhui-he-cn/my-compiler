@@ -1,0 +1,20 @@
+fun fib(n) {
+  if n <= 1 {
+    return n;
+  }
+  return fib(n - 1) + fib(n - 2);
+}
+
+fun makeCounter() {
+  let count = 0;
+  fun next() {
+    count = count + 1;
+    return count;
+  }
+  return next;
+}
+
+print fib(6);
+let counter = makeCounter();
+print counter();
+print counter();

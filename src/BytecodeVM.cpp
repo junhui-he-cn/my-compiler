@@ -126,8 +126,19 @@ BytecodeVM::ExecutionResult BytecodeVM::executeInstructions(
         case BytecodeOp::Constant:
             writeRegister(frame, readDest(instruction), readConstant(program, instruction.operand));
             break;
-        case BytecodeOp::MakeFunction:
-            throw BytecodeRuntimeError(bytecodeOpName(instruction.op) + " not implemented");
+        case BytecodeOp::MakeFunction: {
+            if (instruction.operand >= program.functions().size()) {
+                throw BytecodeRuntimeError("function index out of range");
+            }
+            const BytecodeFunction& function = program.functions()[instruction.operand];
+            writeRegister(frame, readDest(instruction),
+                heap_.makeFunction(function.name,
+                    instruction.operand,
+                    function.parameters.size(),
+                    nextFunctionIdentity_++,
+                    captureEnvironment(frame)));
+            break;
+        }
         case BytecodeOp::Array:
             throw BytecodeRuntimeError(bytecodeOpName(instruction.op) + " not implemented");
         case BytecodeOp::Move:
@@ -148,8 +159,19 @@ BytecodeVM::ExecutionResult BytecodeVM::executeInstructions(
             assignVariable(frame, name, readRegister(frame, readLeft(instruction)));
             break;
         }
-        case BytecodeOp::Call:
-            throw BytecodeRuntimeError(bytecodeOpName(instruction.op) + " not implemented");
+        case BytecodeOp::Call: {
+            const Value& callee = readRegister(frame, readLeft(instruction));
+            if (callee.type() != Value::Type::Function) {
+                throw BytecodeRuntimeError("can only call functions");
+            }
+            std::vector<Value> arguments;
+            arguments.reserve(instruction.arguments.size());
+            for (BytecodeRegister argument : instruction.arguments) {
+                arguments.push_back(readRegister(frame, argument));
+            }
+            writeRegister(frame, readDest(instruction), callFunction(program, callee.asFunction(), arguments));
+            break;
+        }
         case BytecodeOp::Index:
             throw BytecodeRuntimeError(bytecodeOpName(instruction.op) + " not implemented");
         case BytecodeOp::Print:
@@ -288,6 +310,30 @@ void BytecodeVM::validateJumpTarget(std::size_t target, std::size_t instructionC
     if (target > instructionCount) {
         throw BytecodeRuntimeError("jump target out of range");
     }
+}
+
+Value BytecodeVM::callFunction(const BytecodeProgram& program, const FunctionValue& function, const std::vector<Value>& arguments)
+{
+    if (function.functionIndex >= program.functions().size()) {
+        throw BytecodeRuntimeError("function index out of range");
+    }
+    const BytecodeFunction& bytecodeFunction = program.functions()[function.functionIndex];
+    if (arguments.size() != bytecodeFunction.parameters.size()) {
+        throw BytecodeRuntimeError("expected " + std::to_string(bytecodeFunction.parameters.size())
+            + " arguments but got " + std::to_string(arguments.size()));
+    }
+
+    VMFrame frame;
+    frame.functionIndex = static_cast<std::uint32_t>(function.functionIndex);
+    frame.isMain = false;
+    frame.closure = function.closure ? function.closure : std::make_shared<Environment>();
+    frame.registers.assign(bytecodeFunction.registerCount, Value::nil());
+    for (std::size_t i = 0; i < arguments.size(); ++i) {
+        frame.locals->values.emplace(bytecodeFunction.parameters[i], std::make_shared<Cell>(arguments[i]));
+    }
+
+    ExecutionResult result = executeInstructions(program, bytecodeFunction.instructions, frame);
+    return result.returned ? result.value : Value::nil();
 }
 
 std::shared_ptr<Cell> BytecodeVM::findCell(const VMFrame& frame, const std::string& name) const

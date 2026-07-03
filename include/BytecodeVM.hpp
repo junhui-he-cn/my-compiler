@@ -55,6 +55,7 @@ private:
     BytecodeRegister readLeft(const BytecodeInstruction& instruction) const;
     BytecodeRegister readRight(const BytecodeInstruction& instruction) const;
     ExecutionResult executeInstructions(const BytecodeProgram& program, const std::vector<BytecodeInstruction>& instructions, VMFrame& frame);
+    Value callFunction(const BytecodeProgram& program, const FunctionValue& function, const std::vector<Value>& arguments);
     const Value& readRegister(const VMFrame& frame, BytecodeRegister reg) const;
     void writeRegister(VMFrame& frame, BytecodeRegister reg, Value value);
     void validateJumpTarget(std::size_t target, std::size_t instructionCount) const;
