@@ -6,8 +6,10 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 struct Environment;
+struct ArrayValue;
 
 struct FunctionValue {
     std::string name;
@@ -25,6 +27,7 @@ public:
         Bool,
         String,
         Function,
+        Array,
     };
 
     static Value nil();
@@ -32,12 +35,14 @@ public:
     static Value boolean(bool value);
     static Value string(std::string value);
     static Value function(FunctionValue value);
+    static Value array(ArrayValue value);
 
     Type type() const;
     double asNumber() const;
     bool asBool() const;
     const std::string& asString() const;
     const FunctionValue& asFunction() const;
+    const ArrayValue& asArray() const;
 
 private:
     explicit Value(Type type);
@@ -47,6 +52,12 @@ private:
     bool boolean_ = false;
     std::string string_;
     FunctionValue function_;
+    std::shared_ptr<ArrayValue> array_;
+};
+
+struct ArrayValue {
+    std::size_t identity = 0;
+    std::shared_ptr<std::vector<Value>> elements;
 };
 
 struct Cell {

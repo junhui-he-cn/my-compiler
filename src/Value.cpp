@@ -43,6 +43,13 @@ Value Value::function(FunctionValue value)
     return result;
 }
 
+Value Value::array(ArrayValue value)
+{
+    Value result(Type::Array);
+    result.array_ = std::make_shared<ArrayValue>(std::move(value));
+    return result;
+}
+
 Value::Type Value::type() const
 {
     return type_;
@@ -80,6 +87,14 @@ const FunctionValue& Value::asFunction() const
     return function_;
 }
 
+const ArrayValue& Value::asArray() const
+{
+    if (type_ != Type::Array || !array_) {
+        throw std::runtime_error("value is not an array");
+    }
+    return *array_;
+}
+
 bool isTruthy(const Value& value)
 {
     if (value.type() == Value::Type::Nil) {
@@ -108,6 +123,8 @@ bool valuesEqual(const Value& left, const Value& right)
         return left.asString() == right.asString();
     case Value::Type::Function:
         return left.asFunction().identity == right.asFunction().identity;
+    case Value::Type::Array:
+        return left.asArray().identity == right.asArray().identity;
     }
 
     return false;
@@ -129,6 +146,19 @@ std::string valueToString(const Value& value)
         return value.asString();
     case Value::Type::Function:
         return "<fun " + value.asFunction().name + ">";
+    case Value::Type::Array: {
+        std::ostringstream out;
+        out << '[';
+        const auto& elements = *value.asArray().elements;
+        for (std::size_t i = 0; i < elements.size(); ++i) {
+            if (i != 0) {
+                out << ", ";
+            }
+            out << valueToString(elements[i]);
+        }
+        out << ']';
+        return out.str();
+    }
     }
 
     return "<unknown>";
