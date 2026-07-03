@@ -18,7 +18,9 @@ class CheckResult:
 SUCCESS_CHECKS = (
     ("default(ast)", (), "ast.out"),
     ("--ir", ("--ir",), "ir.out"),
+    ("--bytecode", ("--bytecode",), "bytecode.out"),
     ("--run", ("--run",), "run.out"),
+    ("--run-bytecode", ("--run-bytecode",), "run_bytecode.out"),
 )
 
 
@@ -154,6 +156,64 @@ def unexpected_runtime_stdout_result(case_name: str, stdout: str) -> CheckResult
     )
 
 
+def check_runtime_error_execution(
+    compiler: Path,
+    source: Path,
+    update: bool,
+    args: tuple[str, ...],
+    err_suffix: str,
+    exit_suffix: str,
+    display_name: str,
+) -> list[CheckResult]:
+    stem = source.with_suffix("")
+    err_path = stem.with_suffix(err_suffix)
+    exit_path = stem.with_suffix(exit_suffix)
+    case_name = f"runtime_errors/{source.stem} {display_name}"
+
+    completed = run_compiler(compiler, args, source)
+
+    if update:
+        write_text(err_path, completed.stderr)
+        write_text(exit_path, f"{completed.returncode}\n")
+        if completed.stdout:
+            return [unexpected_runtime_stdout_result(case_name, completed.stdout)]
+        return [CheckResult(case_name, True)]
+
+    results: list[CheckResult] = []
+
+    if completed.stdout:
+        results.append(unexpected_runtime_stdout_result(case_name, completed.stdout))
+
+    if not err_path.exists():
+        return []
+
+    expected_err = read_text(err_path)
+    actual_err = completed.stderr
+    if actual_err != expected_err:
+        diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
+        results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
+
+    if not exit_path.exists():
+        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected exit file: {exit_path}"))
+    else:
+        expected_exit_text = read_text(exit_path).strip()
+        actual_exit_text = str(completed.returncode)
+        if actual_exit_text != expected_exit_text:
+            results.append(
+                CheckResult(
+                    case_name,
+                    False,
+                    f"FAIL {case_name} exit code mismatch\nexpected: {expected_exit_text}\nactual: {actual_exit_text}",
+                )
+            )
+
+    if not results:
+        results.append(CheckResult(case_name, True))
+
+    return results
+
+
+
 def unexpected_parse_stdout_result(case_name: str, stdout: str) -> CheckResult:
     return CheckResult(
         case_name,
@@ -177,51 +237,25 @@ def unexpected_type_stdout_result(case_name: str, stdout: str) -> CheckResult:
 
 
 def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list[CheckResult]:
-    stem = source.with_suffix("")
-    err_path = stem.with_suffix(".run.err")
-    exit_path = stem.with_suffix(".exit")
-    case_name = f"runtime_errors/{source.stem} --run"
-
-    completed = run_compiler(compiler, ("--run",), source)
-
-    if update:
-        write_text(err_path, completed.stderr)
-        write_text(exit_path, f"{completed.returncode}\n")
-        if completed.stdout:
-            return [unexpected_runtime_stdout_result(case_name, completed.stdout)]
-        return [CheckResult(case_name, True)]
-
-    results: list[CheckResult] = []
-
-    if completed.stdout:
-        results.append(unexpected_runtime_stdout_result(case_name, completed.stdout))
-
-    if not err_path.exists():
-        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
-    else:
-        expected_err = read_text(err_path)
-        actual_err = completed.stderr
-        if actual_err != expected_err:
-            diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
-            results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
-
-    if not exit_path.exists():
-        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected exit file: {exit_path}"))
-    else:
-        expected_exit_text = read_text(exit_path).strip()
-        actual_exit_text = str(completed.returncode)
-        if actual_exit_text != expected_exit_text:
-            results.append(
-                CheckResult(
-                    case_name,
-                    False,
-                    f"FAIL {case_name} exit code mismatch\nexpected: {expected_exit_text}\nactual: {actual_exit_text}",
-                )
-            )
-
-    if not results:
-        results.append(CheckResult(case_name, True))
-
+    results = check_runtime_error_execution(
+        compiler,
+        source,
+        update,
+        ("--run",),
+        ".run.err",
+        ".exit",
+        "--run",
+    )
+    bytecode_results = check_runtime_error_execution(
+        compiler,
+        source,
+        update,
+        ("--run-bytecode",),
+        ".run_bytecode.err",
+        ".run_bytecode.exit",
+        "--run-bytecode",
+    )
+    results.extend(bytecode_results)
     return results
 
 
@@ -375,7 +409,6 @@ def main() -> int:
     print(f"golden tests: {passed_count} passed, {len(failed)} failed")
 
     return 1 if failed else 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

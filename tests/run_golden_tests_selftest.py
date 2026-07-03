@@ -211,6 +211,101 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertEqual(results[0].name, "type_errors/input default(ast)")
 
 
+    def test_success_case_with_bytecode_expected_file_runs_bytecode_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "bytecode_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "bytecode.out").write_text("bytecode output\n", encoding="utf-8")
+            compiler = root / "fake_compiler.py"
+            compiler.write_text(
+                textwrap.dedent(
+                    """\
+                    #!/usr/bin/env python3
+                    import sys
+
+                    if "--bytecode" not in sys.argv:
+                        sys.stderr.write("missing --bytecode\\n")
+                        raise SystemExit(1)
+                    sys.stdout.write("bytecode output\\n")
+                    """
+                ),
+                encoding="utf-8",
+            )
+            compiler.chmod(compiler.stat().st_mode | 0o111)
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "bytecode_case --bytecode")
+
+    def test_success_case_with_run_bytecode_expected_file_runs_run_bytecode_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "run_bytecode_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "run_bytecode.out").write_text("1\n", encoding="utf-8")
+            compiler = root / "fake_compiler.py"
+            compiler.write_text(
+                textwrap.dedent(
+                    """\
+                    #!/usr/bin/env python3
+                    import sys
+
+                    if "--run-bytecode" not in sys.argv:
+                        sys.stderr.write("missing --run-bytecode\\n")
+                        raise SystemExit(1)
+                    sys.stdout.write("1\\n")
+                    """
+                ),
+                encoding="utf-8",
+            )
+            compiler.chmod(compiler.stat().st_mode | 0o111)
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "run_bytecode_case --run-bytecode")
+
+    def test_runtime_error_case_with_run_bytecode_expected_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            runtime_dir = golden_dir / "runtime_errors"
+            runtime_dir.mkdir(parents=True)
+            (runtime_dir / "bytecode_error.cd").write_text("print 1 / 0;\n", encoding="utf-8")
+            (runtime_dir / "bytecode_error.run_bytecode.err").write_text("Runtime error: division by zero\n", encoding="utf-8")
+            (runtime_dir / "bytecode_error.run_bytecode.exit").write_text("1\n", encoding="utf-8")
+            compiler = root / "fake_compiler.py"
+            compiler.write_text(
+                textwrap.dedent(
+                    """\
+                    #!/usr/bin/env python3
+                    import sys
+
+                    if "--run-bytecode" not in sys.argv:
+                        sys.stderr.write("missing --run-bytecode\\n")
+                        raise SystemExit(1)
+                    sys.stderr.write("Runtime error: division by zero\\n")
+                    raise SystemExit(1)
+                    """
+                ),
+                encoding="utf-8",
+            )
+            compiler.chmod(compiler.stat().st_mode | 0o111)
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "runtime_errors/bytecode_error --run-bytecode")
+
 
 if __name__ == "__main__":
     raise SystemExit(unittest.main())
