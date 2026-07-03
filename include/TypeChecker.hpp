@@ -17,6 +17,7 @@ enum class StaticType {
     Bool,
     String,
     Function,
+    Array,
 };
 
 class TypeError final : public DiagnosticError {
@@ -79,6 +80,7 @@ private:
     void checkFunction(const FunctionStmt& statement);
     StaticType checkExpression(const Expr& expression);
     StaticType checkCall(const CallExpr& expression);
+    StaticType checkIndex(const IndexExpr& expression);
     StaticType checkLetInitializer(const LetStmt& statement);
     StaticType resolveAnnotation(const Token& typeName) const;
     void checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const;

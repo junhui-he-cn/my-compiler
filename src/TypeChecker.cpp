@@ -59,6 +59,8 @@ std::string staticTypeName(StaticType type)
         return "string";
     case StaticType::Function:
         return "function";
+    case StaticType::Array:
+        return "array";
     }
 
     return "unknown";
@@ -393,6 +395,17 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
         return checkCall(*call);
     }
 
+    if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
+        for (const auto& element : array->elements) {
+            checkExpression(*element);
+        }
+        return StaticType::Array;
+    }
+
+    if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
+        return checkIndex(*index);
+    }
+
     throw TypeError("unsupported expression node");
 }
 
@@ -413,6 +426,22 @@ StaticType TypeChecker::checkCall(const CallExpr& expression)
             throw TypeError(expression.paren, "expected " + std::to_string(*binding->arity)
                 + " arguments but got " + std::to_string(expression.arguments.size()));
         }
+    }
+
+    return StaticType::Unknown;
+}
+
+StaticType TypeChecker::checkIndex(const IndexExpr& expression)
+{
+    const StaticType collection = checkExpression(*expression.collection);
+    const StaticType index = checkExpression(*expression.index);
+
+    if (collection != StaticType::Unknown && collection != StaticType::Array) {
+        throw TypeError(expression.bracket, "can only index arrays");
+    }
+
+    if (index != StaticType::Unknown && index != StaticType::Number) {
+        throw TypeError(expression.bracket, "array index must be number");
     }
 
     return StaticType::Unknown;
