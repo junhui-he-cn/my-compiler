@@ -204,9 +204,9 @@ Status: implemented. Nested `fun` declarations capture enclosing local variables
 
 Future work. Add expression-level function literals after closure semantics are stable. This phase should reuse the same by-reference closure capture model introduced in Phase 6B.
 
-## Phase 7: Arrays and Indexing
+## Phase 7: Arrays and Indexing — Implemented
 
-Goal: add a first compound data type.
+Status: implemented. The language supports array literals, mixed element values, read-only indexing, chained indexing/calls, and runtime errors for invalid index operations. Array mutation, `push`, and `len` remain future work.
 
 Suggested syntax:
 

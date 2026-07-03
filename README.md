@@ -33,9 +33,11 @@ Functions are named values declared with `fun`. `return expression;` returns a v
 Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
+- Arrays: `[element, ...]` and `[]`; elements may be mixed runtime types.
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Calls: `callee(argument*)`
+- Indexing: `array[index]` reads an element. Indexes must be integer numbers in range. Array mutation, `push`, and `len` are not implemented yet.
 - Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`
 - Unary operators: `!`, `-`

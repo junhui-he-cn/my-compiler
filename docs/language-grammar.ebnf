@@ -64,16 +64,20 @@ unary       = ( "!" | "-" ), unary
             | call ;
 
 call        = primary,
-              { "(", [ arguments ], ")" } ;
+              { "(", [ arguments ], ")"
+              | "[", expression, "]" } ;
 
 arguments   = expression,
               { ",", expression } ;
+
+array       = "[", [ arguments ], "]" ;
 
 primary     = "false"
             | "true"
             | "nil"
             | number
             | string
+            | array
             | identifier
             | "(", expression, ")" ;
 

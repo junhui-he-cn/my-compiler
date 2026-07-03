@@ -148,12 +148,13 @@ Use locations for lexer, parser, and type errors when a source token/location is
 ## Current Language Semantics and Limitations
 
 - Supported statements include `let`, `print`, `if`/`else`, `while`, `fun`, `return`, blocks, and expression statements.
-- Supported expressions include literals, variables, calls, grouping, unary operators, binary/logical operators, and assignment expressions.
+- Supported expressions include literals, arrays, indexing, variables, calls, grouping, unary operators, binary/logical operators, and assignment expressions.
 - `let name: type = expression;` checks explicit annotations for `number`, `bool`, `string`, and `nil`; unannotated variables are accepted without full inference.
 - Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
 - Reading or assigning an undefined variable is a type error before IR compilation.
-- Runtime values currently include nil, numbers, booleans, strings, and functions.
+- Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
+- Arrays are immutable-length runtime values with mixed element types. Indexing is read-only and validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown.
 - Functions compile to an IR function table. Nested `fun` declarations are closures and capture enclosing local variables by reference through shared runtime cells.
 - Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.
 
