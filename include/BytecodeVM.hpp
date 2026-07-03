@@ -71,6 +71,8 @@ private:
     Value executeBinaryNumber(const VMFrame& frame, const std::string& opName, BytecodeRegister left, BytecodeRegister right, Value (*operation)(double, double));
     Value executeBinaryComparison(const VMFrame& frame, const std::string& opName, BytecodeRegister left, BytecodeRegister right, Value (*operation)(double, double));
     Value executeAdd(const VMFrame& frame, BytecodeRegister left, BytecodeRegister right);
+    Value executeArray(const BytecodeInstruction& instruction, const VMFrame& frame);
+    Value executeIndex(const VMFrame& frame, BytecodeRegister collection, BytecodeRegister index);
 
     std::ostream& output_;
     std::shared_ptr<Environment> globals_ = std::make_shared<Environment>();

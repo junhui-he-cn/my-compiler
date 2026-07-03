@@ -1,0 +1,8 @@
+fun makeNested() {
+  return [[1, 2], [3, 4]];
+}
+
+let xs = [10, "twenty", true, nil];
+print xs[0];
+print xs[1];
+print makeNested()[1][0];

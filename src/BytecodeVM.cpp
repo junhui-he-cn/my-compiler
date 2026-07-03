@@ -1,5 +1,6 @@
 #include "BytecodeVM.hpp"
 
+#include <cmath>
 #include <utility>
 
 namespace {
@@ -140,7 +141,8 @@ BytecodeVM::ExecutionResult BytecodeVM::executeInstructions(
             break;
         }
         case BytecodeOp::Array:
-            throw BytecodeRuntimeError(bytecodeOpName(instruction.op) + " not implemented");
+            writeRegister(frame, readDest(instruction), executeArray(instruction, frame));
+            break;
         case BytecodeOp::Move:
             writeRegister(frame, readDest(instruction), readRegister(frame, readLeft(instruction)));
             break;
@@ -173,7 +175,8 @@ BytecodeVM::ExecutionResult BytecodeVM::executeInstructions(
             break;
         }
         case BytecodeOp::Index:
-            throw BytecodeRuntimeError(bytecodeOpName(instruction.op) + " not implemented");
+            writeRegister(frame, readDest(instruction), executeIndex(frame, readLeft(instruction), readRight(instruction)));
+            break;
         case BytecodeOp::Print:
             output_ << valueToString(readRegister(frame, readLeft(instruction))) << '\n';
             break;
@@ -458,4 +461,44 @@ Value BytecodeVM::executeAdd(const VMFrame& frame, BytecodeRegister left, Byteco
     }
 
     throw BytecodeRuntimeError("add expects two numbers or two strings");
+}
+
+Value BytecodeVM::executeArray(const BytecodeInstruction& instruction, const VMFrame& frame)
+{
+    auto elements = std::make_shared<std::vector<Value>>();
+    elements->reserve(instruction.arguments.size());
+    for (BytecodeRegister argument : instruction.arguments) {
+        elements->push_back(readRegister(frame, argument));
+    }
+    return heap_.makeArray(nextArrayIdentity_++, std::move(elements));
+}
+
+Value BytecodeVM::executeIndex(const VMFrame& frame, BytecodeRegister collection, BytecodeRegister index)
+{
+    const Value& collectionValue = readRegister(frame, collection);
+    if (collectionValue.type() != Value::Type::Array) {
+        throw BytecodeRuntimeError("can only index arrays");
+    }
+
+    const Value& indexValue = readRegister(frame, index);
+    if (indexValue.type() != Value::Type::Number) {
+        throw BytecodeRuntimeError("array index must be number");
+    }
+
+    const double numericIndex = indexValue.asNumber();
+    const double integerIndex = std::trunc(numericIndex);
+    if (integerIndex != numericIndex) {
+        throw BytecodeRuntimeError("array index must be integer");
+    }
+    if (integerIndex < 0) {
+        throw BytecodeRuntimeError("array index out of range");
+    }
+
+    const auto& elements = *collectionValue.asArray().elements;
+    const auto position = static_cast<std::size_t>(integerIndex);
+    if (position >= elements.size()) {
+        throw BytecodeRuntimeError("array index out of range");
+    }
+
+    return elements[position];
 }
