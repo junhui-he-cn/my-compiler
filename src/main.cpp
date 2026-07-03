@@ -1,4 +1,5 @@
 #include "BytecodeCompiler.hpp"
+#include "BytecodeVM.hpp"
 #include "IRCompiler.hpp"
 #include "IRInterpreter.hpp"
 #include "Lexer.hpp"
@@ -7,6 +8,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -43,6 +45,7 @@ int main(int argc, char** argv)
     bool showIr = false;
     bool showBytecode = false;
     bool runIr = false;
+    bool runBytecode = false;
     std::string inputPath;
 
     for (int i = 1; i < argc; ++i) {
@@ -55,6 +58,8 @@ int main(int argc, char** argv)
             showBytecode = true;
         } else if (arg == "--run") {
             runIr = true;
+        } else if (arg == "--run-bytecode") {
+            runBytecode = true;
         } else if (arg == "--help" || arg == "-h") {
             printUsage(argv[0]);
             return 0;
@@ -87,33 +92,48 @@ int main(int argc, char** argv)
         TypeChecker typeChecker;
         const ResolvedNames& resolvedNames = typeChecker.check(program);
 
-        if (!showIr && !showBytecode && !runIr) {
+        if (!showIr && !showBytecode && !runIr && !runBytecode) {
             program.print(std::cout);
         }
 
-        if (showIr || showBytecode || runIr) {
+        if (showIr || showBytecode || runIr || runBytecode) {
             IRCompiler compiler;
             IRProgram ir = compiler.compile(program, resolvedNames);
 
-            if (showIr) {
-                ir.print(std::cout);
-                if (showBytecode || runIr) {
+            std::optional<BytecodeProgram> bytecode;
+            if (showBytecode || runBytecode) {
+                BytecodeCompiler bytecodeCompiler;
+                bytecode = bytecodeCompiler.compile(ir);
+            }
+
+            bool emittedSection = false;
+            const auto separateSection = [&emittedSection]() {
+                if (emittedSection) {
                     std::cout << '\n';
                 }
+                emittedSection = true;
+            };
+
+            if (showIr) {
+                separateSection();
+                ir.print(std::cout);
             }
 
             if (showBytecode) {
-                BytecodeCompiler bytecodeCompiler;
-                BytecodeProgram bytecode = bytecodeCompiler.compile(ir);
-                bytecode.print(std::cout);
-                if (runIr) {
-                    std::cout << '\n';
-                }
+                separateSection();
+                bytecode->print(std::cout);
             }
 
             if (runIr) {
+                separateSection();
                 IRInterpreter interpreter(std::cout);
                 interpreter.execute(ir);
+            }
+
+            if (runBytecode) {
+                separateSection();
+                BytecodeVM vm(std::cout);
+                vm.execute(*bytecode);
             }
         }
     } catch (const std::exception& error) {

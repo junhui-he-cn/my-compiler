@@ -1,0 +1,12 @@
+let i = 0;
+let total = 0;
+while i < 4 {
+  total = total + i;
+  i = i + 1;
+}
+
+if total == 6 && false || true {
+  print total;
+} else {
+  print 999;
+}

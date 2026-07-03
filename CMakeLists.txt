@@ -16,6 +16,7 @@ add_executable(compiler_demo
     src/Ast.cpp
     src/Bytecode.cpp
     src/BytecodeCompiler.cpp
+    src/BytecodeVM.cpp
     src/Diagnostic.cpp
     src/IR.cpp
     src/IRCompiler.cpp
