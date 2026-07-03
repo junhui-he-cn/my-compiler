@@ -1,3 +1,4 @@
+#include "BytecodeCompiler.hpp"
 #include "IRCompiler.hpp"
 #include "IRInterpreter.hpp"
 #include "Lexer.hpp"
@@ -30,7 +31,7 @@ std::string readFile(const std::string& path)
 
 void printUsage(const char* executable)
 {
-    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--run] [file]\n"
+    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [--run] [--run-bytecode] [file]\n"
               << "If file is omitted, source is read from stdin.\n";
 }
 
@@ -40,6 +41,7 @@ int main(int argc, char** argv)
 {
     bool showTokens = false;
     bool showIr = false;
+    bool showBytecode = false;
     bool runIr = false;
     std::string inputPath;
 
@@ -49,6 +51,8 @@ int main(int argc, char** argv)
             showTokens = true;
         } else if (arg == "--ir") {
             showIr = true;
+        } else if (arg == "--bytecode") {
+            showBytecode = true;
         } else if (arg == "--run") {
             runIr = true;
         } else if (arg == "--help" || arg == "-h") {
@@ -83,16 +87,25 @@ int main(int argc, char** argv)
         TypeChecker typeChecker;
         const ResolvedNames& resolvedNames = typeChecker.check(program);
 
-        if (!showIr && !runIr) {
+        if (!showIr && !showBytecode && !runIr) {
             program.print(std::cout);
         }
 
-        if (showIr || runIr) {
+        if (showIr || showBytecode || runIr) {
             IRCompiler compiler;
             IRProgram ir = compiler.compile(program, resolvedNames);
 
             if (showIr) {
                 ir.print(std::cout);
+                if (showBytecode || runIr) {
+                    std::cout << '\n';
+                }
+            }
+
+            if (showBytecode) {
+                BytecodeCompiler bytecodeCompiler;
+                BytecodeProgram bytecode = bytecodeCompiler.compile(ir);
+                bytecode.print(std::cout);
                 if (runIr) {
                     std::cout << '\n';
                 }
