@@ -239,7 +239,7 @@ Likely touch points:
 
 Status: implemented. The compiler now has a parallel register-based bytecode backend. `--bytecode` prints lowered bytecode, and `--run-bytecode` executes it through the bytecode VM while preserving the existing `--ir` and `--run` paths.
 
-The bytecode VM currently reuses the existing runtime `Value` representation. It includes VM heap and VM thread/frame boundaries so later phases can add GC, task scheduling, and JIT support without reworking the frontend.
+The bytecode VM currently reuses the existing runtime `Value` representation. It includes VM heap and VM thread/frame boundaries and provides initial extension points for future GC, task scheduling, and JIT work.
 
 Future Phase 8 follow-ups:
 
@@ -249,4 +249,4 @@ Future Phase 8 follow-ups:
 
 ## Near-Term Recommendation
 
-Start with Phase 1: lexical scope. It unlocks cleaner semantics for future type checking, functions, closures, and block-local behavior.
+Phases 1 through 8A are implemented. For backend continuity, start with Phase 8B GC groundwork: define VM heap ownership, root scanning, and value reachability before adding more runtime complexity. Other reasonable next slices are Phase 8C task scheduling groundwork, Phase 8D JIT exploration, Phase 6C lambdas, or array enhancements such as mutation and length operations.

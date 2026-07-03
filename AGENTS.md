@@ -12,7 +12,7 @@ This is a small C++17 compiler front-end/interpreter demo. It currently has:
 - An IR compiler that lowers AST nodes to a small virtual-register, three-address IR.
 - An IR interpreter that executes the register IR.
 - A CLI binary named `compiler_demo`.
-- Python golden tests that verify AST, IR, run output, parse errors, and runtime errors.
+- Python golden tests that verify AST, IR, bytecode, run, run-bytecode, parse-error, and runtime-error outputs.
 
 ## Architecture Map
 
