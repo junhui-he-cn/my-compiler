@@ -175,7 +175,7 @@ Recommended split:
 
 ### Phase 6A: Function Declarations and Calls — Implemented
 
-Status: implemented. The language supports named functions, calls, explicit `return`, bare `return;`, implicit `nil` returns, and recursion. Closures are not implemented yet.
+Status: implemented. The language supports named functions, calls, explicit `return`, bare `return;`, implicit `nil` returns, and recursion. This phase originally excluded closures; closure support was added in Phase 6B.
 
 Suggested syntax:
 

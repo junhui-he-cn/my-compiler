@@ -168,4 +168,4 @@ Use locations for lexer, parser, and type errors when a source token/location is
 
 ## Roadmap Hints
 
-Likely future work includes richer statements such as loops/functions, more operators, fuller type inference/checking, and a more complete backend. When adding these, prefer vertical slices that update parser, AST, IR, interpreter, docs, and goldens together.
+Likely future work includes bytecode VM follow-ups such as GC, task scheduling, and JIT exploration; lambda/function expressions; array mutation and builtins; fuller type inference/checking; and additional backend expansion. When adding these, prefer vertical slices that update parser, AST, IR, bytecode, interpreters/VM, docs, and goldens together.
