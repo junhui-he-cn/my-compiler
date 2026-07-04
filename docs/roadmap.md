@@ -1,252 +1,193 @@
-# Compiler Demo Roadmap
+# Compiler Demo Language Roadmap
 
-This roadmap captures a practical development sequence for growing the compiler demo from the current interpreter-oriented language into a more complete small language and backend playground.
+This roadmap is the active planning entry point for user-visible language development. The previous mixed compiler/backend roadmap is preserved in `docs/roadmap-archive-2026-07-04.md`.
+
+Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable, but they are a deferred backend track. The current near-term direction is to improve the language itself.
+
+## Current Implemented Baseline
+
+The language currently supports:
+
+- Statements: `let`, `print`, `if`/`else`, `while`, `fun`, `return`, blocks, and expression statements.
+- Expressions: literals, arrays, indexing, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
+- Lexical scopes resolved during type checking.
+- Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
+- Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
+- Array literals and read-only indexing.
+- IR interpreter and bytecode VM execution paths that should match for implemented language features.
+
+For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf` and `README.md`.
 
 ## Guiding Principles
 
-- Develop in vertical slices: update parser, AST, IR, interpreter, tests, grammar docs, and README together when a feature crosses layers.
-- Keep golden tests as the main behavior contract.
-- Prefer small semantic foundations before large syntax features.
-- Do not document planned behavior as implemented behavior in `README.md` or `docs/language-grammar.ebnf`.
-- Keep `AGENTS.md` updated when workflows or architecture conventions change.
+- Prefer vertical language slices that update parser, AST, type checker, IR, bytecode lowering, interpreters/VM, docs, and goldens together when behavior crosses layers.
+- Keep `--run` and `--run-bytecode` behavior aligned for every supported user-visible feature.
+- Keep planned syntax out of `README.md` and `docs/language-grammar.ebnf` until implemented.
+- Write a focused design spec and implementation plan for each substantial phase before changing compiler behavior.
+- Preserve parse errors, type errors, compile errors, and runtime errors as distinct test categories.
 
-## Recommended Phase Order
+## Recommended Language Phase Order
 
 ```text
-1. Lexical scope
-2. Basic type checker
-3. Logical operators
-4. While loops
-5. Diagnostic cleanup
-6. Functions
-7. Arrays and indexing
-8. Bytecode VM or backend expansion
+9. Richer type system
+10. Array mutation and collection builtins
+11. Loop control and for loops
+12. Records / structs
+13. Standard builtins
+14. Modules / imports
+15. Language polish and diagnostics
 ```
 
-## Phase 1: Lexical Scope — Implemented
+## Phase 9: Richer Type System
 
-Status: implemented. Blocks now introduce real variable scopes.
+Goal: evolve the current annotation checker into a more useful static type layer.
 
-Implementation note: lexical names are resolved during type checking; generated IR uses unique internal variable names rather than runtime scope operations.
+Suggested features:
 
-Suggested behavior:
-
-- `{ ... }` creates a nested scope.
-- `let` declares a variable in the current scope.
-- Inner declarations may shadow outer declarations.
-- Variable lookup searches from innermost scope outward.
-- Assignment updates the nearest existing binding.
-- Reading or assigning an undefined variable remains an error.
+- Internal function signatures for named functions and function expressions.
+- User-visible function type annotations, after choosing syntax.
+- Array element types, after deciding whether mixed arrays remain a dynamic escape hatch.
+- Basic inference for unannotated `let` declarations from initializer expressions.
+- Static call checks for variables that are known functions.
+- A clear compatibility rule for `nil`.
 
 Likely touch points:
-
-- `src/IRCompiler.cpp`
-- `src/IRInterpreter.cpp`
-- variable environment representation
-- runtime-error golden fixtures
-- `README.md`
-- `docs/language-grammar.ebnf` if grammar wording changes
-
-Why this first: functions, closures, type checking, and block-local variables all depend on clear scope semantics.
-
-## Phase 2: Basic Type Checker — Implemented
-
-Status: implemented for explicit `let` annotations. Unannotated variables are still accepted without full inference.
-
-Start with these types:
-
-- `number`
-- `bool`
-- `string`
-- `nil` handling as a special initial simple case
-
-Suggested checks:
-
-- `let` initializer matches the annotation when present.
-- Assignment value matches the existing variable type.
-- Unary operators receive valid operand types.
-- Binary operators receive valid operand types.
-- `if` conditions have the intended condition type or truthiness rule.
-
-Likely new files:
 
 - `include/TypeChecker.hpp`
 - `src/TypeChecker.cpp`
+- `include/Ast.hpp` and `src/Ast.cpp` if type syntax grows new AST nodes
+- `include/Parser.hpp` and `src/Parser.cpp` for user-visible type syntax
+- type-error golden fixtures
+- `README.md`
+- `docs/language-grammar.ebnf`
 
-Likely test additions:
+Recommended first slice: infer simple unannotated `let` types and preserve those types through assignment checks without introducing new type annotation syntax.
 
-- successful typed declarations
-- assignment type mismatch
-- invalid unary/binary operands
-- invalid condition type, if strict boolean conditions are chosen
+## Phase 10: Array Mutation and Collection Builtins
 
-Important design choice: decide whether type errors get a new golden fixture category or reuse an existing compile-error path.
+Goal: make arrays useful beyond read-only literals and indexing.
 
-## Phase 3: Logical Operators — Implemented
+Suggested features:
 
-Status: implemented. The language supports `&&` and `||` short-circuit expressions using existing truthiness rules and returning the selected operand value.
-
-Goal: add common boolean/control-flow expression operators.
-
-Suggested syntax:
-
-```text
-a && b
-a || b
-```
-
-Suggested semantics:
-
-- `&&` and `||` short-circuit.
-- `||` has lower precedence than `&&`.
-- `&&` has lower precedence than equality.
-- Result value follows the language's chosen truthiness/value rule.
+- `len(xs)` for arrays and strings, if string length should be included.
+- Index assignment: `xs[i] = value`.
+- `push(xs, value)` and possibly `pop(xs)` after choosing mutable array semantics.
+- Runtime checks for non-array values, invalid indexes, and bounds.
+- Static checks for known non-array values and known invalid index types.
 
 Likely touch points:
 
-- lexer keywords
-- parser precedence methods
-- AST expression node or desugared lowering strategy
-- IR jump lowering
-- interpreter execution
-- AST/IR/run golden fixtures
-- parse-error fixtures for malformed logical expressions
-
-## Phase 4: While Loops — Implemented
-
-Status: implemented. The language supports block-bodied `while` loops with truthy conditions. `break` and `continue` are not implemented yet.
-
-Goal: support basic repeated control flow.
-
-Suggested syntax:
-
-```text
-while condition {
-  statement*
-}
-```
-
-Suggested semantics:
-
-- Evaluate condition before each iteration.
-- Execute body while condition is truthy or boolean-true, depending on the chosen condition rule.
-- Loop body uses the lexical scope behavior from Phase 1.
-
-Likely touch points:
-
-- lexer keyword: `while`
-- parser statement handling
-- `WhileStmt` AST node and printing
-- IR backward jump support, if not already sufficient
-- interpreter control flow through IR
-- grammar and README docs
-- golden tests for zero iterations, multiple iterations, and nested control flow
-
-## Phase 5: Diagnostic Cleanup — Implemented
-
-Status: implemented. Errors now use a shared diagnostic format with `Lex`, `Parse`, `Type`, `Compile`, and `Runtime` categories. Front-end diagnostics include `line:column` locations when available; snippets, carets, and multi-error recovery remain future improvements.
-
-Goal: make errors more compiler-like and easier to test.
-
-Suggested improvements:
-
-- Introduce a common diagnostic representation.
-- Preserve source line and column information consistently.
-- Distinguish parse, type, compile, and runtime errors clearly.
-- Make golden error output stable.
-- Consider source snippets after the core diagnostic shape is stable.
-
-Likely touch points:
-
-- `ParseError`
-- `IRCompileError`
-- `IRRuntimeError`
-- future `TypeError` or diagnostic type
-- `src/main.cpp`
-- parse/type/runtime error golden fixtures
-
-This phase can happen before or after the basic type checker. Doing it before type checking may reduce rework.
-
-## Phase 6: Functions
-
-Goal: add reusable code and call frames.
+- assignment target parsing and AST representation
+- `Value` array representation if arrays become mutable
+- IR operations for index assignment or builtin calls
+- IR interpreter and bytecode VM behavior
+- runtime-error and type-error fixtures
+- success fixtures with `run.out` and `run_bytecode.out`
 
 Recommended split:
 
-### Phase 6A: Function Declarations and Calls — Implemented
+- Phase 10A: `len` builtin as a small usability slice.
+- Phase 10B: index assignment.
+- Phase 10C: `push` / `pop` mutation helpers.
 
-Status: implemented. The language supports named functions, calls, explicit `return`, bare `return;`, implicit `nil` returns, and recursion. This phase originally excluded closures; closure support was added in Phase 6B.
+## Phase 11: Loop Control and For Loops
 
-Suggested syntax:
-
-```text
-fun add(a, b) {
-  return a + b;
-}
-
-print add(1, 2);
-```
+Goal: make iteration practical and structured.
 
 Suggested features:
 
-- function declaration statement
-- call expression
-- parameters and arguments
-- `return` statement
-- function values
-- runtime call frames
-
-### Phase 6B: Closures — Implemented
-
-Status: implemented. Nested `fun` declarations capture enclosing local variables by reference. Captured variables stay alive through shared runtime cells, and closure reads/assignments observe the same cell.
-
-### Phase 6C: Function Expressions / Lambdas — Implemented
-
-Status: implemented. Anonymous function expressions use `fun (parameter*) { declaration* }`. They produce ordinary function values, support `return`, and reuse the existing by-reference closure capture model. Expression-body lambdas and function type annotations remain future work.
-
-## Phase 7: Arrays and Indexing — Implemented
-
-Status: implemented. The language supports array literals, mixed element values, read-only indexing, chained indexing/calls, and runtime errors for invalid index operations. Array mutation, `push`, and `len` remain future work.
-
-Suggested syntax:
-
-```text
-let xs = [1, 2, 3];
-print xs[0];
-```
-
-Suggested features:
-
-- array literals
-- index expressions
-- bounds checking
-- runtime errors for invalid index types or out-of-range access
-- optional later mutation syntax
+- `break;` exits the nearest loop.
+- `continue;` starts the next nearest loop iteration.
+- Type errors for `break` and `continue` outside loops.
+- A later `for` form after array iteration and mutation semantics are clearer.
 
 Likely touch points:
 
-- lexer tokens: brackets and comma
-- parser expression grammar
-- AST nodes
-- `Value` representation
-- IR operations or interpreter support
-- type checker rules after Phase 2
-- golden tests
+- `include/Token.hpp` and `src/Lexer.cpp` for new keywords.
+- `include/Ast.hpp` and `src/Ast.cpp` for break/continue statements.
+- `include/Parser.hpp` and `src/Parser.cpp` for statement parsing.
+- `src/TypeChecker.cpp` for loop-depth validation.
+- IR control-flow lowering and bytecode parity.
+- parse/type/run golden fixtures.
 
-## Phase 8: Bytecode VM or Backend Expansion
+Recommended split:
 
-### Phase 8A: Bytecode VM — Implemented
+- Phase 11A: `break` / `continue` for existing `while` loops.
+- Phase 11B: `for` loop syntax and lowering.
 
-Status: implemented. The compiler now has a parallel register-based bytecode backend. `--bytecode` prints lowered bytecode, and `--run-bytecode` executes it through the bytecode VM while preserving the existing `--ir` and `--run` paths.
+## Phase 12: Records / Structs
 
-The bytecode VM currently reuses the existing runtime `Value` representation. It includes VM heap and VM thread/frame boundaries and provides initial extension points for future GC, task scheduling, and JIT work.
+Goal: add named fields and simple aggregate data.
 
-Future Phase 8 follow-ups:
+Possible approaches:
 
-- GC: replace VM heap internals with tracing collection and explicit root scanning.
-- Task scheduling: make VM threads schedulable with instruction budgets, yield points, and blocked states.
-- JIT: compile hot `BytecodeFunction` units to native code using bytecode-level metadata.
+- Record literals first: `{ name: "Ada", age: 36 }`.
+- Field access: `person.name`.
+- Field assignment after mutation rules are clear: `person.age = 37`.
+- Named structs later: `struct Person { name: string, age: number }`.
+
+Keep methods, inheritance, and protocols out of the first records slice.
+
+Likely touch points:
+
+- lexer/parser support for field syntax and dot access
+- AST expression nodes for record literals and field access
+- runtime value representation for records
+- type checker field tracking
+- IR and bytecode operations for field reads/writes
+- docs and golden fixtures
+
+## Phase 13: Standard Builtins
+
+Goal: provide a small standard environment without introducing modules yet.
+
+Suggested builtins:
+
+- Numeric helpers: `floor`, `ceil`, `sqrt`.
+- String helpers: `str`, `substr`, `charAt`.
+- Collection helpers: `len`, `push`, `pop` if not completed in Phase 10.
+- Debug helper: `typeOf` if useful for mixed runtime values.
+
+Each builtin should define behavior for both the IR interpreter and bytecode VM paths, preferably through shared runtime machinery so semantics stay aligned.
+
+## Phase 14: Modules / Imports
+
+Goal: allow programs to be split across files.
+
+Suggested features:
+
+- `import "path";` or `import name from "path";` after selecting a module model.
+- Deterministic path resolution relative to the importing file.
+- Clear cycle handling.
+- CLI behavior for multi-file source loading.
+- Golden fixtures that include secondary source files.
+
+Why late: modules affect diagnostics, CLI source management, test layout, and name resolution across compilation units.
+
+## Phase 15: Language Polish and Diagnostics
+
+Goal: improve ergonomics after the core language grows.
+
+Suggested features:
+
+- Source snippets and carets for front-end diagnostics.
+- More parse recovery and multi-error reporting.
+- Clear handling for lambda expression statements that begin with `fun`, either by documenting parenthesized form or changing parser disambiguation.
+- Compound assignment operators such as `+=`, after assignment targets are generalized.
+- Comments or doc comments if they are still missing.
+
+## Deferred Backend Track
+
+The bytecode VM already exists and provides extension points for backend research. These directions are deferred while the active roadmap focuses on language features:
+
+- GC groundwork: VM heap ownership, root scanning, and value reachability.
+- Task scheduling: schedulable VM threads, instruction budgets, yield points, and blocked states.
+- JIT exploration: bytecode metadata, hot function detection, and native-code experiments.
+
+Before starting any backend track, create a dedicated backend design spec and implementation plan rather than mixing it into this language roadmap.
 
 ## Near-Term Recommendation
 
-Phases 1 through 8A are implemented. For backend continuity, start with Phase 8B GC groundwork: define VM heap ownership, root scanning, and value reachability before adding more runtime complexity. Other reasonable next slices are Phase 8C task scheduling groundwork, Phase 8D JIT exploration, or array enhancements such as mutation and length operations.
+Start with **Phase 9: Richer Type System** if the priority is stronger foundations for records, mutable arrays, and builtin APIs.
+
+Choose **Phase 10A: `len` builtin** instead if the priority is a small, immediately visible usability improvement before deeper type-system work.
