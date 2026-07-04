@@ -50,14 +50,11 @@ def discover_golden_cases(root: Path) -> list[Path]:
         path for path in root.iterdir()
         if path.is_dir()
         and (path / "input.cd").is_file()
-        and ((path / "run_bytecode.out").is_file() or (path / "run.out").is_file())
+        and (path / "run.out").is_file()
     )
 
 
 def expected_output(case_dir: Path) -> str:
-    bytecode_expected = case_dir / "run_bytecode.out"
-    if bytecode_expected.is_file():
-        return read_text(bytecode_expected)
     return read_text(case_dir / "run.out")
 
 
