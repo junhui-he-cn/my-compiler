@@ -188,7 +188,7 @@ Suggested features:
 
 ## Deferred Backend Track
 
-The C++ bytecode VM already exists and remains available for current behavior, but it is frozen for backend research. Future backend work targets the Rust `compiler-design-vm` project and planned `.cdbc` bytecode artifacts:
+The old C++ bytecode VM has been removed. Future backend work targets the Rust `compiler-design-vm` project and `.cdbc` bytecode artifacts:
 
 - Phase 0: rename to Compiler Design, scaffold `vm-rs/`, and document the planned `.cdbc` text format. Implemented.
 - Phase 1: add a C++ `.cdbc` bytecode artifact emitter. Implemented.
@@ -202,4 +202,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 Start with **Phase 9: Richer Type System** if the priority is stronger foundations for records, mutable arrays, and builtin APIs.
 
-Choose **Phase 10A: `len` builtin** instead if the priority is a small, immediately visible usability improvement before deeper type-system work.
+Choose **Phase 10C: `push` / `pop` mutation helpers** instead if the priority is a small, immediately visible collection usability improvement before deeper type-system work.
