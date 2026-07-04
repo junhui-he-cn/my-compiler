@@ -1,0 +1,23 @@
+let n = 1;
+n = 2;
+print n;
+
+let s = "hi";
+s = "bye";
+print s;
+
+let b = true;
+b = false;
+print b;
+
+let xs = [1, "two"];
+xs = [];
+print xs;
+
+let f = fun () {
+  return 1;
+};
+f = fun () {
+  return 2;
+};
+print f();
