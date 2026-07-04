@@ -1,0 +1,11 @@
+fun maybe(flag) {
+  if flag {
+    return 1;
+  } else {
+    return "x";
+  }
+}
+
+let v = maybe(true);
+v = false;
+print v;
