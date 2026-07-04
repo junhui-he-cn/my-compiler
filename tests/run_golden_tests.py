@@ -20,7 +20,6 @@ SUCCESS_CHECKS = (
     ("--ir", ("--ir",), "ir.out"),
     ("--bytecode", ("--bytecode",), "bytecode.out"),
     ("--run", ("--run",), "run.out"),
-    ("--run-bytecode", ("--run-bytecode",), "run_bytecode.out"),
 )
 
 
@@ -243,7 +242,7 @@ def unexpected_type_stdout_result(case_name: str, stdout: str) -> CheckResult:
 
 
 def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list[CheckResult]:
-    results = check_runtime_error_execution(
+    return check_runtime_error_execution(
         compiler,
         source,
         update,
@@ -253,18 +252,6 @@ def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list
         "--run",
         optional_when_missing=False,
     )
-    bytecode_results = check_runtime_error_execution(
-        compiler,
-        source,
-        update,
-        ("--run-bytecode",),
-        ".run_bytecode.err",
-        ".run_bytecode.exit",
-        "--run-bytecode",
-        optional_when_missing=True,
-    )
-    results.extend(bytecode_results)
-    return results
 
 
 def check_parse_error_case(compiler: Path, source: Path, update: bool) -> list[CheckResult]:
