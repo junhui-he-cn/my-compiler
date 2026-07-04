@@ -299,8 +299,28 @@ ExprPtr Parser::arrayLiteral()
     return std::make_unique<ArrayExpr>(std::move(elements));
 }
 
+ExprPtr Parser::functionExpression()
+{
+    Token keyword = previous();
+    consume(TokenType::LeftParen, "expected `(` after `fun`");
+
+    std::vector<Token> parameters;
+    if (!check(TokenType::RightParen)) {
+        do {
+            parameters.push_back(consume(TokenType::Identifier, "expected parameter name"));
+        } while (match(TokenType::Comma));
+    }
+
+    consume(TokenType::RightParen, "expected `)` after function parameters");
+    consume(TokenType::LeftBrace, "expected `{` before function body");
+    return std::make_unique<FunctionExpr>(std::move(keyword), std::move(parameters), blockStatements());
+}
+
 ExprPtr Parser::primary()
 {
+    if (match(TokenType::Fun)) {
+        return functionExpression();
+    }
     if (match(TokenType::False)) {
         return std::make_unique<LiteralExpr>("false");
     }

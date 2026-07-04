@@ -94,6 +94,24 @@ const std::vector<std::string>& ResolvedNames::parameterNames(const FunctionStmt
     return found->second;
 }
 
+const std::string& ResolvedNames::functionName(const FunctionExpr& expression) const
+{
+    const auto found = functionExpressionNames_.find(&expression);
+    if (found == functionExpressionNames_.end()) {
+        throw std::logic_error("missing resolved function expression name");
+    }
+    return found->second;
+}
+
+const std::vector<std::string>& ResolvedNames::parameterNames(const FunctionExpr& expression) const
+{
+    const auto found = functionExpressionParameterNames_.find(&expression);
+    if (found == functionExpressionParameterNames_.end()) {
+        throw std::logic_error("missing resolved function expression parameter names");
+    }
+    return found->second;
+}
+
 const std::string& ResolvedNames::variableName(const VariableExpr& expression) const
 {
     const auto found = variableNames_.find(&expression);
@@ -117,6 +135,8 @@ void ResolvedNames::clear()
     letNames_.clear();
     functionNames_.clear();
     parameterNames_.clear();
+    functionExpressionNames_.clear();
+    functionExpressionParameterNames_.clear();
     variableNames_.clear();
     assignmentNames_.clear();
 }
@@ -134,6 +154,16 @@ void ResolvedNames::recordFunction(const FunctionStmt& statement, std::string na
 void ResolvedNames::recordParameters(const FunctionStmt& statement, std::vector<std::string> names)
 {
     parameterNames_.emplace(&statement, std::move(names));
+}
+
+void ResolvedNames::recordFunction(const FunctionExpr& expression, std::string name)
+{
+    functionExpressionNames_.emplace(&expression, std::move(name));
+}
+
+void ResolvedNames::recordParameters(const FunctionExpr& expression, std::vector<std::string> names)
+{
+    functionExpressionParameterNames_.emplace(&expression, std::move(names));
 }
 
 void ResolvedNames::recordVariable(const VariableExpr& expression, std::string name)
@@ -318,6 +348,30 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     endScope();
 }
 
+StaticType TypeChecker::checkFunctionExpression(const FunctionExpr& expression)
+{
+    resolvedNames_.recordFunction(expression, "<lambda>");
+
+    beginScope();
+    ++functionDepth_;
+
+    std::vector<std::string> parameterNames;
+    for (const Token& parameter : expression.parameters) {
+        Binding parameterBinding = declareVariable(parameter, StaticType::Unknown);
+        parameterNames.push_back(parameterBinding.resolvedName);
+    }
+    resolvedNames_.recordParameters(expression, std::move(parameterNames));
+
+    for (const auto& child : expression.body) {
+        checkStatement(*child);
+    }
+
+    --functionDepth_;
+    endScope();
+
+    return StaticType::Function;
+}
+
 StaticType TypeChecker::checkLetInitializer(const LetStmt& statement)
 {
     const StaticType initializer = checkExpression(*statement.initializer);
@@ -348,6 +402,10 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
             return StaticType::String;
         }
         return StaticType::Number;
+    }
+
+    if (const auto* function = dynamic_cast<const FunctionExpr*>(&expression)) {
+        return checkFunctionExpression(*function);
     }
 
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {

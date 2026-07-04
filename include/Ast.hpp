@@ -17,6 +17,9 @@ struct Expr {
 
 using ExprPtr = std::unique_ptr<Expr>;
 
+struct Stmt;
+using StmtPtr = std::unique_ptr<Stmt>;
+
 struct LiteralExpr final : Expr {
     explicit LiteralExpr(std::string value);
     void print(std::ostream& out) const override;
@@ -97,12 +100,19 @@ struct IndexExpr final : Expr {
     ExprPtr index;
 };
 
+struct FunctionExpr final : Expr {
+    FunctionExpr(Token keyword, std::vector<Token> parameters, std::vector<StmtPtr> body);
+    void print(std::ostream& out) const override;
+
+    Token keyword;
+    std::vector<Token> parameters;
+    std::vector<StmtPtr> body;
+};
+
 struct Stmt {
     virtual ~Stmt() = default;
     virtual void print(std::ostream& out, int indent) const = 0;
 };
-
-using StmtPtr = std::unique_ptr<Stmt>;
 
 struct LetStmt final : Stmt {
     LetStmt(Token name, std::optional<Token> typeName, ExprPtr initializer);

@@ -21,6 +21,41 @@ void writeExpr(std::ostream& out, const ExprPtr& expr)
     }
 }
 
+void writeInlineStmt(std::ostream& out, const Stmt& stmt)
+{
+    if (const auto* returnStmt = dynamic_cast<const ReturnStmt*>(&stmt)) {
+        out << "(return ";
+        writeExpr(out, returnStmt->value);
+        out << ')';
+        return;
+    }
+
+    if (const auto* expressionStmt = dynamic_cast<const ExpressionStmt*>(&stmt)) {
+        writeExpr(out, expressionStmt->expression);
+        return;
+    }
+
+    if (const auto* printStmt = dynamic_cast<const PrintStmt*>(&stmt)) {
+        out << "(print ";
+        writeExpr(out, printStmt->expression);
+        out << ')';
+        return;
+    }
+
+    if (const auto* letStmt = dynamic_cast<const LetStmt*>(&stmt)) {
+        out << "(let " << letStmt->name.lexeme;
+        if (letStmt->typeName) {
+            out << ": " << letStmt->typeName->lexeme;
+        }
+        out << " = ";
+        writeExpr(out, letStmt->initializer);
+        out << ')';
+        return;
+    }
+
+    out << "(stmt)";
+}
+
 } // namespace
 
 LiteralExpr::LiteralExpr(std::string value)
@@ -159,6 +194,30 @@ void IndexExpr::print(std::ostream& out) const
     writeExpr(out, collection);
     out << ' ';
     writeExpr(out, index);
+    out << ')';
+}
+
+FunctionExpr::FunctionExpr(Token keyword, std::vector<Token> parameters, std::vector<StmtPtr> body)
+    : keyword(std::move(keyword))
+    , parameters(std::move(parameters))
+    , body(std::move(body))
+{
+}
+
+void FunctionExpr::print(std::ostream& out) const
+{
+    out << "(fun (";
+    for (std::size_t i = 0; i < parameters.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        out << parameters[i].lexeme;
+    }
+    out << ')';
+    for (const auto& statement : body) {
+        out << ' ';
+        writeInlineStmt(out, *statement);
+    }
     out << ')';
 }
 

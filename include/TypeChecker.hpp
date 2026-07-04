@@ -31,6 +31,8 @@ public:
     const std::string& letName(const LetStmt& statement) const;
     const std::string& functionName(const FunctionStmt& statement) const;
     const std::vector<std::string>& parameterNames(const FunctionStmt& statement) const;
+    const std::string& functionName(const FunctionExpr& expression) const;
+    const std::vector<std::string>& parameterNames(const FunctionExpr& expression) const;
     const std::string& variableName(const VariableExpr& expression) const;
     const std::string& assignmentName(const AssignExpr& expression) const;
 
@@ -41,12 +43,16 @@ private:
     void recordLet(const LetStmt& statement, std::string name);
     void recordFunction(const FunctionStmt& statement, std::string name);
     void recordParameters(const FunctionStmt& statement, std::vector<std::string> names);
+    void recordFunction(const FunctionExpr& expression, std::string name);
+    void recordParameters(const FunctionExpr& expression, std::vector<std::string> names);
     void recordVariable(const VariableExpr& expression, std::string name);
     void recordAssignment(const AssignExpr& expression, std::string name);
 
     std::unordered_map<const LetStmt*, std::string> letNames_;
     std::unordered_map<const FunctionStmt*, std::string> functionNames_;
     std::unordered_map<const FunctionStmt*, std::vector<std::string>> parameterNames_;
+    std::unordered_map<const FunctionExpr*, std::string> functionExpressionNames_;
+    std::unordered_map<const FunctionExpr*, std::vector<std::string>> functionExpressionParameterNames_;
     std::unordered_map<const VariableExpr*, std::string> variableNames_;
     std::unordered_map<const AssignExpr*, std::string> assignmentNames_;
 };
@@ -79,6 +85,7 @@ private:
     void checkStatement(const Stmt& statement);
     void checkFunction(const FunctionStmt& statement);
     StaticType checkExpression(const Expr& expression);
+    StaticType checkFunctionExpression(const FunctionExpr& expression);
     StaticType checkCall(const CallExpr& expression);
     StaticType checkIndex(const IndexExpr& expression);
     StaticType checkLetInitializer(const LetStmt& statement);

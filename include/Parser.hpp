@@ -46,6 +46,7 @@ private:
     ExprPtr finishCall(ExprPtr callee);
     ExprPtr finishIndex(ExprPtr collection);
     ExprPtr arrayLiteral();
+    ExprPtr functionExpression();
     ExprPtr primary();
 
     bool match(TokenType type);
