@@ -1,0 +1,4 @@
+fun id(x) {
+  return x;
+}
+id(1)[0] = 2;
