@@ -33,6 +33,7 @@ bool isBinary(BytecodeOp op)
     case BytecodeOp::AssignVar:
     case BytecodeOp::Call:
     case BytecodeOp::Index:
+    case BytecodeOp::AssignIndex:
     case BytecodeOp::Len:
     case BytecodeOp::Print:
     case BytecodeOp::Return:
@@ -155,12 +156,15 @@ void printInstruction(
             }
             out << ")";
         }
-    } else if (instruction.op == BytecodeOp::Index) {
+    } else if (instruction.op == BytecodeOp::Index || instruction.op == BytecodeOp::AssignIndex) {
         if (instruction.left) {
             out << " " << *instruction.left;
         }
         if (instruction.right) {
             out << ", " << *instruction.right;
+        }
+        if (instruction.op == BytecodeOp::AssignIndex && !instruction.arguments.empty()) {
+            out << ", " << instruction.arguments.front();
         }
     } else if (instruction.op == BytecodeOp::Len) {
         if (instruction.left) {
@@ -290,6 +294,8 @@ std::string bytecodeOpName(BytecodeOp op)
         return "call";
     case BytecodeOp::Index:
         return "index";
+    case BytecodeOp::AssignIndex:
+        return "assign_index";
     case BytecodeOp::Len:
         return "len";
     case BytecodeOp::Print:

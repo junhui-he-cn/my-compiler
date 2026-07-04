@@ -59,6 +59,8 @@ BytecodeOp lowerOp(IROp op)
         return BytecodeOp::Call;
     case IROp::Index:
         return BytecodeOp::Index;
+    case IROp::AssignIndex:
+        return BytecodeOp::AssignIndex;
     case IROp::Len:
         return BytecodeOp::Len;
     case IROp::Print:

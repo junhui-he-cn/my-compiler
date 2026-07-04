@@ -177,6 +177,11 @@ BytecodeVM::ExecutionResult BytecodeVM::executeInstructions(
         case BytecodeOp::Index:
             writeRegister(frame, readDest(instruction), executeIndex(frame, readLeft(instruction), readRight(instruction)));
             break;
+        case BytecodeOp::AssignIndex:
+            writeRegister(frame,
+                readDest(instruction),
+                executeAssignIndex(frame, readLeft(instruction), readRight(instruction), instruction.arguments.at(0)));
+            break;
         case BytecodeOp::Len:
             writeRegister(frame, readDest(instruction), executeLen(frame, readLeft(instruction)));
             break;
@@ -504,6 +509,38 @@ Value BytecodeVM::executeIndex(const VMFrame& frame, BytecodeRegister collection
     }
 
     return elements[position];
+}
+
+Value BytecodeVM::executeAssignIndex(const VMFrame& frame, BytecodeRegister collection, BytecodeRegister index, BytecodeRegister value)
+{
+    const Value& collectionValue = readRegister(frame, collection);
+    if (collectionValue.type() != Value::Type::Array) {
+        throw BytecodeRuntimeError("can only assign array elements");
+    }
+
+    const Value& indexValue = readRegister(frame, index);
+    if (indexValue.type() != Value::Type::Number) {
+        throw BytecodeRuntimeError("array index must be number");
+    }
+
+    const double numericIndex = indexValue.asNumber();
+    const double integerIndex = std::trunc(numericIndex);
+    if (integerIndex != numericIndex) {
+        throw BytecodeRuntimeError("array index must be integer");
+    }
+    if (integerIndex < 0) {
+        throw BytecodeRuntimeError("array index out of range");
+    }
+
+    auto& elements = *collectionValue.asArray().elements;
+    const auto position = static_cast<std::size_t>(integerIndex);
+    if (position >= elements.size()) {
+        throw BytecodeRuntimeError("array index out of range");
+    }
+
+    Value assignedValue = readRegister(frame, value);
+    elements[position] = assignedValue;
+    return assignedValue;
 }
 
 Value BytecodeVM::executeLen(const VMFrame& frame, BytecodeRegister value)
