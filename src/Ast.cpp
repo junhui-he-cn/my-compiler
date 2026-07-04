@@ -21,6 +21,18 @@ void writeExpr(std::ostream& out, const ExprPtr& expr)
     }
 }
 
+void writeParameterList(std::ostream& out, const std::vector<Token>& parameters)
+{
+    out << '(';
+    for (std::size_t i = 0; i < parameters.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        out << parameters[i].lexeme;
+    }
+    out << ')';
+}
+
 void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 {
     if (const auto* returnStmt = dynamic_cast<const ReturnStmt*>(&stmt)) {
@@ -31,7 +43,9 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
     }
 
     if (const auto* expressionStmt = dynamic_cast<const ExpressionStmt*>(&stmt)) {
+        out << "(expr ";
         writeExpr(out, expressionStmt->expression);
+        out << ')';
         return;
     }
 
@@ -49,6 +63,49 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         }
         out << " = ";
         writeExpr(out, letStmt->initializer);
+        out << ')';
+        return;
+    }
+
+    if (const auto* blockStmt = dynamic_cast<const BlockStmt*>(&stmt)) {
+        out << "(block";
+        for (const auto& child : blockStmt->statements) {
+            out << ' ';
+            writeInlineStmt(out, *child);
+        }
+        out << ')';
+        return;
+    }
+
+    if (const auto* ifStmt = dynamic_cast<const IfStmt*>(&stmt)) {
+        out << "(if ";
+        writeExpr(out, ifStmt->condition);
+        out << ' ';
+        writeInlineStmt(out, *ifStmt->thenBranch);
+        if (ifStmt->elseBranch) {
+            out << ' ';
+            writeInlineStmt(out, *ifStmt->elseBranch);
+        }
+        out << ')';
+        return;
+    }
+
+    if (const auto* whileStmt = dynamic_cast<const WhileStmt*>(&stmt)) {
+        out << "(while ";
+        writeExpr(out, whileStmt->condition);
+        out << ' ';
+        writeInlineStmt(out, *whileStmt->body);
+        out << ')';
+        return;
+    }
+
+    if (const auto* functionStmt = dynamic_cast<const FunctionStmt*>(&stmt)) {
+        out << "(fun " << functionStmt->name.lexeme << ' ';
+        writeParameterList(out, functionStmt->parameters);
+        for (const auto& child : functionStmt->body) {
+            out << ' ';
+            writeInlineStmt(out, *child);
+        }
         out << ')';
         return;
     }
@@ -206,14 +263,8 @@ FunctionExpr::FunctionExpr(Token keyword, std::vector<Token> parameters, std::ve
 
 void FunctionExpr::print(std::ostream& out) const
 {
-    out << "(fun (";
-    for (std::size_t i = 0; i < parameters.size(); ++i) {
-        if (i != 0) {
-            out << ", ";
-        }
-        out << parameters[i].lexeme;
-    }
-    out << ')';
+    out << "(fun ";
+    writeParameterList(out, parameters);
     for (const auto& statement : body) {
         out << ' ';
         writeInlineStmt(out, *statement);
