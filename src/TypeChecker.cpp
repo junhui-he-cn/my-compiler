@@ -411,7 +411,10 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
 
     std::vector<std::string> parameterNames;
     for (const Parameter& parameter : statement.parameters) {
-        Binding parameterBinding = declareVariable(parameter.name, StaticType::Unknown);
+        const StaticType parameterType = parameter.typeName
+            ? resolveAnnotation(*parameter.typeName)
+            : StaticType::Unknown;
+        Binding parameterBinding = declareVariable(parameter.name, parameterType);
         parameterNames.push_back(parameterBinding.resolvedName);
     }
     resolvedNames_.recordParameters(statement, std::move(parameterNames));
@@ -440,7 +443,10 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
 
     std::vector<std::string> parameterNames;
     for (const Parameter& parameter : expression.parameters) {
-        Binding parameterBinding = declareVariable(parameter.name, StaticType::Unknown);
+        const StaticType parameterType = parameter.typeName
+            ? resolveAnnotation(*parameter.typeName)
+            : StaticType::Unknown;
+        Binding parameterBinding = declareVariable(parameter.name, parameterType);
         parameterNames.push_back(parameterBinding.resolvedName);
     }
     resolvedNames_.recordParameters(expression, std::move(parameterNames));
