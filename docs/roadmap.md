@@ -188,9 +188,9 @@ Suggested features:
 
 The C++ bytecode VM already exists and remains available for current behavior, but it is frozen for backend research. Future backend work targets the Rust `compiler-design-vm` project and planned `.cdbc` bytecode artifacts:
 
-- Phase 0: rename to Compiler Design, scaffold `vm-rs/`, and document the planned `.cdbc` text format.
-- Phase 1: add a C++ `.cdbc` bytecode artifact emitter.
-- Phase 2: add Rust VM `.cdbc` parser and dump support.
+- Phase 0: rename to Compiler Design, scaffold `vm-rs/`, and document the planned `.cdbc` text format. Implemented.
+- Phase 1: add a C++ `.cdbc` bytecode artifact emitter. Implemented.
+- Phase 2: add Rust VM `.cdbc` parser and dump support. Implemented.
 - Phase 3: add Rust VM executor parity for current bytecode semantics.
 - Phase 4: explore GC heap ownership/root scanning, task scheduling, and JIT metadata/hot paths.
 

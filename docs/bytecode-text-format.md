@@ -1,14 +1,19 @@
 # Compiler Design ByteCode Text Format
 
-This document describes the planned stable text artifact format for Compiler Design bytecode files.
+This document describes the stable text artifact format for Compiler Design bytecode files.
 
 The file extension is `.cdbc`, short for Compiler Design ByteCode.
 
-This format is not the same as the current `--bytecode` debug print. The debug print is for humans inspecting compiler output. The `.cdbc` format is a future compiler/VM contract that must be stable, versioned, and parseable by the Rust VM.
+This format is not the same as the current `--bytecode` debug print. The debug print is for humans inspecting compiler output. The `.cdbc` format is the compiler/VM contract: stable, versioned, and parseable by the Rust VM.
 
 ## Phase Status
 
-Phase 0 documents the format direction only. The C++ compiler does not emit `.cdbc` files yet, and the Rust VM does not parse or execute them yet.
+This phase implements the text artifact format at the compiler/VM boundary. The C++ compiler can emit `.cdbc` files with `--emit-bytecode`, and the Rust VM can parse and canonicalize them with `dump`. Rust bytecode execution is still a future phase.
+
+```sh
+compiler_design --emit-bytecode output.cdbc input.cd
+compiler-design-vm dump output.cdbc
+```
 
 ## Header
 
@@ -46,7 +51,7 @@ function f0 name="add_one" arity=1 registers=4:
   return r2
 ```
 
-The exact grammar will be finalized when the C++ emitter and Rust parser are implemented. The section names and reference prefixes are reserved by this plan.
+The section names and reference prefixes are part of the canonical text format. Function `param` lines, when present, appear before instructions in a function section.
 
 ## Value Encoding
 
@@ -74,7 +79,7 @@ Indexes are zero-based decimal integers.
 
 ## Opcode Names
 
-The planned opcode names are stable snake-case names:
+The opcode names are stable snake-case names:
 
 ```text
 constant
@@ -107,8 +112,8 @@ jump_if_false
 jump_if_true
 ```
 
-New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/executor together.
+New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter together. When Rust execution is implemented, update the executor at the same time.
 
-## Non-Goals for Phase 0
+## Non-Goals for This Phase
 
-Phase 0 does not define a complete parser grammar, binary encoding, verifier, execution semantics, GC layout, task scheduler, or JIT metadata format. Those belong to later Rust VM phases.
+This phase does not define binary encoding, verifier, Rust execution semantics, GC layout, task scheduler, or JIT metadata format. Those belong to later Rust VM phases.

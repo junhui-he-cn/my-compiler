@@ -23,6 +23,7 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
 - `include/IRCompiler.hpp`, `src/IRCompiler.cpp`: AST-to-IR lowering.
 - `include/IRInterpreter.hpp`, `src/IRInterpreter.cpp`: runtime execution of IR and runtime error behavior.
 - `include/Bytecode.hpp`, `src/Bytecode.cpp`: bytecode opcodes, program/function containers, and bytecode printer output.
+- `include/BytecodeTextEmitter.hpp`, `src/BytecodeTextEmitter.cpp`: stable `.cdbc` text artifact emission for the Rust VM boundary.
 - `include/BytecodeCompiler.hpp`, `src/BytecodeCompiler.cpp`: IR-to-bytecode lowering.
 - `include/BytecodeVM.hpp`, `src/BytecodeVM.cpp`: bytecode VM execution, VM heap boundary, and VM thread/frame state.
 - `include/Value.hpp`, `src/Value.cpp`: runtime value representation and formatting.
@@ -42,6 +43,8 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 python3 tests/run_golden_tests.py ./build/compiler_design
 python3 tests/run_golden_tests_selftest.py
+python3 tests/run_bytecode_artifact_tests.py ./build/compiler_design vm-rs
+cargo test --manifest-path vm-rs/Cargo.toml
 rm -rf tests/__pycache__
 ```
 
@@ -84,6 +87,8 @@ When syntax affects runtime behavior or code generation:
 Use `StoreVar`-style operations for declarations/initialization and assignment-specific operations for updating existing bindings when the distinction matters.
 
 When IR behavior changes, update both the IR interpreter and the bytecode backend unless the change is intentionally IR-only. Bytecode lowering should preserve current IR semantics, and `--run-bytecode` should match `--run` for supported programs.
+
+When changing bytecode opcodes or artifact formatting, update `docs/bytecode-text-format.md`, the C++ `BytecodeTextEmitter`, Rust parser/formatter in `vm-rs/src/format.rs`, and `tests/bytecode_artifacts/` together.
 
 ## Golden Test Conventions
 
@@ -162,7 +167,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Reading or assigning an undefined variable is a type error before IR compilation.
 - Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
 - A parallel C++ bytecode backend lowers register IR to bytecode; `--run-bytecode` should match `--run` for supported programs, but this C++ VM is frozen for future backend research.
-- Future VM backend work targets the Rust `compiler-design-vm` project under `vm-rs/` and planned `.cdbc` artifacts.
+- Future VM backend work targets the Rust `compiler-design-vm` project under `vm-rs/` and `.cdbc` artifacts.
 - Arrays are mutable, immutable-length runtime values with mixed element types. Indexing validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown; `array[index] = value` mutates an existing element and evaluates to the assigned value.
 - The builtin `len(value)` returns array element counts or string byte lengths as a number. User bindings named `len` shadow the builtin; unknown argument types are checked at runtime.
 - Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Known function values carry arity and conservative inferred return types for static checks. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.

@@ -92,10 +92,20 @@ python3 tests/run_golden_tests.py ./build/compiler_design --update
 ./build/compiler_design --run examples/hello.cd
 ./build/compiler_design --bytecode examples/hello.cd
 ./build/compiler_design --run-bytecode examples/hello.cd
+./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
 ```
 
 `--run` executes the existing IR interpreter. `--run-bytecode` executes the newer bytecode VM. They are expected to match for implemented language features.
 
-Backend note: the current C++ bytecode VM is frozen as a reference backend. Future VM work will happen in the standalone Rust `compiler-design-vm` project under `vm-rs/`, using planned `.cdbc` bytecode artifacts. The `.cdbc` emitter and Rust VM executor are not implemented in Phase 0.
+Backend note: the current C++ bytecode VM is frozen as a reference backend. Future VM work will happen in the standalone Rust `compiler-design-vm` project under `vm-rs/`, using `.cdbc` bytecode artifacts.
+
+Bytecode artifacts can be emitted and inspected without executing them:
+
+```sh
+./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
+cargo run --manifest-path vm-rs/Cargo.toml -- dump program.cdbc
+```
+
+The Rust VM `dump` command parses `.cdbc` and reprints canonical text. Rust bytecode execution remains a future phase.
 
 If no file is provided, source is read from stdin.
