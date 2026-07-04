@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 use crate::bytecode::{Constant, FunctionBody, Instruction, Program};
+use crate::runtime::{new_cell, new_environment, Cell, SharedEnvironment};
 use crate::value::Value;
 use std::fmt;
 
@@ -24,18 +27,27 @@ impl fmt::Display for RuntimeError {
 struct Frame {
     ip: usize,
     registers: Vec<Value>,
+    locals: SharedEnvironment,
+    closure: SharedEnvironment,
+    is_main: bool,
 }
 
 pub struct VM<'a> {
     program: &'a Program,
+    globals: SharedEnvironment,
     output: String,
+    next_function_identity: usize,
+    next_array_identity: usize,
 }
 
 impl<'a> VM<'a> {
     pub fn new(program: &'a Program) -> Self {
         Self {
             program,
+            globals: new_environment(),
             output: String::new(),
+            next_function_identity: 1,
+            next_array_identity: 1,
         }
     }
 
@@ -43,6 +55,9 @@ impl<'a> VM<'a> {
         let mut frame = Frame {
             ip: 0,
             registers: vec![Value::Nil; self.program.main.registers],
+            locals: new_environment(),
+            closure: new_environment(),
+            is_main: true,
         };
         let main = FunctionBody {
             registers: self.program.main.registers,
@@ -69,6 +84,25 @@ impl<'a> VM<'a> {
                     let value = self.read_register(frame, *value)?;
                     self.output.push_str(&value.to_string());
                     self.output.push('\n');
+                }
+                Instruction::Move { dest, source } => {
+                    let value = self.read_register(frame, *source)?;
+                    self.write_register(frame, *dest, value)?;
+                }
+                Instruction::LoadVar { dest, name } => {
+                    let name = self.read_name(*name)?;
+                    let value = self.load_variable(frame, &name)?;
+                    self.write_register(frame, *dest, value)?;
+                }
+                Instruction::StoreVar { name, value } => {
+                    let name = self.read_name(*name)?;
+                    let value = self.read_register(frame, *value)?;
+                    self.store_variable(frame, name, value);
+                }
+                Instruction::AssignVar { name, value } => {
+                    let name = self.read_name(*name)?;
+                    let value = self.read_register(frame, *value)?;
+                    self.assign_variable(frame, &name, value)?;
                 }
                 Instruction::Negate { dest, value } => {
                     let input = self.expect_number(frame, *value, "negate")?;
@@ -133,6 +167,25 @@ impl<'a> VM<'a> {
                 Instruction::LessEqual { dest, left, right } => {
                     self.compare(frame, *dest, *left, *right, "less_equal", |l, r| l <= r)?
                 }
+                Instruction::Jump { target } => {
+                    self.validate_jump_target(*target, body.instructions.len())?;
+                    frame.ip = *target;
+                    continue;
+                }
+                Instruction::JumpIfFalse { condition, target } => {
+                    self.validate_jump_target(*target, body.instructions.len())?;
+                    if !self.read_register(frame, *condition)?.is_truthy() {
+                        frame.ip = *target;
+                        continue;
+                    }
+                }
+                Instruction::JumpIfTrue { condition, target } => {
+                    self.validate_jump_target(*target, body.instructions.len())?;
+                    if self.read_register(frame, *condition)?.is_truthy() {
+                        frame.ip = *target;
+                        continue;
+                    }
+                }
                 Instruction::Return { value } => {
                     return Ok(Some(self.read_register(frame, *value)?))
                 }
@@ -146,6 +199,61 @@ impl<'a> VM<'a> {
             frame.ip += 1;
         }
         Ok(None)
+    }
+
+    fn read_name(&self, index: usize) -> Result<String, RuntimeError> {
+        self.program
+            .names
+            .get(index)
+            .cloned()
+            .ok_or_else(|| RuntimeError::new("name index out of range"))
+    }
+
+    fn find_cell(&self, frame: &Frame, name: &str) -> Option<Cell> {
+        if let Some(cell) = frame.locals.borrow().get(name) {
+            return Some(cell.clone());
+        }
+        if let Some(cell) = frame.closure.borrow().get(name) {
+            return Some(cell.clone());
+        }
+        self.globals.borrow().get(name).cloned()
+    }
+
+    fn load_variable(&self, frame: &Frame, name: &str) -> Result<Value, RuntimeError> {
+        let cell = self
+            .find_cell(frame, name)
+            .ok_or_else(|| RuntimeError::new(format!("undefined variable `{}`", name)))?;
+        let value = cell.borrow().clone();
+        Ok(value)
+    }
+
+    fn store_variable(&self, frame: &mut Frame, name: String, value: Value) {
+        let cell = new_cell(value);
+        if frame.is_main {
+            self.globals.borrow_mut().insert(name, cell);
+        } else {
+            frame.locals.borrow_mut().insert(name, cell);
+        }
+    }
+
+    fn assign_variable(&self, frame: &Frame, name: &str, value: Value) -> Result<(), RuntimeError> {
+        let cell = self
+            .find_cell(frame, name)
+            .ok_or_else(|| RuntimeError::new(format!("undefined variable `{}`", name)))?;
+        *cell.borrow_mut() = value;
+        Ok(())
+    }
+
+    fn validate_jump_target(
+        &self,
+        target: usize,
+        instruction_count: usize,
+    ) -> Result<(), RuntimeError> {
+        if target > instruction_count {
+            Err(RuntimeError::new("jump target out of range"))
+        } else {
+            Ok(())
+        }
     }
 
     fn constant_value(&self, index: usize) -> Result<Value, RuntimeError> {
