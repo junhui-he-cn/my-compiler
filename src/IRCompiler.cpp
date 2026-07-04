@@ -154,6 +154,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return value;
     }
 
+    if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(&expression)) {
+        return emitIndexAssign(*indexAssign);
+    }
+
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {
         return compileExpression(*grouping->expression);
     }
@@ -250,6 +254,14 @@ IRRegister IRCompiler::emitIndex(const IndexExpr& expression)
     IRRegister collection = compileExpression(*expression.collection);
     IRRegister index = compileExpression(*expression.index);
     return ir_.emitIndex(collection, index);
+}
+
+IRRegister IRCompiler::emitIndexAssign(const IndexAssignExpr& expression)
+{
+    IRRegister collection = compileExpression(*expression.collection);
+    IRRegister index = compileExpression(*expression.index);
+    IRRegister value = compileExpression(*expression.value);
+    return ir_.emitAssignIndex(collection, index, value);
 }
 
 IRRegister IRCompiler::emitUnary(TokenType op, IRRegister value)

@@ -55,6 +55,7 @@ private:
     Value executeAdd(const Frame& frame, IRRegister left, IRRegister right);
     Value executeArray(const IRInstruction& instruction, const Frame& frame);
     Value executeIndex(const Frame& frame, IRRegister collection, IRRegister index);
+    Value executeAssignIndex(const Frame& frame, IRRegister collection, IRRegister index, IRRegister value);
     Value executeLen(const Frame& frame, IRRegister value);
 
     std::ostream& output_;

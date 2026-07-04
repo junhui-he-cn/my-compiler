@@ -34,6 +34,7 @@ bool isBinary(IROp op)
     case IROp::AssignVar:
     case IROp::Call:
     case IROp::Index:
+    case IROp::AssignIndex:
     case IROp::Len:
     case IROp::Print:
     case IROp::Return:
@@ -173,12 +174,15 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
             }
             out << ")";
         }
-    } else if (instruction.op == IROp::Index) {
+    } else if (instruction.op == IROp::Index || instruction.op == IROp::AssignIndex) {
         if (instruction.left) {
             out << " " << *instruction.left;
         }
         if (instruction.right) {
             out << ", " << *instruction.right;
+        }
+        if (instruction.op == IROp::AssignIndex && !instruction.arguments.empty()) {
+            out << ", " << instruction.arguments.front();
         }
     } else if (instruction.op == IROp::Len) {
         if (instruction.left) {
@@ -316,6 +320,13 @@ IRRegister IRProgram::emitIndex(IRRegister collection, IRRegister index)
 {
     IRRegister dest = makeRegister();
     emit(IRInstruction{IROp::Index, dest, collection, index, {}, 0});
+    return dest;
+}
+
+IRRegister IRProgram::emitAssignIndex(IRRegister collection, IRRegister index, IRRegister value)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::AssignIndex, dest, collection, index, {value}, 0});
     return dest;
 }
 
@@ -480,6 +491,8 @@ std::string irOpName(IROp op)
         return "call";
     case IROp::Index:
         return "index";
+    case IROp::AssignIndex:
+        return "assign_index";
     case IROp::Len:
         return "len";
     case IROp::Print:

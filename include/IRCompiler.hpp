@@ -27,6 +27,7 @@ private:
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);
+    IRRegister emitIndexAssign(const IndexAssignExpr& expression);
     IRRegister emitUnary(TokenType op, IRRegister value);
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
     IRRegister emitLogical(const LogicalExpr& expression);

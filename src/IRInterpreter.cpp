@@ -168,6 +168,11 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
         case IROp::Index:
             writeRegister(frame, readDest(instruction), executeIndex(frame, readLeft(instruction), readRight(instruction)));
             break;
+        case IROp::AssignIndex:
+            writeRegister(frame,
+                readDest(instruction),
+                executeAssignIndex(frame, readLeft(instruction), readRight(instruction), instruction.arguments.at(0)));
+            break;
         case IROp::Len:
             writeRegister(frame, readDest(instruction), executeLen(frame, readLeft(instruction)));
             break;
@@ -446,6 +451,38 @@ Value IRInterpreter::executeIndex(const Frame& frame, IRRegister collection, IRR
     }
 
     return elements[position];
+}
+
+Value IRInterpreter::executeAssignIndex(const Frame& frame, IRRegister collection, IRRegister index, IRRegister value)
+{
+    const Value& collectionValue = readRegister(frame, collection);
+    if (collectionValue.type() != Value::Type::Array) {
+        throw IRRuntimeError("can only assign array elements");
+    }
+
+    const Value& indexValue = readRegister(frame, index);
+    if (indexValue.type() != Value::Type::Number) {
+        throw IRRuntimeError("array index must be number");
+    }
+
+    const double numericIndex = indexValue.asNumber();
+    const double integerIndex = std::trunc(numericIndex);
+    if (integerIndex != numericIndex) {
+        throw IRRuntimeError("array index must be integer");
+    }
+    if (integerIndex < 0) {
+        throw IRRuntimeError("array index out of range");
+    }
+
+    auto& elements = *collectionValue.asArray().elements;
+    const auto position = static_cast<std::size_t>(integerIndex);
+    if (position >= elements.size()) {
+        throw IRRuntimeError("array index out of range");
+    }
+
+    Value assignedValue = readRegister(frame, value);
+    elements[position] = assignedValue;
+    return assignedValue;
 }
 
 Value IRInterpreter::executeLen(const Frame& frame, IRRegister value)
