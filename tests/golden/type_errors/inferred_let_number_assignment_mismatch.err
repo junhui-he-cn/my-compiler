@@ -1,0 +1,1 @@
+Type error at 2:1: cannot assign string to `x` of type number
