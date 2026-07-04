@@ -71,6 +71,8 @@ Completed third slice: function bodies infer conservative return types, and call
 
 ## Phase 10: Array Mutation and Collection Builtins
 
+Status: in progress. Phase 10A is implemented: `len(value)` returns array element counts or string byte lengths with IR and bytecode parity. Index assignment and array mutation helpers remain future work.
+
 Goal: make arrays useful beyond read-only literals and indexing.
 
 Suggested features:
@@ -92,7 +94,7 @@ Likely touch points:
 
 Recommended split:
 
-- Phase 10A: `len` builtin as a small usability slice.
+- Phase 10A: `len` builtin as a small usability slice. Implemented.
 - Phase 10B: index assignment.
 - Phase 10C: `push` / `pop` mutation helpers.
 

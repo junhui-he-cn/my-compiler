@@ -32,6 +32,8 @@ Type annotations on `let` declarations are checked for the built-in annotation n
 
 Functions are values. Named functions use `fun name(parameter*) { declaration* }`, and anonymous function expressions use `fun (parameter*) { declaration* }`. Known function values carry arity and inferred return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Function parameter types, return type annotations, and function type annotations are not implemented yet.
 
+The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and `len("hello")` returns `5` using the current runtime string byte length. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
+
 Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
@@ -40,7 +42,7 @@ Supported expressions:
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Calls: `callee(argument*)`
-- Indexing: `array[index]` reads an element. Indexes must be integer numbers in range. Array mutation, `push`, and `len` are not implemented yet.
+- Indexing: `array[index]` reads an element. Indexes must be integer numbers in range. Array mutation and `push` are not implemented yet.
 - Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`
 - Unary operators: `!`, `-`
