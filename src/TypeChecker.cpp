@@ -307,7 +307,7 @@ void TypeChecker::checkStatement(const Stmt& statement)
         const StaticType returned = returnStmt->value
             ? checkExpression(*returnStmt->value)
             : StaticType::Nil;
-        recordReturn(returned);
+        recordReturn(returnStmt->keyword, returned);
         return;
     }
 
@@ -370,13 +370,18 @@ void TypeChecker::checkStatement(const Stmt& statement)
     throw TypeError("unsupported statement node");
 }
 
-void TypeChecker::recordReturn(StaticType type)
+void TypeChecker::recordReturn(const Token& keyword, StaticType type)
 {
     if (returnContexts_.empty()) {
         throw TypeError("return context stack is empty");
     }
 
     FunctionReturnContext& context = returnContexts_.back();
+    if (context.expectedReturnType && !compatible(*context.expectedReturnType, type)) {
+        throw TypeError(keyword, "cannot return " + staticTypeName(type)
+            + " from function returning " + staticTypeName(*context.expectedReturnType));
+    }
+
     if (!context.sawReturn) {
         context.sawReturn = true;
         context.returnType = type;
@@ -386,9 +391,29 @@ void TypeChecker::recordReturn(StaticType type)
     context.returnType = mergeReturnTypes(context.returnType, type);
 }
 
-StaticType TypeChecker::checkFunctionBody(const std::vector<StmtPtr>& body)
+bool TypeChecker::bodyMayFallThrough(const std::vector<StmtPtr>& body) const
 {
-    returnContexts_.push_back(FunctionReturnContext{});
+    return body.empty() || dynamic_cast<const ReturnStmt*>(body.back().get()) == nullptr;
+}
+
+void TypeChecker::checkImplicitNilReturn(
+    const Token& functionToken,
+    const std::string& functionLabel,
+    StaticType expectedReturnType) const
+{
+    if (!compatible(expectedReturnType, StaticType::Nil)) {
+        throw TypeError(functionToken,
+            "function `" + functionLabel + "` may return nil but is annotated " + staticTypeName(expectedReturnType));
+    }
+}
+
+StaticType TypeChecker::checkFunctionBody(
+    const std::vector<StmtPtr>& body,
+    std::optional<StaticType> expectedReturnType,
+    const Token& functionToken,
+    const std::string& functionLabel)
+{
+    returnContexts_.push_back(FunctionReturnContext{false, StaticType::Nil, expectedReturnType});
 
     for (const auto& child : body) {
         checkStatement(*child);
@@ -396,6 +421,14 @@ StaticType TypeChecker::checkFunctionBody(const std::vector<StmtPtr>& body)
 
     const FunctionReturnContext context = returnContexts_.back();
     returnContexts_.pop_back();
+
+    if (expectedReturnType) {
+        if (bodyMayFallThrough(body)) {
+            checkImplicitNilReturn(functionToken, functionLabel, *expectedReturnType);
+        }
+        return *expectedReturnType;
+    }
+
     return context.sawReturn ? context.returnType : StaticType::Nil;
 }
 
@@ -419,7 +452,16 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     }
     resolvedNames_.recordParameters(statement, std::move(parameterNames));
 
-    const StaticType returnType = checkFunctionBody(statement.body);
+    std::optional<StaticType> expectedReturnType;
+    if (statement.returnTypeName) {
+        expectedReturnType = resolveAnnotation(*statement.returnTypeName);
+    }
+
+    const StaticType returnType = checkFunctionBody(
+        statement.body,
+        expectedReturnType,
+        statement.name,
+        statement.name.lexeme);
 
     loopDepth_ = enclosingLoopDepth;
     --functionDepth_;
@@ -451,7 +493,16 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
     }
     resolvedNames_.recordParameters(expression, std::move(parameterNames));
 
-    const StaticType returnType = checkFunctionBody(expression.body);
+    std::optional<StaticType> expectedReturnType;
+    if (expression.returnTypeName) {
+        expectedReturnType = resolveAnnotation(*expression.returnTypeName);
+    }
+
+    const StaticType returnType = checkFunctionBody(
+        expression.body,
+        expectedReturnType,
+        expression.keyword,
+        "<lambda>");
 
     loopDepth_ = enclosingLoopDepth;
     --functionDepth_;

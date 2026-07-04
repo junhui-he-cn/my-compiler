@@ -1,0 +1,7 @@
+fun value(): number {
+  return 42;
+}
+
+let x = value();
+x = x + 1;
+print x;

@@ -1,0 +1,3 @@
+let bad = fun (): bool {
+  return 1;
+};

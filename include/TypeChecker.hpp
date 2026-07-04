@@ -81,6 +81,7 @@ private:
     struct FunctionReturnContext {
         bool sawReturn = false;
         StaticType returnType = StaticType::Nil;
+        std::optional<StaticType> expectedReturnType;
     };
 
     using Scope = std::unordered_map<std::string, Binding>;
@@ -105,8 +106,14 @@ private:
 
     void checkStatement(const Stmt& statement);
     void checkFunction(const FunctionStmt& statement);
-    StaticType checkFunctionBody(const std::vector<StmtPtr>& body);
-    void recordReturn(StaticType type);
+    StaticType checkFunctionBody(
+        const std::vector<StmtPtr>& body,
+        std::optional<StaticType> expectedReturnType,
+        const Token& functionToken,
+        const std::string& functionLabel);
+    void recordReturn(const Token& keyword, StaticType type);
+    bool bodyMayFallThrough(const std::vector<StmtPtr>& body) const;
+    void checkImplicitNilReturn(const Token& functionToken, const std::string& functionLabel, StaticType expectedReturnType) const;
     StaticType checkExpression(const Expr& expression);
     CheckedExpression checkExpressionInfo(const Expr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
