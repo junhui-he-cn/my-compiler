@@ -1,6 +1,5 @@
 #include "BytecodeCompiler.hpp"
 #include "BytecodeTextEmitter.hpp"
-#include "BytecodeVM.hpp"
 #include "IRCompiler.hpp"
 #include "IRInterpreter.hpp"
 #include "Lexer.hpp"
@@ -34,7 +33,7 @@ std::string readFile(const std::string& path)
 
 void printUsage(const char* executable)
 {
-    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [--run] [--run-bytecode] [file]\n"
+    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [--run] [file]\n"
               << "       " << executable << " --emit-bytecode output.cdbc file\n"
               << "If file is omitted, source is read from stdin except for --emit-bytecode, which requires a file.\n";
 }
@@ -47,7 +46,6 @@ int main(int argc, char** argv)
     bool showIr = false;
     bool showBytecode = false;
     bool runIr = false;
-    bool runBytecode = false;
     std::optional<std::string> emitBytecodePath;
     std::string inputPath;
 
@@ -61,8 +59,6 @@ int main(int argc, char** argv)
             showBytecode = true;
         } else if (arg == "--run") {
             runIr = true;
-        } else if (arg == "--run-bytecode") {
-            runBytecode = true;
         } else if (arg == "--emit-bytecode") {
             if (i + 1 >= argc) {
                 printUsage(argv[0]);
@@ -81,7 +77,7 @@ int main(int argc, char** argv)
     }
 
     if (emitBytecodePath) {
-        if (inputPath.empty() || showTokens || showIr || showBytecode || runIr || runBytecode) {
+        if (inputPath.empty() || showTokens || showIr || showBytecode || runIr) {
             printUsage(argv[0]);
             return 64;
         }
@@ -108,16 +104,16 @@ int main(int argc, char** argv)
         TypeChecker typeChecker;
         const ResolvedNames& resolvedNames = typeChecker.check(program);
 
-        if (!emitBytecodePath && !showIr && !showBytecode && !runIr && !runBytecode) {
+        if (!emitBytecodePath && !showIr && !showBytecode && !runIr) {
             program.print(std::cout);
         }
 
-        if (emitBytecodePath || showIr || showBytecode || runIr || runBytecode) {
+        if (emitBytecodePath || showIr || showBytecode || runIr) {
             IRCompiler compiler;
             IRProgram ir = compiler.compile(program, resolvedNames);
 
             std::optional<BytecodeProgram> bytecode;
-            if (emitBytecodePath || showBytecode || runBytecode) {
+            if (emitBytecodePath || showBytecode) {
                 BytecodeCompiler bytecodeCompiler;
                 bytecode = bytecodeCompiler.compile(ir);
             }
@@ -160,11 +156,6 @@ int main(int argc, char** argv)
                 interpreter.execute(ir);
             }
 
-            if (runBytecode) {
-                separateSection();
-                BytecodeVM vm(std::cout);
-                vm.execute(*bytecode);
-            }
         }
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

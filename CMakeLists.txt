@@ -17,7 +17,6 @@ add_executable(compiler_design
     src/Bytecode.cpp
     src/BytecodeTextEmitter.cpp
     src/BytecodeCompiler.cpp
-    src/BytecodeVM.cpp
     src/Diagnostic.cpp
     src/IR.cpp
     src/IRCompiler.cpp
