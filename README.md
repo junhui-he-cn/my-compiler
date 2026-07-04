@@ -21,17 +21,17 @@ if expression { declaration* } [else { declaration* }]
 while expression { declaration* }
 break;
 continue;
-fun name(parameter*) { declaration* }
+fun name(parameter[: type]*) [: type] { declaration* }
 return [expression];
 { declaration* }
 expression;
 ```
 
-Type annotations on `let` declarations are checked for the built-in annotation names `number`, `bool`, `string`, and `nil`. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, and `array`; expressions whose static type is still unknown, such as function call results, remain flexible. Function parameters, function returns, and array element types are not fully inferred yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
+Type annotations on `let` declarations are checked for the built-in annotation names `number`, `bool`, `string`, and `nil`. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, and `array`; expressions whose static type is still unknown, such as function call results, remain flexible. Annotated function parameters and return types are checked, while unannotated function parameters, unannotated function returns, and array element types are not fully inferred yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
 
 `while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break;` exits the nearest enclosing `while`, and `continue;` skips to that loop's next condition check. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
 
-Functions are values. Named functions use `fun name(parameter*) { declaration* }`, and anonymous function expressions use `fun (parameter*) { declaration* }`. Known function values carry arity and inferred return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Function parameter types, return type annotations, and function type annotations are not implemented yet.
+Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter*) { declaration* }`. Known function values carry arity and inferred return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Function parameters and function return values may be annotated with `number`, `bool`, `string`, or `nil`. Function type annotations for variables and parameters are not implemented yet.
 
 The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and `len("hello")` returns `5` using the current runtime string byte length. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
 
@@ -39,7 +39,7 @@ Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Arrays: `[element, ...]` and `[]`; elements may be mixed runtime types.
-- Function expressions: `fun (parameter*) { declaration* }`
+- Function expressions: `fun (parameter[: type]*) [: type] { declaration* }`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Calls: `callee(argument*)`

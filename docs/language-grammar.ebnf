@@ -17,10 +17,14 @@ statement   = printStmt
 
 funDecl     = "fun", identifier,
               "(", [ parameters ], ")",
+              [ ":", typeName ],
               block ;
 
-parameters  = identifier,
-              { ",", identifier } ;
+parameters  = parameter,
+              { ",", parameter } ;
+
+parameter   = identifier,
+              [ ":", typeName ] ;
 
 letDecl     = "let", identifier,
               [ ":", typeName ],
@@ -84,7 +88,9 @@ arguments   = expression,
 
 array       = "[", [ arguments ], "]" ;
 
-functionExpr = "fun", "(", [ parameters ], ")", block ;
+functionExpr = "fun", "(", [ parameters ], ")",
+               [ ":", typeName ],
+               block ;
 
 primary     = functionExpr
             | "false"

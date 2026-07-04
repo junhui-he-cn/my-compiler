@@ -163,7 +163,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 
 - Supported statements include `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, blocks, and expression statements.
 - Supported expressions include literals, arrays, indexing, array index assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
-- `let name: type = expression;` checks explicit annotations for `number`, `bool`, `string`, and `nil`; unannotated `let` bindings infer known initializer types, while function parameters, function returns, and array element types are not fully inferred yet.
+- `let name: type = expression;`, function parameter annotations, and function return annotations check explicit type names for `number`, `bool`, `string`, and `nil`; unannotated `let` bindings infer known initializer types, while unannotated function parameters, unannotated function returns, and array element types are not fully inferred yet.
 - Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
 - `break;` exits the nearest enclosing `while`, and `continue;` skips to the next condition check of the nearest enclosing `while`; both are type errors outside loops, including inside nested function bodies that are lexically inside a loop.
@@ -173,7 +173,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Future VM backend work targets the Rust `compiler-design-vm` project under `vm-rs/` and `.cdbc` artifacts.
 - Arrays are mutable, immutable-length runtime values with mixed element types. Indexing validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown; `array[index] = value` mutates an existing element and evaluates to the assigned value.
 - The builtin `len(value)` returns array element counts or string byte lengths as a number. User bindings named `len` shadow the builtin; unknown argument types are checked at runtime.
-- Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Known function values carry arity and conservative inferred return types for static checks. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
+- Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Parameters and returns may be annotated with `number`, `bool`, `string`, or `nil`; known function values carry arity and conservative or annotated return types for static checks. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
 - Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.
 
 ## Roadmap Hints

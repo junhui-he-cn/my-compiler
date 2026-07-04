@@ -42,7 +42,7 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 
 ## Phase 9: Richer Type System
 
-Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Function parameter types, return type annotations, function type annotations, and array element types remain future work.
+Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Function type annotations and array element types remain future work.
 
 Goal: evolve the current annotation checker into a more useful static type layer.
 
@@ -70,6 +70,8 @@ Completed first slice: simple unannotated `let` types are inferred from known in
 Completed second slice: known function values carry arity through function expressions, named function variables, same-arity assignments, and direct lambda calls.
 
 Completed third slice: function bodies infer conservative return types, and calls through known function values feed those types into `let` inference and assignment checks.
+
+Completed fourth slice: named functions and function expressions accept optional parameter and return annotations, use annotated parameter types in function bodies, and check explicit or implicit returns against annotated return types.
 
 ## Phase 10: Array Mutation and Collection Builtins
 
