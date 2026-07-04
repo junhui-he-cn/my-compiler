@@ -6,8 +6,7 @@ A small C++17 compiler front-end demo. It currently implements:
 - Parser: builds a simple AST from tokens.
 - IR compiler: lowers the AST to a small three-address intermediate representation with virtual registers.
 - IR interpreter: executes that virtual-register IR directly.
-- Bytecode compiler: lowers register IR into a bytecode program.
-- Bytecode VM: executes the bytecode backend in parallel with the IR interpreter.
+- Bytecode compiler: lowers register IR into a bytecode program and `.cdbc` artifacts for the Rust VM.
 - AST printer: prints the parsed program in prefix form.
 
 ## Language
@@ -20,6 +19,8 @@ let name: type = expression;
 print expression;
 if expression { declaration* } [else { declaration* }]
 while expression { declaration* }
+break;
+continue;
 fun name(parameter*) { declaration* }
 return [expression];
 { declaration* }
@@ -28,7 +29,7 @@ expression;
 
 Type annotations on `let` declarations are checked for the built-in annotation names `number`, `bool`, `string`, and `nil`. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, and `array`; expressions whose static type is still unknown, such as function call results, remain flexible. Function parameters, function returns, and array element types are not fully inferred yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
 
-`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break` and `continue` are not implemented yet.
+`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break;` exits the nearest enclosing `while`, and `continue;` skips to that loop's next condition check. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
 
 Functions are values. Named functions use `fun name(parameter*) { declaration* }`, and anonymous function expressions use `fun (parameter*) { declaration* }`. Known function values carry arity and inferred return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Function parameter types, return type annotations, and function type annotations are not implemented yet.
 

@@ -161,11 +161,12 @@ Use locations for lexer, parser, and type errors when a source token/location is
 
 ## Current Language Semantics and Limitations
 
-- Supported statements include `let`, `print`, `if`/`else`, `while`, `fun`, `return`, blocks, and expression statements.
+- Supported statements include `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, blocks, and expression statements.
 - Supported expressions include literals, arrays, indexing, array index assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - `let name: type = expression;` checks explicit annotations for `number`, `bool`, `string`, and `nil`; unannotated `let` bindings infer known initializer types, while function parameters, function returns, and array element types are not fully inferred yet.
 - Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
+- `break;` exits the nearest enclosing `while`, and `continue;` skips to the next condition check of the nearest enclosing `while`; both are type errors outside loops, including inside nested function bodies that are lexically inside a loop.
 - Reading or assigning an undefined variable is a type error before IR compilation.
 - Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
 - A C++ bytecode backend lowers register IR to bytecode and `.cdbc` artifacts; Rust `compiler-design-vm` is the bytecode execution backend.

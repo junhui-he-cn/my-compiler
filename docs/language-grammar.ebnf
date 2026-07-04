@@ -9,6 +9,8 @@ declaration = funDecl
 statement   = printStmt
             | ifStmt
             | whileStmt
+            | breakStmt
+            | continueStmt
             | returnStmt
             | block
             | exprStmt ;
@@ -28,6 +30,10 @@ ifStmt      = "if", expression, block,
               [ "else", block ] ;
 
 whileStmt   = "while", expression, block ;
+
+breakStmt   = "break", ";" ;
+
+continueStmt = "continue", ";" ;
 
 block       = "{", { declaration }, "}" ;
 

@@ -10,12 +10,12 @@ Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-
 
 The language currently supports:
 
-- Statements: `let`, `print`, `if`/`else`, `while`, `fun`, `return`, blocks, and expression statements.
+- Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, blocks, and expression statements.
 - Expressions: literals, arrays, indexing, array index assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
-- Array literals and read-only indexing.
+- Array literals, indexing, and array index assignment.
 - C++ IR interpreter execution via `--run`, plus bytecode artifact emission and Rust VM execution via `.cdbc`.
 
 For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf` and `README.md`.
@@ -102,6 +102,8 @@ Recommended split:
 
 ## Phase 11: Loop Control and For Loops
 
+Status: in progress. Phase 11A is implemented: `break;` exits the nearest `while`, and `continue;` skips to the nearest `while` condition check. `for` loop syntax remains future work.
+
 Goal: make iteration practical and structured.
 
 Suggested features:
@@ -122,7 +124,7 @@ Likely touch points:
 
 Recommended split:
 
-- Phase 11A: `break` / `continue` for existing `while` loops.
+- Phase 11A: `break` / `continue` for existing `while` loops. Implemented.
 - Phase 11B: `for` loop syntax and lowering.
 
 ## Phase 12: Records / Structs
@@ -158,7 +160,7 @@ Suggested builtins:
 - Collection helpers: `len`, `push`, `pop` if not completed in Phase 10.
 - Debug helper: `typeOf` if useful for mixed runtime values.
 
-Each builtin should define behavior for both the IR interpreter and bytecode VM paths, preferably through shared runtime machinery so semantics stay aligned.
+Each builtin should define behavior for both the IR interpreter and bytecode artifact/Rust VM paths, preferably through shared runtime machinery so semantics stay aligned.
 
 ## Phase 14: Modules / Imports
 
