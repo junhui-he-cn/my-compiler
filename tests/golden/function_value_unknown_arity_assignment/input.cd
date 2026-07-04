@@ -1,0 +1,11 @@
+fun makeZero() {
+  return fun () {
+    return 42;
+  };
+}
+
+let f = fun (x) {
+  return x;
+};
+f = makeZero();
+print f();
