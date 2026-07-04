@@ -1,9 +1,21 @@
 # Compiler Design
 
-A small C++17 compiler front-end demo. It currently implements:
+Compiler Design is a small experimental programming language and compiler
+project. The repository contains the language implementation, a C++17 compiler
+pipeline, a C++ IR interpreter, bytecode artifact emission, and a standalone
+Rust bytecode VM.
+
+The language currently supports variables, lexical blocks, `if`/`else`,
+`while`, `break`, `continue`, functions, closures, arrays, indexing, array
+element assignment, short-circuit logical operators, typed `let` declarations,
+typed function parameters and returns, and the builtin `len`.
+
+The compiler pipeline includes:
 
 - Lexer: turns source text into tokens.
 - Parser: builds a simple AST from tokens.
+- Type checker: resolves lexical scopes and checks implemented static type
+  annotations.
 - IR compiler: lowers the AST to a small three-address intermediate representation with virtual registers.
 - IR interpreter: executes that virtual-register IR directly.
 - Bytecode compiler: lowers register IR into a bytecode program and `.cdbc` artifacts for the Rust VM.
