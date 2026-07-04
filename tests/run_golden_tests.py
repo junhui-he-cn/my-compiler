@@ -389,7 +389,7 @@ def run_all(compiler: Path, golden_dir: Path, update: bool) -> list[CheckResult]
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run compiler CLI golden tests.")
-    parser.add_argument("compiler", type=Path, help="Path to compiler_demo executable")
+    parser.add_argument("compiler", type=Path, help="Path to compiler_design executable")
     parser.add_argument("--update", action="store_true", help="Rewrite golden files from current compiler output")
     return parser.parse_args()
 
