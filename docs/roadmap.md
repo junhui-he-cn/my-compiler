@@ -48,7 +48,7 @@ Goal: evolve the current annotation checker into a more useful static type layer
 
 Suggested future features:
 
-- Full function signatures for named functions and function expressions, including parameter and return types.
+- User-visible function signature compatibility for assignments/calls, after choosing function type syntax.
 - User-visible function type annotations, after choosing syntax.
 - Array element types, after deciding whether mixed arrays remain a dynamic escape hatch.
 - Basic inference for unannotated `let` declarations from initializer expressions.
