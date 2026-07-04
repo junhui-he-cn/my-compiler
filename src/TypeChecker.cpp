@@ -198,6 +198,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     resolvedNames_.clear();
     nextResolvedName_ = 0;
     functionDepth_ = 0;
+    loopDepth_ = 0;
     returnContexts_.clear();
     beginScope();
     for (const auto& statement : program.statements) {
@@ -310,6 +311,20 @@ void TypeChecker::checkStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* breakStmt = dynamic_cast<const BreakStmt*>(&statement)) {
+        if (loopDepth_ == 0) {
+            throw TypeError(breakStmt->keyword, "`break` can only be used inside a loop");
+        }
+        return;
+    }
+
+    if (const auto* continueStmt = dynamic_cast<const ContinueStmt*>(&statement)) {
+        if (loopDepth_ == 0) {
+            throw TypeError(continueStmt->keyword, "`continue` can only be used inside a loop");
+        }
+        return;
+    }
+
     if (const auto* block = dynamic_cast<const BlockStmt*>(&statement)) {
         beginScope();
         for (const auto& child : block->statements) {
@@ -330,7 +345,9 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* whileStmt = dynamic_cast<const WhileStmt*>(&statement)) {
         checkExpression(*whileStmt->condition);
+        ++loopDepth_;
         checkStatement(*whileStmt->body);
+        --loopDepth_;
         return;
     }
 
@@ -389,6 +406,8 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
 
     beginScope();
     ++functionDepth_;
+    const std::size_t enclosingLoopDepth = loopDepth_;
+    loopDepth_ = 0;
 
     std::vector<std::string> parameterNames;
     for (const Token& parameter : statement.parameters) {
@@ -399,6 +418,7 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
 
     const StaticType returnType = checkFunctionBody(statement.body);
 
+    loopDepth_ = enclosingLoopDepth;
     --functionDepth_;
     endScope();
 
@@ -415,6 +435,8 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
 
     beginScope();
     ++functionDepth_;
+    const std::size_t enclosingLoopDepth = loopDepth_;
+    loopDepth_ = 0;
 
     std::vector<std::string> parameterNames;
     for (const Token& parameter : expression.parameters) {
@@ -425,6 +447,7 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
 
     const StaticType returnType = checkFunctionBody(expression.body);
 
+    loopDepth_ = enclosingLoopDepth;
     --functionDepth_;
     endScope();
 

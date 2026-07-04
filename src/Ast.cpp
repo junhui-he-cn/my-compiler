@@ -99,6 +99,16 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         return;
     }
 
+    if (dynamic_cast<const BreakStmt*>(&stmt)) {
+        out << "(break)";
+        return;
+    }
+
+    if (dynamic_cast<const ContinueStmt*>(&stmt)) {
+        out << "(continue)";
+        return;
+    }
+
     if (const auto* functionStmt = dynamic_cast<const FunctionStmt*>(&stmt)) {
         out << "(fun " << functionStmt->name.lexeme << ' ';
         writeParameterList(out, functionStmt->parameters);
@@ -395,6 +405,28 @@ void WhileStmt::print(std::ostream& out, int indent) const
     if (body) {
         body->print(out, indent + 2);
     }
+}
+
+BreakStmt::BreakStmt(Token keyword)
+    : keyword(std::move(keyword))
+{
+}
+
+void BreakStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Break\n";
+}
+
+ContinueStmt::ContinueStmt(Token keyword)
+    : keyword(std::move(keyword))
+{
+}
+
+void ContinueStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Continue\n";
 }
 
 FunctionStmt::FunctionStmt(Token name, std::vector<Token> parameters, std::vector<StmtPtr> body)

@@ -127,6 +127,7 @@ private:
     ResolvedNames resolvedNames_;
     std::size_t nextResolvedName_ = 0;
     std::size_t functionDepth_ = 0;
+    std::size_t loopDepth_ = 0;
     std::vector<FunctionReturnContext> returnContexts_;
 };
 

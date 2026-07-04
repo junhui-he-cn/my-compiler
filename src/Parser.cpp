@@ -77,6 +77,12 @@ StmtPtr Parser::statement()
     if (match(TokenType::While)) {
         return whileStatement();
     }
+    if (match(TokenType::Break)) {
+        return breakStatement();
+    }
+    if (match(TokenType::Continue)) {
+        return continueStatement();
+    }
     if (match(TokenType::Return)) {
         return returnStatement();
     }
@@ -107,6 +113,20 @@ StmtPtr Parser::whileStatement()
     consume(TokenType::LeftBrace, "expected `{` after while condition");
     StmtPtr body = blockStatement();
     return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+}
+
+StmtPtr Parser::breakStatement()
+{
+    Token keyword = previous();
+    consume(TokenType::Semicolon, "expected `;` after break");
+    return std::make_unique<BreakStmt>(std::move(keyword));
+}
+
+StmtPtr Parser::continueStatement()
+{
+    Token keyword = previous();
+    consume(TokenType::Semicolon, "expected `;` after continue");
+    return std::make_unique<ContinueStmt>(std::move(keyword));
 }
 
 StmtPtr Parser::blockStatement()

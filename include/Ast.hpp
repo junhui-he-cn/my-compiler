@@ -171,6 +171,20 @@ struct WhileStmt final : Stmt {
     StmtPtr body;
 };
 
+struct BreakStmt final : Stmt {
+    explicit BreakStmt(Token keyword);
+    void print(std::ostream& out, int indent) const override;
+
+    Token keyword;
+};
+
+struct ContinueStmt final : Stmt {
+    explicit ContinueStmt(Token keyword);
+    void print(std::ostream& out, int indent) const override;
+
+    Token keyword;
+};
+
 struct FunctionStmt final : Stmt {
     FunctionStmt(Token name, std::vector<Token> parameters, std::vector<StmtPtr> body);
     void print(std::ostream& out, int indent) const override;

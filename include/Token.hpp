@@ -34,6 +34,8 @@ enum class TokenType {
     Number,
     String,
 
+    Break,
+    Continue,
     If,
     Else,
     Fun,

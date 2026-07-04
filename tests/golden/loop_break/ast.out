@@ -1,0 +1,7 @@
+Program
+  Let i = 0
+  While true
+    Body
+      Block
+        Break
+  Print i

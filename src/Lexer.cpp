@@ -226,6 +226,8 @@ void Lexer::identifier()
     // Keyword lookup happens after the full identifier has been consumed,
     // which lets names such as `printable` remain identifiers.
     static const std::unordered_map<std::string, TokenType> keywords = {
+        {"break", TokenType::Break},
+        {"continue", TokenType::Continue},
         {"if", TokenType::If},
         {"else", TokenType::Else},
         {"fun", TokenType::Fun},
@@ -302,6 +304,10 @@ std::string tokenTypeName(TokenType type)
         return "Number";
     case TokenType::String:
         return "String";
+    case TokenType::Break:
+        return "Break";
+    case TokenType::Continue:
+        return "Continue";
     case TokenType::If:
         return "If";
     case TokenType::Else:
