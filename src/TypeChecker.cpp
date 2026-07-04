@@ -376,7 +376,7 @@ StaticType TypeChecker::checkLetInitializer(const LetStmt& statement)
 {
     const StaticType initializer = checkExpression(*statement.initializer);
     if (!statement.typeName) {
-        return StaticType::Unknown;
+        return initializer;
     }
 
     const StaticType declared = resolveAnnotation(*statement.typeName);
