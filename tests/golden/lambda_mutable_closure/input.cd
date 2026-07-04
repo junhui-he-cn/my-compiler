@@ -1,0 +1,11 @@
+fun counter() {
+  let n = 0;
+  return fun () {
+    n = n + 1;
+    return n;
+  };
+}
+
+let next = counter();
+print next();
+print next();
