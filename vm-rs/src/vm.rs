@@ -1,9 +1,11 @@
 #![allow(dead_code)]
 
 use crate::bytecode::{Constant, FunctionBody, Instruction, Program};
-use crate::runtime::{new_cell, new_environment, Cell, SharedEnvironment};
+use crate::runtime::{new_cell, new_environment, ArrayValue, Cell, SharedEnvironment};
 use crate::value::Value;
+use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeError {
@@ -84,6 +86,14 @@ impl<'a> VM<'a> {
                     let value = self.read_register(frame, *value)?;
                     self.output.push_str(&value.to_string());
                     self.output.push('\n');
+                }
+                Instruction::Array { dest, elements } => {
+                    let mut values = Vec::with_capacity(elements.len());
+                    for element in elements {
+                        values.push(self.read_register(frame, *element)?);
+                    }
+                    let value = self.make_array(values);
+                    self.write_register(frame, *dest, value)?;
                 }
                 Instruction::Move { dest, source } => {
                     let value = self.read_register(frame, *source)?;
@@ -186,6 +196,33 @@ impl<'a> VM<'a> {
                         continue;
                     }
                 }
+                Instruction::Index {
+                    dest,
+                    collection,
+                    index,
+                } => {
+                    let collection = self.read_register(frame, *collection)?;
+                    let index = self.read_register(frame, *index)?;
+                    let value = self.execute_index(collection, index)?;
+                    self.write_register(frame, *dest, value)?;
+                }
+                Instruction::AssignIndex {
+                    dest,
+                    collection,
+                    index,
+                    value,
+                } => {
+                    let collection = self.read_register(frame, *collection)?;
+                    let index = self.read_register(frame, *index)?;
+                    let value = self.read_register(frame, *value)?;
+                    let assigned = self.execute_assign_index(collection, index, value)?;
+                    self.write_register(frame, *dest, assigned)?;
+                }
+                Instruction::Len { dest, value } => {
+                    let value = self.read_register(frame, *value)?;
+                    let length = self.execute_len(value)?;
+                    self.write_register(frame, *dest, length)?;
+                }
                 Instruction::Return { value } => {
                     return Ok(Some(self.read_register(frame, *value)?))
                 }
@@ -199,6 +236,67 @@ impl<'a> VM<'a> {
             frame.ip += 1;
         }
         Ok(None)
+    }
+
+    fn make_array(&mut self, elements: Vec<Value>) -> Value {
+        let identity = self.next_array_identity;
+        self.next_array_identity += 1;
+        Value::array(ArrayValue {
+            identity,
+            elements: Rc::new(RefCell::new(elements)),
+        })
+    }
+
+    fn checked_array_index(&self, index_value: Value) -> Result<usize, RuntimeError> {
+        let Value::Number(number) = index_value else {
+            return Err(RuntimeError::new("array index must be number"));
+        };
+        let integer = number.trunc();
+        if integer != number {
+            return Err(RuntimeError::new("array index must be integer"));
+        }
+        if integer < 0.0 {
+            return Err(RuntimeError::new("array index out of range"));
+        }
+        Ok(integer as usize)
+    }
+
+    fn execute_index(&self, collection: Value, index: Value) -> Result<Value, RuntimeError> {
+        let Value::Array(array) = collection else {
+            return Err(RuntimeError::new("can only index arrays"));
+        };
+        let position = self.checked_array_index(index)?;
+        let elements = array.elements.borrow();
+        elements
+            .get(position)
+            .cloned()
+            .ok_or_else(|| RuntimeError::new("array index out of range"))
+    }
+
+    fn execute_assign_index(
+        &self,
+        collection: Value,
+        index: Value,
+        value: Value,
+    ) -> Result<Value, RuntimeError> {
+        let Value::Array(array) = collection else {
+            return Err(RuntimeError::new("can only assign array elements"));
+        };
+        let position = self.checked_array_index(index)?;
+        let mut elements = array.elements.borrow_mut();
+        if position >= elements.len() {
+            return Err(RuntimeError::new("array index out of range"));
+        }
+        elements[position] = value.clone();
+        Ok(value)
+    }
+
+    fn execute_len(&self, value: Value) -> Result<Value, RuntimeError> {
+        match value {
+            Value::Array(array) => Ok(Value::number(array.elements.borrow().len() as f64)),
+            Value::String(value) => Ok(Value::number(value.len() as f64)),
+            _ => Err(RuntimeError::new("len expects array or string")),
+        }
     }
 
     fn read_name(&self, index: usize) -> Result<String, RuntimeError> {
