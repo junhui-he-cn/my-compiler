@@ -1,4 +1,4 @@
-# Compiler Demo
+# Compiler Design
 
 A small C++17 compiler front-end demo. It currently implements:
 
@@ -80,20 +80,22 @@ Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` 
 To refresh golden files after an intentional output change:
 
 ```sh
-python3 tests/run_golden_tests.py ./build/compiler_demo --update
+python3 tests/run_golden_tests.py ./build/compiler_design --update
 ```
 
 ## Run
 
 ```sh
-./build/compiler_demo examples/hello.cd
-./build/compiler_demo --tokens examples/hello.cd
-./build/compiler_demo --ir examples/hello.cd
-./build/compiler_demo --run examples/hello.cd
-./build/compiler_demo --bytecode examples/hello.cd
-./build/compiler_demo --run-bytecode examples/hello.cd
+./build/compiler_design examples/hello.cd
+./build/compiler_design --tokens examples/hello.cd
+./build/compiler_design --ir examples/hello.cd
+./build/compiler_design --run examples/hello.cd
+./build/compiler_design --bytecode examples/hello.cd
+./build/compiler_design --run-bytecode examples/hello.cd
 ```
 
 `--run` executes the existing IR interpreter. `--run-bytecode` executes the newer bytecode VM. They are expected to match for implemented language features.
+
+Backend note: the current C++ bytecode VM is frozen as a reference backend. Future VM work will happen in the standalone Rust `compiler-design-vm` project under `vm-rs/`, using planned `.cdbc` bytecode artifacts. The `.cdbc` emitter and Rust VM executor are not implemented in Phase 0.
 
 If no file is provided, source is read from stdin.

@@ -1,8 +1,8 @@
-# Compiler Demo Language Roadmap
+# Compiler Design Language Roadmap
 
 This roadmap is the active planning entry point for user-visible language development. The previous mixed compiler/backend roadmap is preserved in `docs/roadmap-archive-2026-07-04.md`.
 
-Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable, but they are a deferred backend track. The current near-term direction is to improve the language itself.
+Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable. The C++ bytecode VM is frozen as a reference backend, and future backend work will move to the standalone Rust `compiler-design-vm` project under `vm-rs/`. The current near-term language direction remains improving the language itself.
 
 ## Current Implemented Baseline
 
@@ -186,13 +186,15 @@ Suggested features:
 
 ## Deferred Backend Track
 
-The bytecode VM already exists and provides extension points for backend research. These directions are deferred while the active roadmap focuses on language features:
+The C++ bytecode VM already exists and remains available for current behavior, but it is frozen for backend research. Future backend work targets the Rust `compiler-design-vm` project and planned `.cdbc` bytecode artifacts:
 
-- GC groundwork: VM heap ownership, root scanning, and value reachability.
-- Task scheduling: schedulable VM threads, instruction budgets, yield points, and blocked states.
-- JIT exploration: bytecode metadata, hot function detection, and native-code experiments.
+- Phase 0: rename to Compiler Design, scaffold `vm-rs/`, and document the planned `.cdbc` text format.
+- Phase 1: add a C++ `.cdbc` bytecode artifact emitter.
+- Phase 2: add Rust VM `.cdbc` parser and dump support.
+- Phase 3: add Rust VM executor parity for current bytecode semantics.
+- Phase 4: explore GC heap ownership/root scanning, task scheduling, and JIT metadata/hot paths.
 
-Before starting any backend track, create a dedicated backend design spec and implementation plan rather than mixing it into this language roadmap.
+Before starting a backend implementation phase, create a dedicated backend design spec and implementation plan rather than mixing it into language feature work.
 
 ## Near-Term Recommendation
 

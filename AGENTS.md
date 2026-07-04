@@ -4,14 +4,14 @@ This file is project memory for Codex/AI agents working in this repository. Read
 
 ## Project Overview
 
-This is a small C++17 compiler front-end/interpreter demo. It currently has:
+This is a small C++17 Compiler Design front-end/interpreter project. It currently has:
 
 - A lexer that turns source text into tokens.
 - A recursive-descent parser that builds an AST.
 - AST printing in a compact prefix/tree format.
 - An IR compiler that lowers AST nodes to a small virtual-register, three-address IR.
 - An IR interpreter that executes the register IR.
-- A CLI binary named `compiler_demo`.
+- A CLI binary named `compiler_design`.
 - Python golden tests that verify AST, IR, bytecode, run, run-bytecode, parse-error, and runtime-error outputs.
 
 ## Architecture Map
@@ -40,7 +40,7 @@ Use these commands from the repository root:
 cmake -S . -B build
 cmake --build build
 ctest --test-dir build --output-on-failure
-python3 tests/run_golden_tests.py ./build/compiler_demo
+python3 tests/run_golden_tests.py ./build/compiler_design
 python3 tests/run_golden_tests_selftest.py
 rm -rf tests/__pycache__
 ```
@@ -50,7 +50,7 @@ Run the relevant subset during development. Before claiming work is complete, ru
 To refresh golden files after an intentional output change:
 
 ```sh
-python3 tests/run_golden_tests.py ./build/compiler_demo --update
+python3 tests/run_golden_tests.py ./build/compiler_design --update
 ```
 
 Review refreshed goldens before committing them.
@@ -161,7 +161,8 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
 - Reading or assigning an undefined variable is a type error before IR compilation.
 - Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
-- A parallel bytecode backend lowers register IR to bytecode; `--run-bytecode` should match `--run` for supported programs.
+- A parallel C++ bytecode backend lowers register IR to bytecode; `--run-bytecode` should match `--run` for supported programs, but this C++ VM is frozen for future backend research.
+- Future VM backend work targets the Rust `compiler-design-vm` project under `vm-rs/` and planned `.cdbc` artifacts.
 - Arrays are mutable, immutable-length runtime values with mixed element types. Indexing validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown; `array[index] = value` mutates an existing element and evaluates to the assigned value.
 - The builtin `len(value)` returns array element counts or string byte lengths as a number. User bindings named `len` shadow the builtin; unknown argument types are checked at runtime.
 - Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Known function values carry arity and conservative inferred return types for static checks. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
