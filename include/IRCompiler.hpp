@@ -5,7 +5,9 @@
 #include "IR.hpp"
 #include "TypeChecker.hpp"
 
+#include <cstddef>
 #include <string>
+#include <vector>
 
 class IRCompileError final : public DiagnosticError {
 public:
@@ -23,6 +25,8 @@ private:
     IRRegister compileExpression(const Expr& expression);
     IRRegister emitCall(const CallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;
+    void compileBreak(const BreakStmt& statement);
+    void compileContinue(const ContinueStmt& statement);
     IRRegister emitLenCall(const CallExpr& expression);
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
@@ -32,6 +36,12 @@ private:
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
     IRRegister emitLogical(const LogicalExpr& expression);
 
+    struct LoopContext {
+        std::size_t continueTarget = 0;
+        std::vector<std::size_t> breakJumps;
+    };
+
     IRProgram ir_;
     const ResolvedNames* resolvedNames_ = nullptr;
+    std::vector<LoopContext> loopContexts_;
 };

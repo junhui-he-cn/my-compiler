@@ -3,5 +3,9 @@ Program
   While true
     Body
       Block
-        Break
+        Expr (= i (+ i 1))
+        If (== i 3)
+          Then
+            Block
+              Break
   Print i

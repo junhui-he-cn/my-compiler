@@ -39,10 +39,12 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
 {
     ir_ = IRProgram();
     resolvedNames_ = &resolvedNames;
+    loopContexts_.clear();
     for (const auto& statement : program.statements) {
         compileStatement(*statement);
     }
     resolvedNames_ = nullptr;
+    loopContexts_.clear();
     return std::move(ir_);
 }
 
@@ -55,6 +57,16 @@ void IRCompiler::compileStatement(const Stmt& statement)
 
     if (const auto* returnStmt = dynamic_cast<const ReturnStmt*>(&statement)) {
         compileReturn(*returnStmt);
+        return;
+    }
+
+    if (const auto* breakStmt = dynamic_cast<const BreakStmt*>(&statement)) {
+        compileBreak(*breakStmt);
+        return;
+    }
+
+    if (const auto* continueStmt = dynamic_cast<const ContinueStmt*>(&statement)) {
+        compileContinue(*continueStmt);
         return;
     }
 
@@ -86,9 +98,17 @@ void IRCompiler::compileStatement(const Stmt& statement)
         const std::size_t loopStart = ir_.instructionCount();
         const IRRegister condition = compileExpression(*whileStmt->condition);
         const std::size_t exitJump = ir_.emitJumpIfFalse(condition);
+
+        loopContexts_.push_back(LoopContext{loopStart, {}});
         compileStatement(*whileStmt->body);
+        LoopContext loop = std::move(loopContexts_.back());
+        loopContexts_.pop_back();
+
         ir_.emitJumpTo(loopStart);
         ir_.patchJump(exitJump);
+        for (const std::size_t breakJump : loop.breakJumps) {
+            ir_.patchJump(breakJump);
+        }
         return;
     }
 
@@ -121,11 +141,14 @@ void IRCompiler::compileFunctionStatement(const FunctionStmt& function)
     std::vector<std::string> parameters = resolvedNames_->parameterNames(function);
     ir_.beginFunction(function.name.lexeme, std::move(parameters));
 
+    std::vector<LoopContext> enclosingLoopContexts = std::move(loopContexts_);
+    loopContexts_.clear();
     for (const auto& statement : function.body) {
         compileStatement(*statement);
     }
     IRRegister nilValue = ir_.emitConstant(Value::nil());
     ir_.emitReturn(nilValue);
+    loopContexts_ = std::move(enclosingLoopContexts);
 
     const std::size_t functionIndex = ir_.endFunction();
     IRRegister value = ir_.emitMakeFunction(functionIndex);
@@ -136,6 +159,22 @@ void IRCompiler::compileReturn(const ReturnStmt& statement)
 {
     IRRegister value = statement.value ? compileExpression(*statement.value) : ir_.emitConstant(Value::nil());
     ir_.emitReturn(value);
+}
+
+void IRCompiler::compileBreak(const BreakStmt&)
+{
+    if (loopContexts_.empty()) {
+        throw IRCompileError("`break` can only be used inside a loop");
+    }
+    loopContexts_.back().breakJumps.push_back(ir_.emitJump());
+}
+
+void IRCompiler::compileContinue(const ContinueStmt&)
+{
+    if (loopContexts_.empty()) {
+        throw IRCompileError("`continue` can only be used inside a loop");
+    }
+    ir_.emitJumpTo(loopContexts_.back().continueTarget);
 }
 
 IRRegister IRCompiler::compileExpression(const Expr& expression)
@@ -201,11 +240,14 @@ IRRegister IRCompiler::emitFunctionExpr(const FunctionExpr& expression)
     std::vector<std::string> parameters = resolvedNames_->parameterNames(expression);
     ir_.beginFunction(resolvedNames_->functionName(expression), std::move(parameters));
 
+    std::vector<LoopContext> enclosingLoopContexts = std::move(loopContexts_);
+    loopContexts_.clear();
     for (const auto& statement : expression.body) {
         compileStatement(*statement);
     }
     IRRegister nilValue = ir_.emitConstant(Value::nil());
     ir_.emitReturn(nilValue);
+    loopContexts_ = std::move(enclosingLoopContexts);
 
     const std::size_t functionIndex = ir_.endFunction();
     return ir_.emitMakeFunction(functionIndex);
