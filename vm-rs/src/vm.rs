@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 
 use crate::bytecode::{Constant, FunctionBody, Instruction, Program};
-use crate::runtime::{new_cell, new_environment, ArrayValue, Cell, SharedEnvironment};
+use crate::runtime::{
+    new_cell, new_environment, ArrayValue, Cell, FunctionValue, SharedEnvironment,
+};
 use crate::value::Value;
 use std::cell::RefCell;
 use std::fmt;
@@ -87,6 +89,10 @@ impl<'a> VM<'a> {
                     self.output.push_str(&value.to_string());
                     self.output.push('\n');
                 }
+                Instruction::MakeFunction { dest, function } => {
+                    let value = self.make_function(*function, frame)?;
+                    self.write_register(frame, *dest, value)?;
+                }
                 Instruction::Array { dest, elements } => {
                     let mut values = Vec::with_capacity(elements.len());
                     for element in elements {
@@ -113,6 +119,22 @@ impl<'a> VM<'a> {
                     let name = self.read_name(*name)?;
                     let value = self.read_register(frame, *value)?;
                     self.assign_variable(frame, &name, value)?;
+                }
+                Instruction::Call {
+                    dest,
+                    callee,
+                    arguments,
+                } => {
+                    let callee = self.read_register(frame, *callee)?;
+                    let Value::Function(function) = callee else {
+                        return Err(RuntimeError::new("can only call functions"));
+                    };
+                    let mut values = Vec::with_capacity(arguments.len());
+                    for argument in arguments {
+                        values.push(self.read_register(frame, *argument)?);
+                    }
+                    let result = self.call_function(function, values)?;
+                    self.write_register(frame, *dest, result)?;
                 }
                 Instruction::Negate { dest, value } => {
                     let input = self.expect_number(frame, *value, "negate")?;
@@ -226,16 +248,90 @@ impl<'a> VM<'a> {
                 Instruction::Return { value } => {
                     return Ok(Some(self.read_register(frame, *value)?))
                 }
-                other => {
-                    return Err(RuntimeError::new(format!(
-                        "unsupported instruction in current VM slice: {:?}",
-                        other
-                    )))
-                }
             }
             frame.ip += 1;
         }
         Ok(None)
+    }
+
+    fn capture_environment(&self, frame: &Frame) -> SharedEnvironment {
+        let captured = new_environment();
+        {
+            let mut target = captured.borrow_mut();
+            for (name, cell) in frame.closure.borrow().iter() {
+                target.insert(name.clone(), cell.clone());
+            }
+            for (name, cell) in frame.locals.borrow().iter() {
+                target.insert(name.clone(), cell.clone());
+            }
+        }
+        captured
+    }
+
+    fn make_function(
+        &mut self,
+        function_index: usize,
+        frame: &Frame,
+    ) -> Result<Value, RuntimeError> {
+        let function = self
+            .program
+            .functions
+            .get(function_index)
+            .ok_or_else(|| RuntimeError::new("function index out of range"))?;
+        let identity = self.next_function_identity;
+        self.next_function_identity += 1;
+        Ok(Value::function(FunctionValue {
+            name: function.name.clone(),
+            function_index,
+            arity: function.params.len(),
+            identity,
+            closure: self.capture_environment(frame),
+        }))
+    }
+
+    fn call_function(
+        &mut self,
+        function: FunctionValue,
+        arguments: Vec<Value>,
+    ) -> Result<Value, RuntimeError> {
+        let bytecode_function = self
+            .program
+            .functions
+            .get(function.function_index)
+            .ok_or_else(|| RuntimeError::new("function index out of range"))?;
+        let params = bytecode_function.params.clone();
+        let registers = bytecode_function.registers;
+        let instructions = bytecode_function.instructions.clone();
+
+        if arguments.len() != params.len() {
+            return Err(RuntimeError::new(format!(
+                "expected {} arguments but got {}",
+                params.len(),
+                arguments.len()
+            )));
+        }
+
+        let mut frame = Frame {
+            ip: 0,
+            registers: vec![Value::Nil; registers],
+            locals: new_environment(),
+            closure: function.closure.clone(),
+            is_main: false,
+        };
+
+        for (index, argument) in arguments.into_iter().enumerate() {
+            frame
+                .locals
+                .borrow_mut()
+                .insert(params[index].clone(), new_cell(argument));
+        }
+
+        let body = FunctionBody {
+            registers,
+            instructions,
+        };
+        let result = self.execute_body(&body, &mut frame)?;
+        Ok(result.unwrap_or(Value::Nil))
     }
 
     fn make_array(&mut self, elements: Vec<Value>) -> Value {
