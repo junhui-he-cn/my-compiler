@@ -154,6 +154,7 @@ def main() -> int:
             "lambda_mutable_closure",
             "len_builtin",
             "len_builtin_shadowing",
+            "loop_break",
         }
         case_dirs.extend(path for path in discover_golden_cases(tests_root / "golden") if path.name in golden_allowlist)
 
