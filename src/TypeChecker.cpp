@@ -253,9 +253,12 @@ TypeChecker::Binding TypeChecker::declareVariable(const Token& name, StaticType 
     return binding;
 }
 
-TypeChecker::Binding TypeChecker::declareVariable(const LetStmt& statement, StaticType type)
+TypeChecker::Binding TypeChecker::declareVariable(
+    const LetStmt& statement,
+    StaticType type,
+    std::optional<std::size_t> arity)
 {
-    Binding binding = declareVariable(statement.name, type);
+    Binding binding = declareVariable(statement.name, type, arity);
     resolvedNames_.recordLet(statement, binding.resolvedName);
     return binding;
 }
@@ -307,8 +310,8 @@ void TypeChecker::checkStatement(const Stmt& statement)
     }
 
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
-        const StaticType declared = checkLetInitializer(*let);
-        declareVariable(*let, declared);
+        const CheckedExpression declared = checkLetInitializer(*let);
+        declareVariable(*let, declared.type, declared.arity);
         return;
     }
 
@@ -348,7 +351,7 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     endScope();
 }
 
-StaticType TypeChecker::checkFunctionExpression(const FunctionExpr& expression)
+TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const FunctionExpr& expression)
 {
     resolvedNames_.recordFunction(expression, "<lambda>");
 
@@ -369,12 +372,12 @@ StaticType TypeChecker::checkFunctionExpression(const FunctionExpr& expression)
     --functionDepth_;
     endScope();
 
-    return StaticType::Function;
+    return CheckedExpression{StaticType::Function, expression.parameters.size()};
 }
 
-StaticType TypeChecker::checkLetInitializer(const LetStmt& statement)
+TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& statement)
 {
-    const StaticType initializer = checkExpression(*statement.initializer);
+    const CheckedExpression initializer = checkExpressionInfo(*statement.initializer);
     if (!statement.typeName) {
         return initializer;
     }
@@ -383,25 +386,30 @@ StaticType TypeChecker::checkLetInitializer(const LetStmt& statement)
     checkAssignable(
         statement.name,
         "cannot initialize `" + statement.name.lexeme + "` of type " + staticTypeName(declared)
-            + " with " + staticTypeName(initializer),
+            + " with " + staticTypeName(initializer.type),
         declared,
-        initializer);
-    return declared;
+        initializer.type);
+    return CheckedExpression{declared, std::nullopt};
 }
 
 StaticType TypeChecker::checkExpression(const Expr& expression)
 {
+    return checkExpressionInfo(expression).type;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expression)
+{
     if (const auto* literal = dynamic_cast<const LiteralExpr*>(&expression)) {
         if (literal->value == "nil") {
-            return StaticType::Nil;
+            return CheckedExpression{StaticType::Nil, std::nullopt};
         }
         if (literal->value == "true" || literal->value == "false") {
-            return StaticType::Bool;
+            return CheckedExpression{StaticType::Bool, std::nullopt};
         }
         if (literal->value.size() >= 2 && literal->value.front() == '"' && literal->value.back() == '"') {
-            return StaticType::String;
+            return CheckedExpression{StaticType::String, std::nullopt};
         }
-        return StaticType::Number;
+        return CheckedExpression{StaticType::Number, std::nullopt};
     }
 
     if (const auto* function = dynamic_cast<const FunctionExpr*>(&expression)) {
@@ -414,39 +422,52 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
             throw TypeError(variable->name, "undefined variable `" + variable->name.lexeme + "`");
         }
         resolvedNames_.recordVariable(*variable, binding->resolvedName);
-        return binding->type;
+        return CheckedExpression{binding->type, binding->arity};
     }
 
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
-        const StaticType value = checkExpression(*assign->value);
+        const CheckedExpression value = checkExpressionInfo(*assign->value);
         Binding* target = findVariable(assign->name.lexeme);
         if (!target) {
             throw TypeError(assign->name, "undefined variable `" + assign->name.lexeme + "`");
         }
-        if (isKnown(target->type) && isKnown(value) && target->type != value) {
-            throw TypeError(assign->name, "cannot assign " + staticTypeName(value) + " to `" + assign->name.lexeme
+        if (isKnown(target->type) && isKnown(value.type) && target->type != value.type) {
+            throw TypeError(assign->name, "cannot assign " + staticTypeName(value.type) + " to `" + assign->name.lexeme
                 + "` of type " + staticTypeName(target->type));
         }
+        if (target->type == StaticType::Function && value.type == StaticType::Function
+            && target->arity && value.arity && *target->arity != *value.arity) {
+            throw TypeError(assign->name,
+                "cannot assign function with " + std::to_string(*value.arity)
+                    + " parameters to `" + assign->name.lexeme
+                    + "` of type function with " + std::to_string(*target->arity) + " parameters");
+        }
+
+        if (target->type == StaticType::Function) {
+            target->arity = value.type == StaticType::Function ? value.arity : std::nullopt;
+        }
+
         resolvedNames_.recordAssignment(*assign, target->resolvedName);
-        return isKnown(target->type) ? target->type : value;
+        const StaticType resultType = isKnown(target->type) ? target->type : value.type;
+        return CheckedExpression{resultType, resultType == StaticType::Function ? target->arity : std::nullopt};
     }
 
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {
-        return checkExpression(*grouping->expression);
+        return checkExpressionInfo(*grouping->expression);
     }
 
     if (const auto* unary = dynamic_cast<const UnaryExpr*>(&expression)) {
-        return checkUnary(*unary);
+        return CheckedExpression{checkUnary(*unary), std::nullopt};
     }
 
     if (const auto* binary = dynamic_cast<const BinaryExpr*>(&expression)) {
-        return checkBinary(*binary);
+        return CheckedExpression{checkBinary(*binary), std::nullopt};
     }
 
     if (const auto* logical = dynamic_cast<const LogicalExpr*>(&expression)) {
         const StaticType left = checkExpression(*logical->left);
         const StaticType right = checkExpression(*logical->right);
-        return logicalResultType(left, right);
+        return CheckedExpression{logicalResultType(left, right), std::nullopt};
     }
 
     if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
@@ -457,36 +478,33 @@ StaticType TypeChecker::checkExpression(const Expr& expression)
         for (const auto& element : array->elements) {
             checkExpression(*element);
         }
-        return StaticType::Array;
+        return CheckedExpression{StaticType::Array, std::nullopt};
     }
 
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
-        return checkIndex(*index);
+        return CheckedExpression{checkIndex(*index), std::nullopt};
     }
 
     throw TypeError("unsupported expression node");
 }
 
-StaticType TypeChecker::checkCall(const CallExpr& expression)
+TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression)
 {
-    const StaticType callee = checkExpression(*expression.callee);
+    const CheckedExpression callee = checkExpressionInfo(*expression.callee);
     for (const auto& argument : expression.arguments) {
-        checkExpression(*argument);
+        checkExpressionInfo(*argument);
     }
 
-    if (callee != StaticType::Unknown && callee != StaticType::Function) {
+    if (callee.type != StaticType::Unknown && callee.type != StaticType::Function) {
         throw TypeError(expression.paren, "can only call functions");
     }
 
-    if (const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get())) {
-        const Binding* binding = findVariable(variable->name.lexeme);
-        if (binding && binding->arity && *binding->arity != expression.arguments.size()) {
-            throw TypeError(expression.paren, "expected " + std::to_string(*binding->arity)
-                + " arguments but got " + std::to_string(expression.arguments.size()));
-        }
+    if (callee.arity && *callee.arity != expression.arguments.size()) {
+        throw TypeError(expression.paren, "expected " + std::to_string(*callee.arity)
+            + " arguments but got " + std::to_string(expression.arguments.size()));
     }
 
-    return StaticType::Unknown;
+    return CheckedExpression{StaticType::Unknown, std::nullopt};
 }
 
 StaticType TypeChecker::checkIndex(const IndexExpr& expression)

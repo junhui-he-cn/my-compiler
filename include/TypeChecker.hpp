@@ -62,6 +62,11 @@ public:
     const ResolvedNames& check(const Program& program);
 
 private:
+    struct CheckedExpression {
+        StaticType type;
+        std::optional<std::size_t> arity;
+    };
+
     struct Binding {
         StaticType type;
         std::string resolvedName;
@@ -79,16 +84,20 @@ private:
     Binding* findVariable(const std::string& name);
     const Binding* findVariable(const std::string& name) const;
     Binding declareVariable(const Token& name, StaticType type, std::optional<std::size_t> arity = std::nullopt);
-    Binding declareVariable(const LetStmt& statement, StaticType type);
+    Binding declareVariable(
+        const LetStmt& statement,
+        StaticType type,
+        std::optional<std::size_t> arity = std::nullopt);
     std::string makeResolvedName(const std::string& sourceName);
 
     void checkStatement(const Stmt& statement);
     void checkFunction(const FunctionStmt& statement);
     StaticType checkExpression(const Expr& expression);
-    StaticType checkFunctionExpression(const FunctionExpr& expression);
-    StaticType checkCall(const CallExpr& expression);
+    CheckedExpression checkExpressionInfo(const Expr& expression);
+    CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
+    CheckedExpression checkCall(const CallExpr& expression);
     StaticType checkIndex(const IndexExpr& expression);
-    StaticType checkLetInitializer(const LetStmt& statement);
+    CheckedExpression checkLetInitializer(const LetStmt& statement);
     StaticType resolveAnnotation(const Token& typeName) const;
     void checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const;
     StaticType checkUnary(const UnaryExpr& expression);
