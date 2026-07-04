@@ -163,7 +163,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
 - A parallel bytecode backend lowers register IR to bytecode; `--run-bytecode` should match `--run` for supported programs.
 - Arrays are immutable-length runtime values with mixed element types. Indexing is read-only and validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown.
-- Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
+- Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Known function values carry arity for static argument-count checks. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
 - Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.
 
 ## Roadmap Hints
