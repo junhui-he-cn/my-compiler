@@ -1,0 +1,8 @@
+let f = fun () {
+  return 1;
+};
+f = fun () {
+  return "x";
+};
+let s = f();
+s = 2;

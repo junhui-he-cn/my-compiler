@@ -1,0 +1,1 @@
+Type error at 5:1: cannot assign bool to `n` of type number
