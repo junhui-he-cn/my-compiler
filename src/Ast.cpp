@@ -148,6 +148,25 @@ void AssignExpr::print(std::ostream& out) const
     out << ')';
 }
 
+IndexAssignExpr::IndexAssignExpr(ExprPtr collection, Token bracket, ExprPtr index, ExprPtr value)
+    : collection(std::move(collection))
+    , bracket(std::move(bracket))
+    , index(std::move(index))
+    , value(std::move(value))
+{
+}
+
+void IndexAssignExpr::print(std::ostream& out) const
+{
+    out << "(= (index ";
+    writeExpr(out, collection);
+    out << ' ';
+    writeExpr(out, index);
+    out << ") ";
+    writeExpr(out, value);
+    out << ')';
+}
+
 UnaryExpr::UnaryExpr(Token op, ExprPtr right)
     : op(std::move(op))
     , right(std::move(right))

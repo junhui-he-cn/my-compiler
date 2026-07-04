@@ -166,6 +166,14 @@ ExprPtr Parser::assignment()
             return std::make_unique<AssignExpr>(variable->name, std::move(value));
         }
 
+        if (auto* index = dynamic_cast<IndexExpr*>(expr.get())) {
+            ExprPtr collection = std::move(index->collection);
+            Token bracket = std::move(index->bracket);
+            ExprPtr indexExpression = std::move(index->index);
+            return std::make_unique<IndexAssignExpr>(
+                std::move(collection), std::move(bracket), std::move(indexExpression), std::move(value));
+        }
+
         throw ParseError(equals, "invalid assignment target");
     }
 
