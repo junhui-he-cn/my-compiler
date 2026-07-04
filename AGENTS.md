@@ -44,6 +44,7 @@ ctest --test-dir build --output-on-failure
 python3 tests/run_golden_tests.py ./build/compiler_design
 python3 tests/run_golden_tests_selftest.py
 python3 tests/run_bytecode_artifact_tests.py ./build/compiler_design vm-rs
+python3 tests/run_rust_vm_tests.py ./build/compiler_design vm-rs --goldens
 cargo test --manifest-path vm-rs/Cargo.toml
 rm -rf tests/__pycache__
 ```
@@ -89,6 +90,8 @@ Use `StoreVar`-style operations for declarations/initialization and assignment-s
 When IR behavior changes, update both the IR interpreter and the bytecode backend unless the change is intentionally IR-only. Bytecode lowering should preserve current IR semantics, and `--run-bytecode` should match `--run` for supported programs.
 
 When changing bytecode opcodes or artifact formatting, update `docs/bytecode-text-format.md`, the C++ `BytecodeTextEmitter`, Rust parser/formatter in `vm-rs/src/format.rs`, and `tests/bytecode_artifacts/` together.
+
+When changing Rust VM execution semantics, update `vm-rs/src/vm.rs`, focused Rust unit tests, and `tests/run_rust_vm_tests.py` coverage together. Keep C++ `--run-bytecode` as the reference behavior until a later migration explicitly changes that policy.
 
 ## Golden Test Conventions
 

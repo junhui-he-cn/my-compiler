@@ -99,13 +99,14 @@ python3 tests/run_golden_tests.py ./build/compiler_design --update
 
 Backend note: the current C++ bytecode VM is frozen as a reference backend. Future VM work will happen in the standalone Rust `compiler-design-vm` project under `vm-rs/`, using `.cdbc` bytecode artifacts.
 
-Bytecode artifacts can be emitted and inspected without executing them:
+The Rust VM can parse, dump, and execute `.cdbc` artifacts:
 
 ```sh
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
 cargo run --manifest-path vm-rs/Cargo.toml -- dump program.cdbc
+cargo run --manifest-path vm-rs/Cargo.toml -- run program.cdbc
 ```
 
-The Rust VM `dump` command parses `.cdbc` and reprints canonical text. Rust bytecode execution remains a future phase.
+The C++ `--run-bytecode` mode remains the reference backend while Rust VM execution is developed further.
 
 If no file is provided, source is read from stdin.

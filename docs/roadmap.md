@@ -191,7 +191,7 @@ The C++ bytecode VM already exists and remains available for current behavior, b
 - Phase 0: rename to Compiler Design, scaffold `vm-rs/`, and document the planned `.cdbc` text format. Implemented.
 - Phase 1: add a C++ `.cdbc` bytecode artifact emitter. Implemented.
 - Phase 2: add Rust VM `.cdbc` parser and dump support. Implemented.
-- Phase 3: add Rust VM executor parity for current bytecode semantics.
+- Phase 3: add Rust VM executor parity for current bytecode semantics. Implemented.
 - Phase 4: explore GC heap ownership/root scanning, task scheduling, and JIT metadata/hot paths.
 
 Before starting a backend implementation phase, create a dedicated backend design spec and implementation plan rather than mixing it into language feature work.

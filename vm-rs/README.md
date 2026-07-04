@@ -1,30 +1,23 @@
 # Compiler Design VM
 
-`compiler-design-vm` is the planned standalone Rust bytecode VM for Compiler Design.
-
-Phase 0 status: this crate is a project skeleton and CLI placeholder. It does not parse `.cdbc` files and does not execute bytecode yet.
+`compiler-design-vm` is the standalone Rust bytecode VM for Compiler Design `.cdbc` artifacts.
 
 ## Current Commands
 
 ```sh
 cargo run --manifest-path vm-rs/Cargo.toml -- --help
+cargo run --manifest-path vm-rs/Cargo.toml -- dump program.cdbc
+cargo run --manifest-path vm-rs/Cargo.toml -- run program.cdbc
 ```
 
-## Planned Commands
+`dump` parses and prints canonical `.cdbc` text. `run` executes the artifact and writes program output to stdout.
 
-```sh
-compiler-design-vm run program.cdbc
-compiler-design-vm dump program.cdbc
-```
+## Module Boundaries
 
-`run` will execute a stable Compiler Design ByteCode artifact. `dump` will parse and print a normalized view of that artifact for debugging and golden tests. These commands are part of future phases.
-
-## Future Module Boundaries
-
+- `bytecode`: parsed bytecode structures.
 - `format`: `.cdbc` parser and serializer.
-- `bytecode`: bytecode structures and validation.
-- `value`: runtime values.
-- `vm`: executor.
-- `heap`: GC-aware heap ownership and root scanning.
-- `scheduler`: task scheduling, instruction budgets, and yield points.
-- `jit`: JIT metadata and native-code experiments.
+- `value`: runtime values, printing, truthiness, and equality.
+- `runtime`: shared cells, environments, functions, and arrays.
+- `vm`: executor, frames, instruction dispatch, calls, and runtime errors.
+
+Future backend tracks may add GC-aware heap ownership, task scheduling, and JIT metadata modules.
