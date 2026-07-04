@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::runtime::{ArrayValue, FunctionValue};
 use std::fmt;
 
