@@ -72,7 +72,10 @@ arguments   = expression,
 
 array       = "[", [ arguments ], "]" ;
 
-primary     = "false"
+functionExpr = "fun", "(", [ parameters ], ")", block ;
+
+primary     = functionExpr
+            | "false"
             | "true"
             | "nil"
             | number

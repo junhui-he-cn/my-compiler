@@ -155,7 +155,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 ## Current Language Semantics and Limitations
 
 - Supported statements include `let`, `print`, `if`/`else`, `while`, `fun`, `return`, blocks, and expression statements.
-- Supported expressions include literals, arrays, indexing, variables, calls, grouping, unary operators, binary/logical operators, and assignment expressions.
+- Supported expressions include literals, arrays, indexing, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - `let name: type = expression;` checks explicit annotations for `number`, `bool`, `string`, and `nil`; unannotated variables are accepted without full inference.
 - Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
@@ -163,9 +163,9 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
 - A parallel bytecode backend lowers register IR to bytecode; `--run-bytecode` should match `--run` for supported programs.
 - Arrays are immutable-length runtime values with mixed element types. Indexing is read-only and validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown.
-- Functions compile to an IR function table. Nested `fun` declarations are closures and capture enclosing local variables by reference through shared runtime cells.
+- Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
 - Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.
 
 ## Roadmap Hints
 
-Likely future work includes bytecode VM follow-ups such as GC, task scheduling, and JIT exploration; lambda/function expressions; array mutation and builtins; fuller type inference/checking; and additional backend expansion. When adding these, prefer vertical slices that update parser, AST, IR, bytecode, interpreters/VM, docs, and goldens together.
+Likely future work includes bytecode VM follow-ups such as GC, task scheduling, and JIT exploration; array mutation and builtins; fuller type inference/checking; and additional backend expansion. When adding these, prefer vertical slices that update parser, AST, IR, bytecode, interpreters/VM, docs, and goldens together.

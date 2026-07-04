@@ -200,9 +200,9 @@ Suggested features:
 
 Status: implemented. Nested `fun` declarations capture enclosing local variables by reference. Captured variables stay alive through shared runtime cells, and closure reads/assignments observe the same cell.
 
-### Phase 6C: Function Expressions / Lambdas
+### Phase 6C: Function Expressions / Lambdas — Implemented
 
-Future work. Add expression-level function literals after closure semantics are stable. This phase should reuse the same by-reference closure capture model introduced in Phase 6B.
+Status: implemented. Anonymous function expressions use `fun (parameter*) { declaration* }`. They produce ordinary function values, support `return`, and reuse the existing by-reference closure capture model. Expression-body lambdas and function type annotations remain future work.
 
 ## Phase 7: Arrays and Indexing — Implemented
 
@@ -249,4 +249,4 @@ Future Phase 8 follow-ups:
 
 ## Near-Term Recommendation
 
-Phases 1 through 8A are implemented. For backend continuity, start with Phase 8B GC groundwork: define VM heap ownership, root scanning, and value reachability before adding more runtime complexity. Other reasonable next slices are Phase 8C task scheduling groundwork, Phase 8D JIT exploration, Phase 6C lambdas, or array enhancements such as mutation and length operations.
+Phases 1 through 8A are implemented. For backend continuity, start with Phase 8B GC groundwork: define VM heap ownership, root scanning, and value reachability before adding more runtime complexity. Other reasonable next slices are Phase 8C task scheduling groundwork, Phase 8D JIT exploration, or array enhancements such as mutation and length operations.
