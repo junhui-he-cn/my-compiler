@@ -42,7 +42,8 @@ Supported expressions:
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Calls: `callee(argument*)`
-- Indexing: `array[index]` reads an element. Indexes must be integer numbers in range. Array mutation and `push` are not implemented yet.
+- Indexing: `array[index]` reads an element. Indexes must be integer numbers in range.
+- Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element mutation. Array length mutation and `push` are not implemented yet.
 - Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`
 - Unary operators: `!`, `-`

@@ -9,7 +9,7 @@ Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable, but 
 The language currently supports:
 
 - Statements: `let`, `print`, `if`/`else`, `while`, `fun`, `return`, blocks, and expression statements.
-- Expressions: literals, arrays, indexing, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
+- Expressions: literals, arrays, indexing, array index assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
@@ -71,7 +71,7 @@ Completed third slice: function bodies infer conservative return types, and call
 
 ## Phase 10: Array Mutation and Collection Builtins
 
-Status: in progress. Phase 10A is implemented: `len(value)` returns array element counts or string byte lengths with IR and bytecode parity. Index assignment and array mutation helpers remain future work.
+Status: in progress. Phase 10A is implemented: `len(value)` returns array element counts or string byte lengths with IR and bytecode parity. Phase 10B is implemented: `array[index] = value` mutates shared array elements and works in both runtime paths. Array mutation helpers such as `push` and `pop` remain future work.
 
 Goal: make arrays useful beyond read-only literals and indexing.
 
@@ -95,7 +95,7 @@ Likely touch points:
 Recommended split:
 
 - Phase 10A: `len` builtin as a small usability slice. Implemented.
-- Phase 10B: index assignment.
+- Phase 10B: index assignment. Implemented.
 - Phase 10C: `push` / `pop` mutation helpers.
 
 ## Phase 11: Loop Control and For Loops
