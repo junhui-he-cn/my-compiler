@@ -544,6 +544,10 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         return CheckedExpression{checkIndex(*index), std::nullopt, StaticType::Unknown};
     }
 
+    if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(&expression)) {
+        return checkIndexAssignment(*indexAssign);
+    }
+
     throw TypeError("unsupported expression node");
 }
 
@@ -608,6 +612,23 @@ StaticType TypeChecker::checkIndex(const IndexExpr& expression)
     }
 
     return StaticType::Unknown;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssignExpr& expression)
+{
+    const StaticType collection = checkExpression(*expression.collection);
+    const StaticType index = checkExpression(*expression.index);
+    const CheckedExpression value = checkExpressionInfo(*expression.value);
+
+    if (collection != StaticType::Unknown && collection != StaticType::Array) {
+        throw TypeError(expression.bracket, "can only assign array elements");
+    }
+
+    if (index != StaticType::Unknown && index != StaticType::Number) {
+        throw TypeError(expression.bracket, "array index must be number");
+    }
+
+    return value;
 }
 
 StaticType TypeChecker::resolveAnnotation(const Token& typeName) const

@@ -114,6 +114,7 @@ private:
     bool isBuiltinLenCall(const CallExpr& expression) const;
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
     StaticType checkIndex(const IndexExpr& expression);
+    CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     StaticType resolveAnnotation(const Token& typeName) const;
     void checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const;
