@@ -65,14 +65,21 @@ private:
     struct CheckedExpression {
         StaticType type;
         std::optional<std::size_t> arity;
+        StaticType returnType = StaticType::Unknown;
     };
 
     struct Binding {
         StaticType type;
         std::string resolvedName;
         std::optional<std::size_t> arity;
+        StaticType returnType = StaticType::Unknown;
         std::size_t scopeDepth = 0;
         std::size_t functionDepth = 0;
+    };
+
+    struct FunctionReturnContext {
+        bool sawReturn = false;
+        StaticType returnType = StaticType::Nil;
     };
 
     using Scope = std::unordered_map<std::string, Binding>;
@@ -83,15 +90,22 @@ private:
     const Scope& currentScope() const;
     Binding* findVariable(const std::string& name);
     const Binding* findVariable(const std::string& name) const;
-    Binding declareVariable(const Token& name, StaticType type, std::optional<std::size_t> arity = std::nullopt);
+    Binding declareVariable(
+        const Token& name,
+        StaticType type,
+        std::optional<std::size_t> arity = std::nullopt,
+        StaticType returnType = StaticType::Unknown);
     Binding declareVariable(
         const LetStmt& statement,
         StaticType type,
-        std::optional<std::size_t> arity = std::nullopt);
+        std::optional<std::size_t> arity = std::nullopt,
+        StaticType returnType = StaticType::Unknown);
     std::string makeResolvedName(const std::string& sourceName);
 
     void checkStatement(const Stmt& statement);
     void checkFunction(const FunctionStmt& statement);
+    StaticType checkFunctionBody(const std::vector<StmtPtr>& body);
+    void recordReturn(StaticType type);
     StaticType checkExpression(const Expr& expression);
     CheckedExpression checkExpressionInfo(const Expr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
@@ -109,6 +123,7 @@ private:
     ResolvedNames resolvedNames_;
     std::size_t nextResolvedName_ = 0;
     std::size_t functionDepth_ = 0;
+    std::vector<FunctionReturnContext> returnContexts_;
 };
 
 std::string staticTypeName(StaticType type);
