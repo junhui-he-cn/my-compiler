@@ -1,0 +1,1 @@
+Type error at 4:1: cannot assign function with 2 parameters to `f` of type function with 1 parameters

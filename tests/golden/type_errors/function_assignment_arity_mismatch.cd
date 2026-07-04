@@ -1,0 +1,6 @@
+let f = fun (x) {
+  return x;
+};
+f = fun (x, y) {
+  return x + y;
+};
