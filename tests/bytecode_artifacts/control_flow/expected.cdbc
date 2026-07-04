@@ -1,0 +1,38 @@
+cdbc 0.1
+
+constants:
+  c0 = number 0
+  c1 = number 2
+  c2 = number 1
+  c3 = string "one"
+  c4 = string "zero"
+  c5 = number 1
+
+names:
+  n0 = "i#0"
+  n1 = "i#0"
+  n2 = "i#0"
+  n3 = "i#0"
+  n4 = "i#0"
+
+main registers=12:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = load_var n1
+  r2 = constant c1
+  r3 = less r1, r2
+  jump_if_false r3, 20
+  r4 = load_var n2
+  r5 = constant c2
+  r6 = equal r4, r5
+  jump_if_false r6, 13
+  r7 = constant c3
+  print r7
+  jump 15
+  r8 = constant c4
+  print r8
+  r9 = load_var n3
+  r10 = constant c5
+  r11 = add r9, r10
+  assign_var n4, r11
+  jump 2

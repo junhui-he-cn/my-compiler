@@ -1,0 +1,13 @@
+fun makeCounter(start) {
+  let value = start;
+  fun next() {
+    value = value + 1;
+    return value;
+  }
+  return next;
+}
+let counter = makeCounter(1);
+print counter();
+let xs = [1, 2, 3];
+xs[1] = len(xs);
+print xs[1];
