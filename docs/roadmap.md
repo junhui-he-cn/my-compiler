@@ -2,7 +2,9 @@
 
 This roadmap is the active planning entry point for user-visible language development. The previous mixed compiler/backend roadmap is preserved in `docs/roadmap-archive-2026-07-04.md`.
 
-Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable. The C++ bytecode VM is frozen as a reference backend, and future backend work will move to the standalone Rust `compiler-design-vm` project under `vm-rs/`. The current near-term language direction remains improving the language itself.
+Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable. The former C++ bytecode VM has been removed, and future backend work targets the standalone Rust `compiler-design-vm` project under `vm-rs/` and `.cdbc` artifacts. The current near-term language direction remains improving the language itself.
+
+Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-process bytecode-run CLI mode; Rust VM is now the bytecode execution backend. Implemented.
 
 ## Current Implemented Baseline
 
@@ -14,14 +16,14 @@ The language currently supports:
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
 - Array literals and read-only indexing.
-- IR interpreter and bytecode VM execution paths that should match for implemented language features.
+- C++ IR interpreter execution via `--run`, plus bytecode artifact emission and Rust VM execution via `.cdbc`.
 
 For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf` and `README.md`.
 
 ## Guiding Principles
 
 - Prefer vertical language slices that update parser, AST, type checker, IR, bytecode lowering, interpreters/VM, docs, and goldens together when behavior crosses layers.
-- Keep `--run` and `--run-bytecode` behavior aligned for every supported user-visible feature.
+- Keep `--run`, bytecode lowering, and Rust VM execution aligned for every supported user-visible feature covered by parity tests.
 - Keep planned syntax out of `README.md` and `docs/language-grammar.ebnf` until implemented.
 - Write a focused design spec and implementation plan for each substantial phase before changing compiler behavior.
 - Preserve parse errors, type errors, compile errors, and runtime errors as distinct test categories.
@@ -88,9 +90,9 @@ Likely touch points:
 - assignment target parsing and AST representation
 - `Value` array representation if arrays become mutable
 - IR operations for index assignment or builtin calls
-- IR interpreter and bytecode VM behavior
+- IR interpreter, bytecode lowering, and Rust VM behavior
 - runtime-error and type-error fixtures
-- success fixtures with `run.out` and `run_bytecode.out`
+- success fixtures with `run.out` plus Rust VM parity coverage
 
 Recommended split:
 

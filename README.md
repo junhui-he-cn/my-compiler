@@ -75,7 +75,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, `bytecode.out`, `run.out`, or `run_bytecode.out` files to cover successful syntax and backend behavior. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files, and optionally `example.run_bytecode.err` and `example.run_bytecode.exit` files for bytecode VM diagnostics. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files. Type-error fixtures live in `tests/golden/type_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
+Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, `bytecode.out`, or `run.out` files to cover successful syntax and backend behavior. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files. Type-error fixtures live in `tests/golden/type_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
 
 To refresh golden files after an intentional output change:
 
@@ -91,22 +91,15 @@ python3 tests/run_golden_tests.py ./build/compiler_design --update
 ./build/compiler_design --ir examples/hello.cd
 ./build/compiler_design --run examples/hello.cd
 ./build/compiler_design --bytecode examples/hello.cd
-./build/compiler_design --run-bytecode examples/hello.cd
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
 ```
 
-`--run` executes the existing IR interpreter. `--run-bytecode` executes the newer bytecode VM. They are expected to match for implemented language features.
-
-Backend note: the current C++ bytecode VM is frozen as a reference backend. Future VM work will happen in the standalone Rust `compiler-design-vm` project under `vm-rs/`, using `.cdbc` bytecode artifacts.
-
-The Rust VM can parse, dump, and execute `.cdbc` artifacts:
+`--run` executes the C++ IR interpreter. `--bytecode` remains a debug-print mode for inspecting compiler output. Bytecode execution is handled by the Rust VM via `.cdbc` artifacts:
 
 ```sh
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
 cargo run --manifest-path vm-rs/Cargo.toml -- dump program.cdbc
 cargo run --manifest-path vm-rs/Cargo.toml -- run program.cdbc
 ```
-
-The C++ `--run-bytecode` mode remains the reference backend while Rust VM execution is developed further.
 
 If no file is provided, source is read from stdin.

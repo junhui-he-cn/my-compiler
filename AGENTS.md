@@ -12,7 +12,7 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
 - An IR compiler that lowers AST nodes to a small virtual-register, three-address IR.
 - An IR interpreter that executes the register IR.
 - A CLI binary named `compiler_design`.
-- Python golden tests that verify AST, IR, bytecode, run, run-bytecode, parse-error, and runtime-error outputs.
+- Python golden tests that verify AST, IR, bytecode, run, parse-error, and runtime-error outputs.
 
 ## Architecture Map
 
@@ -25,7 +25,7 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
 - `include/Bytecode.hpp`, `src/Bytecode.cpp`: bytecode opcodes, program/function containers, and bytecode printer output.
 - `include/BytecodeTextEmitter.hpp`, `src/BytecodeTextEmitter.cpp`: stable `.cdbc` text artifact emission for the Rust VM boundary.
 - `include/BytecodeCompiler.hpp`, `src/BytecodeCompiler.cpp`: IR-to-bytecode lowering.
-- `include/BytecodeVM.hpp`, `src/BytecodeVM.cpp`: bytecode VM execution, VM heap boundary, and VM thread/frame state.
+- `vm-rs/src/vm.rs`, `vm-rs/src/value.rs`, `vm-rs/src/runtime.rs`: Rust `.cdbc` bytecode execution, runtime values, shared cells, closures, and arrays.
 - `include/Value.hpp`, `src/Value.cpp`: runtime value representation and formatting.
 - `src/main.cpp`: CLI modes and top-level error handling.
 - `docs/language-grammar.ebnf`: implemented grammar and precedence reference.
@@ -43,7 +43,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 python3 tests/run_golden_tests.py ./build/compiler_design
 python3 tests/run_golden_tests_selftest.py
-python3 tests/run_bytecode_artifact_tests.py ./build/compiler_design vm-rs
+python3 tests/bytecode_artifact_tests.py ./build/compiler_design vm-rs
 python3 tests/run_rust_vm_tests.py ./build/compiler_design vm-rs --goldens
 cargo test --manifest-path vm-rs/Cargo.toml
 rm -rf tests/__pycache__
@@ -87,11 +87,11 @@ When syntax affects runtime behavior or code generation:
 
 Use `StoreVar`-style operations for declarations/initialization and assignment-specific operations for updating existing bindings when the distinction matters.
 
-When IR behavior changes, update both the IR interpreter and the bytecode backend unless the change is intentionally IR-only. Bytecode lowering should preserve current IR semantics, and `--run-bytecode` should match `--run` for supported programs.
+When IR behavior changes, update both the IR interpreter and bytecode artifact/Rust VM path unless the change is intentionally IR-only. Bytecode lowering should preserve current IR semantics, and Rust VM execution should match `--run` for supported programs covered by `tests/run_rust_vm_tests.py`.
 
 When changing bytecode opcodes or artifact formatting, update `docs/bytecode-text-format.md`, the C++ `BytecodeTextEmitter`, Rust parser/formatter in `vm-rs/src/format.rs`, and `tests/bytecode_artifacts/` together.
 
-When changing Rust VM execution semantics, update `vm-rs/src/vm.rs`, focused Rust unit tests, and `tests/run_rust_vm_tests.py` coverage together. Keep C++ `--run-bytecode` as the reference behavior until a later migration explicitly changes that policy.
+When changing Rust VM execution semantics, update `vm-rs/src/vm.rs`, focused Rust unit tests, and `tests/run_rust_vm_tests.py` coverage together.
 
 ## Golden Test Conventions
 
@@ -104,7 +104,7 @@ tests/golden/<case>/ir.out
 tests/golden/<case>/run.out
 ```
 
-A successful fixture may include one or more expected output files. In non-update mode, a success fixture with no expected files is a test failure. Successful fixtures may include `bytecode.out` for `--bytecode` and `run_bytecode.out` for `--run-bytecode`.
+A successful fixture may include one or more expected output files. In non-update mode, a success fixture with no expected files is a test failure. Successful fixtures may include `bytecode.out` for `--bytecode`. Bytecode execution parity is covered by `tests/run_rust_vm_tests.py`, not by C++ bytecode-run golden files.
 
 Runtime-error fixtures live under `tests/golden/runtime_errors`:
 
@@ -130,7 +130,6 @@ tests/golden/type_errors/<case>.err
 tests/golden/type_errors/<case>.exit
 ```
 
-Runtime-error fixtures may include `.run_bytecode.err` and `.run_bytecode.exit` to check bytecode VM runtime diagnostics.
 
 Runtime-error, parse-error, and type-error fixtures should not produce stdout. The runner checks stderr and exit code.
 
@@ -169,7 +168,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
 - Reading or assigning an undefined variable is a type error before IR compilation.
 - Runtime values currently include nil, numbers, booleans, strings, functions, and arrays.
-- A parallel C++ bytecode backend lowers register IR to bytecode; `--run-bytecode` should match `--run` for supported programs, but this C++ VM is frozen for future backend research.
+- A C++ bytecode backend lowers register IR to bytecode and `.cdbc` artifacts; Rust `compiler-design-vm` is the bytecode execution backend.
 - Future VM backend work targets the Rust `compiler-design-vm` project under `vm-rs/` and `.cdbc` artifacts.
 - Arrays are mutable, immutable-length runtime values with mixed element types. Indexing validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown; `array[index] = value` mutates an existing element and evaluates to the assigned value.
 - The builtin `len(value)` returns array element counts or string byte lengths as a number. User bindings named `len` shadow the builtin; unknown argument types are checked at runtime.
