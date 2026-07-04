@@ -73,6 +73,7 @@ private:
     Value executeAdd(const VMFrame& frame, BytecodeRegister left, BytecodeRegister right);
     Value executeArray(const BytecodeInstruction& instruction, const VMFrame& frame);
     Value executeIndex(const VMFrame& frame, BytecodeRegister collection, BytecodeRegister index);
+    Value executeLen(const VMFrame& frame, BytecodeRegister value);
 
     std::ostream& output_;
     std::shared_ptr<Environment> globals_ = std::make_shared<Environment>();

@@ -22,6 +22,7 @@ enum class IROp {
     AssignVar,
     Call,
     Index,
+    Len,
     Print,
     Return,
     Negate,
@@ -75,6 +76,7 @@ public:
     void emitAssignVar(std::string name, IRRegister value);
     IRRegister emitCall(IRRegister callee, std::vector<IRRegister> arguments);
     IRRegister emitIndex(IRRegister collection, IRRegister index);
+    IRRegister emitLen(IRRegister value);
     void emitPrint(IRRegister value);
     void emitReturn(IRRegister value);
     IRRegister emitUnary(IROp op, IRRegister value);

@@ -207,8 +207,27 @@ IRRegister IRCompiler::emitFunctionExpr(const FunctionExpr& expression)
     return ir_.emitMakeFunction(functionIndex);
 }
 
+bool IRCompiler::isBuiltinLenCall(const CallExpr& expression) const
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
+    return variable && variable->name.lexeme == "len" && !resolvedNames_->hasVariable(*variable);
+}
+
+IRRegister IRCompiler::emitLenCall(const CallExpr& expression)
+{
+    if (expression.arguments.size() != 1) {
+        throw IRCompileError("len expects exactly one argument");
+    }
+    const IRRegister value = compileExpression(*expression.arguments.front());
+    return ir_.emitLen(value);
+}
+
 IRRegister IRCompiler::emitCall(const CallExpr& expression)
 {
+    if (isBuiltinLenCall(expression)) {
+        return emitLenCall(expression);
+    }
+
     IRRegister callee = compileExpression(*expression.callee);
     std::vector<IRRegister> arguments;
     for (const auto& argument : expression.arguments) {

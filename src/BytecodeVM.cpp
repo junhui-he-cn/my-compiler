@@ -177,6 +177,9 @@ BytecodeVM::ExecutionResult BytecodeVM::executeInstructions(
         case BytecodeOp::Index:
             writeRegister(frame, readDest(instruction), executeIndex(frame, readLeft(instruction), readRight(instruction)));
             break;
+        case BytecodeOp::Len:
+            writeRegister(frame, readDest(instruction), executeLen(frame, readLeft(instruction)));
+            break;
         case BytecodeOp::Print:
             output_ << valueToString(readRegister(frame, readLeft(instruction))) << '\n';
             break;
@@ -501,4 +504,16 @@ Value BytecodeVM::executeIndex(const VMFrame& frame, BytecodeRegister collection
     }
 
     return elements[position];
+}
+
+Value BytecodeVM::executeLen(const VMFrame& frame, BytecodeRegister value)
+{
+    const Value& input = readRegister(frame, value);
+    if (input.type() == Value::Type::Array) {
+        return Value::number(static_cast<double>(input.asArray().elements->size()));
+    }
+    if (input.type() == Value::Type::String) {
+        return Value::number(static_cast<double>(input.asString().size()));
+    }
+    throw BytecodeRuntimeError("len expects array or string");
 }

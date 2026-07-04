@@ -33,6 +33,7 @@ public:
     const std::vector<std::string>& parameterNames(const FunctionStmt& statement) const;
     const std::string& functionName(const FunctionExpr& expression) const;
     const std::vector<std::string>& parameterNames(const FunctionExpr& expression) const;
+    bool hasVariable(const VariableExpr& expression) const;
     const std::string& variableName(const VariableExpr& expression) const;
     const std::string& assignmentName(const AssignExpr& expression) const;
 
@@ -110,6 +111,8 @@ private:
     CheckedExpression checkExpressionInfo(const Expr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
     CheckedExpression checkCall(const CallExpr& expression);
+    bool isBuiltinLenCall(const CallExpr& expression) const;
+    CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
     StaticType checkIndex(const IndexExpr& expression);
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     StaticType resolveAnnotation(const Token& typeName) const;

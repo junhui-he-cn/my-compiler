@@ -168,6 +168,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
         case IROp::Index:
             writeRegister(frame, readDest(instruction), executeIndex(frame, readLeft(instruction), readRight(instruction)));
             break;
+        case IROp::Len:
+            writeRegister(frame, readDest(instruction), executeLen(frame, readLeft(instruction)));
+            break;
         case IROp::Print:
             output_ << valueToString(readRegister(frame, readLeft(instruction))) << '\n';
             break;
@@ -443,6 +446,18 @@ Value IRInterpreter::executeIndex(const Frame& frame, IRRegister collection, IRR
     }
 
     return elements[position];
+}
+
+Value IRInterpreter::executeLen(const Frame& frame, IRRegister value)
+{
+    const Value& input = readRegister(frame, value);
+    if (input.type() == Value::Type::Array) {
+        return Value::number(static_cast<double>(input.asArray().elements->size()));
+    }
+    if (input.type() == Value::Type::String) {
+        return Value::number(static_cast<double>(input.asString().size()));
+    }
+    throw IRRuntimeError("len expects array or string");
 }
 
 Value IRInterpreter::executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double))

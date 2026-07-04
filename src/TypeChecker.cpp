@@ -123,6 +123,11 @@ const std::vector<std::string>& ResolvedNames::parameterNames(const FunctionExpr
     return found->second;
 }
 
+bool ResolvedNames::hasVariable(const VariableExpr& expression) const
+{
+    return variableNames_.find(&expression) != variableNames_.end();
+}
+
 const std::string& ResolvedNames::variableName(const VariableExpr& expression) const
 {
     const auto found = variableNames_.find(&expression);
@@ -542,8 +547,32 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     throw TypeError("unsupported expression node");
 }
 
+bool TypeChecker::isBuiltinLenCall(const CallExpr& expression) const
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
+    return variable && variable->name.lexeme == "len" && findVariable("len") == nullptr;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkBuiltinLenCall(const CallExpr& expression)
+{
+    if (expression.arguments.size() != 1) {
+        throw TypeError(expression.paren, "expected 1 arguments but got " + std::to_string(expression.arguments.size()));
+    }
+
+    const CheckedExpression argument = checkExpressionInfo(*expression.arguments.front());
+    if (isKnown(argument.type) && argument.type != StaticType::Array && argument.type != StaticType::String) {
+        throw TypeError(expression.paren, "len expects array or string, got " + staticTypeName(argument.type));
+    }
+
+    return CheckedExpression{StaticType::Number, std::nullopt, StaticType::Unknown};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression)
 {
+    if (isBuiltinLenCall(expression)) {
+        return checkBuiltinLenCall(expression);
+    }
+
     const CheckedExpression callee = checkExpressionInfo(*expression.callee);
     for (const auto& argument : expression.arguments) {
         checkExpressionInfo(*argument);

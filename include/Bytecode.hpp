@@ -22,6 +22,7 @@ enum class BytecodeOp {
     AssignVar,
     Call,
     Index,
+    Len,
     Print,
     Return,
     Negate,

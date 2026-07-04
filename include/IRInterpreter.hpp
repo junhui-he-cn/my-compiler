@@ -55,6 +55,7 @@ private:
     Value executeAdd(const Frame& frame, IRRegister left, IRRegister right);
     Value executeArray(const IRInstruction& instruction, const Frame& frame);
     Value executeIndex(const Frame& frame, IRRegister collection, IRRegister index);
+    Value executeLen(const Frame& frame, IRRegister value);
 
     std::ostream& output_;
     std::shared_ptr<Environment> globals_ = std::make_shared<Environment>();
