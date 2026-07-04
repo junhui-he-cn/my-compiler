@@ -1,5 +1,7 @@
 mod bytecode;
 mod format;
+mod runtime;
+mod value;
 
 use std::env;
 use std::fs;
