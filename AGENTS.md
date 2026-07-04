@@ -168,4 +168,4 @@ Use locations for lexer, parser, and type errors when a source token/location is
 
 ## Roadmap Hints
 
-Likely future work includes bytecode VM follow-ups such as GC, task scheduling, and JIT exploration; array mutation and builtins; fuller type inference/checking; and additional backend expansion. When adding these, prefer vertical slices that update parser, AST, IR, bytecode, interpreters/VM, docs, and goldens together.
+The active roadmap in `docs/roadmap.md` is now language-focused. Likely future language work includes richer type inference/checking, array mutation and collection builtins, loop control, records/structs, standard builtins, modules/imports, and diagnostic polish. Bytecode VM follow-ups such as GC, task scheduling, and JIT exploration are deferred backend tracks; start them only from a dedicated backend design spec and implementation plan. When adding language features, prefer vertical slices that update parser, AST, type checker, IR, bytecode, interpreters/VM, docs, and goldens together.
