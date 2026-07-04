@@ -173,6 +173,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitLogical(*logical);
     }
 
+    if (const auto* function = dynamic_cast<const FunctionExpr*>(&expression)) {
+        return emitFunctionExpr(*function);
+    }
+
     if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
         return emitCall(*call);
     }
@@ -186,6 +190,21 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
     }
 
     throw IRCompileError("unsupported expression node");
+}
+
+IRRegister IRCompiler::emitFunctionExpr(const FunctionExpr& expression)
+{
+    std::vector<std::string> parameters = resolvedNames_->parameterNames(expression);
+    ir_.beginFunction(resolvedNames_->functionName(expression), std::move(parameters));
+
+    for (const auto& statement : expression.body) {
+        compileStatement(*statement);
+    }
+    IRRegister nilValue = ir_.emitConstant(Value::nil());
+    ir_.emitReturn(nilValue);
+
+    const std::size_t functionIndex = ir_.endFunction();
+    return ir_.emitMakeFunction(functionIndex);
 }
 
 IRRegister IRCompiler::emitCall(const CallExpr& expression)

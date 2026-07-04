@@ -22,6 +22,7 @@ private:
     void compileReturn(const ReturnStmt& statement);
     IRRegister compileExpression(const Expr& expression);
     IRRegister emitCall(const CallExpr& expression);
+    IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);
     IRRegister emitUnary(TokenType op, IRRegister value);
