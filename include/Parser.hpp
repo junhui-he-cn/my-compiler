@@ -23,6 +23,9 @@ private:
     StmtPtr declaration();
     StmtPtr functionDeclaration();
     StmtPtr letDeclaration();
+    std::vector<Parameter> parameters();
+    Parameter parameter();
+    std::optional<Token> optionalReturnType();
     StmtPtr statement();
     StmtPtr ifStatement();
     StmtPtr whileStatement();

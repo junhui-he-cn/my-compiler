@@ -20,6 +20,11 @@ using ExprPtr = std::unique_ptr<Expr>;
 struct Stmt;
 using StmtPtr = std::unique_ptr<Stmt>;
 
+struct Parameter {
+    Token name;
+    std::optional<Token> typeName;
+};
+
 struct LiteralExpr final : Expr {
     explicit LiteralExpr(std::string value);
     void print(std::ostream& out) const override;
@@ -111,11 +116,12 @@ struct IndexExpr final : Expr {
 };
 
 struct FunctionExpr final : Expr {
-    FunctionExpr(Token keyword, std::vector<Token> parameters, std::vector<StmtPtr> body);
+    FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body);
     void print(std::ostream& out) const override;
 
     Token keyword;
-    std::vector<Token> parameters;
+    std::vector<Parameter> parameters;
+    std::optional<Token> returnTypeName;
     std::vector<StmtPtr> body;
 };
 
@@ -186,11 +192,12 @@ struct ContinueStmt final : Stmt {
 };
 
 struct FunctionStmt final : Stmt {
-    FunctionStmt(Token name, std::vector<Token> parameters, std::vector<StmtPtr> body);
+    FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
-    std::vector<Token> parameters;
+    std::vector<Parameter> parameters;
+    std::optional<Token> returnTypeName;
     std::vector<StmtPtr> body;
 };
 

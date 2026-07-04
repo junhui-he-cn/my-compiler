@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <sstream>
+#include <utility>
 
 ParseError::ParseError(const Token& token, const std::string& message)
     : DiagnosticError(DiagnosticKind::Parse, SourceLocation{token.line, token.column}, message)
@@ -38,16 +39,15 @@ StmtPtr Parser::functionDeclaration()
     Token name = consume(TokenType::Identifier, "expected function name after `fun`");
     consume(TokenType::LeftParen, "expected `(` after function name");
 
-    std::vector<Token> parameters;
-    if (!check(TokenType::RightParen)) {
-        do {
-            parameters.push_back(consume(TokenType::Identifier, "expected parameter name"));
-        } while (match(TokenType::Comma));
-    }
-
+    std::vector<Parameter> parsedParameters = parameters();
     consume(TokenType::RightParen, "expected `)` after function parameters");
+    std::optional<Token> returnTypeName = optionalReturnType();
     consume(TokenType::LeftBrace, "expected `{` before function body");
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), blockStatements());
+    return std::make_unique<FunctionStmt>(
+        std::move(name),
+        std::move(parsedParameters),
+        std::move(returnTypeName),
+        blockStatements());
 }
 
 StmtPtr Parser::letDeclaration()
@@ -64,6 +64,35 @@ StmtPtr Parser::letDeclaration()
 
     consume(TokenType::Semicolon, "expected `;` after variable declaration");
     return std::make_unique<LetStmt>(std::move(name), std::move(typeName), std::move(initializer));
+}
+
+std::vector<Parameter> Parser::parameters()
+{
+    std::vector<Parameter> parsedParameters;
+    if (!check(TokenType::RightParen)) {
+        do {
+            parsedParameters.push_back(parameter());
+        } while (match(TokenType::Comma));
+    }
+    return parsedParameters;
+}
+
+Parameter Parser::parameter()
+{
+    Token name = consume(TokenType::Identifier, "expected parameter name");
+    std::optional<Token> typeName;
+    if (match(TokenType::Colon)) {
+        typeName = consume(TokenType::Identifier, "expected parameter type after `:`");
+    }
+    return Parameter{std::move(name), std::move(typeName)};
+}
+
+std::optional<Token> Parser::optionalReturnType()
+{
+    if (!match(TokenType::Colon)) {
+        return std::nullopt;
+    }
+    return consume(TokenType::Identifier, "expected return type after `:`");
 }
 
 StmtPtr Parser::statement()
@@ -332,16 +361,15 @@ ExprPtr Parser::functionExpression()
     Token keyword = previous();
     consume(TokenType::LeftParen, "expected `(` after `fun`");
 
-    std::vector<Token> parameters;
-    if (!check(TokenType::RightParen)) {
-        do {
-            parameters.push_back(consume(TokenType::Identifier, "expected parameter name"));
-        } while (match(TokenType::Comma));
-    }
-
+    std::vector<Parameter> parsedParameters = parameters();
     consume(TokenType::RightParen, "expected `)` after function parameters");
+    std::optional<Token> returnTypeName = optionalReturnType();
     consume(TokenType::LeftBrace, "expected `{` before function body");
-    return std::make_unique<FunctionExpr>(std::move(keyword), std::move(parameters), blockStatements());
+    return std::make_unique<FunctionExpr>(
+        std::move(keyword),
+        std::move(parsedParameters),
+        std::move(returnTypeName),
+        blockStatements());
 }
 
 ExprPtr Parser::primary()

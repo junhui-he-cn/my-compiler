@@ -21,16 +21,26 @@ void writeExpr(std::ostream& out, const ExprPtr& expr)
     }
 }
 
-void writeParameterList(std::ostream& out, const std::vector<Token>& parameters)
+void writeParameterList(std::ostream& out, const std::vector<Parameter>& parameters)
 {
     out << '(';
     for (std::size_t i = 0; i < parameters.size(); ++i) {
         if (i != 0) {
             out << ", ";
         }
-        out << parameters[i].lexeme;
+        out << parameters[i].name.lexeme;
+        if (parameters[i].typeName) {
+            out << ": " << parameters[i].typeName->lexeme;
+        }
     }
     out << ')';
+}
+
+void writeReturnAnnotation(std::ostream& out, const std::optional<Token>& returnTypeName)
+{
+    if (returnTypeName) {
+        out << ": " << returnTypeName->lexeme;
+    }
 }
 
 void writeInlineStmt(std::ostream& out, const Stmt& stmt)
@@ -112,6 +122,7 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
     if (const auto* functionStmt = dynamic_cast<const FunctionStmt*>(&stmt)) {
         out << "(fun " << functionStmt->name.lexeme << ' ';
         writeParameterList(out, functionStmt->parameters);
+        writeReturnAnnotation(out, functionStmt->returnTypeName);
         for (const auto& child : functionStmt->body) {
             out << ' ';
             writeInlineStmt(out, *child);
@@ -283,9 +294,10 @@ void IndexExpr::print(std::ostream& out) const
     out << ')';
 }
 
-FunctionExpr::FunctionExpr(Token keyword, std::vector<Token> parameters, std::vector<StmtPtr> body)
+FunctionExpr::FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body)
     : keyword(std::move(keyword))
     , parameters(std::move(parameters))
+    , returnTypeName(std::move(returnTypeName))
     , body(std::move(body))
 {
 }
@@ -294,6 +306,7 @@ void FunctionExpr::print(std::ostream& out) const
 {
     out << "(fun ";
     writeParameterList(out, parameters);
+    writeReturnAnnotation(out, returnTypeName);
     for (const auto& statement : body) {
         out << ' ';
         writeInlineStmt(out, *statement);
@@ -429,9 +442,10 @@ void ContinueStmt::print(std::ostream& out, int indent) const
     out << "Continue\n";
 }
 
-FunctionStmt::FunctionStmt(Token name, std::vector<Token> parameters, std::vector<StmtPtr> body)
+FunctionStmt::FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body)
     : name(std::move(name))
     , parameters(std::move(parameters))
+    , returnTypeName(std::move(returnTypeName))
     , body(std::move(body))
 {
 }
@@ -439,14 +453,10 @@ FunctionStmt::FunctionStmt(Token name, std::vector<Token> parameters, std::vecto
 void FunctionStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
-    out << "Fun " << name.lexeme << '(';
-    for (std::size_t i = 0; i < parameters.size(); ++i) {
-        if (i != 0) {
-            out << ", ";
-        }
-        out << parameters[i].lexeme;
-    }
-    out << ")\n";
+    out << "Fun " << name.lexeme;
+    writeParameterList(out, parameters);
+    writeReturnAnnotation(out, returnTypeName);
+    out << '\n';
     for (const auto& statement : body) {
         statement->print(out, indent + 1);
     }
