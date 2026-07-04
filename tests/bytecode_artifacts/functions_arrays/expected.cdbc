@@ -70,7 +70,7 @@ function f0 name="next" arity=0 registers=5:
   return r4
 
 function f1 name="makeCounter" arity=1 registers=5:
-  param 0 = "start"
+  param 0 = "start#1"
   r0 = load_var n1
   store_var n2, r0
   r1 = constant c1

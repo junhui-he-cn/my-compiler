@@ -15,6 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(compiler_design
     src/Ast.cpp
     src/Bytecode.cpp
+    src/BytecodeTextEmitter.cpp
     src/BytecodeCompiler.cpp
     src/BytecodeVM.cpp
     src/Diagnostic.cpp
