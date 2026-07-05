@@ -2,7 +2,8 @@
 
 program     = { declaration } ;
 
-declaration = funDecl
+declaration = structDecl
+            | funDecl
             | letDecl
             | statement ;
 
@@ -19,6 +20,14 @@ funDecl     = "fun", identifier,
               "(", [ parameters ], ")",
               [ ":", typeExpr ],
               block ;
+
+structDecl  = "struct", identifier,
+              "{", [ structFields ], "}" ;
+
+structFields = structField,
+               { ",", structField } ;
+
+structField = identifier, ":", typeExpr ;
 
 parameters  = parameter,
               { ",", parameter } ;

@@ -29,6 +29,7 @@ Supported statements:
 ```text
 let name = expression;
 let name: type = expression;
+struct Name { field: type, ... }
 print expression;
 if expression { declaration* } [else { declaration* }]
 while expression { declaration* }
@@ -40,13 +41,24 @@ return [expression];
 expression;
 ```
 
-Type annotations support `number`, `bool`, `string`, `nil`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and `struct`; expressions whose static type is still unknown remain flexible. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Array element types, generic types, and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
+Type annotations support `number`, `bool`, `string`, `nil`, named struct types, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and anonymous `struct`; expressions whose static type is still unknown remain flexible. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Array element types, generic types, and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
 
 `while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break;` exits the nearest enclosing `while`, and `continue;` skips to that loop's next condition check. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
 
 Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Known function values carry arity, parameter types when annotated, and inferred or annotated return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
-Struct literals use `{ field: expression, ... }`, preserve field order when printed, and support field reads with `value.field`. Existing fields can be reassigned with `value.field = expression`; the assignment evaluates to the assigned value. Structs are reference values with identity equality, so aliases observe field mutation. Assigning a missing field is a runtime error. Named struct declarations, methods, and struct type annotations are not implemented yet.
+Struct literals use `{ field: expression, ... }`, preserve field order when printed, and support field reads with `value.field`. Existing fields can be reassigned with `value.field = expression`; the assignment evaluates to the assigned value. Structs are reference values with identity equality, so aliases observe field mutation. Assigning a missing field is a runtime error.
+
+Named struct declarations define static field shapes:
+
+```cd
+struct Person { name: string, age: number }
+let p: Person = { name: "Ada", age: 36 };
+print p.name;
+p.age = 37;
+```
+
+Named structs are static-only in this phase: runtime values remain anonymous struct values. Literal initialization of a named struct requires an exact field match, field order does not matter, and field access/assignment on known named struct values is statically checked. Constructor syntax such as `Person { ... }`, methods, recursive struct types, and runtime type names are not implemented yet.
 
 ```cd
 let person = { name: "Ada", age: 36 };
