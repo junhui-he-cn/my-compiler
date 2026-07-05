@@ -91,6 +91,7 @@ load_var
 store_var
 assign_var
 call
+native_call
 index
 assign_index
 field
@@ -124,6 +125,14 @@ rD = assign_field rObject, nName, rValue
 ```
 
 `assign_field` mutates an existing struct field and stores the assigned value in `rD`; assigning to a missing field is a runtime error.
+
+Native stdlib calls use a name-table reference for the function name:
+
+```text
+rD = native_call nName [rArg0, rArg1, ...]
+```
+
+`native_call` invokes a registered VM native stdlib function by name-table reference; in this version `push` and `pop` are supported.
 
 New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter and executor together.
 

@@ -9,7 +9,7 @@ The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, indexing, array
 element assignment, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
-and the builtin `len`.
+and builtins such as `len`, `push`, and `pop`.
 
 The compiler pipeline includes:
 
@@ -69,6 +69,8 @@ print person.age = 38; // 38
 
 The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and `len("hello")` returns `5` using the current runtime string byte length. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
 
+The native stdlib functions `push(array, value)` and `pop(array)` mutate arrays in place. `push` appends a value and returns `nil`; `pop` removes and returns the last value. Arrays are reference values, so aliases observe length changes. Calling `pop([])` is a runtime error. User bindings named `push` or `pop` shadow the stdlib functions, matching `len` shadowing behavior.
+
 Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
@@ -79,7 +81,7 @@ Supported expressions:
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Calls: `callee(argument*)`
 - Indexing: `array[index]` reads an element. Indexes must be integer numbers in range.
-- Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element mutation. Array length mutation and `push` are not implemented yet.
+- Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element and length mutation through `push(array, value)` and `pop(array)`.
 - Struct field assignment: `object.field = value` mutates an existing field and evaluates to the assigned value. Structs are reference values, so aliases observe field mutation. Assigning a missing field is a runtime error.
 - Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`

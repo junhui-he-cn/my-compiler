@@ -75,7 +75,7 @@ Completed fifth slice: function type annotations use `fun(type, ...): type` synt
 
 ## Phase 10: Array Mutation and Collection Builtins
 
-Status: in progress. Phase 10A is implemented: `len(value)` returns array element counts or string byte lengths with IR and bytecode parity. Phase 10B is implemented: `array[index] = value` mutates shared array elements and works in both runtime paths. Array mutation helpers such as `push` and `pop` remain future work.
+Status: implemented for the current collection slice. Phase 10A is implemented: `len(value)` returns array element counts or string byte lengths with IR and bytecode parity. Phase 10B is implemented: `array[index] = value` mutates shared array elements and works in both runtime paths. Phase 10C is implemented: `push(array, value)` and `pop(array)` are shadowable native stdlib functions backed by a generic `native_call` IR/bytecode path. `push` mutates in place and returns `nil`; `pop` mutates in place and returns the removed value.
 
 Goal: make arrays useful beyond read-only literals and indexing.
 
@@ -83,7 +83,7 @@ Suggested features:
 
 - `len(xs)` for arrays and strings, if string length should be included.
 - Index assignment: `xs[i] = value`.
-- `push(xs, value)` and possibly `pop(xs)` after choosing mutable array semantics.
+- `push(xs, value)` and `pop(xs)` as in-place native stdlib helpers. Implemented.
 - Runtime checks for non-array values, invalid indexes, and bounds.
 - Static checks for known non-array values and known invalid index types.
 
@@ -100,8 +100,8 @@ Recommended split:
 
 - Phase 10A: `len` builtin as a small usability slice. Implemented.
 - Phase 10B: index assignment. Implemented.
-- Phase 10C: `push` / `pop` mutation helpers. Prefer function-style helpers
-  (`push(xs, value)` / `pop(xs)`) for this phase if pursued before records.
+- Phase 10C: `push` / `pop` mutation helpers. Implemented as function-style helpers
+  (`push(xs, value)` / `pop(xs)`) before method syntax.
   Defer method-style syntax (`xs.push(value)` / `xs.pop()`) to Phase 12, where
   dot access and aggregate/member syntax can be designed together.
 
@@ -162,11 +162,13 @@ Likely touch points:
 
 Goal: provide a small standard environment without introducing modules yet.
 
+Status note: a generic native stdlib foundation now exists via `native_call` for shadowable `push` and `pop`. `len` remains supported through its legacy dedicated IR/bytecode opcode and still awaits migration if a unified builtin path becomes valuable.
+
 Suggested builtins:
 
 - Numeric helpers: `floor`, `ceil`, `sqrt`.
 - String helpers: `str`, `substr`, `charAt`.
-- Collection helpers: `len`, `push`, `pop` if not completed in Phase 10.
+- Collection helpers: `len` plus additional helpers beyond the Phase 10 `push`/`pop` slice.
 - Debug helper: `typeOf` if useful for mixed runtime values.
 
 Each builtin should define behavior for both the IR interpreter and bytecode artifact/Rust VM paths, preferably through shared runtime machinery so semantics stay aligned.
@@ -213,4 +215,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 Start with **Phase 9: Richer Type System** if the priority is stronger foundations for records, mutable arrays, and builtin APIs.
 
-Choose **Phase 10C: `push` / `pop` mutation helpers** instead if the priority is a small, immediately visible collection usability improvement before deeper type-system work.
+Choose **Phase 13: Standard Builtins** if the priority is expanding the native stdlib foundation beyond the implemented `push` / `pop` mutation helpers.
