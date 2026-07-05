@@ -63,6 +63,9 @@ private:
     Value executeNativeCall(const IRProgram& program, const Frame& frame, std::size_t nameIndex, const std::vector<IRRegister>& arguments);
     Value executeNativePush(const Frame& frame, const std::vector<IRRegister>& arguments);
     Value executeNativePop(const Frame& frame, const std::vector<IRRegister>& arguments);
+    Value executeNativeFloor(const Frame& frame, const std::vector<IRRegister>& arguments);
+    Value executeNativeCeil(const Frame& frame, const std::vector<IRRegister>& arguments);
+    Value executeNativeSqrt(const Frame& frame, const std::vector<IRRegister>& arguments);
 
     std::ostream& output_;
     std::shared_ptr<Environment> globals_ = std::make_shared<Environment>();

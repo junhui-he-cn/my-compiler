@@ -584,6 +584,15 @@ Value IRInterpreter::executeNativeCall(
     if (name == "pop") {
         return executeNativePop(frame, arguments);
     }
+    if (name == "floor") {
+        return executeNativeFloor(frame, arguments);
+    }
+    if (name == "ceil") {
+        return executeNativeCeil(frame, arguments);
+    }
+    if (name == "sqrt") {
+        return executeNativeSqrt(frame, arguments);
+    }
     throw IRRuntimeError("unknown native stdlib function `" + name + "`");
 }
 
@@ -616,6 +625,45 @@ Value IRInterpreter::executeNativePop(const Frame& frame, const std::vector<IRRe
     Value result = elements.back();
     elements.pop_back();
     return result;
+}
+
+Value IRInterpreter::executeNativeFloor(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 1) {
+        throw IRRuntimeError("floor expects 1 arguments");
+    }
+    const Value& value = readRegister(frame, arguments[0]);
+    if (value.type() != Value::Type::Number) {
+        throw IRRuntimeError("floor expects number");
+    }
+    return Value::number(std::floor(value.asNumber()));
+}
+
+Value IRInterpreter::executeNativeCeil(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 1) {
+        throw IRRuntimeError("ceil expects 1 arguments");
+    }
+    const Value& value = readRegister(frame, arguments[0]);
+    if (value.type() != Value::Type::Number) {
+        throw IRRuntimeError("ceil expects number");
+    }
+    return Value::number(std::ceil(value.asNumber()));
+}
+
+Value IRInterpreter::executeNativeSqrt(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 1) {
+        throw IRRuntimeError("sqrt expects 1 arguments");
+    }
+    const Value& value = readRegister(frame, arguments[0]);
+    if (value.type() != Value::Type::Number) {
+        throw IRRuntimeError("sqrt expects number");
+    }
+    if (value.asNumber() < 0.0) {
+        throw IRRuntimeError("sqrt expects non-negative number");
+    }
+    return Value::number(std::sqrt(value.asNumber()));
 }
 
 Value IRInterpreter::executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double))
