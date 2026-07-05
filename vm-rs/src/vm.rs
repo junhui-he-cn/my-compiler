@@ -484,6 +484,9 @@ impl<'a> VM<'a> {
         match name {
             "push" => self.execute_native_push(arguments),
             "pop" => self.execute_native_pop(arguments),
+            "floor" => self.execute_native_floor(arguments),
+            "ceil" => self.execute_native_ceil(arguments),
+            "sqrt" => self.execute_native_sqrt(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
                 name
@@ -514,6 +517,39 @@ impl<'a> VM<'a> {
             .borrow_mut()
             .pop()
             .ok_or_else(|| RuntimeError::new("cannot pop from empty array"))
+    }
+
+    fn execute_native_floor(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("floor expects 1 arguments"));
+        }
+        let Value::Number(value) = &arguments[0] else {
+            return Err(RuntimeError::new("floor expects number"));
+        };
+        Ok(Value::number(value.floor()))
+    }
+
+    fn execute_native_ceil(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("ceil expects 1 arguments"));
+        }
+        let Value::Number(value) = &arguments[0] else {
+            return Err(RuntimeError::new("ceil expects number"));
+        };
+        Ok(Value::number(value.ceil()))
+    }
+
+    fn execute_native_sqrt(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("sqrt expects 1 arguments"));
+        }
+        let Value::Number(value) = &arguments[0] else {
+            return Err(RuntimeError::new("sqrt expects number"));
+        };
+        if *value < 0.0 {
+            return Err(RuntimeError::new("sqrt expects non-negative number"));
+        }
+        Ok(Value::number(value.sqrt()))
     }
 
     fn read_name(&self, index: usize) -> Result<String, RuntimeError> {
