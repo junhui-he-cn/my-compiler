@@ -132,7 +132,7 @@ Native stdlib calls use a name-table reference for the function name:
 rD = native_call nName [rArg0, rArg1, ...]
 ```
 
-`native_call` invokes a registered VM native stdlib function by name-table reference; in this version `push` and `pop` are supported.
+`native_call` invokes a registered VM native stdlib function by name-table reference; in this version `push`, `pop`, `floor`, `ceil`, and `sqrt` are supported.
 
 New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter and executor together.
 

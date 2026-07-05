@@ -9,7 +9,7 @@ The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, indexing, array
 element assignment, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
-and builtins such as `len`, `push`, and `pop`.
+and builtins such as `len`, `push`, `pop`, `floor`, `ceil`, and `sqrt`.
 
 The compiler pipeline includes:
 
@@ -70,6 +70,8 @@ print person.age = 38; // 38
 The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and `len("hello")` returns `5` using the current runtime string byte length. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
 
 The native stdlib functions `push(array, value)` and `pop(array)` mutate arrays in place. `push` appends a value and returns `nil`; `pop` removes and returns the last value. Arrays are reference values, so aliases observe length changes. Calling `pop([])` is a runtime error. User bindings named `push` or `pop` shadow the stdlib functions, matching `len` shadowing behavior.
+
+The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(number)` each return a number. `sqrt` rejects negative inputs at runtime. User bindings with the same names shadow these stdlib functions.
 
 Supported expressions:
 

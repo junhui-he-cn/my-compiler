@@ -162,11 +162,11 @@ Likely touch points:
 
 Goal: provide a small standard environment without introducing modules yet.
 
-Status note: a generic native stdlib foundation now exists via `native_call` for shadowable `push` and `pop`. `len` remains supported through its legacy dedicated IR/bytecode opcode and still awaits migration if a unified builtin path becomes valuable.
+Status: in progress. Phase 13A is implemented: `floor(number)`, `ceil(number)`, and `sqrt(number)` are shadowable native stdlib functions using the generic `native_call` path. `len` remains supported through its legacy dedicated IR/bytecode opcode and still awaits migration if a unified builtin path becomes valuable.
 
 Suggested builtins:
 
-- Numeric helpers: `floor`, `ceil`, `sqrt`.
+- Numeric helpers: `floor`, `ceil`, `sqrt`. Implemented.
 - String helpers: `str`, `substr`, `charAt`.
 - Collection helpers: `len` plus additional helpers beyond the Phase 10 `push`/`pop` slice.
 - Debug helper: `typeOf` if useful for mixed runtime values.
@@ -215,4 +215,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 Start with **Phase 9: Richer Type System** if the priority is stronger foundations for records, mutable arrays, and builtin APIs.
 
-Choose **Phase 13: Standard Builtins** if the priority is expanding the native stdlib foundation beyond the implemented `push` / `pop` mutation helpers.
+Choose **Phase 13: Standard Builtins** if the priority is expanding the native stdlib foundation beyond the implemented `push` / `pop` and `floor` / `ceil` / `sqrt` helpers.
