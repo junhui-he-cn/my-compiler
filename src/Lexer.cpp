@@ -109,6 +109,9 @@ void Lexer::scanToken()
     case ',':
         addToken(TokenType::Comma);
         break;
+    case '.':
+        addToken(TokenType::Dot);
+        break;
     case '+':
         addToken(TokenType::Plus);
         break;
@@ -270,6 +273,8 @@ std::string tokenTypeName(TokenType type)
         return "Semicolon";
     case TokenType::Comma:
         return "Comma";
+    case TokenType::Dot:
+        return "Dot";
     case TokenType::Plus:
         return "Plus";
     case TokenType::Minus:

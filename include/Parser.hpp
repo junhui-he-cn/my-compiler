@@ -52,7 +52,9 @@ private:
     ExprPtr call();
     ExprPtr finishCall(ExprPtr callee);
     ExprPtr finishIndex(ExprPtr collection);
+    ExprPtr finishFieldAccess(ExprPtr object);
     ExprPtr arrayLiteral();
+    ExprPtr structLiteral();
     ExprPtr functionExpression();
     ExprPtr primary();
 

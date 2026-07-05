@@ -316,6 +316,21 @@ void ArrayExpr::print(std::ostream& out) const
     out << ')';
 }
 
+StructExpr::StructExpr(std::vector<StructField> fields)
+    : fields(std::move(fields))
+{
+}
+
+void StructExpr::print(std::ostream& out) const
+{
+    out << "(struct";
+    for (const StructField& field : fields) {
+        out << ' ' << field.name.lexeme << ": ";
+        writeExpr(out, field.value);
+    }
+    out << ')';
+}
+
 IndexExpr::IndexExpr(ExprPtr collection, Token bracket, ExprPtr index)
     : collection(std::move(collection))
     , bracket(std::move(bracket))
@@ -330,6 +345,19 @@ void IndexExpr::print(std::ostream& out) const
     out << ' ';
     writeExpr(out, index);
     out << ')';
+}
+
+FieldAccessExpr::FieldAccessExpr(ExprPtr object, Token name)
+    : object(std::move(object))
+    , name(std::move(name))
+{
+}
+
+void FieldAccessExpr::print(std::ostream& out) const
+{
+    out << "(field ";
+    writeExpr(out, object);
+    out << ' ' << name.lexeme << ')';
 }
 
 FunctionExpr::FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)

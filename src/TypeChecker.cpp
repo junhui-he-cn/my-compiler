@@ -141,6 +141,8 @@ std::string staticTypeName(StaticType type)
         return "function";
     case StaticType::Array:
         return "array";
+    case StaticType::Struct:
+        return "struct";
     }
 
     return "unknown";
@@ -709,6 +711,21 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
             checkExpression(*element);
         }
         return CheckedExpression{simpleType(StaticType::Array)};
+    }
+
+    if (const auto* structExpr = dynamic_cast<const StructExpr*>(&expression)) {
+        for (const StructField& field : structExpr->fields) {
+            checkExpression(*field.value);
+        }
+        return CheckedExpression{simpleType(StaticType::Struct)};
+    }
+
+    if (const auto* field = dynamic_cast<const FieldAccessExpr*>(&expression)) {
+        const TypeInfo object = checkExpression(*field->object);
+        if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
+            throw TypeError(field->name, "can only access fields on structs");
+        }
+        return CheckedExpression{unknownType()};
     }
 
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {

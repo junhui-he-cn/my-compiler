@@ -19,6 +19,7 @@ enum class StaticType {
     String,
     Function,
     Array,
+    Struct,
 };
 
 struct TypeInfo {

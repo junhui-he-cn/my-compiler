@@ -343,6 +343,8 @@ ExprPtr Parser::call()
             expr = finishCall(std::move(expr));
         } else if (match(TokenType::LeftBracket)) {
             expr = finishIndex(std::move(expr));
+        } else if (match(TokenType::Dot)) {
+            expr = finishFieldAccess(std::move(expr));
         } else {
             break;
         }
@@ -370,6 +372,12 @@ ExprPtr Parser::finishIndex(ExprPtr collection)
     return std::make_unique<IndexExpr>(std::move(collection), std::move(bracket), std::move(index));
 }
 
+ExprPtr Parser::finishFieldAccess(ExprPtr object)
+{
+    Token name = consume(TokenType::Identifier, "expected field name after `.`");
+    return std::make_unique<FieldAccessExpr>(std::move(object), std::move(name));
+}
+
 ExprPtr Parser::arrayLiteral()
 {
     std::vector<ExprPtr> elements;
@@ -380,6 +388,21 @@ ExprPtr Parser::arrayLiteral()
     }
     consume(TokenType::RightBracket, "expected `]` after array elements");
     return std::make_unique<ArrayExpr>(std::move(elements));
+}
+
+ExprPtr Parser::structLiteral()
+{
+    std::vector<StructField> fields;
+    if (!check(TokenType::RightBrace)) {
+        do {
+            Token name = consume(TokenType::Identifier, "expected struct field name");
+            consume(TokenType::Colon, "expected `:` after struct field name");
+            ExprPtr value = expression();
+            fields.push_back(StructField{std::move(name), std::move(value)});
+        } while (match(TokenType::Comma));
+    }
+    consume(TokenType::RightBrace, "expected `}` after struct fields");
+    return std::make_unique<StructExpr>(std::move(fields));
 }
 
 ExprPtr Parser::functionExpression()
@@ -417,6 +440,9 @@ ExprPtr Parser::primary()
     }
     if (match(TokenType::LeftBracket)) {
         return arrayLiteral();
+    }
+    if (match(TokenType::LeftBrace)) {
+        return structLiteral();
     }
     if (match(TokenType::Identifier)) {
         return std::make_unique<VariableExpr>(previous());

@@ -121,6 +121,18 @@ struct ArrayExpr final : Expr {
     std::vector<ExprPtr> elements;
 };
 
+struct StructField {
+    Token name;
+    ExprPtr value;
+};
+
+struct StructExpr final : Expr {
+    explicit StructExpr(std::vector<StructField> fields);
+    void print(std::ostream& out) const override;
+
+    std::vector<StructField> fields;
+};
+
 struct IndexExpr final : Expr {
     IndexExpr(ExprPtr collection, Token bracket, ExprPtr index);
     void print(std::ostream& out) const override;
@@ -128,6 +140,14 @@ struct IndexExpr final : Expr {
     ExprPtr collection;
     Token bracket;
     ExprPtr index;
+};
+
+struct FieldAccessExpr final : Expr {
+    FieldAccessExpr(ExprPtr object, Token name);
+    void print(std::ostream& out) const override;
+
+    ExprPtr object;
+    Token name;
 };
 
 struct FunctionExpr final : Expr {
