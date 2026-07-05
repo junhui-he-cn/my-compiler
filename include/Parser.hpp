@@ -21,6 +21,9 @@ public:
 
 private:
     StmtPtr declaration();
+    StmtPtr structDeclaration();
+    std::vector<StructFieldDecl> structFields();
+    StructFieldDecl structField();
     StmtPtr functionDeclaration();
     StmtPtr letDeclaration();
     std::vector<Parameter> parameters();

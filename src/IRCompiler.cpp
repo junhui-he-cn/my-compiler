@@ -50,6 +50,10 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
 
 void IRCompiler::compileStatement(const Stmt& statement)
 {
+    if (dynamic_cast<const StructDeclStmt*>(&statement)) {
+        return;
+    }
+
     if (const auto* function = dynamic_cast<const FunctionStmt*>(&statement)) {
         compileFunctionStatement(*function);
         return;

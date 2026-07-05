@@ -25,6 +25,9 @@ Program Parser::parse()
 
 StmtPtr Parser::declaration()
 {
+    if (match(TokenType::Struct)) {
+        return structDeclaration();
+    }
     if (match(TokenType::Fun)) {
         return functionDeclaration();
     }
@@ -32,6 +35,34 @@ StmtPtr Parser::declaration()
         return letDeclaration();
     }
     return statement();
+}
+
+StmtPtr Parser::structDeclaration()
+{
+    Token name = consume(TokenType::Identifier, "expected struct name after `struct`");
+    consume(TokenType::LeftBrace, "expected `{` after struct name");
+    std::vector<StructFieldDecl> fields = structFields();
+    consume(TokenType::RightBrace, "expected `}` after struct fields");
+    return std::make_unique<StructDeclStmt>(std::move(name), std::move(fields));
+}
+
+std::vector<StructFieldDecl> Parser::structFields()
+{
+    std::vector<StructFieldDecl> fields;
+    if (!check(TokenType::RightBrace)) {
+        do {
+            fields.push_back(structField());
+        } while (match(TokenType::Comma));
+    }
+    return fields;
+}
+
+StructFieldDecl Parser::structField()
+{
+    Token name = consume(TokenType::Identifier, "expected struct field name");
+    consume(TokenType::Colon, "expected `:` after struct field name");
+    TypeAnnotation typeName = typeAnnotation("expected struct field type after `:`");
+    return StructFieldDecl{std::move(name), std::move(typeName)};
 }
 
 StmtPtr Parser::functionDeclaration()

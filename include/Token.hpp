@@ -43,6 +43,7 @@ enum class TokenType {
     Let,
     Print,
     Return,
+    Struct,
     While,
     True,
     False,

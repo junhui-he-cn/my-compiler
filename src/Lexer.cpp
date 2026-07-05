@@ -237,6 +237,7 @@ void Lexer::identifier()
         {"let", TokenType::Let},
         {"print", TokenType::Print},
         {"return", TokenType::Return},
+        {"struct", TokenType::Struct},
         {"while", TokenType::While},
         {"true", TokenType::True},
         {"false", TokenType::False},
@@ -325,6 +326,8 @@ std::string tokenTypeName(TokenType type)
         return "Print";
     case TokenType::Return:
         return "Return";
+    case TokenType::Struct:
+        return "Struct";
     case TokenType::While:
         return "While";
     case TokenType::True:

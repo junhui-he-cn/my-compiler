@@ -151,6 +151,16 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         return;
     }
 
+    if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(&stmt)) {
+        out << "(struct " << structDecl->name.lexeme;
+        for (const StructFieldDecl& field : structDecl->fields) {
+            out << ' ' << field.name.lexeme << ": ";
+            writeTypeAnnotation(out, field.typeName);
+        }
+        out << ')';
+        return;
+    }
+
     out << "(stmt)";
 }
 
@@ -394,6 +404,26 @@ void FunctionExpr::print(std::ostream& out) const
         writeInlineStmt(out, *statement);
     }
     out << ')';
+}
+
+StructDeclStmt::StructDeclStmt(Token name, std::vector<StructFieldDecl> fields)
+    : name(std::move(name))
+    , fields(std::move(fields))
+{
+}
+
+void StructDeclStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Struct " << name.lexeme << " {";
+    for (std::size_t i = 0; i < fields.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        out << fields[i].name.lexeme << ": ";
+        writeTypeAnnotation(out, fields[i].typeName);
+    }
+    out << "}\n";
 }
 
 LetStmt::LetStmt(Token name, std::optional<TypeAnnotation> typeName, ExprPtr initializer)

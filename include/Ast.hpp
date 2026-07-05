@@ -133,6 +133,11 @@ struct StructExpr final : Expr {
     std::vector<StructField> fields;
 };
 
+struct StructFieldDecl {
+    Token name;
+    TypeAnnotation typeName;
+};
+
 struct IndexExpr final : Expr {
     IndexExpr(ExprPtr collection, Token bracket, ExprPtr index);
     void print(std::ostream& out) const override;
@@ -172,6 +177,14 @@ struct FunctionExpr final : Expr {
 struct Stmt {
     virtual ~Stmt() = default;
     virtual void print(std::ostream& out, int indent) const = 0;
+};
+
+struct StructDeclStmt final : Stmt {
+    StructDeclStmt(Token name, std::vector<StructFieldDecl> fields);
+    void print(std::ostream& out, int indent) const override;
+
+    Token name;
+    std::vector<StructFieldDecl> fields;
 };
 
 struct LetStmt final : Stmt {
