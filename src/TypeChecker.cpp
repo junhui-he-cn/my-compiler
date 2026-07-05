@@ -838,6 +838,15 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
             throw TypeError(field->name, "can only access fields on structs");
         }
+        if (object.kind == StaticType::Struct && object.structName) {
+            const StructTypeDecl* structType = findStructType(*object.structName);
+            const StructFieldType* structField = structType ? findStructField(*structType, field->name.lexeme) : nullptr;
+            if (!structField) {
+                throw TypeError(field->name,
+                    "struct `" + *object.structName + "` has no field `" + field->name.lexeme + "`");
+            }
+            return CheckedExpression{structField->type};
+        }
         return CheckedExpression{unknownType()};
     }
 
@@ -953,6 +962,21 @@ TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssi
 
     if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
         throw TypeError(expression.name, "can only assign fields on structs");
+    }
+
+    if (object.kind == StaticType::Struct && object.structName) {
+        const StructTypeDecl* structType = findStructType(*object.structName);
+        const StructFieldType* structField = structType ? findStructField(*structType, expression.name.lexeme) : nullptr;
+        if (!structField) {
+            throw TypeError(expression.name,
+                "struct `" + *object.structName + "` has no field `" + expression.name.lexeme + "`");
+        }
+        if (!compatible(structField->type, value.type)) {
+            throw TypeError(expression.name,
+                "field `" + expression.name.lexeme + "` expects " + typeInfoName(structField->type)
+                    + ", got " + typeInfoName(value.type));
+        }
+        return CheckedExpression{structField->type};
     }
 
     return value;
