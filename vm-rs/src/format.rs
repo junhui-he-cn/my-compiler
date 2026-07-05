@@ -348,6 +348,21 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                     name: parse_name_ref(line, name)?,
                 })
             }
+            "assign_field" => {
+                let parts = split_comma_parts(operands);
+                if parts.len() != 3 {
+                    return Err(ParseError {
+                        line,
+                        message: "assign_field expects three operands".to_string(),
+                    });
+                }
+                Ok(Instruction::AssignField {
+                    dest,
+                    object: parse_register(line, parts[0])?,
+                    name: parse_name_ref(line, parts[1])?,
+                    value: parse_register(line, parts[2])?,
+                })
+            }
             "len" => Ok(Instruction::Len {
                 dest,
                 value: parse_register(line, operands)?,
@@ -471,6 +486,12 @@ fn format_instruction(instruction: &Instruction) -> String {
         Instruction::Field { dest, object, name } => {
             format!("r{} = field r{}, n{}", dest, object, name)
         }
+        Instruction::AssignField {
+            dest,
+            object,
+            name,
+            value,
+        } => format!("r{} = assign_field r{}, n{}, r{}", dest, object, name, value),
         Instruction::Len { dest, value } => format!("r{} = len r{}", dest, value),
         Instruction::Print { value } => format!("print r{}", value),
         Instruction::Return { value } => format!("return r{}", value),

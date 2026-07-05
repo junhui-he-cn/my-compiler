@@ -252,6 +252,18 @@ impl<'a> VM<'a> {
                     let value = self.execute_field(object, &name)?;
                     self.write_register(frame, *dest, value)?;
                 }
+                Instruction::AssignField {
+                    dest,
+                    object,
+                    name,
+                    value,
+                } => {
+                    let object = self.read_register(frame, *object)?;
+                    let name = self.read_name(*name)?;
+                    let value = self.read_register(frame, *value)?;
+                    let assigned = self.execute_assign_field(object, &name, value)?;
+                    self.write_register(frame, *dest, assigned)?;
+                }
                 Instruction::Len { dest, value } => {
                     let value = self.read_register(frame, *value)?;
                     let length = self.execute_len(value)?;
@@ -419,6 +431,25 @@ impl<'a> VM<'a> {
         for (field_name, field_value) in value.fields.borrow().iter() {
             if field_name == name {
                 return Ok(field_value.clone());
+            }
+        }
+        Err(RuntimeError::new(format!("undefined field `{}`", name)))
+    }
+
+    fn execute_assign_field(
+        &self,
+        object: Value,
+        name: &str,
+        value: Value,
+    ) -> Result<Value, RuntimeError> {
+        let Value::Struct(struct_value) = object else {
+            return Err(RuntimeError::new("can only assign fields on structs"));
+        };
+        let mut fields = struct_value.fields.borrow_mut();
+        for (field_name, field_value) in fields.iter_mut() {
+            if field_name == name {
+                *field_value = value.clone();
+                return Ok(value);
             }
         }
         Err(RuntimeError::new(format!("undefined field `{}`", name)))

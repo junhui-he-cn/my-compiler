@@ -85,6 +85,12 @@ pub enum Instruction {
         object: usize,
         name: usize,
     },
+    AssignField {
+        dest: usize,
+        object: usize,
+        name: usize,
+        value: usize,
+    },
     Len {
         dest: usize,
         value: usize,
