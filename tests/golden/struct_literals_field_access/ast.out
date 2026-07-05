@@ -1,0 +1,7 @@
+Program
+  Let person = (struct name: "Ada" age: 36)
+  Print (field person name)
+  Print (field person age)
+  Let nested = (struct point: (struct x: 1 y: 2) label: "p")
+  Print (field (field nested point) x)
+  Print (struct)

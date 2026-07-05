@@ -1,0 +1,7 @@
+let person = { name: "Ada", age: 36 };
+print person.name;
+print person.age;
+
+let nested = { point: { x: 1, y: 2 }, label: "p" };
+print nested.point.x;
+print {};
