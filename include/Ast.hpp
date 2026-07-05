@@ -20,9 +20,24 @@ using ExprPtr = std::unique_ptr<Expr>;
 struct Stmt;
 using StmtPtr = std::unique_ptr<Stmt>;
 
+struct TypeAnnotation {
+    enum class Kind {
+        Simple,
+        Function,
+    };
+
+    static TypeAnnotation simple(Token token);
+    static TypeAnnotation function(Token token, std::vector<TypeAnnotation> parameterTypes, TypeAnnotation returnType);
+
+    Kind kind = Kind::Simple;
+    Token token{TokenType::Identifier, "", 0, 0};
+    std::vector<TypeAnnotation> parameterTypes;
+    std::shared_ptr<TypeAnnotation> returnType;
+};
+
 struct Parameter {
     Token name;
-    std::optional<Token> typeName;
+    std::optional<TypeAnnotation> typeName;
 };
 
 struct LiteralExpr final : Expr {
@@ -116,12 +131,12 @@ struct IndexExpr final : Expr {
 };
 
 struct FunctionExpr final : Expr {
-    FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body);
+    FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
     void print(std::ostream& out) const override;
 
     Token keyword;
     std::vector<Parameter> parameters;
-    std::optional<Token> returnTypeName;
+    std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;
 };
 
@@ -131,11 +146,11 @@ struct Stmt {
 };
 
 struct LetStmt final : Stmt {
-    LetStmt(Token name, std::optional<Token> typeName, ExprPtr initializer);
+    LetStmt(Token name, std::optional<TypeAnnotation> typeName, ExprPtr initializer);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
-    std::optional<Token> typeName;
+    std::optional<TypeAnnotation> typeName;
     ExprPtr initializer;
 };
 
@@ -192,12 +207,12 @@ struct ContinueStmt final : Stmt {
 };
 
 struct FunctionStmt final : Stmt {
-    FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body);
+    FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
     std::vector<Parameter> parameters;
-    std::optional<Token> returnTypeName;
+    std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;
 };
 

@@ -21,6 +21,32 @@ void writeExpr(std::ostream& out, const ExprPtr& expr)
     }
 }
 
+void writeTypeAnnotation(std::ostream& out, const TypeAnnotation& annotation)
+{
+    if (annotation.kind == TypeAnnotation::Kind::Simple) {
+        out << annotation.token.lexeme;
+        return;
+    }
+
+    out << "fun(";
+    for (std::size_t i = 0; i < annotation.parameterTypes.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        writeTypeAnnotation(out, annotation.parameterTypes[i]);
+    }
+    out << "): ";
+    writeTypeAnnotation(out, *annotation.returnType);
+}
+
+void writeOptionalTypeAnnotation(std::ostream& out, const std::optional<TypeAnnotation>& annotation)
+{
+    if (annotation) {
+        out << ": ";
+        writeTypeAnnotation(out, *annotation);
+    }
+}
+
 void writeParameterList(std::ostream& out, const std::vector<Parameter>& parameters)
 {
     out << '(';
@@ -29,18 +55,14 @@ void writeParameterList(std::ostream& out, const std::vector<Parameter>& paramet
             out << ", ";
         }
         out << parameters[i].name.lexeme;
-        if (parameters[i].typeName) {
-            out << ": " << parameters[i].typeName->lexeme;
-        }
+        writeOptionalTypeAnnotation(out, parameters[i].typeName);
     }
     out << ')';
 }
 
-void writeReturnAnnotation(std::ostream& out, const std::optional<Token>& returnTypeName)
+void writeReturnAnnotation(std::ostream& out, const std::optional<TypeAnnotation>& returnTypeName)
 {
-    if (returnTypeName) {
-        out << ": " << returnTypeName->lexeme;
-    }
+    writeOptionalTypeAnnotation(out, returnTypeName);
 }
 
 void writeInlineStmt(std::ostream& out, const Stmt& stmt)
@@ -68,9 +90,7 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 
     if (const auto* letStmt = dynamic_cast<const LetStmt*>(&stmt)) {
         out << "(let " << letStmt->name.lexeme;
-        if (letStmt->typeName) {
-            out << ": " << letStmt->typeName->lexeme;
-        }
+        writeOptionalTypeAnnotation(out, letStmt->typeName);
         out << " = ";
         writeExpr(out, letStmt->initializer);
         out << ')';
@@ -135,6 +155,24 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 }
 
 } // namespace
+
+TypeAnnotation TypeAnnotation::simple(Token token)
+{
+    TypeAnnotation result;
+    result.kind = Kind::Simple;
+    result.token = std::move(token);
+    return result;
+}
+
+TypeAnnotation TypeAnnotation::function(Token token, std::vector<TypeAnnotation> parameterTypes, TypeAnnotation returnType)
+{
+    TypeAnnotation result;
+    result.kind = Kind::Function;
+    result.token = std::move(token);
+    result.parameterTypes = std::move(parameterTypes);
+    result.returnType = std::make_shared<TypeAnnotation>(std::move(returnType));
+    return result;
+}
 
 LiteralExpr::LiteralExpr(std::string value)
     : value(std::move(value))
@@ -294,7 +332,7 @@ void IndexExpr::print(std::ostream& out) const
     out << ')';
 }
 
-FunctionExpr::FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body)
+FunctionExpr::FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
     : keyword(std::move(keyword))
     , parameters(std::move(parameters))
     , returnTypeName(std::move(returnTypeName))
@@ -314,7 +352,7 @@ void FunctionExpr::print(std::ostream& out) const
     out << ')';
 }
 
-LetStmt::LetStmt(Token name, std::optional<Token> typeName, ExprPtr initializer)
+LetStmt::LetStmt(Token name, std::optional<TypeAnnotation> typeName, ExprPtr initializer)
     : name(std::move(name))
     , typeName(std::move(typeName))
     , initializer(std::move(initializer))
@@ -325,9 +363,7 @@ void LetStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
     out << "Let " << name.lexeme;
-    if (typeName) {
-        out << ": " << typeName->lexeme;
-    }
+    writeOptionalTypeAnnotation(out, typeName);
     out << " = ";
     writeExpr(out, initializer);
     out << '\n';
@@ -442,7 +478,7 @@ void ContinueStmt::print(std::ostream& out, int indent) const
     out << "Continue\n";
 }
 
-FunctionStmt::FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<Token> returnTypeName, std::vector<StmtPtr> body)
+FunctionStmt::FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
     : name(std::move(name))
     , parameters(std::move(parameters))
     , returnTypeName(std::move(returnTypeName))

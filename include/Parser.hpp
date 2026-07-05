@@ -25,7 +25,9 @@ private:
     StmtPtr letDeclaration();
     std::vector<Parameter> parameters();
     Parameter parameter();
-    std::optional<Token> optionalReturnType();
+    TypeAnnotation typeAnnotation(const std::string& simpleTypeMessage = "expected type name");
+    std::vector<TypeAnnotation> typeArguments();
+    std::optional<TypeAnnotation> optionalReturnType();
     StmtPtr statement();
     StmtPtr ifStatement();
     StmtPtr whileStatement();

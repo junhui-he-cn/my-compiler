@@ -123,7 +123,7 @@ private:
     StaticType checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkLetInitializer(const LetStmt& statement);
-    StaticType resolveAnnotation(const Token& typeName) const;
+    StaticType resolveAnnotation(const TypeAnnotation& typeName) const;
     void checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const;
     StaticType checkUnary(const UnaryExpr& expression);
     StaticType checkBinary(const BinaryExpr& expression);

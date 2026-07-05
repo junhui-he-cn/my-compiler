@@ -41,7 +41,7 @@ StmtPtr Parser::functionDeclaration()
 
     std::vector<Parameter> parsedParameters = parameters();
     consume(TokenType::RightParen, "expected `)` after function parameters");
-    std::optional<Token> returnTypeName = optionalReturnType();
+    std::optional<TypeAnnotation> returnTypeName = optionalReturnType();
     consume(TokenType::LeftBrace, "expected `{` before function body");
     return std::make_unique<FunctionStmt>(
         std::move(name),
@@ -54,9 +54,9 @@ StmtPtr Parser::letDeclaration()
 {
     Token name = consume(TokenType::Identifier, "expected variable name after `let`");
 
-    std::optional<Token> typeName;
+    std::optional<TypeAnnotation> typeName;
     if (match(TokenType::Colon)) {
-        typeName = consume(TokenType::Identifier, "expected type name after `:`");
+        typeName = typeAnnotation("expected type name after `:`");
     }
 
     consume(TokenType::Equal, "expected `=` after variable declaration");
@@ -80,19 +80,45 @@ std::vector<Parameter> Parser::parameters()
 Parameter Parser::parameter()
 {
     Token name = consume(TokenType::Identifier, "expected parameter name");
-    std::optional<Token> typeName;
+    std::optional<TypeAnnotation> typeName;
     if (match(TokenType::Colon)) {
-        typeName = consume(TokenType::Identifier, "expected parameter type after `:`");
+        typeName = typeAnnotation("expected parameter type after `:`");
     }
     return Parameter{std::move(name), std::move(typeName)};
 }
 
-std::optional<Token> Parser::optionalReturnType()
+std::optional<TypeAnnotation> Parser::optionalReturnType()
 {
     if (!match(TokenType::Colon)) {
         return std::nullopt;
     }
-    return consume(TokenType::Identifier, "expected return type after `:`");
+    return typeAnnotation("expected return type after `:`");
+}
+
+TypeAnnotation Parser::typeAnnotation(const std::string& simpleTypeMessage)
+{
+    if (match(TokenType::Fun)) {
+        Token keyword = previous();
+        consume(TokenType::LeftParen, "expected `(` after `fun` in function type");
+        std::vector<TypeAnnotation> parameterTypes = typeArguments();
+        consume(TokenType::RightParen, "expected `)` after function type parameters");
+        consume(TokenType::Colon, "expected `:` before function type return");
+        TypeAnnotation returnType = typeAnnotation();
+        return TypeAnnotation::function(std::move(keyword), std::move(parameterTypes), std::move(returnType));
+    }
+
+    return TypeAnnotation::simple(consume(TokenType::Identifier, simpleTypeMessage));
+}
+
+std::vector<TypeAnnotation> Parser::typeArguments()
+{
+    std::vector<TypeAnnotation> arguments;
+    if (!check(TokenType::RightParen)) {
+        do {
+            arguments.push_back(typeAnnotation());
+        } while (match(TokenType::Comma));
+    }
+    return arguments;
 }
 
 StmtPtr Parser::statement()
@@ -363,7 +389,7 @@ ExprPtr Parser::functionExpression()
 
     std::vector<Parameter> parsedParameters = parameters();
     consume(TokenType::RightParen, "expected `)` after function parameters");
-    std::optional<Token> returnTypeName = optionalReturnType();
+    std::optional<TypeAnnotation> returnTypeName = optionalReturnType();
     consume(TokenType::LeftBrace, "expected `{` before function body");
     return std::make_unique<FunctionExpr>(
         std::move(keyword),

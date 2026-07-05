@@ -711,21 +711,24 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
     return value;
 }
 
-StaticType TypeChecker::resolveAnnotation(const Token& typeName) const
+StaticType TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
 {
-    if (typeName.lexeme == "number") {
+    if (typeName.kind == TypeAnnotation::Kind::Function) {
+        return StaticType::Function;
+    }
+    if (typeName.token.lexeme == "number") {
         return StaticType::Number;
     }
-    if (typeName.lexeme == "bool") {
+    if (typeName.token.lexeme == "bool") {
         return StaticType::Bool;
     }
-    if (typeName.lexeme == "string") {
+    if (typeName.token.lexeme == "string") {
         return StaticType::String;
     }
-    if (typeName.lexeme == "nil") {
+    if (typeName.token.lexeme == "nil") {
         return StaticType::Nil;
     }
-    throw TypeError(typeName, "unknown type `" + typeName.lexeme + "`");
+    throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
 }
 
 void TypeChecker::checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const
