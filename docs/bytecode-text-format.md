@@ -85,6 +85,7 @@ The opcode names are stable snake-case names:
 constant
 make_function
 array
+struct
 move
 load_var
 store_var
@@ -92,6 +93,7 @@ assign_var
 call
 index
 assign_index
+field
 len
 print
 return
@@ -110,6 +112,13 @@ less_equal
 jump
 jump_if_false
 jump_if_true
+```
+
+Struct and field instructions use name-table references for field names:
+
+```text
+rD = struct {nName: rValue, ...}
+rD = field rObject, nName
 ```
 
 New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter together. When Rust execution is implemented, update the executor at the same time.

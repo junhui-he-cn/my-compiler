@@ -27,6 +27,7 @@ bool isBinary(BytecodeOp op)
     case BytecodeOp::Constant:
     case BytecodeOp::MakeFunction:
     case BytecodeOp::Array:
+    case BytecodeOp::Struct:
     case BytecodeOp::Move:
     case BytecodeOp::LoadVar:
     case BytecodeOp::StoreVar:
@@ -34,6 +35,7 @@ bool isBinary(BytecodeOp op)
     case BytecodeOp::Call:
     case BytecodeOp::Index:
     case BytecodeOp::AssignIndex:
+    case BytecodeOp::Field:
     case BytecodeOp::Len:
     case BytecodeOp::Print:
     case BytecodeOp::Return:
@@ -134,6 +136,20 @@ void printInstruction(
             out << instruction.arguments[arg];
         }
         out << "]";
+    } else if (instruction.op == BytecodeOp::Struct) {
+        out << " {";
+        for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            if (arg < instruction.operands.size()) {
+                printNameOperand(out, program, instruction.operands[arg]);
+            } else {
+                out << " @" << arg;
+            }
+            out << ": " << instruction.arguments[arg];
+        }
+        out << "}";
     } else if (instruction.op == BytecodeOp::Move) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -166,6 +182,12 @@ void printInstruction(
         if (instruction.op == BytecodeOp::AssignIndex && !instruction.arguments.empty()) {
             out << ", " << instruction.arguments.front();
         }
+    } else if (instruction.op == BytecodeOp::Field) {
+        if (instruction.left) {
+            out << " " << *instruction.left;
+        }
+        out << ", ";
+        printNameOperand(out, program, instruction.operand);
     } else if (instruction.op == BytecodeOp::Len) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -282,6 +304,8 @@ std::string bytecodeOpName(BytecodeOp op)
         return "make_function";
     case BytecodeOp::Array:
         return "array";
+    case BytecodeOp::Struct:
+        return "struct";
     case BytecodeOp::Move:
         return "move";
     case BytecodeOp::LoadVar:
@@ -296,6 +320,8 @@ std::string bytecodeOpName(BytecodeOp op)
         return "index";
     case BytecodeOp::AssignIndex:
         return "assign_index";
+    case BytecodeOp::Field:
+        return "field";
     case BytecodeOp::Len:
         return "len";
     case BytecodeOp::Print:

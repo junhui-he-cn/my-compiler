@@ -16,6 +16,7 @@ enum class BytecodeOp {
     Constant,
     MakeFunction,
     Array,
+    Struct,
     Move,
     LoadVar,
     StoreVar,
@@ -23,6 +24,7 @@ enum class BytecodeOp {
     Call,
     Index,
     AssignIndex,
+    Field,
     Len,
     Print,
     Return,
@@ -50,6 +52,7 @@ struct BytecodeInstruction {
     std::optional<BytecodeRegister> right;
     std::vector<BytecodeRegister> arguments;
     std::uint32_t operand = 0;
+    std::vector<std::uint32_t> operands;
 };
 
 struct BytecodeFunction {

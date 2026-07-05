@@ -59,6 +59,8 @@ std::string constantText(const Value& value)
         throw std::runtime_error("cannot emit function value as bytecode constant");
     case Value::Type::Array:
         throw std::runtime_error("cannot emit array value as bytecode constant");
+    case Value::Type::Struct:
+        throw std::runtime_error("cannot emit struct value as bytecode constant");
     }
     throw std::runtime_error("unsupported bytecode constant");
 }
@@ -133,6 +135,19 @@ void writeInstruction(std::ostream& out, const BytecodeInstruction& instruction)
         out << reg(requireDest(instruction)) << " = array ";
         writeRegisterList(out, instruction.arguments);
         break;
+    case BytecodeOp::Struct:
+        if (instruction.arguments.size() != instruction.operands.size()) {
+            throw std::runtime_error("struct expects matching field names and values");
+        }
+        out << reg(requireDest(instruction)) << " = struct {";
+        for (std::size_t i = 0; i < instruction.arguments.size(); ++i) {
+            if (i != 0) {
+                out << ", ";
+            }
+            out << nameRef(instruction.operands[i]) << ": " << reg(instruction.arguments[i]);
+        }
+        out << "}";
+        break;
     case BytecodeOp::Move:
         out << reg(requireDest(instruction)) << " = move " << reg(requireLeft(instruction));
         break;
@@ -157,6 +172,9 @@ void writeInstruction(std::ostream& out, const BytecodeInstruction& instruction)
             throw std::runtime_error("assign_index expects one value operand");
         }
         out << reg(requireDest(instruction)) << " = assign_index " << reg(requireLeft(instruction)) << ", " << reg(requireRight(instruction)) << ", " << reg(instruction.arguments.front());
+        break;
+    case BytecodeOp::Field:
+        out << reg(requireDest(instruction)) << " = field " << reg(requireLeft(instruction)) << ", " << nameRef(instruction.operand);
         break;
     case BytecodeOp::Len:
         out << reg(requireDest(instruction)) << " = len " << reg(requireLeft(instruction));
