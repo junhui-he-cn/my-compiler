@@ -1,0 +1,2 @@
+let value = { name: "Ada" };
+print value.;

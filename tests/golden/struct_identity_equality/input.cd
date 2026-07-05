@@ -1,0 +1,9 @@
+let a = { x: 1 };
+let b = a;
+let c = { x: 1 };
+print a == b;
+print a == c;
+fun id(value) {
+  return value;
+}
+print id(a).x;
