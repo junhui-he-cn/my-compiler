@@ -1,0 +1,37 @@
+IR
+0000  v0 = constant #0 1
+0001  v1 = constant #1 2
+0002  v2 = array [v0, v1]
+0003  store_var @0 xs#0, v2
+0004  v3 = load_var @1 xs#0
+0005  v4 = constant #2 3
+0006  v5 = native_call @2 push(v3, v4)
+0007  print v5
+0008  v6 = load_var @3 xs#0
+0009  print v6
+0010  v7 = load_var @4 xs#0
+0011  v8 = native_call @5 pop(v7)
+0012  print v8
+0013  v9 = load_var @6 xs#0
+0014  print v9
+0015  v10 = load_var @7 xs#0
+0016  store_var @8 alias#1, v10
+0017  v11 = load_var @9 alias#1
+0018  v12 = constant #3 4
+0019  v13 = native_call @10 push(v11, v12)
+0020  v14 = load_var @11 xs#0
+0021  print v14
+0022  v15 = array []
+0023  store_var @12 mixed#2, v15
+0024  v16 = load_var @13 mixed#2
+0025  v17 = constant #4 "hi"
+0026  v18 = native_call @14 push(v16, v17)
+0027  v19 = load_var @15 mixed#2
+0028  v20 = constant #5 true
+0029  v21 = native_call @16 push(v19, v20)
+0030  v22 = load_var @17 mixed#2
+0031  v23 = native_call @18 pop(v22)
+0032  print v23
+0033  v24 = load_var @19 mixed#2
+0034  v25 = native_call @20 pop(v24)
+0035  print v25

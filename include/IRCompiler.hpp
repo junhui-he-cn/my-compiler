@@ -25,9 +25,11 @@ private:
     IRRegister compileExpression(const Expr& expression);
     IRRegister emitCall(const CallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;
+    bool isNativeStdlibCall(const CallExpr& expression) const;
     void compileBreak(const BreakStmt& statement);
     void compileContinue(const ContinueStmt& statement);
     IRRegister emitLenCall(const CallExpr& expression);
+    IRRegister emitNativeStdlibCall(const CallExpr& expression);
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
     IRRegister emitStruct(const StructExpr& expression);

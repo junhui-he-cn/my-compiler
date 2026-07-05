@@ -1,5 +1,7 @@
 #include "IRCompiler.hpp"
 
+#include "NativeStdlib.hpp"
+
 #include <cstdlib>
 #include <utility>
 
@@ -275,6 +277,12 @@ bool IRCompiler::isBuiltinLenCall(const CallExpr& expression) const
     return variable && variable->name.lexeme == "len" && !resolvedNames_->hasVariable(*variable);
 }
 
+bool IRCompiler::isNativeStdlibCall(const CallExpr& expression) const
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
+    return variable && isNativeStdlibName(variable->name.lexeme) && !resolvedNames_->hasVariable(*variable);
+}
+
 IRRegister IRCompiler::emitLenCall(const CallExpr& expression)
 {
     if (expression.arguments.size() != 1) {
@@ -284,10 +292,28 @@ IRRegister IRCompiler::emitLenCall(const CallExpr& expression)
     return ir_.emitLen(value);
 }
 
+IRRegister IRCompiler::emitNativeStdlibCall(const CallExpr& expression)
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
+    if (!variable) {
+        throw IRCompileError("native stdlib call missing variable callee");
+    }
+
+    std::vector<IRRegister> arguments;
+    for (const auto& argument : expression.arguments) {
+        arguments.push_back(compileExpression(*argument));
+    }
+    return ir_.emitNativeCall(variable->name.lexeme, std::move(arguments));
+}
+
 IRRegister IRCompiler::emitCall(const CallExpr& expression)
 {
     if (isBuiltinLenCall(expression)) {
         return emitLenCall(expression);
+    }
+
+    if (isNativeStdlibCall(expression)) {
+        return emitNativeStdlibCall(expression);
     }
 
     IRRegister callee = compileExpression(*expression.callee);

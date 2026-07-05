@@ -1,0 +1,2 @@
+fun id(x) { return x; }
+push(id(123), 1);

@@ -171,6 +171,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
             writeRegister(frame, readDest(instruction), callFunction(program, callee.asFunction(), arguments));
             break;
         }
+        case IROp::NativeCall:
+            writeRegister(frame, readDest(instruction), executeNativeCall(program, frame, instruction.operand, instruction.arguments));
+            break;
         case IROp::Index:
             writeRegister(frame, readDest(instruction), executeIndex(frame, readLeft(instruction), readRight(instruction)));
             break;
@@ -566,6 +569,53 @@ Value IRInterpreter::executeLen(const Frame& frame, IRRegister value)
         return Value::number(static_cast<double>(input.asString().size()));
     }
     throw IRRuntimeError("len expects array or string");
+}
+
+Value IRInterpreter::executeNativeCall(
+    const IRProgram& program,
+    const Frame& frame,
+    std::size_t nameIndex,
+    const std::vector<IRRegister>& arguments)
+{
+    const std::string name = readName(program, nameIndex);
+    if (name == "push") {
+        return executeNativePush(frame, arguments);
+    }
+    if (name == "pop") {
+        return executeNativePop(frame, arguments);
+    }
+    throw IRRuntimeError("unknown native stdlib function `" + name + "`");
+}
+
+Value IRInterpreter::executeNativePush(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 2) {
+        throw IRRuntimeError("push expects 2 arguments");
+    }
+    const Value& arrayValue = readRegister(frame, arguments[0]);
+    if (arrayValue.type() != Value::Type::Array) {
+        throw IRRuntimeError("push expects array as first argument");
+    }
+    arrayValue.asArray().elements->push_back(readRegister(frame, arguments[1]));
+    return Value::nil();
+}
+
+Value IRInterpreter::executeNativePop(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 1) {
+        throw IRRuntimeError("pop expects 1 arguments");
+    }
+    const Value& arrayValue = readRegister(frame, arguments[0]);
+    if (arrayValue.type() != Value::Type::Array) {
+        throw IRRuntimeError("pop expects array as first argument");
+    }
+    auto& elements = *arrayValue.asArray().elements;
+    if (elements.empty()) {
+        throw IRRuntimeError("cannot pop from empty array");
+    }
+    Value result = elements.back();
+    elements.pop_back();
+    return result;
 }
 
 Value IRInterpreter::executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double))

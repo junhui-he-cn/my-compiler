@@ -33,6 +33,7 @@ bool isBinary(IROp op)
     case IROp::StoreVar:
     case IROp::AssignVar:
     case IROp::Call:
+    case IROp::NativeCall:
     case IROp::Index:
     case IROp::AssignIndex:
     case IROp::Field:
@@ -190,6 +191,16 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
             }
             out << ")";
         }
+    } else if (instruction.op == IROp::NativeCall) {
+        printNameOperand(out, program, instruction.operand);
+        out << "(";
+        for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            out << instruction.arguments[arg];
+        }
+        out << ")";
     } else if (instruction.op == IROp::Index || instruction.op == IROp::AssignIndex) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -359,6 +370,13 @@ IRRegister IRProgram::emitCall(IRRegister callee, std::vector<IRRegister> argume
 {
     IRRegister dest = makeRegister();
     emit(IRInstruction{IROp::Call, dest, callee, std::nullopt, std::move(arguments), 0});
+    return dest;
+}
+
+IRRegister IRProgram::emitNativeCall(std::string name, std::vector<IRRegister> arguments)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::NativeCall, dest, std::nullopt, std::nullopt, std::move(arguments), addName(std::move(name))});
     return dest;
 }
 
@@ -551,6 +569,8 @@ std::string irOpName(IROp op)
         return "assign_var";
     case IROp::Call:
         return "call";
+    case IROp::NativeCall:
+        return "native_call";
     case IROp::Index:
         return "index";
     case IROp::AssignIndex:

@@ -22,6 +22,7 @@ enum class IROp {
     StoreVar,
     AssignVar,
     Call,
+    NativeCall,
     Index,
     AssignIndex,
     Field,
@@ -81,6 +82,7 @@ public:
     void emitStoreVar(std::string name, IRRegister value);
     void emitAssignVar(std::string name, IRRegister value);
     IRRegister emitCall(IRRegister callee, std::vector<IRRegister> arguments);
+    IRRegister emitNativeCall(std::string name, std::vector<IRRegister> arguments);
     IRRegister emitIndex(IRRegister collection, IRRegister index);
     IRRegister emitAssignIndex(IRRegister collection, IRRegister index, IRRegister value);
     IRRegister emitField(IRRegister object, std::string fieldName);
