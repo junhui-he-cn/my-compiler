@@ -1,0 +1,3 @@
+fun apply(f: fun(number): number): number {
+  return f(1, 2);
+}
