@@ -1,0 +1,3 @@
+let f: fun(number) number = fun (x: number): number {
+  return x;
+};
