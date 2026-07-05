@@ -100,7 +100,10 @@ Recommended split:
 
 - Phase 10A: `len` builtin as a small usability slice. Implemented.
 - Phase 10B: index assignment. Implemented.
-- Phase 10C: `push` / `pop` mutation helpers.
+- Phase 10C: `push` / `pop` mutation helpers. Prefer function-style helpers
+  (`push(xs, value)` / `pop(xs)`) for this phase if pursued before records.
+  Defer method-style syntax (`xs.push(value)` / `xs.pop()`) to Phase 12, where
+  dot access and aggregate/member syntax can be designed together.
 
 ## Phase 11: Loop Control and For Loops
 
@@ -138,6 +141,8 @@ Possible approaches:
 - Record literals first: `{ name: "Ada", age: 36 }`.
 - Field access: `person.name`.
 - Field assignment after mutation rules are clear: `person.age = 37`.
+- Dot/member call syntax for collection methods such as `xs.push(value)` and
+  `xs.pop()`, if method-style collection APIs are still desired.
 - Named structs later: `struct Person { name: string, age: number }`.
 
 Keep methods, inheritance, and protocols out of the first records slice.
