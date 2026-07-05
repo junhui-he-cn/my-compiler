@@ -1,0 +1,4 @@
+let xs = [1, 2];
+push(xs, 3);
+print xs;
+print pop(xs);

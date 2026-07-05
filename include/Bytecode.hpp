@@ -22,6 +22,7 @@ enum class BytecodeOp {
     StoreVar,
     AssignVar,
     Call,
+    NativeCall,
     Index,
     AssignIndex,
     Field,
