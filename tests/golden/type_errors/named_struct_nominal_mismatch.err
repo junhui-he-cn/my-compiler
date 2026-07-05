@@ -1,0 +1,1 @@
+Type error at 4:5: cannot initialize `person` of type Person with Pet

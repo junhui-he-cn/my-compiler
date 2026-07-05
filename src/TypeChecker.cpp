@@ -651,18 +651,78 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
 
 TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& statement)
 {
-    const CheckedExpression initializer = checkExpressionInfo(*statement.initializer);
     if (!statement.typeName) {
-        return initializer;
+        return checkExpressionInfo(*statement.initializer);
     }
 
     const TypeInfo declared = resolveAnnotation(*statement.typeName);
+    if (declared.kind == StaticType::Struct && declared.structName) {
+        if (const auto* structLiteral = dynamic_cast<const StructExpr*>(statement.initializer.get())) {
+            return checkNamedStructLiteralInitializer(statement, declared, *structLiteral);
+        }
+    }
+
+    const CheckedExpression initializer = checkExpressionInfo(*statement.initializer);
     checkAssignable(
         statement.name,
         "cannot initialize `" + statement.name.lexeme + "` of type " + typeInfoName(declared)
             + " with " + typeInfoName(initializer.type),
         declared,
         initializer.type);
+    return CheckedExpression{declared};
+}
+
+const TypeChecker::StructFieldType* TypeChecker::findStructField(
+    const StructTypeDecl& structType,
+    const std::string& name) const
+{
+    for (const StructFieldType& field : structType.fields) {
+        if (field.name.lexeme == name) {
+            return &field;
+        }
+    }
+    return nullptr;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
+    const LetStmt& statement,
+    const TypeInfo& declared,
+    const StructExpr& initializer)
+{
+    const StructTypeDecl* structType = declared.structName ? findStructType(*declared.structName) : nullptr;
+    if (!structType) {
+        throw TypeError(statement.name, "unknown struct type `" + typeInfoName(declared) + "`");
+    }
+
+    std::unordered_map<std::string, const StructField*> literalFields;
+    for (const StructField& field : initializer.fields) {
+        if (literalFields.find(field.name.lexeme) != literalFields.end()) {
+            throw TypeError(field.name, "duplicate field `" + field.name.lexeme + "` in struct literal");
+        }
+        literalFields.emplace(field.name.lexeme, &field);
+    }
+
+    for (const StructFieldType& expectedField : structType->fields) {
+        const auto found = literalFields.find(expectedField.name.lexeme);
+        if (found == literalFields.end()) {
+            throw TypeError(statement.name,
+                "missing field `" + expectedField.name.lexeme + "` for struct `" + structType->name.lexeme + "`");
+        }
+        const CheckedExpression actual = checkExpressionInfo(*found->second->value);
+        if (!compatible(expectedField.type, actual.type)) {
+            throw TypeError(found->second->name,
+                "field `" + expectedField.name.lexeme + "` expects " + typeInfoName(expectedField.type)
+                    + ", got " + typeInfoName(actual.type));
+        }
+    }
+
+    for (const StructField& field : initializer.fields) {
+        if (!findStructField(*structType, field.name.lexeme)) {
+            throw TypeError(field.name,
+                "extra field `" + field.name.lexeme + "` for struct `" + structType->name.lexeme + "`");
+        }
+    }
+
     return CheckedExpression{declared};
 }
 

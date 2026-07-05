@@ -1,0 +1,2 @@
+struct Person { name: string, age: number }
+let p: Person = { name: "Ada", age: 36, title: "Dr" };

@@ -139,6 +139,11 @@ private:
     TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkFieldAssignment(const FieldAssignExpr& expression);
+    CheckedExpression checkNamedStructLiteralInitializer(
+        const LetStmt& statement,
+        const TypeInfo& declared,
+        const StructExpr& initializer);
+    const StructFieldType* findStructField(const StructTypeDecl& structType, const std::string& name) const;
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     TypeInfo resolveAnnotation(const TypeAnnotation& typeName) const;
     void checkAssignable(const Token& token, const std::string& context, const TypeInfo& expected, const TypeInfo& actual) const;
