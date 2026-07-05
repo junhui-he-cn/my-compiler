@@ -1,0 +1,2 @@
+struct Person { name: string }
+struct Person { age: number }

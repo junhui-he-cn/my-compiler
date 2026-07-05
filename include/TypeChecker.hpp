@@ -26,6 +26,7 @@ struct TypeInfo {
     StaticType kind = StaticType::Unknown;
     std::vector<TypeInfo> parameterTypes;
     std::shared_ptr<TypeInfo> returnType;
+    std::optional<std::string> structName;
 };
 
 class TypeError final : public DiagnosticError {
@@ -89,6 +90,16 @@ private:
         std::optional<TypeInfo> expectedReturnType;
     };
 
+    struct StructFieldType {
+        Token name;
+        TypeInfo type;
+    };
+
+    struct StructTypeDecl {
+        Token name;
+        std::vector<StructFieldType> fields;
+    };
+
     using Scope = std::unordered_map<std::string, Binding>;
 
     void beginScope();
@@ -108,6 +119,8 @@ private:
     std::string makeResolvedName(const std::string& sourceName);
 
     void checkStatement(const Stmt& statement);
+    void checkStructDeclaration(const StructDeclStmt& statement);
+    const StructTypeDecl* findStructType(const std::string& name) const;
     void checkFunction(const FunctionStmt& statement);
     TypeInfo checkFunctionBody(
         const std::vector<StmtPtr>& body,
@@ -135,6 +148,7 @@ private:
     bool isCurrentFunctionBinding(const Binding& binding) const;
 
     std::vector<Scope> scopes_;
+    std::unordered_map<std::string, StructTypeDecl> structTypes_;
     ResolvedNames resolvedNames_;
     std::size_t nextResolvedName_ = 0;
     std::size_t functionDepth_ = 0;

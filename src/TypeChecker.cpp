@@ -7,12 +7,20 @@ namespace {
 
 TypeInfo unknownType()
 {
-    return TypeInfo{StaticType::Unknown, {}, nullptr};
+    return TypeInfo{StaticType::Unknown, {}, nullptr, std::nullopt};
 }
 
 TypeInfo simpleType(StaticType kind)
 {
-    return TypeInfo{kind, {}, nullptr};
+    return TypeInfo{kind, {}, nullptr, std::nullopt};
+}
+
+TypeInfo namedStructType(std::string name)
+{
+    TypeInfo result;
+    result.kind = StaticType::Struct;
+    result.structName = std::move(name);
+    return result;
 }
 
 TypeInfo functionType(std::vector<TypeInfo> parameterTypes, TypeInfo returnType)
@@ -26,7 +34,7 @@ TypeInfo functionType(std::vector<TypeInfo> parameterTypes, TypeInfo returnType)
 
 TypeInfo functionWithoutSignature()
 {
-    return TypeInfo{StaticType::Function, {}, nullptr};
+    return TypeInfo{StaticType::Function, {}, nullptr, std::nullopt};
 }
 
 bool isKnown(const TypeInfo& type)
@@ -41,6 +49,10 @@ bool hasFunctionSignature(const TypeInfo& type)
 
 std::string typeInfoName(const TypeInfo& type)
 {
+    if (type.kind == StaticType::Struct && type.structName) {
+        return *type.structName;
+    }
+
     if (type.kind != StaticType::Function || !type.returnType) {
         return staticTypeName(type.kind);
     }
@@ -64,6 +76,12 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
     }
     if (expected.kind != actual.kind) {
         return false;
+    }
+    if (expected.kind == StaticType::Struct) {
+        if (expected.structName || actual.structName) {
+            return expected.structName == actual.structName;
+        }
+        return true;
     }
     if (expected.kind != StaticType::Function) {
         return true;
@@ -266,6 +284,7 @@ void ResolvedNames::recordAssignment(const AssignExpr& expression, std::string n
 const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
+    structTypes_.clear();
     resolvedNames_.clear();
     nextResolvedName_ = 0;
     functionDepth_ = 0;
@@ -362,6 +381,11 @@ std::string TypeChecker::makeResolvedName(const std::string& sourceName)
 
 void TypeChecker::checkStatement(const Stmt& statement)
 {
+    if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(&statement)) {
+        checkStructDeclaration(*structDecl);
+        return;
+    }
+
     if (const auto* function = dynamic_cast<const FunctionStmt*>(&statement)) {
         checkFunction(*function);
         return;
@@ -500,6 +524,35 @@ TypeInfo TypeChecker::checkFunctionBody(
     }
 
     return context.sawReturn ? context.returnType : simpleType(StaticType::Nil);
+}
+
+const TypeChecker::StructTypeDecl* TypeChecker::findStructType(const std::string& name) const
+{
+    const auto found = structTypes_.find(name);
+    if (found == structTypes_.end()) {
+        return nullptr;
+    }
+    return &found->second;
+}
+
+void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
+{
+    if (structTypes_.find(statement.name.lexeme) != structTypes_.end()) {
+        throw TypeError(statement.name, "duplicate struct `" + statement.name.lexeme + "`");
+    }
+
+    StructTypeDecl declaration{statement.name, {}};
+    std::unordered_map<std::string, Token> fieldNames;
+    for (const StructFieldDecl& field : statement.fields) {
+        if (fieldNames.find(field.name.lexeme) != fieldNames.end()) {
+            throw TypeError(field.name,
+                "duplicate field `" + field.name.lexeme + "` in struct `" + statement.name.lexeme + "`");
+        }
+        fieldNames.emplace(field.name.lexeme, field.name);
+        declaration.fields.push_back(StructFieldType{field.name, resolveAnnotation(field.typeName)});
+    }
+
+    structTypes_.emplace(statement.name.lexeme, std::move(declaration));
 }
 
 void TypeChecker::checkFunction(const FunctionStmt& statement)
@@ -867,6 +920,9 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
     }
     if (typeName.token.lexeme == "nil") {
         return simpleType(StaticType::Nil);
+    }
+    if (findStructType(typeName.token.lexeme)) {
+        return namedStructType(typeName.token.lexeme);
     }
     throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
 }
