@@ -75,6 +75,8 @@ BytecodeOp lowerOp(IROp op)
         return BytecodeOp::AssignIndex;
     case IROp::Field:
         return BytecodeOp::Field;
+    case IROp::AssignField:
+        return BytecodeOp::AssignField;
     case IROp::Len:
         return BytecodeOp::Len;
     case IROp::Print:

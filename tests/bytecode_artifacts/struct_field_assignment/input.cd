@@ -1,0 +1,3 @@
+let person = { name: "Ada", age: 36 };
+person.age = 37;
+print person.age;

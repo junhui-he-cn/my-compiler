@@ -176,6 +176,13 @@ void writeInstruction(std::ostream& out, const BytecodeInstruction& instruction)
     case BytecodeOp::Field:
         out << reg(requireDest(instruction)) << " = field " << reg(requireLeft(instruction)) << ", " << nameRef(instruction.operand);
         break;
+    case BytecodeOp::AssignField:
+        if (instruction.arguments.size() != 1) {
+            throw std::runtime_error("assign_field expects one value operand");
+        }
+        out << reg(requireDest(instruction)) << " = assign_field " << reg(requireLeft(instruction)) << ", "
+            << nameRef(instruction.operand) << ", " << reg(instruction.arguments.front());
+        break;
     case BytecodeOp::Len:
         out << reg(requireDest(instruction)) << " = len " << reg(requireLeft(instruction));
         break;
