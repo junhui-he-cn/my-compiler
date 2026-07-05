@@ -68,6 +68,8 @@ std::string typeName(Value::Type type)
         return "function";
     case Value::Type::Array:
         return "array";
+    case Value::Type::Struct:
+        return "struct";
     }
 
     return "unknown";
@@ -98,6 +100,7 @@ void IRInterpreter::execute(const IRProgram& program)
     globalsView_.clear();
     nextFunctionIdentity_ = 1;
     nextArrayIdentity_ = 1;
+    nextStructIdentity_ = 1;
     Frame mainFrame;
     mainFrame.registers.assign(program.registerCount(), Value::nil());
     executeInstructions(program, program.instructions(), mainFrame, true);
@@ -134,6 +137,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
         }
         case IROp::Array:
             writeRegister(frame, readDest(instruction), executeArray(instruction, frame));
+            break;
+        case IROp::Struct:
+            writeRegister(frame, readDest(instruction), executeStruct(program, instruction, frame));
             break;
         case IROp::Copy:
             writeRegister(frame, readDest(instruction), readRegister(frame, readLeft(instruction)));
@@ -172,6 +178,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
             writeRegister(frame,
                 readDest(instruction),
                 executeAssignIndex(frame, readLeft(instruction), readRight(instruction), instruction.arguments.at(0)));
+            break;
+        case IROp::Field:
+            writeRegister(frame, readDest(instruction), executeField(program, frame, readLeft(instruction), instruction.operand));
             break;
         case IROp::Len:
             writeRegister(frame, readDest(instruction), executeLen(frame, readLeft(instruction)));
@@ -423,6 +432,20 @@ Value IRInterpreter::executeArray(const IRInstruction& instruction, const Frame&
     return Value::array(ArrayValue{nextArrayIdentity_++, std::move(elements)});
 }
 
+Value IRInterpreter::executeStruct(const IRProgram& program, const IRInstruction& instruction, const Frame& frame)
+{
+    if (instruction.operands.size() != instruction.arguments.size()) {
+        throw IRRuntimeError("struct field metadata mismatch");
+    }
+
+    auto fields = std::make_shared<std::vector<std::pair<std::string, Value>>>();
+    fields->reserve(instruction.arguments.size());
+    for (std::size_t i = 0; i < instruction.arguments.size(); ++i) {
+        fields->push_back({readName(program, instruction.operands[i]), readRegister(frame, instruction.arguments[i])});
+    }
+    return Value::structure(StructValue{nextStructIdentity_++, std::move(fields)});
+}
+
 Value IRInterpreter::executeIndex(const Frame& frame, IRRegister collection, IRRegister index)
 {
     const Value& collectionValue = readRegister(frame, collection);
@@ -483,6 +506,24 @@ Value IRInterpreter::executeAssignIndex(const Frame& frame, IRRegister collectio
     Value assignedValue = readRegister(frame, value);
     elements[position] = assignedValue;
     return assignedValue;
+}
+
+Value IRInterpreter::executeField(const IRProgram& program, const Frame& frame, IRRegister object, std::size_t fieldNameIndex)
+{
+    const Value& input = readRegister(frame, object);
+    if (input.type() != Value::Type::Struct) {
+        throw IRRuntimeError("can only access fields on structs");
+    }
+
+    const std::string fieldName = readName(program, fieldNameIndex);
+    const auto& fields = *input.asStruct().fields;
+    for (const auto& field : fields) {
+        if (field.first == fieldName) {
+            return field.second;
+        }
+    }
+
+    throw IRRuntimeError("undefined field `" + fieldName + "`");
 }
 
 Value IRInterpreter::executeLen(const Frame& frame, IRRegister value)

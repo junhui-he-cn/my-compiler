@@ -16,6 +16,7 @@ enum class IROp {
     Constant,
     MakeFunction,
     Array,
+    Struct,
     Copy,
     LoadVar,
     StoreVar,
@@ -23,6 +24,7 @@ enum class IROp {
     Call,
     Index,
     AssignIndex,
+    Field,
     Len,
     Print,
     Return,
@@ -50,6 +52,7 @@ struct IRInstruction {
     std::optional<IRRegister> right;
     std::vector<IRRegister> arguments;
     std::size_t operand = 0;
+    std::vector<std::size_t> operands;
 };
 
 struct IRFunction {
@@ -70,6 +73,7 @@ public:
     IRRegister emitConstant(Value value);
     IRRegister emitMakeFunction(std::size_t functionIndex);
     IRRegister emitArray(std::vector<IRRegister> elements);
+    IRRegister emitStruct(std::vector<std::size_t> fieldNames, std::vector<IRRegister> fieldValues);
     IRRegister emitCopy(IRRegister value);
     void emitCopyTo(IRRegister dest, IRRegister value);
     IRRegister emitLoadVar(std::string name);
@@ -78,6 +82,7 @@ public:
     IRRegister emitCall(IRRegister callee, std::vector<IRRegister> arguments);
     IRRegister emitIndex(IRRegister collection, IRRegister index);
     IRRegister emitAssignIndex(IRRegister collection, IRRegister index, IRRegister value);
+    IRRegister emitField(IRRegister object, std::string fieldName);
     IRRegister emitLen(IRRegister value);
     void emitPrint(IRRegister value);
     void emitReturn(IRRegister value);

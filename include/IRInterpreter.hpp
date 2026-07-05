@@ -54,8 +54,10 @@ private:
     Value executeBinaryComparison(const Frame& frame, const std::string& opName, IRRegister left, IRRegister right, Value (*operation)(double, double));
     Value executeAdd(const Frame& frame, IRRegister left, IRRegister right);
     Value executeArray(const IRInstruction& instruction, const Frame& frame);
+    Value executeStruct(const IRProgram& program, const IRInstruction& instruction, const Frame& frame);
     Value executeIndex(const Frame& frame, IRRegister collection, IRRegister index);
     Value executeAssignIndex(const Frame& frame, IRRegister collection, IRRegister index, IRRegister value);
+    Value executeField(const IRProgram& program, const Frame& frame, IRRegister object, std::size_t fieldNameIndex);
     Value executeLen(const Frame& frame, IRRegister value);
 
     std::ostream& output_;
@@ -63,4 +65,5 @@ private:
     mutable std::unordered_map<std::string, Value> globalsView_;
     std::size_t nextFunctionIdentity_ = 1;
     std::size_t nextArrayIdentity_ = 1;
+    std::size_t nextStructIdentity_ = 1;
 };

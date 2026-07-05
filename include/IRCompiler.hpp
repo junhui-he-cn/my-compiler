@@ -30,8 +30,10 @@ private:
     IRRegister emitLenCall(const CallExpr& expression);
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
+    IRRegister emitStruct(const StructExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);
     IRRegister emitIndexAssign(const IndexAssignExpr& expression);
+    IRRegister emitFieldAccess(const FieldAccessExpr& expression);
     IRRegister emitUnary(TokenType op, IRRegister value);
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
     IRRegister emitLogical(const LogicalExpr& expression);

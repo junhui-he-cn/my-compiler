@@ -228,8 +228,16 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitArray(*array);
     }
 
+    if (const auto* structExpr = dynamic_cast<const StructExpr*>(&expression)) {
+        return emitStruct(*structExpr);
+    }
+
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
         return emitIndex(*index);
+    }
+
+    if (const auto* field = dynamic_cast<const FieldAccessExpr*>(&expression)) {
+        return emitFieldAccess(*field);
     }
 
     throw IRCompileError("unsupported expression node");
@@ -291,6 +299,19 @@ IRRegister IRCompiler::emitArray(const ArrayExpr& expression)
     return ir_.emitArray(std::move(elements));
 }
 
+IRRegister IRCompiler::emitStruct(const StructExpr& expression)
+{
+    std::vector<std::size_t> names;
+    std::vector<IRRegister> values;
+    names.reserve(expression.fields.size());
+    values.reserve(expression.fields.size());
+    for (const StructField& field : expression.fields) {
+        names.push_back(ir_.addName(field.name.lexeme));
+        values.push_back(compileExpression(*field.value));
+    }
+    return ir_.emitStruct(std::move(names), std::move(values));
+}
+
 IRRegister IRCompiler::emitIndex(const IndexExpr& expression)
 {
     IRRegister collection = compileExpression(*expression.collection);
@@ -304,6 +325,12 @@ IRRegister IRCompiler::emitIndexAssign(const IndexAssignExpr& expression)
     IRRegister index = compileExpression(*expression.index);
     IRRegister value = compileExpression(*expression.value);
     return ir_.emitAssignIndex(collection, index, value);
+}
+
+IRRegister IRCompiler::emitFieldAccess(const FieldAccessExpr& expression)
+{
+    IRRegister object = compileExpression(*expression.object);
+    return ir_.emitField(object, expression.name.lexeme);
 }
 
 IRRegister IRCompiler::emitUnary(TokenType op, IRRegister value)

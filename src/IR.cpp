@@ -152,6 +152,20 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
             out << instruction.arguments[arg];
         }
         out << "]";
+    } else if (instruction.op == IROp::Struct) {
+        out << " {";
+        for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            if (arg < instruction.operands.size() && instruction.operands[arg] < program.names().size()) {
+                out << program.names()[instruction.operands[arg]];
+            } else {
+                out << "@" << arg;
+            }
+            out << ": " << instruction.arguments[arg];
+        }
+        out << "}";
     } else if (instruction.op == IROp::Copy) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -183,6 +197,15 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
         }
         if (instruction.op == IROp::AssignIndex && !instruction.arguments.empty()) {
             out << ", " << instruction.arguments.front();
+        }
+    } else if (instruction.op == IROp::Field) {
+        if (instruction.left) {
+            out << " " << *instruction.left << ".";
+            if (instruction.operand < program.names().size()) {
+                out << program.names()[instruction.operand];
+            } else {
+                out << "@" << instruction.operand;
+            }
         }
     } else if (instruction.op == IROp::Len) {
         if (instruction.left) {
@@ -280,6 +303,15 @@ IRRegister IRProgram::emitArray(std::vector<IRRegister> elements)
     return dest;
 }
 
+IRRegister IRProgram::emitStruct(std::vector<std::size_t> fieldNames, std::vector<IRRegister> fieldValues)
+{
+    IRRegister dest = makeRegister();
+    IRInstruction instruction{IROp::Struct, dest, std::nullopt, std::nullopt, std::move(fieldValues), 0};
+    instruction.operands = std::move(fieldNames);
+    emit(std::move(instruction));
+    return dest;
+}
+
 IRRegister IRProgram::emitCopy(IRRegister value)
 {
     IRRegister dest = makeRegister();
@@ -327,6 +359,13 @@ IRRegister IRProgram::emitAssignIndex(IRRegister collection, IRRegister index, I
 {
     IRRegister dest = makeRegister();
     emit(IRInstruction{IROp::AssignIndex, dest, collection, index, {value}, 0});
+    return dest;
+}
+
+IRRegister IRProgram::emitField(IRRegister object, std::string fieldName)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::Field, dest, object, std::nullopt, {}, addName(std::move(fieldName))});
     return dest;
 }
 
@@ -479,6 +518,8 @@ std::string irOpName(IROp op)
         return "make_function";
     case IROp::Array:
         return "array";
+    case IROp::Struct:
+        return "struct";
     case IROp::Copy:
         return "copy";
     case IROp::LoadVar:
@@ -493,6 +534,8 @@ std::string irOpName(IROp op)
         return "index";
     case IROp::AssignIndex:
         return "assign_index";
+    case IROp::Field:
+        return "field";
     case IROp::Len:
         return "len";
     case IROp::Print:
