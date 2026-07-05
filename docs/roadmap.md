@@ -11,11 +11,12 @@ Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-
 The language currently supports:
 
 - Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, blocks, and expression statements.
-- Expressions: literals, arrays, indexing, array index assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
+- Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
 - Array literals, indexing, and array index assignment.
+- Anonymous struct literals, field access, and existing-field assignment.
 - C++ IR interpreter execution via `--run`, plus bytecode artifact emission and Rust VM execution via `.cdbc`.
 
 For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf` and `README.md`.
@@ -133,7 +134,7 @@ Recommended split:
 
 ## Phase 12: Records / Structs
 
-Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Field assignment, named structs, methods, and struct type annotations remain future work.
+Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Field creation by assignment, named structs, methods, and struct type annotations remain future work.
 
 Goal: add named fields and simple aggregate data.
 
@@ -141,7 +142,7 @@ Possible approaches:
 
 - Struct literals first: `{ name: "Ada", age: 36 }`. Implemented.
 - Field access: `person.name`. Implemented.
-- Field assignment after mutation rules are clear: `person.age = 37`.
+- Field assignment after mutation rules are clear: `person.age = 37`. Implemented for existing fields.
 - Dot/member call syntax for collection methods such as `xs.push(value)` and
   `xs.pop()`, if method-style collection APIs are still desired.
 - Named structs later: `struct Person { name: string, age: number }`.

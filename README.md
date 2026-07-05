@@ -7,8 +7,9 @@ Rust bytecode VM.
 
 The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, indexing, array
-element assignment, short-circuit logical operators, typed `let` declarations,
-typed function parameters and returns, and the builtin `len`.
+element assignment, structs, field access and assignment, short-circuit logical
+operators, typed `let` declarations, typed function parameters and returns,
+and the builtin `len`.
 
 The compiler pipeline includes:
 
@@ -39,13 +40,20 @@ return [expression];
 expression;
 ```
 
-Type annotations support `number`, `bool`, `string`, `nil`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, and `array`; expressions whose static type is still unknown remain flexible. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Array element types, generic types, and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
+Type annotations support `number`, `bool`, `string`, `nil`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and `struct`; expressions whose static type is still unknown remain flexible. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Array element types, generic types, and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
 
 `while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break;` exits the nearest enclosing `while`, and `continue;` skips to that loop's next condition check. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
 
 Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Known function values carry arity, parameter types when annotated, and inferred or annotated return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
-Struct literals use `{ field: expression, ... }`, preserve field order when printed, and support field reads with `value.field`. Structs are reference values with identity equality. Field assignment, named struct declarations, methods, and struct type annotations are not implemented yet.
+Struct literals use `{ field: expression, ... }`, preserve field order when printed, and support field reads with `value.field`. Existing fields can be reassigned with `value.field = expression`; the assignment evaluates to the assigned value. Structs are reference values with identity equality, so aliases observe field mutation. Assigning a missing field is a runtime error. Named struct declarations, methods, and struct type annotations are not implemented yet.
+
+```cd
+let person = { name: "Ada", age: 36 };
+person.age = 37;
+print person.age;      // 37
+print person.age = 38; // 38
+```
 
 The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and `len("hello")` returns `5` using the current runtime string byte length. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
 
@@ -53,13 +61,14 @@ Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Arrays: `[element, ...]` and `[]`; elements may be mixed runtime types.
-- Structs: `{ name: value, ... }` and field reads `value.name`.
+- Structs: `{ name: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
 - Function expressions: `fun (parameter[: type]*) [: type] { declaration* }`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Calls: `callee(argument*)`
 - Indexing: `array[index]` reads an element. Indexes must be integer numbers in range.
 - Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element mutation. Array length mutation and `push` are not implemented yet.
+- Struct field assignment: `object.field = value` mutates an existing field and evaluates to the assigned value. Structs are reference values, so aliases observe field mutation. Assigning a missing field is a runtime error.
 - Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`
 - Unary operators: `!`, `-`

@@ -52,11 +52,12 @@ expression  = assignment ;
 assignment  = logicalOr, [ "=", assignment ] ;
 
 assignmentTarget = identifier
-                 | call, "[", expression, "]" ;
+                 | call, "[", expression, "]"
+                 | call, ".", identifier ;
 
 (* Assignment is right-associative. The parser accepts only variable targets and
-   index targets (`name = value` and `array[index] = value`); all other left
-   sides are parse errors. *)
+   index or field targets (`name = value`, `array[index] = value`, and
+   `object.field = value`); all other left sides are parse errors. *)
 
 logicalOr   = logicalAnd,
               { "||", logicalAnd } ;

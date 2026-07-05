@@ -25,7 +25,7 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
 - `include/Bytecode.hpp`, `src/Bytecode.cpp`: bytecode opcodes, program/function containers, and bytecode printer output.
 - `include/BytecodeTextEmitter.hpp`, `src/BytecodeTextEmitter.cpp`: stable `.cdbc` text artifact emission for the Rust VM boundary.
 - `include/BytecodeCompiler.hpp`, `src/BytecodeCompiler.cpp`: IR-to-bytecode lowering.
-- `vm-rs/src/vm.rs`, `vm-rs/src/value.rs`, `vm-rs/src/runtime.rs`: Rust `.cdbc` bytecode execution, runtime values, shared cells, closures, and arrays.
+- `vm-rs/src/vm.rs`, `vm-rs/src/value.rs`, `vm-rs/src/runtime.rs`: Rust `.cdbc` bytecode execution, runtime values, shared cells, closures, arrays, and structs.
 - `include/Value.hpp`, `src/Value.cpp`: runtime value representation and formatting.
 - `src/main.cpp`: CLI modes and top-level error handling.
 - `docs/language-grammar.ebnf`: implemented grammar and precedence reference.
@@ -162,7 +162,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 ## Current Language Semantics and Limitations
 
 - Supported statements include `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, blocks, and expression statements.
-- Supported expressions include literals, arrays, structs, indexing, array index assignment, field access, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
+- Supported expressions include literals, arrays, structs, indexing, array index assignment, field access, field assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - `let name: type = expression;`, function parameter annotations, and function return annotations check explicit type names for `number`, `bool`, `string`, and `nil`. Function type annotations use `fun(type, ...): type` and may appear in `let`, parameter, and return annotations. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Unannotated `let` bindings infer known initializer types, while unannotated function parameters, unannotated function returns, and array element types are not fully inferred yet.
 - Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
 - Assignment has the form `name = expression`, is right-associative, updates the nearest resolved binding, and evaluates to the assigned value.
@@ -172,11 +172,11 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - A C++ bytecode backend lowers register IR to bytecode and `.cdbc` artifacts; Rust `compiler-design-vm` is the bytecode execution backend.
 - Future VM backend work targets the Rust `compiler-design-vm` project under `vm-rs/` and `.cdbc` artifacts.
 - Arrays are mutable, immutable-length runtime values with mixed element types. Indexing validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown; `array[index] = value` mutates an existing element and evaluates to the assigned value.
-- Struct literals create anonymous reference values with ordered fields. Field access `value.name` reads an existing field; statically known non-struct field access is a type error, dynamic non-struct or missing-field access is a runtime error. Field assignment and named struct declarations are not implemented yet.
+- Struct literals create anonymous reference values with ordered fields. Field access `value.name` reads an existing field; statically known non-struct field access is a type error, dynamic non-struct or missing-field access is a runtime error. Field assignment `value.name = expression` mutates an existing field, evaluates to the assigned value, and aliases observe the mutation. Statically known non-struct field assignment is a type error; dynamic non-struct targets or missing fields are runtime errors. Creating fields by assignment and named struct declarations are not implemented yet.
 - The builtin `len(value)` returns array element counts or string byte lengths as a number. User bindings named `len` shadow the builtin; unknown argument types are checked at runtime.
 - Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Parameters and returns may be annotated with `number`, `bool`, `string`, `nil`, or function types such as `fun(number): string`; known function values carry arity, annotated parameter types, and conservative or annotated return types for static checks. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
 - Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.
 
 ## Roadmap Hints
 
-The active roadmap in `docs/roadmap.md` is now language-focused. Likely future language work includes richer type inference/checking, array mutation and collection builtins, loop control, records/structs, standard builtins, modules/imports, and diagnostic polish. Bytecode VM follow-ups such as GC, task scheduling, and JIT exploration are deferred backend tracks; start them only from a dedicated backend design spec and implementation plan. When adding language features, prefer vertical slices that update parser, AST, type checker, IR, bytecode, interpreters/VM, docs, and goldens together.
+The active roadmap in `docs/roadmap.md` is now language-focused. Likely future language work includes richer type inference/checking, collection builtins, for loops, named structs, standard builtins, modules/imports, and diagnostic polish. Bytecode VM follow-ups such as GC, task scheduling, and JIT exploration are deferred backend tracks; start them only from a dedicated backend design spec and implementation plan. When adding language features, prefer vertical slices that update parser, AST, type checker, IR, bytecode, interpreters/VM, docs, and goldens together.

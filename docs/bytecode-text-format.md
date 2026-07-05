@@ -8,7 +8,7 @@ This format is not the same as the current `--bytecode` debug print. The debug p
 
 ## Phase Status
 
-This phase implements the text artifact format at the compiler/VM boundary. The C++ compiler can emit `.cdbc` files with `--emit-bytecode`, and the Rust VM can parse and canonicalize them with `dump`. Rust bytecode execution is still a future phase.
+This format is the text artifact contract at the compiler/VM boundary. The C++ compiler can emit `.cdbc` files with `--emit-bytecode`, and the Rust VM can parse, canonicalize, and execute them with `dump` and `run`.
 
 ```sh
 compiler_design --emit-bytecode output.cdbc input.cd
@@ -94,6 +94,7 @@ call
 index
 assign_index
 field
+assign_field
 len
 print
 return
@@ -119,10 +120,13 @@ Struct and field instructions use name-table references for field names:
 ```text
 rD = struct {nName: rValue, ...}
 rD = field rObject, nName
+rD = assign_field rObject, nName, rValue
 ```
 
-New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter together. When Rust execution is implemented, update the executor at the same time.
+`assign_field` mutates an existing struct field and stores the assigned value in `rD`; assigning to a missing field is a runtime error.
+
+New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter and executor together.
 
 ## Non-Goals for This Phase
 
-This phase does not define binary encoding, verifier, Rust execution semantics, GC layout, task scheduler, or JIT metadata format. Those belong to later Rust VM phases.
+This format does not define binary encoding, verifier internals, GC layout, task scheduler, or JIT metadata format. Those belong to later Rust VM phases.
