@@ -155,6 +155,7 @@ def main() -> int:
             "len_builtin",
             "len_builtin_shadowing",
             "loop_break",
+            "named_struct_types",
             "struct_literals_field_access",
             "struct_identity_equality",
         }
