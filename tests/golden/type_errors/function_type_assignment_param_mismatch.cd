@@ -1,0 +1,6 @@
+let f: fun(number): number = fun (x: number): number {
+  return x;
+};
+f = fun (s: string): number {
+  return 1;
+};

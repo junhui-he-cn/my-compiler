@@ -1,0 +1,1 @@
+Type error at 4:1: cannot assign fun(string): number to `f` of type fun(number): number

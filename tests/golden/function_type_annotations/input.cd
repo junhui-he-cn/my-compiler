@@ -11,3 +11,8 @@ fun makeAdder(): fun(number): number {
     return x + 1;
   };
 }
+
+print pred(1);
+print apply(fun (n: number): number { return n + 1; }, 41);
+let addOne: fun(number): number = makeAdder();
+print addOne(5);
