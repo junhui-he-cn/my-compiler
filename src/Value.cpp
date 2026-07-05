@@ -50,6 +50,13 @@ Value Value::array(ArrayValue value)
     return result;
 }
 
+Value Value::structure(StructValue value)
+{
+    Value result(Type::Struct);
+    result.struct_ = std::make_shared<StructValue>(std::move(value));
+    return result;
+}
+
 Value::Type Value::type() const
 {
     return type_;
@@ -95,6 +102,14 @@ const ArrayValue& Value::asArray() const
     return *array_;
 }
 
+const StructValue& Value::asStruct() const
+{
+    if (type_ != Type::Struct || !struct_) {
+        throw std::runtime_error("value is not a struct");
+    }
+    return *struct_;
+}
+
 bool isTruthy(const Value& value)
 {
     if (value.type() == Value::Type::Nil) {
@@ -125,6 +140,8 @@ bool valuesEqual(const Value& left, const Value& right)
         return left.asFunction().identity == right.asFunction().identity;
     case Value::Type::Array:
         return left.asArray().identity == right.asArray().identity;
+    case Value::Type::Struct:
+        return left.asStruct().identity == right.asStruct().identity;
     }
 
     return false;
@@ -157,6 +174,19 @@ std::string valueToString(const Value& value)
             out << valueToString(elements[i]);
         }
         out << ']';
+        return out.str();
+    }
+    case Value::Type::Struct: {
+        std::ostringstream out;
+        out << '{';
+        const auto& fields = *value.asStruct().fields;
+        for (std::size_t i = 0; i < fields.size(); ++i) {
+            if (i != 0) {
+                out << ", ";
+            }
+            out << fields[i].first << ": " << valueToString(fields[i].second);
+        }
+        out << '}';
         return out.str();
     }
     }
