@@ -81,12 +81,20 @@ unary       = ( "!" | "-" ), unary
 
 call        = primary,
               { "(", [ arguments ], ")"
-              | "[", expression, "]" } ;
+              | "[", expression, "]"
+              | ".", identifier } ;
 
 arguments   = expression,
               { ",", expression } ;
 
 array       = "[", [ arguments ], "]" ;
+
+struct      = "{", [ fields ], "}" ;
+
+fields      = field,
+              { ",", field } ;
+
+field       = identifier, ":", expression ;
 
 functionExpr = "fun", "(", [ parameters ], ")",
                [ ":", typeExpr ],
@@ -99,6 +107,7 @@ primary     = functionExpr
             | number
             | string
             | array
+            | struct
             | identifier
             | "(", expression, ")" ;
 

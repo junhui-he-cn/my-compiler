@@ -45,12 +45,15 @@ Type annotations support `number`, `bool`, `string`, `nil`, and function types s
 
 Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Known function values carry arity, parameter types when annotated, and inferred or annotated return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
+Struct literals use `{ field: expression, ... }`, preserve field order when printed, and support field reads with `value.field`. Structs are reference values with identity equality. Field assignment, named struct declarations, methods, and struct type annotations are not implemented yet.
+
 The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and `len("hello")` returns `5` using the current runtime string byte length. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
 
 Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Arrays: `[element, ...]` and `[]`; elements may be mixed runtime types.
+- Structs: `{ name: value, ... }` and field reads `value.name`.
 - Function expressions: `fun (parameter[: type]*) [: type] { declaration* }`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.

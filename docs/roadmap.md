@@ -133,12 +133,14 @@ Recommended split:
 
 ## Phase 12: Records / Structs
 
+Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Field assignment, named structs, methods, and struct type annotations remain future work.
+
 Goal: add named fields and simple aggregate data.
 
 Possible approaches:
 
-- Record literals first: `{ name: "Ada", age: 36 }`.
-- Field access: `person.name`.
+- Struct literals first: `{ name: "Ada", age: 36 }`. Implemented.
+- Field access: `person.name`. Implemented.
 - Field assignment after mutation rules are clear: `person.age = 37`.
 - Dot/member call syntax for collection methods such as `xs.push(value)` and
   `xs.pop()`, if method-style collection APIs are still desired.
