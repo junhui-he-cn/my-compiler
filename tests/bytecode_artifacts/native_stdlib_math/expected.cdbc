@@ -1,0 +1,22 @@
+cdbc 0.1
+
+constants:
+  c0 = number 4.8
+  c1 = number 4.2
+  c2 = number 25
+
+names:
+  n0 = "floor"
+  n1 = "ceil"
+  n2 = "sqrt"
+
+main registers=6:
+  r0 = constant c0
+  r1 = native_call n0 [r0]
+  print r1
+  r2 = constant c1
+  r3 = native_call n1 [r2]
+  print r3
+  r4 = constant c2
+  r5 = native_call n2 [r4]
+  print r5
