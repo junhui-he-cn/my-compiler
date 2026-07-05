@@ -1,0 +1,8 @@
+let factory: fun(): fun(number): number = fun (): fun(number): number {
+  return fun (x: number): number {
+    return x + 2;
+  };
+};
+
+let f: fun(number): number = factory();
+print f(5);
