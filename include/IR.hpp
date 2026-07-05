@@ -25,6 +25,7 @@ enum class IROp {
     Index,
     AssignIndex,
     Field,
+    AssignField,
     Len,
     Print,
     Return,
@@ -83,6 +84,7 @@ public:
     IRRegister emitIndex(IRRegister collection, IRRegister index);
     IRRegister emitAssignIndex(IRRegister collection, IRRegister index, IRRegister value);
     IRRegister emitField(IRRegister object, std::string fieldName);
+    IRRegister emitAssignField(IRRegister object, std::string fieldName, IRRegister value);
     IRRegister emitLen(IRRegister value);
     void emitPrint(IRRegister value);
     void emitReturn(IRRegister value);

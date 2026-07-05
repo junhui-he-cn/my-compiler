@@ -197,6 +197,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitIndexAssign(*indexAssign);
     }
 
+    if (const auto* fieldAssign = dynamic_cast<const FieldAssignExpr*>(&expression)) {
+        return emitFieldAssign(*fieldAssign);
+    }
+
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {
         return compileExpression(*grouping->expression);
     }
@@ -331,6 +335,13 @@ IRRegister IRCompiler::emitFieldAccess(const FieldAccessExpr& expression)
 {
     IRRegister object = compileExpression(*expression.object);
     return ir_.emitField(object, expression.name.lexeme);
+}
+
+IRRegister IRCompiler::emitFieldAssign(const FieldAssignExpr& expression)
+{
+    IRRegister object = compileExpression(*expression.object);
+    IRRegister value = compileExpression(*expression.value);
+    return ir_.emitAssignField(object, expression.name.lexeme, value);
 }
 
 IRRegister IRCompiler::emitUnary(TokenType op, IRRegister value)

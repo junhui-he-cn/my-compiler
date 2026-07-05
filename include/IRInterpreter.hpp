@@ -58,6 +58,7 @@ private:
     Value executeIndex(const Frame& frame, IRRegister collection, IRRegister index);
     Value executeAssignIndex(const Frame& frame, IRRegister collection, IRRegister index, IRRegister value);
     Value executeField(const IRProgram& program, const Frame& frame, IRRegister object, std::size_t fieldNameIndex);
+    Value executeAssignField(const IRProgram& program, const Frame& frame, IRRegister object, std::size_t fieldNameIndex, IRRegister value);
     Value executeLen(const Frame& frame, IRRegister value);
 
     std::ostream& output_;

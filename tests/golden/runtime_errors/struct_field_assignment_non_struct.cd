@@ -1,0 +1,2 @@
+fun id(x) { return x; }
+id(123).name = "x";

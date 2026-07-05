@@ -35,6 +35,8 @@ bool isBinary(IROp op)
     case IROp::Call:
     case IROp::Index:
     case IROp::AssignIndex:
+    case IROp::Field:
+    case IROp::AssignField:
     case IROp::Len:
     case IROp::Print:
     case IROp::Return:
@@ -207,6 +209,18 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
                 out << "@" << instruction.operand;
             }
         }
+    } else if (instruction.op == IROp::AssignField) {
+        if (instruction.left) {
+            out << " " << *instruction.left << ".";
+            if (instruction.operand < program.names().size()) {
+                out << program.names()[instruction.operand];
+            } else {
+                out << "@" << instruction.operand;
+            }
+        }
+        if (!instruction.arguments.empty()) {
+            out << ", " << instruction.arguments.front();
+        }
     } else if (instruction.op == IROp::Len) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -366,6 +380,13 @@ IRRegister IRProgram::emitField(IRRegister object, std::string fieldName)
 {
     IRRegister dest = makeRegister();
     emit(IRInstruction{IROp::Field, dest, object, std::nullopt, {}, addName(std::move(fieldName))});
+    return dest;
+}
+
+IRRegister IRProgram::emitAssignField(IRRegister object, std::string fieldName, IRRegister value)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::AssignField, dest, object, std::nullopt, {value}, addName(std::move(fieldName))});
     return dest;
 }
 
@@ -536,6 +557,8 @@ std::string irOpName(IROp op)
         return "assign_index";
     case IROp::Field:
         return "field";
+    case IROp::AssignField:
+        return "assign_field";
     case IROp::Len:
         return "len";
     case IROp::Print:

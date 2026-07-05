@@ -182,6 +182,11 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
         case IROp::Field:
             writeRegister(frame, readDest(instruction), executeField(program, frame, readLeft(instruction), instruction.operand));
             break;
+        case IROp::AssignField:
+            writeRegister(frame,
+                readDest(instruction),
+                executeAssignField(program, frame, readLeft(instruction), instruction.operand, instruction.arguments.at(0)));
+            break;
         case IROp::Len:
             writeRegister(frame, readDest(instruction), executeLen(frame, readLeft(instruction)));
             break;
@@ -520,6 +525,31 @@ Value IRInterpreter::executeField(const IRProgram& program, const Frame& frame, 
     for (const auto& field : fields) {
         if (field.first == fieldName) {
             return field.second;
+        }
+    }
+
+    throw IRRuntimeError("undefined field `" + fieldName + "`");
+}
+
+Value IRInterpreter::executeAssignField(
+    const IRProgram& program,
+    const Frame& frame,
+    IRRegister object,
+    std::size_t fieldNameIndex,
+    IRRegister value)
+{
+    const Value& input = readRegister(frame, object);
+    if (input.type() != Value::Type::Struct) {
+        throw IRRuntimeError("can only assign fields on structs");
+    }
+
+    const std::string fieldName = readName(program, fieldNameIndex);
+    auto& fields = *input.asStruct().fields;
+    for (auto& field : fields) {
+        if (field.first == fieldName) {
+            Value assignedValue = readRegister(frame, value);
+            field.second = assignedValue;
+            return assignedValue;
         }
     }
 

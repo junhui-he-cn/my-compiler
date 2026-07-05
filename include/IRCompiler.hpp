@@ -34,6 +34,7 @@ private:
     IRRegister emitIndex(const IndexExpr& expression);
     IRRegister emitIndexAssign(const IndexAssignExpr& expression);
     IRRegister emitFieldAccess(const FieldAccessExpr& expression);
+    IRRegister emitFieldAssign(const FieldAssignExpr& expression);
     IRRegister emitUnary(TokenType op, IRRegister value);
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
     IRRegister emitLogical(const LogicalExpr& expression);
