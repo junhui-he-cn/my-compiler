@@ -125,6 +125,7 @@ private:
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
     TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
+    CheckedExpression checkFieldAssignment(const FieldAssignExpr& expression);
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     TypeInfo resolveAnnotation(const TypeAnnotation& typeName) const;
     void checkAssignable(const Token& token, const std::string& context, const TypeInfo& expected, const TypeInfo& actual) const;

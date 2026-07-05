@@ -728,6 +728,10 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         return CheckedExpression{unknownType()};
     }
 
+    if (const auto* fieldAssign = dynamic_cast<const FieldAssignExpr*>(&expression)) {
+        return checkFieldAssignment(*fieldAssign);
+    }
+
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
         return CheckedExpression{checkIndex(*index)};
     }
@@ -824,6 +828,18 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
 
     if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
         throw TypeError(expression.bracket, "array index must be number");
+    }
+
+    return value;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssignExpr& expression)
+{
+    const TypeInfo object = checkExpression(*expression.object);
+    const CheckedExpression value = checkExpressionInfo(*expression.value);
+
+    if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
+        throw TypeError(expression.name, "can only assign fields on structs");
     }
 
     return value;
