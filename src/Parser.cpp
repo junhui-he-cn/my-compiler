@@ -249,6 +249,12 @@ ExprPtr Parser::assignment()
                 std::move(collection), std::move(bracket), std::move(indexExpression), std::move(value));
         }
 
+        if (auto* field = dynamic_cast<FieldAccessExpr*>(expr.get())) {
+            ExprPtr object = std::move(field->object);
+            Token name = std::move(field->name);
+            return std::make_unique<FieldAssignExpr>(std::move(object), std::move(name), std::move(value));
+        }
+
         throw ParseError(equals, "invalid assignment target");
     }
 

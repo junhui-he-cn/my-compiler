@@ -360,6 +360,22 @@ void FieldAccessExpr::print(std::ostream& out) const
     out << ' ' << name.lexeme << ')';
 }
 
+FieldAssignExpr::FieldAssignExpr(ExprPtr object, Token name, ExprPtr value)
+    : object(std::move(object))
+    , name(std::move(name))
+    , value(std::move(value))
+{
+}
+
+void FieldAssignExpr::print(std::ostream& out) const
+{
+    out << "(= (field ";
+    writeExpr(out, object);
+    out << ' ' << name.lexeme << ") ";
+    writeExpr(out, value);
+    out << ')';
+}
+
 FunctionExpr::FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
     : keyword(std::move(keyword))
     , parameters(std::move(parameters))

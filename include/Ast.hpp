@@ -150,6 +150,15 @@ struct FieldAccessExpr final : Expr {
     Token name;
 };
 
+struct FieldAssignExpr final : Expr {
+    FieldAssignExpr(ExprPtr object, Token name, ExprPtr value);
+    void print(std::ostream& out) const override;
+
+    ExprPtr object;
+    Token name;
+    ExprPtr value;
+};
+
 struct FunctionExpr final : Expr {
     FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
     void print(std::ostream& out) const override;
