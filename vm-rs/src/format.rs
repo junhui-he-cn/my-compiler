@@ -317,6 +317,14 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                     arguments: parse_register_list(line, args)?,
                 })
             }
+            "native_call" => {
+                let (name, args) = split_once(line, operands, " ")?;
+                Ok(Instruction::NativeCall {
+                    dest,
+                    name: parse_name_ref(line, name)?,
+                    arguments: parse_register_list(line, args)?,
+                })
+            }
             "index" => {
                 let (collection, index) = parse_two_registers(line, operands)?;
                 Ok(Instruction::Index {
@@ -467,6 +475,16 @@ fn format_instruction(instruction: &Instruction) -> String {
             "r{} = call r{} {}",
             dest,
             callee,
+            format_register_list(arguments)
+        ),
+        Instruction::NativeCall {
+            dest,
+            name,
+            arguments,
+        } => format!(
+            "r{} = native_call n{} {}",
+            dest,
+            name,
             format_register_list(arguments)
         ),
         Instruction::Index {

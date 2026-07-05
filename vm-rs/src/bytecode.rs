@@ -69,6 +69,11 @@ pub enum Instruction {
         callee: usize,
         arguments: Vec<usize>,
     },
+    NativeCall {
+        dest: usize,
+        name: usize,
+        arguments: Vec<usize>,
+    },
     Index {
         dest: usize,
         collection: usize,

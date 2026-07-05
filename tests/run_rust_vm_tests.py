@@ -156,6 +156,7 @@ def main() -> int:
             "len_builtin_shadowing",
             "loop_break",
             "named_struct_types",
+            "native_stdlib_push_pop",
             "struct_literals_field_access",
             "struct_identity_equality",
         }

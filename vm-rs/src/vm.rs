@@ -142,6 +142,19 @@ impl<'a> VM<'a> {
                     let result = self.call_function(function, values)?;
                     self.write_register(frame, *dest, result)?;
                 }
+                Instruction::NativeCall {
+                    dest,
+                    name,
+                    arguments,
+                } => {
+                    let name = self.read_name(*name)?;
+                    let mut values = Vec::with_capacity(arguments.len());
+                    for argument in arguments {
+                        values.push(self.read_register(frame, *argument)?);
+                    }
+                    let result = self.execute_native_call(&name, values)?;
+                    self.write_register(frame, *dest, result)?;
+                }
                 Instruction::Negate { dest, value } => {
                     let input = self.expect_number(frame, *value, "negate")?;
                     self.write_register(frame, *dest, Value::number(-input))?;
@@ -461,6 +474,46 @@ impl<'a> VM<'a> {
             Value::String(value) => Ok(Value::number(value.len() as f64)),
             _ => Err(RuntimeError::new("len expects array or string")),
         }
+    }
+
+    fn execute_native_call(
+        &self,
+        name: &str,
+        arguments: Vec<Value>,
+    ) -> Result<Value, RuntimeError> {
+        match name {
+            "push" => self.execute_native_push(arguments),
+            "pop" => self.execute_native_pop(arguments),
+            _ => Err(RuntimeError::new(format!(
+                "unknown native stdlib function `{}`",
+                name
+            ))),
+        }
+    }
+
+    fn execute_native_push(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("push expects 2 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("push expects array as first argument"));
+        };
+        array.elements.borrow_mut().push(arguments[1].clone());
+        Ok(Value::Nil)
+    }
+
+    fn execute_native_pop(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("pop expects 1 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("pop expects array as first argument"));
+        };
+        array
+            .elements
+            .borrow_mut()
+            .pop()
+            .ok_or_else(|| RuntimeError::new("cannot pop from empty array"))
     }
 
     fn read_name(&self, index: usize) -> Result<String, RuntimeError> {
