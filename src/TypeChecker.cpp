@@ -1,5 +1,7 @@
 #include "TypeChecker.hpp"
 
+#include "NativeStdlib.hpp"
+
 #include <stdexcept>
 #include <utility>
 
@@ -885,10 +887,61 @@ TypeChecker::CheckedExpression TypeChecker::checkBuiltinLenCall(const CallExpr& 
     return CheckedExpression{simpleType(StaticType::Number)};
 }
 
+bool TypeChecker::isNativeStdlibCall(const CallExpr& expression) const
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
+    return variable && isNativeStdlibName(variable->name.lexeme) && findVariable(variable->name.lexeme) == nullptr;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr& expression)
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
+    if (!variable) {
+        throw TypeError("native stdlib call missing variable callee");
+    }
+
+    const std::optional<std::size_t> arity = nativeStdlibArity(variable->name.lexeme);
+    if (!arity) {
+        throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
+    }
+    if (expression.arguments.size() != *arity) {
+        throw TypeError(expression.paren,
+            "expected " + std::to_string(*arity) + " arguments but got " + std::to_string(expression.arguments.size()));
+    }
+
+    std::vector<CheckedExpression> arguments;
+    arguments.reserve(expression.arguments.size());
+    for (const auto& argument : expression.arguments) {
+        arguments.push_back(checkExpressionInfo(*argument));
+    }
+
+    if (variable->name.lexeme == "push") {
+        if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "push expects array as first argument, got " + typeInfoName(arguments[0].type));
+        }
+        return CheckedExpression{simpleType(StaticType::Nil)};
+    }
+
+    if (variable->name.lexeme == "pop") {
+        if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "pop expects array as first argument, got " + typeInfoName(arguments[0].type));
+        }
+        return CheckedExpression{unknownType()};
+    }
+
+    throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression)
 {
     if (isBuiltinLenCall(expression)) {
         return checkBuiltinLenCall(expression);
+    }
+
+    if (isNativeStdlibCall(expression)) {
+        return checkNativeStdlibCall(expression);
     }
 
     const CheckedExpression callee = checkExpressionInfo(*expression.callee);

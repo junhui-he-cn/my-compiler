@@ -22,6 +22,7 @@ add_executable(compiler_design
     src/IRCompiler.cpp
     src/IRInterpreter.cpp
     src/Lexer.cpp
+    src/NativeStdlib.cpp
     src/Parser.cpp
     src/TypeChecker.cpp
     src/Value.cpp

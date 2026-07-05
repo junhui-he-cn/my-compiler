@@ -136,6 +136,8 @@ private:
     CheckedExpression checkCall(const CallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
+    bool isNativeStdlibCall(const CallExpr& expression) const;
+    CheckedExpression checkNativeStdlibCall(const CallExpr& expression);
     TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkFieldAssignment(const FieldAssignExpr& expression);
