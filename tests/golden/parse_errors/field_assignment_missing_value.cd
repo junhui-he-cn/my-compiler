@@ -1,0 +1,2 @@
+let person = { age: 36 };
+person.age = ;
