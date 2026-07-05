@@ -5,42 +5,111 @@
 
 namespace {
 
-bool isKnown(StaticType type)
+TypeInfo unknownType()
 {
-    return type != StaticType::Unknown;
+    return TypeInfo{StaticType::Unknown, {}, nullptr};
 }
 
-bool compatible(StaticType expected, StaticType actual)
+TypeInfo simpleType(StaticType kind)
 {
-    return !isKnown(expected) || !isKnown(actual) || expected == actual;
+    return TypeInfo{kind, {}, nullptr};
 }
 
-StaticType logicalResultType(StaticType left, StaticType right)
+TypeInfo functionType(std::vector<TypeInfo> parameterTypes, TypeInfo returnType)
+{
+    TypeInfo result;
+    result.kind = StaticType::Function;
+    result.parameterTypes = std::move(parameterTypes);
+    result.returnType = std::make_shared<TypeInfo>(std::move(returnType));
+    return result;
+}
+
+TypeInfo functionWithoutSignature()
+{
+    return TypeInfo{StaticType::Function, {}, nullptr};
+}
+
+bool isKnown(const TypeInfo& type)
+{
+    return type.kind != StaticType::Unknown;
+}
+
+bool hasFunctionSignature(const TypeInfo& type)
+{
+    return type.kind == StaticType::Function && type.returnType != nullptr;
+}
+
+std::string typeInfoName(const TypeInfo& type)
+{
+    if (type.kind != StaticType::Function || !type.returnType) {
+        return staticTypeName(type.kind);
+    }
+
+    std::string result = "fun(";
+    for (std::size_t i = 0; i < type.parameterTypes.size(); ++i) {
+        if (i != 0) {
+            result += ", ";
+        }
+        result += typeInfoName(type.parameterTypes[i]);
+    }
+    result += "): ";
+    result += typeInfoName(*type.returnType);
+    return result;
+}
+
+bool compatible(const TypeInfo& expected, const TypeInfo& actual)
+{
+    if (!isKnown(expected) || !isKnown(actual)) {
+        return true;
+    }
+    if (expected.kind != actual.kind) {
+        return false;
+    }
+    if (expected.kind != StaticType::Function) {
+        return true;
+    }
+    if (!hasFunctionSignature(expected) || !hasFunctionSignature(actual)) {
+        return true;
+    }
+    if (expected.parameterTypes.size() != actual.parameterTypes.size()) {
+        return false;
+    }
+    for (std::size_t i = 0; i < expected.parameterTypes.size(); ++i) {
+        if (!compatible(expected.parameterTypes[i], actual.parameterTypes[i])) {
+            return false;
+        }
+    }
+    return compatible(*expected.returnType, *actual.returnType);
+}
+
+TypeInfo logicalResultType(const TypeInfo& left, const TypeInfo& right)
 {
     if (!isKnown(left) || !isKnown(right)) {
-        return StaticType::Unknown;
+        return unknownType();
     }
-    if (left == right) {
+    if (left.kind == right.kind) {
         return left;
     }
-    return StaticType::Unknown;
+    return unknownType();
 }
 
-StaticType mergeReturnTypes(StaticType current, StaticType next)
+TypeInfo mergeReturnTypes(const TypeInfo& current, const TypeInfo& next)
 {
-    if (current == next) {
-        return current;
+    if (compatible(current, next) && compatible(next, current) && current.kind == next.kind) {
+        if (current.kind != StaticType::Function || typeInfoName(current) == typeInfoName(next)) {
+            return current;
+        }
     }
     if (!isKnown(current) || !isKnown(next)) {
-        return StaticType::Unknown;
+        return unknownType();
     }
-    return StaticType::Unknown;
+    return unknownType();
 }
 
-std::string binaryTypesMessage(const BinaryExpr& expression, StaticType left, StaticType right)
+std::string binaryTypesMessage(const BinaryExpr& expression, const TypeInfo& left, const TypeInfo& right)
 {
     return "binary `" + expression.op.lexeme + "` expects numbers, got "
-        + staticTypeName(left) + " and " + staticTypeName(right);
+        + typeInfoName(left) + " and " + typeInfoName(right);
 }
 
 } // namespace
@@ -261,29 +330,25 @@ const TypeChecker::Binding* TypeChecker::findVariable(const std::string& name) c
 
 TypeChecker::Binding TypeChecker::declareVariable(
     const Token& name,
-    StaticType type,
-    std::optional<std::size_t> arity,
-    StaticType returnType)
+    TypeInfo type,
+    bool explicitType)
 {
     auto& scope = currentScope();
     if (scope.find(name.lexeme) != scope.end()) {
         throw TypeError(name, "variable `" + name.lexeme + "` already declared in this scope");
     }
 
-    Binding binding{type, makeResolvedName(name.lexeme), arity,
-        type == StaticType::Function ? returnType : StaticType::Unknown,
-        scopes_.size() - 1, functionDepth_};
+    Binding binding{std::move(type), makeResolvedName(name.lexeme), scopes_.size() - 1, functionDepth_, explicitType};
     scope.emplace(name.lexeme, binding);
     return binding;
 }
 
 TypeChecker::Binding TypeChecker::declareVariable(
     const LetStmt& statement,
-    StaticType type,
-    std::optional<std::size_t> arity,
-    StaticType returnType)
+    TypeInfo type,
+    bool explicitType)
 {
-    Binding binding = declareVariable(statement.name, type, arity, returnType);
+    Binding binding = declareVariable(statement.name, std::move(type), explicitType);
     resolvedNames_.recordLet(statement, binding.resolvedName);
     return binding;
 }
@@ -304,9 +369,9 @@ void TypeChecker::checkStatement(const Stmt& statement)
         if (functionDepth_ == 0) {
             throw TypeError(returnStmt->keyword, "return outside function");
         }
-        const StaticType returned = returnStmt->value
+        const TypeInfo returned = returnStmt->value
             ? checkExpression(*returnStmt->value)
-            : StaticType::Nil;
+            : simpleType(StaticType::Nil);
         recordReturn(returnStmt->keyword, returned);
         return;
     }
@@ -353,7 +418,7 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const CheckedExpression declared = checkLetInitializer(*let);
-        declareVariable(*let, declared.type, declared.arity, declared.returnType);
+        declareVariable(*let, declared.type, let->typeName.has_value());
         return;
     }
 
@@ -370,7 +435,7 @@ void TypeChecker::checkStatement(const Stmt& statement)
     throw TypeError("unsupported statement node");
 }
 
-void TypeChecker::recordReturn(const Token& keyword, StaticType type)
+void TypeChecker::recordReturn(const Token& keyword, TypeInfo type)
 {
     if (returnContexts_.empty()) {
         throw TypeError("return context stack is empty");
@@ -378,8 +443,11 @@ void TypeChecker::recordReturn(const Token& keyword, StaticType type)
 
     FunctionReturnContext& context = returnContexts_.back();
     if (context.expectedReturnType && !compatible(*context.expectedReturnType, type)) {
-        throw TypeError(keyword, "cannot return " + staticTypeName(type)
-            + " from function returning " + staticTypeName(*context.expectedReturnType));
+        throw TypeError(keyword, "cannot return " + typeInfoName(type)
+            + " from function returning " + typeInfoName(*context.expectedReturnType));
+    }
+    if (!context.expectedReturnType && type.kind == StaticType::Function) {
+        type = functionWithoutSignature();
     }
 
     if (!context.sawReturn) {
@@ -399,21 +467,21 @@ bool TypeChecker::bodyMayFallThrough(const std::vector<StmtPtr>& body) const
 void TypeChecker::checkImplicitNilReturn(
     const Token& functionToken,
     const std::string& functionLabel,
-    StaticType expectedReturnType) const
+    const TypeInfo& expectedReturnType) const
 {
-    if (!compatible(expectedReturnType, StaticType::Nil)) {
+    if (!compatible(expectedReturnType, simpleType(StaticType::Nil))) {
         throw TypeError(functionToken,
-            "function `" + functionLabel + "` may return nil but is annotated " + staticTypeName(expectedReturnType));
+            "function `" + functionLabel + "` may return nil but is annotated " + typeInfoName(expectedReturnType));
     }
 }
 
-StaticType TypeChecker::checkFunctionBody(
+TypeInfo TypeChecker::checkFunctionBody(
     const std::vector<StmtPtr>& body,
-    std::optional<StaticType> expectedReturnType,
+    std::optional<TypeInfo> expectedReturnType,
     const Token& functionToken,
     const std::string& functionLabel)
 {
-    returnContexts_.push_back(FunctionReturnContext{false, StaticType::Nil, expectedReturnType});
+    returnContexts_.push_back(FunctionReturnContext{false, simpleType(StaticType::Nil), expectedReturnType});
 
     for (const auto& child : body) {
         checkStatement(*child);
@@ -429,12 +497,28 @@ StaticType TypeChecker::checkFunctionBody(
         return *expectedReturnType;
     }
 
-    return context.sawReturn ? context.returnType : StaticType::Nil;
+    return context.sawReturn ? context.returnType : simpleType(StaticType::Nil);
 }
 
 void TypeChecker::checkFunction(const FunctionStmt& statement)
 {
-    Binding functionBinding = declareVariable(statement.name, StaticType::Function, statement.parameters.size());
+    std::vector<TypeInfo> declaredParameterTypes;
+    declaredParameterTypes.reserve(statement.parameters.size());
+    for (const Parameter& parameter : statement.parameters) {
+        declaredParameterTypes.push_back(parameter.typeName
+            ? resolveAnnotation(*parameter.typeName)
+            : unknownType());
+    }
+
+    std::optional<TypeInfo> expectedReturnType;
+    if (statement.returnTypeName) {
+        expectedReturnType = resolveAnnotation(*statement.returnTypeName);
+    }
+
+    Binding functionBinding = declareVariable(
+        statement.name,
+        functionType(declaredParameterTypes, expectedReturnType ? *expectedReturnType : unknownType()),
+        statement.returnTypeName.has_value());
     resolvedNames_.recordFunction(statement, functionBinding.resolvedName);
 
     beginScope();
@@ -443,21 +527,14 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     loopDepth_ = 0;
 
     std::vector<std::string> parameterNames;
-    for (const Parameter& parameter : statement.parameters) {
-        const StaticType parameterType = parameter.typeName
-            ? resolveAnnotation(*parameter.typeName)
-            : StaticType::Unknown;
-        Binding parameterBinding = declareVariable(parameter.name, parameterType);
+    for (std::size_t i = 0; i < statement.parameters.size(); ++i) {
+        const Parameter& parameter = statement.parameters[i];
+        Binding parameterBinding = declareVariable(parameter.name, declaredParameterTypes[i], parameter.typeName.has_value());
         parameterNames.push_back(parameterBinding.resolvedName);
     }
     resolvedNames_.recordParameters(statement, std::move(parameterNames));
 
-    std::optional<StaticType> expectedReturnType;
-    if (statement.returnTypeName) {
-        expectedReturnType = resolveAnnotation(*statement.returnTypeName);
-    }
-
-    const StaticType returnType = checkFunctionBody(
+    const TypeInfo returnType = checkFunctionBody(
         statement.body,
         expectedReturnType,
         statement.name,
@@ -471,12 +548,25 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     if (!storedFunction) {
         throw TypeError(statement.name, "undefined function `" + statement.name.lexeme + "`");
     }
-    storedFunction->returnType = returnType;
+    storedFunction->type = functionType(std::move(declaredParameterTypes), returnType);
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const FunctionExpr& expression)
 {
     resolvedNames_.recordFunction(expression, "<lambda>");
+
+    std::vector<TypeInfo> declaredParameterTypes;
+    declaredParameterTypes.reserve(expression.parameters.size());
+    for (const Parameter& parameter : expression.parameters) {
+        declaredParameterTypes.push_back(parameter.typeName
+            ? resolveAnnotation(*parameter.typeName)
+            : unknownType());
+    }
+
+    std::optional<TypeInfo> expectedReturnType;
+    if (expression.returnTypeName) {
+        expectedReturnType = resolveAnnotation(*expression.returnTypeName);
+    }
 
     beginScope();
     ++functionDepth_;
@@ -484,21 +574,14 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
     loopDepth_ = 0;
 
     std::vector<std::string> parameterNames;
-    for (const Parameter& parameter : expression.parameters) {
-        const StaticType parameterType = parameter.typeName
-            ? resolveAnnotation(*parameter.typeName)
-            : StaticType::Unknown;
-        Binding parameterBinding = declareVariable(parameter.name, parameterType);
+    for (std::size_t i = 0; i < expression.parameters.size(); ++i) {
+        const Parameter& parameter = expression.parameters[i];
+        Binding parameterBinding = declareVariable(parameter.name, declaredParameterTypes[i], parameter.typeName.has_value());
         parameterNames.push_back(parameterBinding.resolvedName);
     }
     resolvedNames_.recordParameters(expression, std::move(parameterNames));
 
-    std::optional<StaticType> expectedReturnType;
-    if (expression.returnTypeName) {
-        expectedReturnType = resolveAnnotation(*expression.returnTypeName);
-    }
-
-    const StaticType returnType = checkFunctionBody(
+    const TypeInfo returnType = checkFunctionBody(
         expression.body,
         expectedReturnType,
         expression.keyword,
@@ -508,7 +591,7 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
     --functionDepth_;
     endScope();
 
-    return CheckedExpression{StaticType::Function, expression.parameters.size(), returnType};
+    return CheckedExpression{functionType(std::move(declaredParameterTypes), returnType)};
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& statement)
@@ -518,17 +601,17 @@ TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& s
         return initializer;
     }
 
-    const StaticType declared = resolveAnnotation(*statement.typeName);
+    const TypeInfo declared = resolveAnnotation(*statement.typeName);
     checkAssignable(
         statement.name,
-        "cannot initialize `" + statement.name.lexeme + "` of type " + staticTypeName(declared)
-            + " with " + staticTypeName(initializer.type),
+        "cannot initialize `" + statement.name.lexeme + "` of type " + typeInfoName(declared)
+            + " with " + typeInfoName(initializer.type),
         declared,
         initializer.type);
-    return CheckedExpression{declared, std::nullopt, StaticType::Unknown};
+    return CheckedExpression{declared};
 }
 
-StaticType TypeChecker::checkExpression(const Expr& expression)
+TypeInfo TypeChecker::checkExpression(const Expr& expression)
 {
     return checkExpressionInfo(expression).type;
 }
@@ -537,15 +620,15 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
 {
     if (const auto* literal = dynamic_cast<const LiteralExpr*>(&expression)) {
         if (literal->value == "nil") {
-            return CheckedExpression{StaticType::Nil, std::nullopt, StaticType::Unknown};
+            return CheckedExpression{simpleType(StaticType::Nil)};
         }
         if (literal->value == "true" || literal->value == "false") {
-            return CheckedExpression{StaticType::Bool, std::nullopt, StaticType::Unknown};
+            return CheckedExpression{simpleType(StaticType::Bool)};
         }
         if (literal->value.size() >= 2 && literal->value.front() == '"' && literal->value.back() == '"') {
-            return CheckedExpression{StaticType::String, std::nullopt, StaticType::Unknown};
+            return CheckedExpression{simpleType(StaticType::String)};
         }
-        return CheckedExpression{StaticType::Number, std::nullopt, StaticType::Unknown};
+        return CheckedExpression{simpleType(StaticType::Number)};
     }
 
     if (const auto* function = dynamic_cast<const FunctionExpr*>(&expression)) {
@@ -558,7 +641,7 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
             throw TypeError(variable->name, "undefined variable `" + variable->name.lexeme + "`");
         }
         resolvedNames_.recordVariable(*variable, binding->resolvedName);
-        return CheckedExpression{binding->type, binding->arity, binding->returnType};
+        return CheckedExpression{binding->type};
     }
 
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
@@ -567,28 +650,36 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         if (!target) {
             throw TypeError(assign->name, "undefined variable `" + assign->name.lexeme + "`");
         }
-        if (isKnown(target->type) && isKnown(value.type) && target->type != value.type) {
-            throw TypeError(assign->name, "cannot assign " + staticTypeName(value.type) + " to `" + assign->name.lexeme
-                + "` of type " + staticTypeName(target->type));
-        }
-        if (target->type == StaticType::Function && value.type == StaticType::Function
-            && target->arity && value.arity && *target->arity != *value.arity) {
-            throw TypeError(assign->name,
-                "cannot assign function with " + std::to_string(*value.arity)
-                    + " parameters to `" + assign->name.lexeme
-                    + "` of type function with " + std::to_string(*target->arity) + " parameters");
-        }
 
-        if (target->type == StaticType::Function) {
-            target->arity = value.type == StaticType::Function ? value.arity : std::nullopt;
-            target->returnType = value.type == StaticType::Function ? value.returnType : StaticType::Unknown;
+        if (target->type.kind == StaticType::Function && value.type.kind == StaticType::Function) {
+            if (hasFunctionSignature(target->type) && hasFunctionSignature(value.type)
+                && target->type.parameterTypes.size() != value.type.parameterTypes.size()) {
+                throw TypeError(assign->name,
+                    "cannot assign function with " + std::to_string(value.type.parameterTypes.size())
+                        + " parameters to `" + assign->name.lexeme
+                        + "` of type function with " + std::to_string(target->type.parameterTypes.size()) + " parameters");
+            }
+
+            if (target->explicitType && !compatible(target->type, value.type)) {
+                throw TypeError(assign->name, "cannot assign " + typeInfoName(value.type) + " to `" + assign->name.lexeme
+                    + "` of type " + typeInfoName(target->type));
+            }
+
+            if (!target->explicitType) {
+                target->type = value.type;
+            }
+        } else if (!compatible(target->type, value.type)) {
+            const std::string targetTypeName = target->type.kind == StaticType::Function && !target->explicitType
+                ? staticTypeName(StaticType::Function)
+                : typeInfoName(target->type);
+            throw TypeError(assign->name, "cannot assign " + typeInfoName(value.type) + " to `" + assign->name.lexeme
+                + "` of type " + targetTypeName);
+        } else if (!isKnown(target->type)) {
+            target->type = value.type;
         }
 
         resolvedNames_.recordAssignment(*assign, target->resolvedName);
-        const StaticType resultType = isKnown(target->type) ? target->type : value.type;
-        return CheckedExpression{resultType,
-            resultType == StaticType::Function ? target->arity : std::nullopt,
-            resultType == StaticType::Function ? target->returnType : StaticType::Unknown};
+        return CheckedExpression{target->type};
     }
 
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {
@@ -596,17 +687,17 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* unary = dynamic_cast<const UnaryExpr*>(&expression)) {
-        return CheckedExpression{checkUnary(*unary), std::nullopt, StaticType::Unknown};
+        return CheckedExpression{checkUnary(*unary)};
     }
 
     if (const auto* binary = dynamic_cast<const BinaryExpr*>(&expression)) {
-        return CheckedExpression{checkBinary(*binary), std::nullopt, StaticType::Unknown};
+        return CheckedExpression{checkBinary(*binary)};
     }
 
     if (const auto* logical = dynamic_cast<const LogicalExpr*>(&expression)) {
-        const StaticType left = checkExpression(*logical->left);
-        const StaticType right = checkExpression(*logical->right);
-        return CheckedExpression{logicalResultType(left, right), std::nullopt, StaticType::Unknown};
+        const TypeInfo left = checkExpression(*logical->left);
+        const TypeInfo right = checkExpression(*logical->right);
+        return CheckedExpression{logicalResultType(left, right)};
     }
 
     if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
@@ -617,11 +708,11 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         for (const auto& element : array->elements) {
             checkExpression(*element);
         }
-        return CheckedExpression{StaticType::Array, std::nullopt, StaticType::Unknown};
+        return CheckedExpression{simpleType(StaticType::Array)};
     }
 
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
-        return CheckedExpression{checkIndex(*index), std::nullopt, StaticType::Unknown};
+        return CheckedExpression{checkIndex(*index)};
     }
 
     if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(&expression)) {
@@ -644,11 +735,11 @@ TypeChecker::CheckedExpression TypeChecker::checkBuiltinLenCall(const CallExpr& 
     }
 
     const CheckedExpression argument = checkExpressionInfo(*expression.arguments.front());
-    if (isKnown(argument.type) && argument.type != StaticType::Array && argument.type != StaticType::String) {
-        throw TypeError(expression.paren, "len expects array or string, got " + staticTypeName(argument.type));
+    if (isKnown(argument.type) && argument.type.kind != StaticType::Array && argument.type.kind != StaticType::String) {
+        throw TypeError(expression.paren, "len expects array or string, got " + typeInfoName(argument.type));
     }
 
-    return CheckedExpression{StaticType::Number, std::nullopt, StaticType::Unknown};
+    return CheckedExpression{simpleType(StaticType::Number)};
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression)
@@ -658,144 +749,160 @@ TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression
     }
 
     const CheckedExpression callee = checkExpressionInfo(*expression.callee);
+    std::vector<CheckedExpression> arguments;
+    arguments.reserve(expression.arguments.size());
     for (const auto& argument : expression.arguments) {
-        checkExpressionInfo(*argument);
+        arguments.push_back(checkExpressionInfo(*argument));
     }
 
-    if (callee.type != StaticType::Unknown && callee.type != StaticType::Function) {
+    if (callee.type.kind != StaticType::Unknown && callee.type.kind != StaticType::Function) {
         throw TypeError(expression.paren, "can only call functions");
     }
 
-    if (callee.arity && *callee.arity != expression.arguments.size()) {
-        throw TypeError(expression.paren, "expected " + std::to_string(*callee.arity)
-            + " arguments but got " + std::to_string(expression.arguments.size()));
+    if (callee.type.kind == StaticType::Function && hasFunctionSignature(callee.type)) {
+        if (callee.type.parameterTypes.size() != expression.arguments.size()) {
+            throw TypeError(expression.paren, "expected " + std::to_string(callee.type.parameterTypes.size())
+                + " arguments but got " + std::to_string(expression.arguments.size()));
+        }
+        for (std::size_t i = 0; i < arguments.size(); ++i) {
+            const TypeInfo& expected = callee.type.parameterTypes[i];
+            const TypeInfo& actual = arguments[i].type;
+            if (!compatible(expected, actual)) {
+                throw TypeError(expression.paren,
+                    "argument " + std::to_string(i + 1) + " expects " + typeInfoName(expected)
+                        + ", got " + typeInfoName(actual));
+            }
+        }
+        return CheckedExpression{*callee.type.returnType};
     }
 
-    if (callee.type == StaticType::Function) {
-        return CheckedExpression{callee.returnType, std::nullopt, StaticType::Unknown};
-    }
-
-    return CheckedExpression{StaticType::Unknown, std::nullopt, StaticType::Unknown};
+    return CheckedExpression{unknownType()};
 }
 
-StaticType TypeChecker::checkIndex(const IndexExpr& expression)
+TypeInfo TypeChecker::checkIndex(const IndexExpr& expression)
 {
-    const StaticType collection = checkExpression(*expression.collection);
-    const StaticType index = checkExpression(*expression.index);
+    const TypeInfo collection = checkExpression(*expression.collection);
+    const TypeInfo index = checkExpression(*expression.index);
 
-    if (collection != StaticType::Unknown && collection != StaticType::Array) {
+    if (collection.kind != StaticType::Unknown && collection.kind != StaticType::Array) {
         throw TypeError(expression.bracket, "can only index arrays");
     }
 
-    if (index != StaticType::Unknown && index != StaticType::Number) {
+    if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
         throw TypeError(expression.bracket, "array index must be number");
     }
 
-    return StaticType::Unknown;
+    return unknownType();
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssignExpr& expression)
 {
-    const StaticType collection = checkExpression(*expression.collection);
-    const StaticType index = checkExpression(*expression.index);
+    const TypeInfo collection = checkExpression(*expression.collection);
+    const TypeInfo index = checkExpression(*expression.index);
     const CheckedExpression value = checkExpressionInfo(*expression.value);
 
-    if (collection != StaticType::Unknown && collection != StaticType::Array) {
+    if (collection.kind != StaticType::Unknown && collection.kind != StaticType::Array) {
         throw TypeError(expression.bracket, "can only assign array elements");
     }
 
-    if (index != StaticType::Unknown && index != StaticType::Number) {
+    if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
         throw TypeError(expression.bracket, "array index must be number");
     }
 
     return value;
 }
 
-StaticType TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
+TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
 {
     if (typeName.kind == TypeAnnotation::Kind::Function) {
-        return StaticType::Function;
+        std::vector<TypeInfo> parameterTypes;
+        parameterTypes.reserve(typeName.parameterTypes.size());
+        for (const TypeAnnotation& parameter : typeName.parameterTypes) {
+            parameterTypes.push_back(resolveAnnotation(parameter));
+        }
+        return functionType(std::move(parameterTypes), resolveAnnotation(*typeName.returnType));
     }
+
     if (typeName.token.lexeme == "number") {
-        return StaticType::Number;
+        return simpleType(StaticType::Number);
     }
     if (typeName.token.lexeme == "bool") {
-        return StaticType::Bool;
+        return simpleType(StaticType::Bool);
     }
     if (typeName.token.lexeme == "string") {
-        return StaticType::String;
+        return simpleType(StaticType::String);
     }
     if (typeName.token.lexeme == "nil") {
-        return StaticType::Nil;
+        return simpleType(StaticType::Nil);
     }
     throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
 }
 
-void TypeChecker::checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const
+void TypeChecker::checkAssignable(const Token& token, const std::string& context, const TypeInfo& expected, const TypeInfo& actual) const
 {
     if (!compatible(expected, actual)) {
         throw TypeError(token, context);
     }
 }
 
-StaticType TypeChecker::checkUnary(const UnaryExpr& expression)
+TypeInfo TypeChecker::checkUnary(const UnaryExpr& expression)
 {
-    const StaticType right = checkExpression(*expression.right);
+    const TypeInfo right = checkExpression(*expression.right);
     switch (expression.op.type) {
     case TokenType::Minus:
-        if (isKnown(right) && right != StaticType::Number) {
-            throw TypeError(expression.op, "unary `-` expects number, got " + staticTypeName(right));
+        if (isKnown(right) && right.kind != StaticType::Number) {
+            throw TypeError(expression.op, "unary `-` expects number, got " + typeInfoName(right));
         }
-        return StaticType::Number;
+        return simpleType(StaticType::Number);
     case TokenType::Bang:
-        return StaticType::Bool;
+        return simpleType(StaticType::Bool);
     default:
         throw TypeError(expression.op, "unsupported unary operator `" + expression.op.lexeme + "`");
     }
 }
 
-StaticType TypeChecker::checkBinary(const BinaryExpr& expression)
+TypeInfo TypeChecker::checkBinary(const BinaryExpr& expression)
 {
-    const StaticType left = checkExpression(*expression.left);
-    const StaticType right = checkExpression(*expression.right);
+    const TypeInfo left = checkExpression(*expression.left);
+    const TypeInfo right = checkExpression(*expression.right);
 
     switch (expression.op.type) {
     case TokenType::Plus:
         if (!isKnown(left) || !isKnown(right)) {
-            return StaticType::Unknown;
+            return unknownType();
         }
-        if (left == StaticType::Number && right == StaticType::Number) {
-            return StaticType::Number;
+        if (left.kind == StaticType::Number && right.kind == StaticType::Number) {
+            return simpleType(StaticType::Number);
         }
-        if (left == StaticType::String && right == StaticType::String) {
-            return StaticType::String;
+        if (left.kind == StaticType::String && right.kind == StaticType::String) {
+            return simpleType(StaticType::String);
         }
         throw TypeError(expression.op, "binary `+` expects two numbers or two strings, got "
-            + staticTypeName(left) + " and " + staticTypeName(right));
+            + typeInfoName(left) + " and " + typeInfoName(right));
     case TokenType::Minus:
     case TokenType::Star:
     case TokenType::Slash:
         if (!isKnown(left) || !isKnown(right)) {
-            return StaticType::Number;
+            return simpleType(StaticType::Number);
         }
-        if (left != StaticType::Number || right != StaticType::Number) {
+        if (left.kind != StaticType::Number || right.kind != StaticType::Number) {
             throw TypeError(expression.op, binaryTypesMessage(expression, left, right));
         }
-        return StaticType::Number;
+        return simpleType(StaticType::Number);
     case TokenType::Greater:
     case TokenType::GreaterEqual:
     case TokenType::Less:
     case TokenType::LessEqual:
         if (!isKnown(left) || !isKnown(right)) {
-            return StaticType::Bool;
+            return simpleType(StaticType::Bool);
         }
-        if (left != StaticType::Number || right != StaticType::Number) {
+        if (left.kind != StaticType::Number || right.kind != StaticType::Number) {
             throw TypeError(expression.op, binaryTypesMessage(expression, left, right));
         }
-        return StaticType::Bool;
+        return simpleType(StaticType::Bool);
     case TokenType::EqualEqual:
     case TokenType::BangEqual:
-        return StaticType::Bool;
+        return simpleType(StaticType::Bool);
     default:
         throw TypeError(expression.op, "unsupported binary operator `" + expression.op.lexeme + "`");
     }

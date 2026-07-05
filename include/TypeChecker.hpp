@@ -5,6 +5,7 @@
 #include "Token.hpp"
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -18,6 +19,12 @@ enum class StaticType {
     String,
     Function,
     Array,
+};
+
+struct TypeInfo {
+    StaticType kind = StaticType::Unknown;
+    std::vector<TypeInfo> parameterTypes;
+    std::shared_ptr<TypeInfo> returnType;
 };
 
 class TypeError final : public DiagnosticError {
@@ -64,24 +71,21 @@ public:
 
 private:
     struct CheckedExpression {
-        StaticType type;
-        std::optional<std::size_t> arity;
-        StaticType returnType = StaticType::Unknown;
+        TypeInfo type;
     };
 
     struct Binding {
-        StaticType type;
+        TypeInfo type;
         std::string resolvedName;
-        std::optional<std::size_t> arity;
-        StaticType returnType = StaticType::Unknown;
         std::size_t scopeDepth = 0;
         std::size_t functionDepth = 0;
+        bool explicitType = false;
     };
 
     struct FunctionReturnContext {
         bool sawReturn = false;
-        StaticType returnType = StaticType::Nil;
-        std::optional<StaticType> expectedReturnType;
+        TypeInfo returnType;
+        std::optional<TypeInfo> expectedReturnType;
     };
 
     using Scope = std::unordered_map<std::string, Binding>;
@@ -94,39 +98,37 @@ private:
     const Binding* findVariable(const std::string& name) const;
     Binding declareVariable(
         const Token& name,
-        StaticType type,
-        std::optional<std::size_t> arity = std::nullopt,
-        StaticType returnType = StaticType::Unknown);
+        TypeInfo type,
+        bool explicitType = false);
     Binding declareVariable(
         const LetStmt& statement,
-        StaticType type,
-        std::optional<std::size_t> arity = std::nullopt,
-        StaticType returnType = StaticType::Unknown);
+        TypeInfo type,
+        bool explicitType = false);
     std::string makeResolvedName(const std::string& sourceName);
 
     void checkStatement(const Stmt& statement);
     void checkFunction(const FunctionStmt& statement);
-    StaticType checkFunctionBody(
+    TypeInfo checkFunctionBody(
         const std::vector<StmtPtr>& body,
-        std::optional<StaticType> expectedReturnType,
+        std::optional<TypeInfo> expectedReturnType,
         const Token& functionToken,
         const std::string& functionLabel);
-    void recordReturn(const Token& keyword, StaticType type);
+    void recordReturn(const Token& keyword, TypeInfo type);
     bool bodyMayFallThrough(const std::vector<StmtPtr>& body) const;
-    void checkImplicitNilReturn(const Token& functionToken, const std::string& functionLabel, StaticType expectedReturnType) const;
-    StaticType checkExpression(const Expr& expression);
+    void checkImplicitNilReturn(const Token& functionToken, const std::string& functionLabel, const TypeInfo& expectedReturnType) const;
+    TypeInfo checkExpression(const Expr& expression);
     CheckedExpression checkExpressionInfo(const Expr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
     CheckedExpression checkCall(const CallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
-    StaticType checkIndex(const IndexExpr& expression);
+    TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkLetInitializer(const LetStmt& statement);
-    StaticType resolveAnnotation(const TypeAnnotation& typeName) const;
-    void checkAssignable(const Token& token, const std::string& context, StaticType expected, StaticType actual) const;
-    StaticType checkUnary(const UnaryExpr& expression);
-    StaticType checkBinary(const BinaryExpr& expression);
+    TypeInfo resolveAnnotation(const TypeAnnotation& typeName) const;
+    void checkAssignable(const Token& token, const std::string& context, const TypeInfo& expected, const TypeInfo& actual) const;
+    TypeInfo checkUnary(const UnaryExpr& expression);
+    TypeInfo checkBinary(const BinaryExpr& expression);
     bool isGlobalBinding(const Binding& binding) const;
     bool isCurrentFunctionBinding(const Binding& binding) const;
 
