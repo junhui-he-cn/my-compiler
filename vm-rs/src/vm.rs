@@ -2,7 +2,7 @@
 
 use crate::bytecode::{Constant, FunctionBody, Instruction, Program};
 use crate::runtime::{
-    new_cell, new_environment, ArrayValue, Cell, FunctionValue, SharedEnvironment,
+    new_cell, new_environment, ArrayValue, Cell, FunctionValue, SharedEnvironment, StructValue,
 };
 use crate::value::Value;
 use std::cell::RefCell;
@@ -42,6 +42,7 @@ pub struct VM<'a> {
     output: String,
     next_function_identity: usize,
     next_array_identity: usize,
+    next_struct_identity: usize,
 }
 
 impl<'a> VM<'a> {
@@ -52,6 +53,7 @@ impl<'a> VM<'a> {
             output: String::new(),
             next_function_identity: 1,
             next_array_identity: 1,
+            next_struct_identity: 1,
         }
     }
 
@@ -99,6 +101,10 @@ impl<'a> VM<'a> {
                         values.push(self.read_register(frame, *element)?);
                     }
                     let value = self.make_array(values);
+                    self.write_register(frame, *dest, value)?;
+                }
+                Instruction::Struct { dest, fields } => {
+                    let value = self.make_struct(frame, fields)?;
                     self.write_register(frame, *dest, value)?;
                 }
                 Instruction::Move { dest, source } => {
@@ -240,6 +246,12 @@ impl<'a> VM<'a> {
                     let assigned = self.execute_assign_index(collection, index, value)?;
                     self.write_register(frame, *dest, assigned)?;
                 }
+                Instruction::Field { dest, object, name } => {
+                    let object = self.read_register(frame, *object)?;
+                    let name = self.read_name(*name)?;
+                    let value = self.execute_field(object, &name)?;
+                    self.write_register(frame, *dest, value)?;
+                }
                 Instruction::Len { dest, value } => {
                     let value = self.read_register(frame, *value)?;
                     let length = self.execute_len(value)?;
@@ -343,6 +355,19 @@ impl<'a> VM<'a> {
         })
     }
 
+    fn make_struct(&mut self, frame: &Frame, fields: &[(usize, usize)]) -> Result<Value, RuntimeError> {
+        let identity = self.next_struct_identity;
+        self.next_struct_identity += 1;
+        let mut values = Vec::with_capacity(fields.len());
+        for (name_index, register) in fields {
+            values.push((self.read_name(*name_index)?, self.read_register(frame, *register)?));
+        }
+        Ok(Value::structure(StructValue {
+            identity,
+            fields: Rc::new(RefCell::new(values)),
+        }))
+    }
+
     fn checked_array_index(&self, index_value: Value) -> Result<usize, RuntimeError> {
         let Value::Number(number) = index_value else {
             return Err(RuntimeError::new("array index must be number"));
@@ -385,6 +410,18 @@ impl<'a> VM<'a> {
         }
         elements[position] = value.clone();
         Ok(value)
+    }
+
+    fn execute_field(&self, object: Value, name: &str) -> Result<Value, RuntimeError> {
+        let Value::Struct(value) = object else {
+            return Err(RuntimeError::new("can only access fields on structs"));
+        };
+        for (field_name, field_value) in value.fields.borrow().iter() {
+            if field_name == name {
+                return Ok(field_value.clone());
+            }
+        }
+        Err(RuntimeError::new(format!("undefined field `{}`", name)))
     }
 
     fn execute_len(&self, value: Value) -> Result<Value, RuntimeError> {

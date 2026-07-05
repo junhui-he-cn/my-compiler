@@ -44,6 +44,10 @@ pub enum Instruction {
         dest: usize,
         elements: Vec<usize>,
     },
+    Struct {
+        dest: usize,
+        fields: Vec<(usize, usize)>,
+    },
     Move {
         dest: usize,
         source: usize,
@@ -75,6 +79,11 @@ pub enum Instruction {
         collection: usize,
         index: usize,
         value: usize,
+    },
+    Field {
+        dest: usize,
+        object: usize,
+        name: usize,
     },
     Len {
         dest: usize,

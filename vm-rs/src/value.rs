@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::runtime::{ArrayValue, FunctionValue};
+use crate::runtime::{ArrayValue, FunctionValue, StructValue};
 use std::fmt;
 
 #[derive(Clone, Debug)]
@@ -11,6 +11,7 @@ pub enum Value {
     String(String),
     Function(FunctionValue),
     Array(ArrayValue),
+    Struct(StructValue),
 }
 
 impl Value {
@@ -34,6 +35,10 @@ impl Value {
         Self::Array(value)
     }
 
+    pub fn structure(value: StructValue) -> Self {
+        Self::Struct(value)
+    }
+
     pub fn type_name(&self) -> &'static str {
         match self {
             Self::Nil => "nil",
@@ -42,6 +47,7 @@ impl Value {
             Self::String(_) => "string",
             Self::Function(_) => "function",
             Self::Array(_) => "array",
+            Self::Struct(_) => "struct",
         }
     }
 
@@ -57,6 +63,7 @@ impl Value {
             (Self::String(left), Self::String(right)) => left == right,
             (Self::Function(left), Self::Function(right)) => left.identity == right.identity,
             (Self::Array(left), Self::Array(right)) => left.identity == right.identity,
+            (Self::Struct(left), Self::Struct(right)) => left.identity == right.identity,
             _ => false,
         }
     }
@@ -88,6 +95,17 @@ impl fmt::Display for Value {
                     write!(f, "{}", value)?;
                 }
                 write!(f, "]")
+            }
+            Self::Struct(value) => {
+                write!(f, "{{")?;
+                let fields = value.fields.borrow();
+                for (index, (name, field_value)) in fields.iter().enumerate() {
+                    if index != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", name, field_value)?;
+                }
+                write!(f, "}}")
             }
         }
     }

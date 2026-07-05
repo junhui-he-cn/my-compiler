@@ -297,6 +297,10 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                 dest,
                 elements: parse_register_list(line, operands)?,
             }),
+            "struct" => Ok(Instruction::Struct {
+                dest,
+                fields: parse_struct_fields(line, operands)?,
+            }),
             "move" => Ok(Instruction::Move {
                 dest,
                 source: parse_register(line, operands)?,
@@ -334,6 +338,14 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                     collection: parse_register(line, parts[0])?,
                     index: parse_register(line, parts[1])?,
                     value: parse_register(line, parts[2])?,
+                })
+            }
+            "field" => {
+                let (object, name) = split_once(line, operands, ", ")?;
+                Ok(Instruction::Field {
+                    dest,
+                    object: parse_register(line, object)?,
+                    name: parse_name_ref(line, name)?,
                 })
             }
             "len" => Ok(Instruction::Len {
@@ -420,6 +432,14 @@ fn format_instruction(instruction: &Instruction) -> String {
         Instruction::Array { dest, elements } => {
             format!("r{} = array {}", dest, format_register_list(elements))
         }
+        Instruction::Struct { dest, fields } => {
+            let parts = fields
+                .iter()
+                .map(|(name, value)| format!("n{}: r{}", name, value))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("r{} = struct {{{}}}", dest, parts)
+        }
         Instruction::Move { dest, source } => format!("r{} = move r{}", dest, source),
         Instruction::LoadVar { dest, name } => format!("r{} = load_var n{}", dest, name),
         Instruction::StoreVar { name, value } => format!("store_var n{}, r{}", name, value),
@@ -448,6 +468,9 @@ fn format_instruction(instruction: &Instruction) -> String {
             "r{} = assign_index r{}, r{}, r{}",
             dest, collection, index, value
         ),
+        Instruction::Field { dest, object, name } => {
+            format!("r{} = field r{}, n{}", dest, object, name)
+        }
         Instruction::Len { dest, value } => format!("r{} = len r{}", dest, value),
         Instruction::Print { value } => format!("print r{}", value),
         Instruction::Return { value } => format!("return r{}", value),
@@ -577,6 +600,25 @@ fn parse_register_list(line: usize, text: &str) -> Result<Vec<usize>, ParseError
         .split(", ")
         .map(|part| parse_register(line, part))
         .collect()
+}
+
+fn parse_struct_fields(line: usize, text: &str) -> Result<Vec<(usize, usize)>, ParseError> {
+    if !text.starts_with('{') || !text.ends_with('}') {
+        return Err(ParseError {
+            line,
+            message: "struct fields must be wrapped in braces".to_string(),
+        });
+    }
+    let inner = &text[1..text.len() - 1];
+    if inner.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut fields = Vec::new();
+    for part in split_comma_parts(inner) {
+        let (name, value) = split_once(line, part, ": ")?;
+        fields.push((parse_name_ref(line, name)?, parse_register(line, value)?));
+    }
+    Ok(fields)
 }
 
 fn format_register_list(registers: &[usize]) -> String {
