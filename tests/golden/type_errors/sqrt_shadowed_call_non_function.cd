@@ -1,0 +1,2 @@
+let sqrt = 123;
+sqrt(9);

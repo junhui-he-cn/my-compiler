@@ -900,13 +900,13 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         throw TypeError("native stdlib call missing variable callee");
     }
 
-    const std::optional<std::size_t> arity = nativeStdlibArity(variable->name.lexeme);
-    if (!arity) {
+    const NativeFunctionSignature* function = findNativeStdlibFunction(variable->name.lexeme);
+    if (!function) {
         throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
     }
-    if (expression.arguments.size() != *arity) {
+    if (expression.arguments.size() != function->arity) {
         throw TypeError(expression.paren,
-            "expected " + std::to_string(*arity) + " arguments but got " + std::to_string(expression.arguments.size()));
+            "expected " + std::to_string(function->arity) + " arguments but got " + std::to_string(expression.arguments.size()));
     }
 
     std::vector<CheckedExpression> arguments;
@@ -915,20 +915,27 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         arguments.push_back(checkExpressionInfo(*argument));
     }
 
-    if (variable->name.lexeme == "push") {
+    switch (function->kind) {
+    case NativeFunctionKind::Push:
         if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Array) {
             throw TypeError(expression.paren,
                 "push expects array as first argument, got " + typeInfoName(arguments[0].type));
         }
         return CheckedExpression{simpleType(StaticType::Nil)};
-    }
-
-    if (variable->name.lexeme == "pop") {
+    case NativeFunctionKind::Pop:
         if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Array) {
             throw TypeError(expression.paren,
                 "pop expects array as first argument, got " + typeInfoName(arguments[0].type));
         }
         return CheckedExpression{unknownType()};
+    case NativeFunctionKind::Floor:
+    case NativeFunctionKind::Ceil:
+    case NativeFunctionKind::Sqrt:
+        if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                std::string(function->name) + " expects number, got " + typeInfoName(arguments[0].type));
+        }
+        return CheckedExpression{simpleType(StaticType::Number)};
     }
 
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");

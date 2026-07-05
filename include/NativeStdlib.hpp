@@ -4,10 +4,20 @@
 #include <optional>
 #include <string>
 
+enum class NativeFunctionKind {
+    Push,
+    Pop,
+    Floor,
+    Ceil,
+    Sqrt,
+};
+
 struct NativeFunctionSignature {
     const char* name;
     std::size_t arity;
+    NativeFunctionKind kind;
 };
 
+const NativeFunctionSignature* findNativeStdlibFunction(const std::string& name);
 bool isNativeStdlibName(const std::string& name);
 std::optional<std::size_t> nativeStdlibArity(const std::string& name);
