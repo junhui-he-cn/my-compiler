@@ -1,0 +1,6 @@
+Program
+  Let pred: fun(number): bool = (fun (x: number): bool (return (> x 0)))
+  Fun apply(f: fun(number): number, x: number): number
+    Return (call f x)
+  Fun makeAdder(): fun(number): number
+    Return (fun (x: number): number (return (+ x 1)))

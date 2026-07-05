@@ -1,0 +1,13 @@
+let pred: fun(number): bool = fun (x: number): bool {
+  return x > 0;
+};
+
+fun apply(f: fun(number): number, x: number): number {
+  return f(x);
+}
+
+fun makeAdder(): fun(number): number {
+  return fun (x: number): number {
+    return x + 1;
+  };
+}
