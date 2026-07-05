@@ -42,17 +42,14 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 
 ## Phase 9: Richer Type System
 
-Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Function type annotations and array element types remain future work.
+Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Phase 9E is implemented: function type annotations use `fun(...): ...` syntax and support static signature checks for annotated variables, parameters, returns, assignments, and calls. Array element types remain future work.
 
 Goal: evolve the current annotation checker into a more useful static type layer.
 
 Suggested future features:
 
-- User-visible function signature compatibility for assignments/calls, after choosing function type syntax.
-- User-visible function type annotations, after choosing syntax.
 - Array element types, after deciding whether mixed arrays remain a dynamic escape hatch.
-- Basic inference for unannotated `let` declarations from initializer expressions.
-- Static call checks for variables that are known functions.
+- Deeper inference for currently unknown function parameters and call results.
 - A clear compatibility rule for `nil`.
 
 Likely touch points:
@@ -72,6 +69,8 @@ Completed second slice: known function values carry arity through function expre
 Completed third slice: function bodies infer conservative return types, and calls through known function values feed those types into `let` inference and assignment checks.
 
 Completed fourth slice: named functions and function expressions accept optional parameter and return annotations, use annotated parameter types in function bodies, and check explicit or implicit returns against annotated return types.
+
+Completed fifth slice: function type annotations use `fun(type, ...): type` syntax in `let`, parameter, and return annotations, with static signature checks for assignments, calls, and returns.
 
 ## Phase 10: Array Mutation and Collection Builtins
 

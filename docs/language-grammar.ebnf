@@ -17,17 +17,17 @@ statement   = printStmt
 
 funDecl     = "fun", identifier,
               "(", [ parameters ], ")",
-              [ ":", typeName ],
+              [ ":", typeExpr ],
               block ;
 
 parameters  = parameter,
               { ",", parameter } ;
 
 parameter   = identifier,
-              [ ":", typeName ] ;
+              [ ":", typeExpr ] ;
 
 letDecl     = "let", identifier,
-              [ ":", typeName ],
+              [ ":", typeExpr ],
               "=", expression, ";" ;
 
 ifStmt      = "if", expression, block,
@@ -89,7 +89,7 @@ arguments   = expression,
 array       = "[", [ arguments ], "]" ;
 
 functionExpr = "fun", "(", [ parameters ], ")",
-               [ ":", typeName ],
+               [ ":", typeExpr ],
                block ;
 
 primary     = functionExpr
@@ -102,7 +102,15 @@ primary     = functionExpr
             | identifier
             | "(", expression, ")" ;
 
-typeName    = identifier ;
+typeExpr    = simpleType
+            | functionType ;
+
+simpleType  = identifier ;
+
+functionType = "fun", "(", [ typeArguments ], ")", ":", typeExpr ;
+
+typeArguments = typeExpr,
+                { ",", typeExpr } ;
 identifier  = letter, { letter | digit | "_" } ;
 number      = digit, { digit }, [ ".", digit, { digit } ] ;
 string      = "\"", { character }, "\"" ;
