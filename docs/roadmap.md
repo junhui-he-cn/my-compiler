@@ -10,7 +10,7 @@ Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-
 
 The language currently supports:
 
-- Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, blocks, and expression statements.
+- Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, top-level `import`, blocks, and expression statements.
 - Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
@@ -175,15 +175,15 @@ Each builtin should define behavior for both the IR interpreter and bytecode art
 
 ## Phase 14: Modules / Imports
 
-Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. File-level `import` syntax, dependency graph loading, and file-aware diagnostics remain future work.
+Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively expands source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Namespaces, exports, package search paths, separate compilation, and file-aware diagnostics remain future work.
 
 Goal: allow programs to be split across files.
 
 Suggested features:
 
-- `import "path";` or `import name from "path";` after selecting a module model.
-- Deterministic path resolution relative to the importing file.
-- Clear cycle handling.
+- `import "path";` source loading. Implemented.
+- Deterministic path resolution relative to the importing file. Implemented.
+- Clear cycle handling. Implemented.
 - CLI behavior for multi-file source loading. Implemented for direct CLI inputs.
 - Golden fixtures that include secondary source files.
 

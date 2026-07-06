@@ -131,7 +131,16 @@ tests/golden/type_errors/<case>.exit
 ```
 
 
-Runtime-error, parse-error, and type-error fixtures should not produce stdout. The runner checks stderr and exit code.
+Import-error fixtures live under `tests/golden/import_errors`:
+
+```text
+tests/golden/import_errors/<case>.cd
+tests/golden/import_errors/<case>.err
+tests/golden/import_errors/<case>.exit
+```
+
+
+Runtime-error, parse-error, type-error, and import-error fixtures should not produce stdout. The runner checks stderr and exit code.
 
 ## Diagnostic Output Convention
 
@@ -142,7 +151,7 @@ Language diagnostics use this stable shape:
 <Kind> error: <message>
 ```
 
-Use locations for lexer, parser, and type errors when a source token/location is available. Compile and runtime diagnostics are currently locationless. After intentional diagnostic format changes, refresh and review parse/type/runtime error goldens. Lexer errors do not yet have a dedicated golden fixture category.
+Use locations for lexer, parser, and type errors when a source token/location is available. Compile, import, and runtime diagnostics are currently locationless. After intentional diagnostic format changes, refresh and review parse/type/runtime/import error goldens. Lexer errors do not yet have a dedicated golden fixture category.
 
 ## Documentation Update Rules
 
@@ -161,7 +170,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 
 ## Current Language Semantics and Limitations
 
-- Supported statements include `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, blocks, and expression statements.
+- Supported statements include `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, top-level `import`, blocks, and expression statements.
 - Supported expressions include literals, arrays, structs, indexing, array index assignment, field access, field assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
 - `let name: type = expression;`, function parameter annotations, and function return annotations check explicit type names for `number`, `bool`, `string`, and `nil`. Function type annotations use `fun(type, ...): type` and may appear in `let`, parameter, and return annotations. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Unannotated `let` bindings infer known initializer types, while unannotated function parameters, unannotated function returns, and array element types are not fully inferred yet.
 - Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, and same-scope duplicate declarations are type errors.
@@ -172,6 +181,7 @@ Use locations for lexer, parser, and type errors when a source token/location is
 - A C++ bytecode backend lowers register IR to bytecode and `.cdbc` artifacts; Rust `compiler-design-vm` is the bytecode execution backend.
 - Future VM backend work targets the Rust `compiler-design-vm` project under `vm-rs/` and `.cdbc` artifacts.
 - The CLI accepts multiple input files for normal modes and `--emit-bytecode`; files are read in command-line order and compiled as one combined source. If no input file is provided, source is read from stdin except `--emit-bytecode`, which requires at least one file. Diagnostics still report combined-source line/column rather than original file names.
+- Top-level `import "path";` directives are expanded by `SourceManager` before lexing/parsing. Paths resolve relative to the importing file, duplicate canonical imports are no-ops, imports from stdin are rejected, and this phase has no namespace/export/private visibility or separate compilation.
 - Arrays are mutable runtime values with mixed element types. Indexing validates array-ness, numeric integer indexes, and bounds at runtime when static types are unknown; `array[index] = value` mutates an existing element and evaluates to the assigned value. The native stdlib currently includes shadowable `push(array, value)` and `pop(array)`. `push` mutates arrays in place and returns nil; `pop` mutates arrays in place and returns the removed value, with runtime error on empty arrays. New stdlib functions should prefer the generic `native_call` path rather than bespoke opcodes; `len` remains a legacy dedicated opcode for now.
 - The numeric native stdlib includes shadowable `floor(number)`, `ceil(number)`, and `sqrt(number)` helpers. They return numbers; `sqrt` raises a runtime error for negative inputs. New stdlib functions should prefer the generic `native_call` path rather than bespoke opcodes; `len` remains a legacy dedicated opcode for now.
 - Struct literals create anonymous reference values with ordered fields. Field access `value.name` reads an existing field; statically known non-struct field access is a type error, dynamic non-struct or missing-field access is a runtime error. Field assignment `value.name = expression` mutates an existing field, evaluates to the assigned value, and aliases observe the mutation. Statically known non-struct field assignment is a type error; dynamic non-struct targets or missing fields are runtime errors. Named struct declarations `struct Name { field: type, ... }` define static field shapes. Named struct type annotations check exact struct literal initialization, and known named struct field access/assignment is statically checked. Runtime struct values remain anonymous reference values; creating fields by assignment, constructor syntax, and recursive struct types are not implemented yet.

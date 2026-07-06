@@ -9,7 +9,8 @@ The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, indexing, array
 element assignment, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
-and builtins such as `len`, `push`, `pop`, `floor`, `ceil`, and `sqrt`.
+source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
+and `sqrt`.
 
 The compiler pipeline includes:
 
@@ -29,6 +30,7 @@ Supported statements:
 ```text
 let name = expression;
 let name: type = expression;
+import "path";
 struct Name { field: type, ... }
 print expression;
 if expression { declaration* } [else { declaration* }]
@@ -44,6 +46,25 @@ expression;
 Type annotations support `number`, `bool`, `string`, `nil`, named struct types, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and anonymous `struct`; expressions whose static type is still unknown remain flexible. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Array element types, generic types, and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
 
 `while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break;` exits the nearest enclosing `while`, and `continue;` skips to that loop's next condition check. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
+
+### Source imports
+
+A top-level source file can load another source file with:
+
+```cd
+import "./lib.cd";
+```
+
+Imports are source-loading directives: the imported file is expanded at the
+import declaration's position before normal parsing, and the final program has
+one shared top-level scope. Import paths are resolved relative to the file that
+contains the import. Importing the same canonical file more than once is a
+no-op, which allows shared helper files to be imported through multiple paths
+in the source graph.
+
+This phase does not add namespaces, `export`, package search paths, separate
+compilation, or imports from stdin. `import` inside strings or `//` comments is
+ignored by the loader.
 
 Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Known function values carry arity, parameter types when annotated, and inferred or annotated return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
@@ -92,7 +113,7 @@ Supported expressions:
 
 ## Diagnostics
 
-Compiler errors are reported as `Lex`, `Parse`, `Type`, `Compile`, or `Runtime` errors. Front-end diagnostics include a `line:column` location when available, for example:
+Compiler errors are reported as `Lex`, `Parse`, `Type`, `Compile`, `Import`, or `Runtime` errors. Front-end diagnostics include a `line:column` location when available, for example:
 
 ```text
 Parse error at 1:15: expected expression

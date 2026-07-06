@@ -2,7 +2,8 @@
 
 program     = { declaration } ;
 
-declaration = structDecl
+declaration = importDecl
+            | structDecl
             | funDecl
             | letDecl
             | statement ;
@@ -38,6 +39,8 @@ parameter   = identifier,
 letDecl     = "let", identifier,
               [ ":", typeExpr ],
               "=", expression, ";" ;
+
+importDecl  = "import", string, ";" ;
 
 ifStmt      = "if", expression, block,
               [ "else", block ] ;
