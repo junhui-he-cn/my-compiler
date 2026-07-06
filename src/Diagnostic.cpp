@@ -1,6 +1,40 @@
 #include "Diagnostic.hpp"
 
+#include <sstream>
 #include <utility>
+
+namespace {
+
+std::optional<std::string> sourceLineAt(const std::string& source, int requestedLine)
+{
+    if (requestedLine <= 0) {
+        return std::nullopt;
+    }
+
+    int currentLine = 1;
+    std::size_t lineStart = 0;
+    for (std::size_t index = 0; index <= source.size(); ++index) {
+        if (index == source.size() || source[index] == '\n') {
+            if (currentLine == requestedLine) {
+                return source.substr(lineStart, index - lineStart);
+            }
+            ++currentLine;
+            lineStart = index + 1;
+        }
+    }
+
+    return std::nullopt;
+}
+
+std::size_t caretColumn(int column)
+{
+    if (column <= 1) {
+        return 0;
+    }
+    return static_cast<std::size_t>(column - 1);
+}
+
+} // namespace
 
 std::string diagnosticKindName(DiagnosticKind kind)
 {
@@ -33,6 +67,27 @@ std::string formatDiagnostic(
     }
     formatted += ": " + message;
     return formatted;
+}
+
+std::string formatDiagnosticWithSource(const DiagnosticError& error, const std::string& source)
+{
+    std::ostringstream formatted;
+    formatted << error.what();
+
+    const std::optional<SourceLocation>& location = error.location();
+    if (!location) {
+        return formatted.str();
+    }
+
+    std::optional<std::string> line = sourceLineAt(source, location->line);
+    if (!line) {
+        return formatted.str();
+    }
+
+    formatted << '\n'
+              << "  " << *line << '\n'
+              << "  " << std::string(caretColumn(location->column), ' ') << '^';
+    return formatted.str();
 }
 
 DiagnosticError::DiagnosticError(DiagnosticKind kind, std::string message)

@@ -38,3 +38,4 @@ std::string formatDiagnostic(
     DiagnosticKind kind,
     const std::optional<SourceLocation>& location,
     const std::string& message);
+std::string formatDiagnosticWithSource(const DiagnosticError& error, const std::string& source);

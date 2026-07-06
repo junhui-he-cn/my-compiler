@@ -66,9 +66,10 @@ int main(int argc, char** argv)
         }
     }
 
+    std::string source;
     try {
         SourceManager sourceManager;
-        const std::string source = inputPaths.empty()
+        source = inputPaths.empty()
             ? sourceManager.loadStdin(std::cin)
             : sourceManager.loadFiles(inputPaths);
 
@@ -143,6 +144,9 @@ int main(int argc, char** argv)
             }
 
         }
+    } catch (const DiagnosticError& error) {
+        std::cerr << formatDiagnosticWithSource(error, source) << '\n';
+        return 1;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;
