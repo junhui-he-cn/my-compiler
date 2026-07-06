@@ -19,6 +19,14 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def compiler_inputs(case_dir: Path) -> list[Path]:
+    args_path = case_dir / "args.txt"
+    if args_path.is_file():
+        entries = read_text(args_path).split()
+        return [case_dir / entry for entry in entries]
+    return [case_dir / "input.cd"]
+
+
 def unified_diff(expected: str, actual: str, fromfile: str, tofile: str) -> str:
     return "".join(
         difflib.unified_diff(
@@ -39,19 +47,21 @@ def discover_cases(root: Path) -> list[Path]:
         return []
     return sorted(
         path for path in root.iterdir()
-        if path.is_dir() and (path / "input.cd").is_file() and (path / "expected.cdbc").is_file()
+        if path.is_dir()
+        and ((path / "input.cd").is_file() or (path / "args.txt").is_file())
+        and (path / "expected.cdbc").is_file()
     )
 
 
 def check_case(compiler: Path, vm_manifest: Path, case_dir: Path) -> list[CheckResult]:
-    source = case_dir / "input.cd"
+    sources = compiler_inputs(case_dir)
     expected_path = case_dir / "expected.cdbc"
     expected = read_text(expected_path)
     results: list[CheckResult] = []
 
     with tempfile.TemporaryDirectory() as temp_dir:
         actual_path = Path(temp_dir) / "actual.cdbc"
-        compile_command = [str(compiler), "--emit-bytecode", str(actual_path), str(source)]
+        compile_command = [str(compiler), "--emit-bytecode", str(actual_path), *(str(source) for source in sources)]
         compiled = run_command(compile_command)
         compile_name = f"{case_dir.name} emit"
         if compiled.returncode != 0:

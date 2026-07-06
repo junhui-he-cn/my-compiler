@@ -19,6 +19,14 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def compiler_inputs(case_dir: Path) -> list[Path]:
+    args_path = case_dir / "args.txt"
+    if args_path.is_file():
+        entries = read_text(args_path).split()
+        return [case_dir / entry for entry in entries]
+    return [case_dir / "input.cd"]
+
+
 def unified_diff(expected: str, actual: str, fromfile: str, tofile: str) -> str:
     return "".join(
         difflib.unified_diff(
@@ -39,7 +47,9 @@ def discover_artifact_cases(root: Path) -> list[Path]:
         return []
     return sorted(
         path for path in root.iterdir()
-        if path.is_dir() and (path / "input.cd").is_file() and (path / "run.out").is_file()
+        if path.is_dir()
+        and ((path / "input.cd").is_file() or (path / "args.txt").is_file())
+        and (path / "run.out").is_file()
     )
 
 
@@ -49,7 +59,7 @@ def discover_golden_cases(root: Path) -> list[Path]:
     return sorted(
         path for path in root.iterdir()
         if path.is_dir()
-        and (path / "input.cd").is_file()
+        and ((path / "input.cd").is_file() or (path / "args.txt").is_file())
         and (path / "run.out").is_file()
     )
 
@@ -59,13 +69,13 @@ def expected_output(case_dir: Path) -> str:
 
 
 def check_case(compiler: Path, vm_manifest: Path, case_dir: Path) -> list[CheckResult]:
-    source = case_dir / "input.cd"
+    sources = compiler_inputs(case_dir)
     expected = expected_output(case_dir)
     results: list[CheckResult] = []
 
     with tempfile.TemporaryDirectory() as temp_dir:
         artifact = Path(temp_dir) / "program.cdbc"
-        compile_command = [str(compiler), "--emit-bytecode", str(artifact), str(source)]
+        compile_command = [str(compiler), "--emit-bytecode", str(artifact), *(str(source) for source in sources)]
         compiled = run_command(compile_command)
         compile_name = f"{case_dir.name} emit"
         if compiled.returncode != 0:
@@ -156,6 +166,7 @@ def main() -> int:
             "len_builtin_shadowing",
             "loop_break",
             "named_struct_types",
+            "multi_file_functions",
             "native_stdlib_math",
             "native_stdlib_push_pop",
             "struct_literals_field_access",
