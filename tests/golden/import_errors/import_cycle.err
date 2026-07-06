@@ -1,0 +1,1 @@
+Import error: import cycle detected: tests/golden/import_errors/cycle/import_cycle_a.cd -> tests/golden/import_errors/cycle/import_cycle_b.cd -> tests/golden/import_errors/cycle/import_cycle_a.cd

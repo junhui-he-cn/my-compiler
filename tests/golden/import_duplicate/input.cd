@@ -1,0 +1,3 @@
+import "./lib.cd";
+import "./lib.cd";
+print value;

@@ -289,5 +289,51 @@ class GoldenRunnerQualityTests(unittest.TestCase):
             self.assertIn(["compiler", "--run", str(case_dir / "lib.cd"), str(case_dir / "main.cd")], commands)
 
 
+    def test_import_error_case_checks_default_mode_stderr_exit_and_stdout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            import_dir = golden_dir / "import_errors"
+            import_dir.mkdir(parents=True)
+            (import_dir / "missing.cd").write_text('import "./missing_dep.cd";\n', encoding="utf-8")
+            (import_dir / "missing.err").write_text("import error\n", encoding="utf-8")
+            (import_dir / "missing.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stdout="unexpected output\n",
+                stderr="import error\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("import_errors/missing default(ast)", results[0].message)
+        self.assertIn("unexpected stdout", results[0].message)
+        self.assertIn("unexpected output", results[0].message)
+
+    def test_import_error_input_cd_is_not_discovered_as_success_case(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            import_dir = golden_dir / "import_errors"
+            import_dir.mkdir(parents=True)
+            (import_dir / "input.cd").write_text('import "./missing_dep.cd";\n', encoding="utf-8")
+            (import_dir / "input.err").write_text("import error\n", encoding="utf-8")
+            (import_dir / "input.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="import error\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "import_errors/input default(ast)")
+
+
 if __name__ == "__main__":
     raise SystemExit(unittest.main())

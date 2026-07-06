@@ -85,5 +85,43 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertFalse(artifact.exists())
 
 
+    def test_import_from_stdin_is_rejected(self) -> None:
+        completed = self.run_compiler(input_text='import "./lib.cd";\n')
+
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(completed.stdout, "")
+        self.assertEqual(completed.stderr, "Import error: import is not supported from stdin\n")
+
+    def test_import_path_resolves_relative_to_importing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            nested = root / "nested"
+            nested.mkdir()
+            (root / "input.cd").write_text('import "./nested/lib.cd";\nprint value;\n', encoding="utf-8")
+            (nested / "lib.cd").write_text('import "./inner.cd";\n', encoding="utf-8")
+            (nested / "inner.cd").write_text('let value = "relative";\n', encoding="utf-8")
+
+            completed = self.run_compiler("--run", str(root / "input.cd"))
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "relative\n")
+            self.assertEqual(completed.stderr, "")
+
+    def test_import_text_inside_string_and_comment_is_ignored_by_loader(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "input.cd").write_text(
+                '// import "./missing_from_comment.cd";\n'
+                'print "import ./missing_from_string.cd;";\n',
+                encoding="utf-8",
+            )
+
+            completed = self.run_compiler("--run", str(root / "input.cd"))
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, 'import ./missing_from_string.cd;\n')
+            self.assertEqual(completed.stderr, "")
+
+
 if __name__ == "__main__":
     unittest.main(argv=[sys.argv[0]])
