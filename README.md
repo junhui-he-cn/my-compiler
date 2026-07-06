@@ -116,11 +116,15 @@ Supported expressions:
 Compiler errors are reported as `Lex`, `Parse`, `Type`, `Compile`, `Import`, or `Runtime` errors. Front-end diagnostics include a `line:column` location when available, for example:
 
 ```text
-Parse error at 1:15: expected expression
+Parse error at 1:14: expected expression
+  print add(1, );
+               ^
 Type error at 1:7: undefined variable `missing`
+  print missing;
+        ^
 ```
 
-Runtime diagnostics currently do not include source locations.
+Located front-end diagnostics include the combined-source line and a caret. Locationless diagnostics, including import, compile, and runtime errors, remain one-line messages.
 
 ## Build
 

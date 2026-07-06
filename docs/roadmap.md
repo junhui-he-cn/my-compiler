@@ -193,9 +193,11 @@ Why late: modules affect diagnostics, CLI source management, test layout, and na
 
 Goal: improve ergonomics after the core language grows.
 
+Status: in progress. Phase 15A is implemented: located front-end diagnostics print the combined-source line and a caret while keeping the existing first diagnostic line stable. File-aware diagnostic remapping remains future work.
+
 Suggested features:
 
-- Source snippets and carets for front-end diagnostics.
+- Source snippets and carets for front-end diagnostics. Implemented for combined-source locations.
 - More parse recovery and multi-error reporting.
 - Clear handling for lambda expression statements that begin with `fun`, either by documenting parenthesized form or changing parser disambiguation.
 - Compound assignment operators such as `+=`, after assignment targets are generalized.

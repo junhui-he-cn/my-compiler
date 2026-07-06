@@ -140,6 +140,8 @@ tests/golden/import_errors/<case>.exit
 ```
 
 
+Parse/type error `.err` files may either contain the first diagnostic line only or the full snippet form. Use the full snippet form for fixtures that intentionally cover caret placement.
+
 Runtime-error, parse-error, type-error, and import-error fixtures should not produce stdout. The runner checks stderr and exit code.
 
 ## Diagnostic Output Convention
@@ -148,10 +150,12 @@ Language diagnostics use this stable shape:
 
 ```text
 <Kind> error at <line>:<column>: <message>
+  <source line>
+  <caret>
 <Kind> error: <message>
 ```
 
-Use locations for lexer, parser, and type errors when a source token/location is available. Compile, import, and runtime diagnostics are currently locationless. After intentional diagnostic format changes, refresh and review parse/type/runtime/import error goldens. Lexer errors do not yet have a dedicated golden fixture category.
+Use locations for lexer, parser, and type errors when a source token/location is available. The CLI appends a combined-source line and caret for located diagnostics. Compile, import, and runtime diagnostics are currently locationless. After intentional diagnostic format changes, refresh and review parse/type/runtime/import error goldens. Lexer errors do not yet have a dedicated golden fixture category.
 
 ## Documentation Update Rules
 
