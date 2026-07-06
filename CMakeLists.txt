@@ -24,6 +24,7 @@ add_executable(compiler_design
     src/Lexer.cpp
     src/NativeStdlib.cpp
     src/Parser.cpp
+    src/SourceManager.cpp
     src/TypeChecker.cpp
     src/Value.cpp
     src/main.cpp
