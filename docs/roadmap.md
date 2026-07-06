@@ -175,6 +175,8 @@ Each builtin should define behavior for both the IR interpreter and bytecode art
 
 ## Phase 14: Modules / Imports
 
+Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. File-level `import` syntax, dependency graph loading, and file-aware diagnostics remain future work.
+
 Goal: allow programs to be split across files.
 
 Suggested features:
@@ -182,7 +184,7 @@ Suggested features:
 - `import "path";` or `import name from "path";` after selecting a module model.
 - Deterministic path resolution relative to the importing file.
 - Clear cycle handling.
-- CLI behavior for multi-file source loading.
+- CLI behavior for multi-file source loading. Implemented for direct CLI inputs.
 - Golden fixtures that include secondary source files.
 
 Why late: modules affect diagnostics, CLI source management, test layout, and name resolution across compilation units.

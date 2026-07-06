@@ -135,6 +135,13 @@ python3 tests/run_golden_tests.py ./build/compiler_design --update
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
 ```
 
+Multiple input files may be provided. They are read in command-line order and compiled as one combined program:
+
+```sh
+./build/compiler_design --run lib.cd main.cd
+./build/compiler_design --emit-bytecode program.cdbc lib.cd main.cd
+```
+
 `--run` executes the C++ IR interpreter. `--bytecode` remains a debug-print mode for inspecting compiler output. Bytecode execution is handled by the Rust VM via `.cdbc` artifacts:
 
 ```sh
@@ -143,4 +150,4 @@ cargo run --manifest-path vm-rs/Cargo.toml -- dump program.cdbc
 cargo run --manifest-path vm-rs/Cargo.toml -- run program.cdbc
 ```
 
-If no file is provided, source is read from stdin.
+If no file is provided, source is read from stdin. Diagnostics currently report line and column in the combined source rather than original file names.
