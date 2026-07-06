@@ -1,0 +1,7 @@
+Program
+  Let numbers: [number] = (array 1 2 3)
+  Let matrix: [[number]] = (array (array 1) (array 2))
+  Let callbacks: [fun(number): number] = (array (fun (x: number): number (return x)))
+  Fun makeStrings(): [string]
+    Return (array "a" "b")
+  Struct Bag {values: [number]}

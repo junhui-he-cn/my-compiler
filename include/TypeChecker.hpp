@@ -27,6 +27,7 @@ struct TypeInfo {
     std::vector<TypeInfo> parameterTypes;
     std::shared_ptr<TypeInfo> returnType;
     std::optional<std::string> structName;
+    std::shared_ptr<TypeInfo> elementType;
 };
 
 class TypeError final : public DiagnosticError {

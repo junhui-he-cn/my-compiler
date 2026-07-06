@@ -28,6 +28,13 @@ void writeTypeAnnotation(std::ostream& out, const TypeAnnotation& annotation)
         return;
     }
 
+    if (annotation.kind == TypeAnnotation::Kind::Array) {
+        out << '[';
+        writeTypeAnnotation(out, *annotation.elementType);
+        out << ']';
+        return;
+    }
+
     out << "fun(";
     for (std::size_t i = 0; i < annotation.parameterTypes.size(); ++i) {
         if (i != 0) {
@@ -184,6 +191,15 @@ TypeAnnotation TypeAnnotation::function(Token token, std::vector<TypeAnnotation>
     return result;
 }
 
+TypeAnnotation TypeAnnotation::array(Token token, TypeAnnotation elementType)
+{
+    TypeAnnotation result;
+    result.kind = Kind::Array;
+    result.token = std::move(token);
+    result.elementType = std::make_shared<TypeAnnotation>(std::move(elementType));
+    return result;
+}
+
 LiteralExpr::LiteralExpr(std::string value)
     : value(std::move(value))
 {
@@ -311,8 +327,9 @@ void CallExpr::print(std::ostream& out) const
     out << ')';
 }
 
-ArrayExpr::ArrayExpr(std::vector<ExprPtr> elements)
-    : elements(std::move(elements))
+ArrayExpr::ArrayExpr(Token bracket, std::vector<ExprPtr> elements)
+    : bracket(std::move(bracket))
+    , elements(std::move(elements))
 {
 }
 

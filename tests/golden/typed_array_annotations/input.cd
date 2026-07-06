@@ -1,0 +1,9 @@
+let numbers: [number] = [1, 2, 3];
+let matrix: [[number]] = [[1], [2]];
+let callbacks: [fun(number): number] = [fun (x: number): number { return x; }];
+
+fun makeStrings(): [string] {
+  return ["a", "b"];
+}
+
+struct Bag { values: [number] }

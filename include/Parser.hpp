@@ -57,7 +57,7 @@ private:
     ExprPtr finishCall(ExprPtr callee);
     ExprPtr finishIndex(ExprPtr collection);
     ExprPtr finishFieldAccess(ExprPtr object);
-    ExprPtr arrayLiteral();
+    ExprPtr arrayLiteral(Token bracket);
     ExprPtr structLiteral();
     ExprPtr functionExpression();
     ExprPtr primary();

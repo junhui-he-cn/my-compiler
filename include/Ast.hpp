@@ -24,15 +24,18 @@ struct TypeAnnotation {
     enum class Kind {
         Simple,
         Function,
+        Array,
     };
 
     static TypeAnnotation simple(Token token);
     static TypeAnnotation function(Token token, std::vector<TypeAnnotation> parameterTypes, TypeAnnotation returnType);
+    static TypeAnnotation array(Token token, TypeAnnotation elementType);
 
     Kind kind = Kind::Simple;
     Token token{TokenType::Identifier, "", 0, 0};
     std::vector<TypeAnnotation> parameterTypes;
     std::shared_ptr<TypeAnnotation> returnType;
+    std::shared_ptr<TypeAnnotation> elementType;
 };
 
 struct Parameter {
@@ -115,9 +118,10 @@ struct CallExpr final : Expr {
 };
 
 struct ArrayExpr final : Expr {
-    explicit ArrayExpr(std::vector<ExprPtr> elements);
+    ArrayExpr(Token bracket, std::vector<ExprPtr> elements);
     void print(std::ostream& out) const override;
 
+    Token bracket;
     std::vector<ExprPtr> elements;
 };
 

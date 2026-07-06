@@ -9,12 +9,14 @@ namespace {
 
 TypeInfo unknownType()
 {
-    return TypeInfo{StaticType::Unknown, {}, nullptr, std::nullopt};
+    return TypeInfo{};
 }
 
 TypeInfo simpleType(StaticType kind)
 {
-    return TypeInfo{kind, {}, nullptr, std::nullopt};
+    TypeInfo result;
+    result.kind = kind;
+    return result;
 }
 
 TypeInfo namedStructType(std::string name)
@@ -22,6 +24,14 @@ TypeInfo namedStructType(std::string name)
     TypeInfo result;
     result.kind = StaticType::Struct;
     result.structName = std::move(name);
+    return result;
+}
+
+TypeInfo arrayType(TypeInfo elementType)
+{
+    TypeInfo result;
+    result.kind = StaticType::Array;
+    result.elementType = std::make_shared<TypeInfo>(std::move(elementType));
     return result;
 }
 
@@ -36,7 +46,9 @@ TypeInfo functionType(std::vector<TypeInfo> parameterTypes, TypeInfo returnType)
 
 TypeInfo functionWithoutSignature()
 {
-    return TypeInfo{StaticType::Function, {}, nullptr, std::nullopt};
+    TypeInfo result;
+    result.kind = StaticType::Function;
+    return result;
 }
 
 bool isKnown(const TypeInfo& type)
@@ -53,6 +65,10 @@ std::string typeInfoName(const TypeInfo& type)
 {
     if (type.kind == StaticType::Struct && type.structName) {
         return *type.structName;
+    }
+
+    if (type.kind == StaticType::Array && type.elementType) {
+        return "[" + typeInfoName(*type.elementType) + "]";
     }
 
     if (type.kind != StaticType::Function || !type.returnType) {
@@ -84,6 +100,12 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
             return expected.structName == actual.structName;
         }
         return true;
+    }
+    if (expected.kind == StaticType::Array) {
+        if (!expected.elementType || !actual.elementType) {
+            return true;
+        }
+        return compatible(*expected.elementType, *actual.elementType);
     }
     if (expected.kind != StaticType::Function) {
         return true;
@@ -1044,6 +1066,10 @@ TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssi
 
 TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
 {
+    if (typeName.kind == TypeAnnotation::Kind::Array) {
+        return arrayType(resolveAnnotation(*typeName.elementType));
+    }
+
     if (typeName.kind == TypeAnnotation::Kind::Function) {
         std::vector<TypeInfo> parameterTypes;
         parameterTypes.reserve(typeName.parameterTypes.size());

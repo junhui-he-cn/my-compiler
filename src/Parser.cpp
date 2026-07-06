@@ -159,6 +159,13 @@ std::optional<TypeAnnotation> Parser::optionalReturnType()
 
 TypeAnnotation Parser::typeAnnotation(const std::string& simpleTypeMessage)
 {
+    if (match(TokenType::LeftBracket)) {
+        Token bracket = previous();
+        TypeAnnotation elementType = typeAnnotation("expected array element type after `[`");
+        consume(TokenType::RightBracket, "expected `]` after array element type");
+        return TypeAnnotation::array(std::move(bracket), std::move(elementType));
+    }
+
     if (match(TokenType::Fun)) {
         Token keyword = previous();
         consume(TokenType::LeftParen, "expected `(` after `fun` in function type");
@@ -446,7 +453,7 @@ ExprPtr Parser::finishFieldAccess(ExprPtr object)
     return std::make_unique<FieldAccessExpr>(std::move(object), std::move(name));
 }
 
-ExprPtr Parser::arrayLiteral()
+ExprPtr Parser::arrayLiteral(Token bracket)
 {
     std::vector<ExprPtr> elements;
     if (!check(TokenType::RightBracket)) {
@@ -455,7 +462,7 @@ ExprPtr Parser::arrayLiteral()
         } while (match(TokenType::Comma));
     }
     consume(TokenType::RightBracket, "expected `]` after array elements");
-    return std::make_unique<ArrayExpr>(std::move(elements));
+    return std::make_unique<ArrayExpr>(std::move(bracket), std::move(elements));
 }
 
 ExprPtr Parser::structLiteral()
@@ -507,7 +514,8 @@ ExprPtr Parser::primary()
         return std::make_unique<LiteralExpr>(previous().lexeme);
     }
     if (match(TokenType::LeftBracket)) {
-        return arrayLiteral();
+        Token bracket = previous();
+        return arrayLiteral(std::move(bracket));
     }
     if (match(TokenType::LeftBrace)) {
         return structLiteral();
