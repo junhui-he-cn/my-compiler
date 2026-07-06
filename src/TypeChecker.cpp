@@ -419,8 +419,12 @@ void TypeChecker::checkStatement(const Stmt& statement)
         if (functionDepth_ == 0) {
             throw TypeError(returnStmt->keyword, "return outside function");
         }
+        const TypeInfo* expectedReturn = nullptr;
+        if (!returnContexts_.empty() && returnContexts_.back().expectedReturnType) {
+            expectedReturn = &*returnContexts_.back().expectedReturnType;
+        }
         const TypeInfo returned = returnStmt->value
-            ? checkExpression(*returnStmt->value)
+            ? checkExpressionInfo(*returnStmt->value, expectedReturn).type
             : simpleType(StaticType::Nil);
         recordReturn(returnStmt->keyword, returned);
         return;
@@ -686,7 +690,7 @@ TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& s
         }
     }
 
-    const CheckedExpression initializer = checkExpressionInfo(*statement.initializer);
+    const CheckedExpression initializer = checkExpressionInfo(*statement.initializer, &declared);
     checkAssignable(
         statement.name,
         "cannot initialize `" + statement.name.lexeme + "` of type " + typeInfoName(declared)
@@ -732,7 +736,7 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
             throw TypeError(statement.name,
                 "missing field `" + expectedField.name.lexeme + "` for struct `" + structType->name.lexeme + "`");
         }
-        const CheckedExpression actual = checkExpressionInfo(*found->second->value);
+        const CheckedExpression actual = checkExpressionInfo(*found->second->value, &expectedField.type);
         if (!compatible(expectedField.type, actual.type)) {
             throw TypeError(found->second->name,
                 "field `" + expectedField.name.lexeme + "` expects " + typeInfoName(expectedField.type)
@@ -756,6 +760,51 @@ TypeInfo TypeChecker::checkExpression(const Expr& expression)
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expression)
+{
+    return checkExpressionInfo(expression, nullptr);
+}
+
+TypeInfo TypeChecker::inferArrayElementType(const ArrayExpr& expression)
+{
+    std::optional<TypeInfo> current;
+    for (const auto& element : expression.elements) {
+        TypeInfo elementType = checkExpression(*element);
+        if (!isKnown(elementType)) {
+            return unknownType();
+        }
+        if (!current) {
+            current = std::move(elementType);
+            continue;
+        }
+        if (!(compatible(*current, elementType) && compatible(elementType, *current))) {
+            return unknownType();
+        }
+    }
+    return current ? *current : unknownType();
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType)
+{
+    if (expectedType && expectedType->kind == StaticType::Array && expectedType->elementType) {
+        for (const auto& element : expression.elements) {
+            const CheckedExpression actual = checkExpressionInfo(*element, expectedType->elementType.get());
+            if (!compatible(*expectedType->elementType, actual.type)) {
+                throw TypeError(expression.bracket,
+                    "array element expects " + typeInfoName(*expectedType->elementType)
+                        + ", got " + typeInfoName(actual.type));
+            }
+        }
+        return CheckedExpression{*expectedType};
+    }
+
+    const TypeInfo element = inferArrayElementType(expression);
+    if (isKnown(element)) {
+        return CheckedExpression{arrayType(element)};
+    }
+    return CheckedExpression{simpleType(StaticType::Array)};
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expression, const TypeInfo* expectedType)
 {
     if (const auto* literal = dynamic_cast<const LiteralExpr*>(&expression)) {
         if (literal->value == "nil") {
@@ -784,11 +833,12 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
-        const CheckedExpression value = checkExpressionInfo(*assign->value);
         Binding* target = findVariable(assign->name.lexeme);
         if (!target) {
             throw TypeError(assign->name, "undefined variable `" + assign->name.lexeme + "`");
         }
+
+        const CheckedExpression value = checkExpressionInfo(*assign->value, &target->type);
 
         if (target->type.kind == StaticType::Function && value.type.kind == StaticType::Function) {
             if (hasFunctionSignature(target->type) && hasFunctionSignature(value.type)
@@ -844,10 +894,7 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
-        for (const auto& element : array->elements) {
-            checkExpression(*element);
-        }
-        return CheckedExpression{simpleType(StaticType::Array)};
+        return checkArrayLiteral(*array, expectedType);
     }
 
     if (const auto* structExpr = dynamic_cast<const StructExpr*>(&expression)) {
@@ -976,8 +1023,19 @@ TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression
     const CheckedExpression callee = checkExpressionInfo(*expression.callee);
     std::vector<CheckedExpression> arguments;
     arguments.reserve(expression.arguments.size());
-    for (const auto& argument : expression.arguments) {
-        arguments.push_back(checkExpressionInfo(*argument));
+
+    if (callee.type.kind == StaticType::Function && hasFunctionSignature(callee.type)) {
+        if (callee.type.parameterTypes.size() != expression.arguments.size()) {
+            throw TypeError(expression.paren, "expected " + std::to_string(callee.type.parameterTypes.size())
+                + " arguments but got " + std::to_string(expression.arguments.size()));
+        }
+        for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
+            arguments.push_back(checkExpressionInfo(*expression.arguments[i], &callee.type.parameterTypes[i]));
+        }
+    } else {
+        for (const auto& argument : expression.arguments) {
+            arguments.push_back(checkExpressionInfo(*argument));
+        }
     }
 
     if (callee.type.kind != StaticType::Unknown && callee.type.kind != StaticType::Function) {
@@ -985,10 +1043,6 @@ TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression
     }
 
     if (callee.type.kind == StaticType::Function && hasFunctionSignature(callee.type)) {
-        if (callee.type.parameterTypes.size() != expression.arguments.size()) {
-            throw TypeError(expression.paren, "expected " + std::to_string(callee.type.parameterTypes.size())
-                + " arguments but got " + std::to_string(expression.arguments.size()));
-        }
         for (std::size_t i = 0; i < arguments.size(); ++i) {
             const TypeInfo& expected = callee.type.parameterTypes[i];
             const TypeInfo& actual = arguments[i].type;

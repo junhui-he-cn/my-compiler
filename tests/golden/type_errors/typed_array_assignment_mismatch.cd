@@ -1,0 +1,3 @@
+let xs: [number] = [1];
+let ys = ["bad"];
+xs = ys;

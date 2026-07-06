@@ -133,6 +133,9 @@ private:
     void checkImplicitNilReturn(const Token& functionToken, const std::string& functionLabel, const TypeInfo& expectedReturnType) const;
     TypeInfo checkExpression(const Expr& expression);
     CheckedExpression checkExpressionInfo(const Expr& expression);
+    CheckedExpression checkExpressionInfo(const Expr& expression, const TypeInfo* expectedType);
+    CheckedExpression checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType);
+    TypeInfo inferArrayElementType(const ArrayExpr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
     CheckedExpression checkCall(const CallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;

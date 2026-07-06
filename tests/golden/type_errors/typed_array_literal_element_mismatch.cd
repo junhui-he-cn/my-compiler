@@ -1,0 +1,1 @@
+let bad: [number] = [1, "bad"];
