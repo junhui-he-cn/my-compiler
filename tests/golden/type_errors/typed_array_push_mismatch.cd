@@ -1,0 +1,2 @@
+let xs: [number] = [1];
+push(xs, "bad");

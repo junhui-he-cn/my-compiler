@@ -978,33 +978,43 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
             "expected " + std::to_string(function->arity) + " arguments but got " + std::to_string(expression.arguments.size()));
     }
 
-    std::vector<CheckedExpression> arguments;
-    arguments.reserve(expression.arguments.size());
-    for (const auto& argument : expression.arguments) {
-        arguments.push_back(checkExpressionInfo(*argument));
-    }
-
     switch (function->kind) {
-    case NativeFunctionKind::Push:
-        if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Array) {
+    case NativeFunctionKind::Push: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (arrayArgument.type.kind != StaticType::Unknown && arrayArgument.type.kind != StaticType::Array) {
             throw TypeError(expression.paren,
-                "push expects array as first argument, got " + typeInfoName(arguments[0].type));
+                "push expects array as first argument, got " + typeInfoName(arrayArgument.type));
+        }
+        const TypeInfo* expectedElement = arrayArgument.type.elementType.get();
+        const CheckedExpression valueArgument = checkExpressionInfo(*expression.arguments[1], expectedElement);
+        if (expectedElement && !compatible(*expectedElement, valueArgument.type)) {
+            throw TypeError(expression.paren,
+                "push value expects " + typeInfoName(*expectedElement)
+                    + ", got " + typeInfoName(valueArgument.type));
         }
         return CheckedExpression{simpleType(StaticType::Nil)};
-    case NativeFunctionKind::Pop:
-        if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Array) {
+    }
+    case NativeFunctionKind::Pop: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (arrayArgument.type.kind != StaticType::Unknown && arrayArgument.type.kind != StaticType::Array) {
             throw TypeError(expression.paren,
-                "pop expects array as first argument, got " + typeInfoName(arguments[0].type));
+                "pop expects array as first argument, got " + typeInfoName(arrayArgument.type));
+        }
+        if (arrayArgument.type.kind == StaticType::Array && arrayArgument.type.elementType) {
+            return CheckedExpression{*arrayArgument.type.elementType};
         }
         return CheckedExpression{unknownType()};
+    }
     case NativeFunctionKind::Floor:
     case NativeFunctionKind::Ceil:
-    case NativeFunctionKind::Sqrt:
-        if (arguments[0].type.kind != StaticType::Unknown && arguments[0].type.kind != StaticType::Number) {
+    case NativeFunctionKind::Sqrt: {
+        const CheckedExpression argument = checkExpressionInfo(*expression.arguments[0]);
+        if (argument.type.kind != StaticType::Unknown && argument.type.kind != StaticType::Number) {
             throw TypeError(expression.paren,
-                std::string(function->name) + " expects number, got " + typeInfoName(arguments[0].type));
+                std::string(function->name) + " expects number, got " + typeInfoName(argument.type));
         }
         return CheckedExpression{simpleType(StaticType::Number)};
+    }
     }
 
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
@@ -1071,6 +1081,9 @@ TypeInfo TypeChecker::checkIndex(const IndexExpr& expression)
         throw TypeError(expression.bracket, "array index must be number");
     }
 
+    if (collection.kind == StaticType::Array && collection.elementType) {
+        return *collection.elementType;
+    }
     return unknownType();
 }
 
@@ -1078,7 +1091,6 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
 {
     const TypeInfo collection = checkExpression(*expression.collection);
     const TypeInfo index = checkExpression(*expression.index);
-    const CheckedExpression value = checkExpressionInfo(*expression.value);
 
     if (collection.kind != StaticType::Unknown && collection.kind != StaticType::Array) {
         throw TypeError(expression.bracket, "can only assign array elements");
@@ -1086,6 +1098,14 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
 
     if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
         throw TypeError(expression.bracket, "array index must be number");
+    }
+
+    const TypeInfo* expectedElement = collection.elementType.get();
+    const CheckedExpression value = checkExpressionInfo(*expression.value, expectedElement);
+    if (expectedElement && !compatible(*expectedElement, value.type)) {
+        throw TypeError(expression.bracket,
+            "array index assignment expects " + typeInfoName(*expectedElement)
+                + ", got " + typeInfoName(value.type));
     }
 
     return value;

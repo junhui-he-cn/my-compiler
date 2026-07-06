@@ -1,6 +1,6 @@
 IR
 0000  v0 = constant #0 1
-0001  v1 = constant #1 2
+0001  v1 = constant #1 "two"
 0002  v2 = constant #2 3
 0003  v3 = array [v0, v1, v2]
 0004  store_var @0 xs#0, v3

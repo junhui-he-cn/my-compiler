@@ -1,5 +1,5 @@
 Program
-  Let xs = (array 1 2 3)
+  Let xs = (array 1 "two" 3)
   Expr (= (index xs 1) 42)
   Print (index xs 1)
   Let ys = xs

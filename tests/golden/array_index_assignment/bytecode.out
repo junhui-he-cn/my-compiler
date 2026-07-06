@@ -1,6 +1,6 @@
 main registers=43
 0000  b0 = constant #0 1
-0001  b1 = constant #1 2
+0001  b1 = constant #1 "two"
 0002  b2 = constant #2 3
 0003  b3 = array [b0, b1, b2]
 0004  store_var @0 xs#0, b3
