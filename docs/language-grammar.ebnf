@@ -124,8 +124,11 @@ primary     = functionExpr
             | identifier
             | "(", expression, ")" ;
 
-typeExpr    = simpleType
-            | functionType ;
+typeExpr    = arrayType
+            | functionType
+            | simpleType ;
+
+arrayType   = "[", typeExpr, "]" ;
 
 simpleType  = identifier ;
 
