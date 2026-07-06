@@ -1,0 +1,3 @@
+Program
+  Expr (fun (x) (return (+ x 1)))
+  Print "ok"

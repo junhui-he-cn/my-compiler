@@ -159,6 +159,7 @@ def main() -> int:
             "inferred_let_assignment",
             "inferred_let_unknown_call_result",
             "lambda_basic",
+            "lambda_expression_statement",
             "lambda_closure",
             "lambda_immediate_call",
             "lambda_mutable_closure",

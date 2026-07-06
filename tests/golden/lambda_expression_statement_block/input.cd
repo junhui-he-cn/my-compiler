@@ -1,0 +1,6 @@
+{
+  fun () {
+    return 1;
+  };
+}
+print "done";
