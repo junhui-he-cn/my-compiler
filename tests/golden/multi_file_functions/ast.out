@@ -1,0 +1,6 @@
+Program
+  Fun add(a, b)
+    Return (+ a b)
+  Let banner = "sum"
+  Print banner
+  Print (call add 1 2)

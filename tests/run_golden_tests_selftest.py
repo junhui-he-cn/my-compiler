@@ -3,6 +3,8 @@
 import tempfile
 import textwrap
 import unittest
+import unittest.mock
+import subprocess
 from pathlib import Path
 
 import run_golden_tests
@@ -263,6 +265,28 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0].passed)
         self.assertEqual(results[0].name, "bytecode_case --bytecode")
+
+    def test_success_case_args_txt_replaces_default_input_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            case_dir = root / "multi_file"
+            case_dir.mkdir()
+            (case_dir / "lib.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "main.cd").write_text("print 2;\n", encoding="utf-8")
+            (case_dir / "args.txt").write_text("lib.cd main.cd\n", encoding="utf-8")
+            (case_dir / "run.out").write_text("1\n2\n", encoding="utf-8")
+
+            commands: list[list[str]] = []
+
+            def fake_run(command, text, capture_output, check):
+                commands.append([str(part) for part in command])
+                return subprocess.CompletedProcess(command, 0, "1\n2\n", "")
+
+            with unittest.mock.patch.object(run_golden_tests.subprocess, "run", side_effect=fake_run):
+                results = run_golden_tests.check_success_case(Path("compiler"), case_dir, False)
+
+            self.assertTrue(all(result.passed for result in results), results)
+            self.assertIn(["compiler", "--run", str(case_dir / "lib.cd"), str(case_dir / "main.cd")], commands)
 
 
 if __name__ == "__main__":

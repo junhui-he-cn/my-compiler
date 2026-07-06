@@ -31,6 +31,14 @@ def write_text(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def compiler_inputs(case_dir: Path) -> list[Path]:
+    args_path = case_dir / "args.txt"
+    if args_path.is_file():
+        entries = read_text(args_path).split()
+        return [case_dir / entry for entry in entries]
+    return [case_dir / "input.cd"]
+
+
 def unified_diff(expected: str, actual: str, fromfile: str, tofile: str) -> str:
     return "".join(
         difflib.unified_diff(
@@ -42,8 +50,12 @@ def unified_diff(expected: str, actual: str, fromfile: str, tofile: str) -> str:
     )
 
 
-def run_compiler(compiler: Path, args: tuple[str, ...], source: Path) -> subprocess.CompletedProcess[str]:
-    command = [str(compiler), *args, str(source)]
+def run_compiler(compiler: Path, args: tuple[str, ...], source_or_sources) -> subprocess.CompletedProcess[str]:
+    if isinstance(source_or_sources, list):
+        sources = source_or_sources
+    else:
+        sources = [source_or_sources]
+    command = [str(compiler), *args, *(str(source) for source in sources)]
     return subprocess.run(command, text=True, capture_output=True, check=False)
 
 
@@ -53,7 +65,7 @@ def discover_success_cases(golden_dir: Path) -> list[Path]:
         for case_dir in golden_dir.iterdir()
         if case_dir.is_dir()
         and case_dir.name not in {"runtime_errors", "parse_errors", "type_errors"}
-        and (case_dir / "input.cd").is_file()
+        and ((case_dir / "input.cd").is_file() or (case_dir / "args.txt").is_file())
     )
 
 
@@ -79,7 +91,7 @@ def discover_type_error_cases(golden_dir: Path) -> list[Path]:
 
 
 def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[CheckResult]:
-    source = case_dir / "input.cd"
+    sources = compiler_inputs(case_dir)
     results: list[CheckResult] = []
     expected_golden_names = tuple(golden_name for _, _, golden_name in SUCCESS_CHECKS)
 
@@ -102,7 +114,7 @@ def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[Che
         if not update and not golden_path.exists():
             continue
 
-        completed = run_compiler(compiler, args, source)
+        completed = run_compiler(compiler, args, sources)
         check_name = f"{case_dir.name} {display_name}"
 
         if completed.returncode != 0:
