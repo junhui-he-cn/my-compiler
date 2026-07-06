@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <filesystem>
 #include <iosfwd>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 struct SourceFile {
@@ -18,5 +20,11 @@ public:
     const std::vector<SourceFile>& files() const;
 
 private:
+    std::string loadFile(const std::filesystem::path& path, bool isImport);
+    std::string expandImports(const std::string& source, const std::filesystem::path& importingFile);
+    bool containsTopLevelImportKeyword(const std::string& source) const;
+
     std::vector<SourceFile> files_;
+    std::unordered_set<std::string> loadedFiles_;
+    std::vector<std::string> loadingStack_;
 };

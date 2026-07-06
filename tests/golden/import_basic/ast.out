@@ -1,0 +1,4 @@
+Program
+  Fun add(a, b)
+    Return (+ a b)
+  Print (call add 1 2)
