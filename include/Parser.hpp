@@ -64,6 +64,7 @@ private:
 
     bool match(TokenType type);
     bool check(TokenType type) const;
+    bool checkNext(TokenType type) const;
     Token advance();
     bool isAtEnd() const;
     const Token& peek() const;

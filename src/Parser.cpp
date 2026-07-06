@@ -4,6 +4,21 @@
 #include <sstream>
 #include <utility>
 
+namespace {
+
+std::string expectedFunStartMessage(const Token& token)
+{
+    std::ostringstream message;
+    message << "expected function name after `fun` declaration or `(` for function expression, found "
+            << tokenTypeName(token.type);
+    if (!token.lexeme.empty()) {
+        message << " `" << token.lexeme << "`";
+    }
+    return message.str();
+}
+
+} // namespace
+
 ParseError::ParseError(const Token& token, const std::string& message)
     : DiagnosticError(DiagnosticKind::Parse, SourceLocation{token.line, token.column}, message)
 {
@@ -31,8 +46,13 @@ StmtPtr Parser::declaration()
     if (match(TokenType::Struct)) {
         return structDeclaration();
     }
-    if (match(TokenType::Fun)) {
+    if (check(TokenType::Fun) && checkNext(TokenType::Identifier)) {
+        advance();
         return functionDeclaration();
+    }
+    if (check(TokenType::Fun) && !checkNext(TokenType::LeftParen)) {
+        advance();
+        throw ParseError(peek(), expectedFunStartMessage(peek()));
     }
     if (match(TokenType::Let)) {
         return letDeclaration();
@@ -519,6 +539,14 @@ bool Parser::check(TokenType type) const
         return type == TokenType::EndOfFile;
     }
     return peek().type == type;
+}
+
+bool Parser::checkNext(TokenType type) const
+{
+    if (current_ + 1 >= tokens_.size()) {
+        return false;
+    }
+    return tokens_[current_ + 1].type == type;
 }
 
 Token Parser::advance()
