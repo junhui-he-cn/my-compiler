@@ -193,13 +193,13 @@ Why late: modules affect diagnostics, CLI source management, test layout, and na
 
 Goal: improve ergonomics after the core language grows.
 
-Status: in progress. Phase 15A is implemented: located front-end diagnostics print the combined-source line and a caret while keeping the existing first diagnostic line stable. File-aware diagnostic remapping remains future work.
+Status: in progress. Phase 15A is implemented: located front-end diagnostics print the combined-source line and a caret while keeping the existing first diagnostic line stable. Phase 15B is implemented: anonymous function expressions beginning with `fun (` can appear directly as expression statements while named `fun name(...)` declarations keep their existing behavior. File-aware diagnostic remapping remains future work.
 
 Suggested features:
 
 - Source snippets and carets for front-end diagnostics. Implemented for combined-source locations.
 - More parse recovery and multi-error reporting.
-- Clear handling for lambda expression statements that begin with `fun`, either by documenting parenthesized form or changing parser disambiguation.
+- Clear handling for lambda expression statements that begin with `fun`. Implemented by parser disambiguation between `fun name` declarations and `fun (` expressions.
 - Compound assignment operators such as `+=`, after assignment targets are generalized.
 - Comments or doc comments if they are still missing.
 
