@@ -10,6 +10,7 @@ enum class DiagnosticKind {
     Type,
     Compile,
     Runtime,
+    Import,
 };
 
 struct SourceLocation {

@@ -26,6 +26,7 @@ private:
     StructFieldDecl structField();
     StmtPtr functionDeclaration();
     StmtPtr letDeclaration();
+    StmtPtr importDeclaration();
     std::vector<Parameter> parameters();
     Parameter parameter();
     TypeAnnotation typeAnnotation(const std::string& simpleTypeMessage = "expected type name");

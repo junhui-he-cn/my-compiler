@@ -15,6 +15,8 @@ std::string diagnosticKindName(DiagnosticKind kind)
         return "Compile";
     case DiagnosticKind::Runtime:
         return "Runtime";
+    case DiagnosticKind::Import:
+        return "Import";
     }
 
     return "Unknown";

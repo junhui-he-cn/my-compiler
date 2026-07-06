@@ -38,6 +38,7 @@ enum class TokenType {
     Break,
     Continue,
     If,
+    Import,
     Else,
     Fun,
     Let,

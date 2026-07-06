@@ -25,6 +25,9 @@ Program Parser::parse()
 
 StmtPtr Parser::declaration()
 {
+    if (match(TokenType::Import)) {
+        return importDeclaration();
+    }
     if (match(TokenType::Struct)) {
         return structDeclaration();
     }
@@ -95,6 +98,14 @@ StmtPtr Parser::letDeclaration()
 
     consume(TokenType::Semicolon, "expected `;` after variable declaration");
     return std::make_unique<LetStmt>(std::move(name), std::move(typeName), std::move(initializer));
+}
+
+StmtPtr Parser::importDeclaration()
+{
+    const Token keyword = previous();
+    consume(TokenType::String, "expected import path string");
+    consume(TokenType::Semicolon, "expected `;` after import path");
+    throw ParseError(keyword, "import declarations must be loaded before parsing");
 }
 
 std::vector<Parameter> Parser::parameters()
