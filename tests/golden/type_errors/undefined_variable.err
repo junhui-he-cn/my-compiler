@@ -1,1 +1,3 @@
 Type error at 1:7: undefined variable `missing`
+  print missing;
+        ^

@@ -1,1 +1,3 @@
 Parse error at 1:14: expected expression
+  print add(1, );
+               ^

@@ -123,5 +123,25 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.stderr, "")
 
 
+    def test_lex_error_in_stdin_prints_source_snippet(self) -> None:
+        completed = self.run_compiler(input_text="print @;\n")
+
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(completed.stdout, "")
+        self.assertEqual(
+            completed.stderr,
+            "Lex error at 1:7: unexpected character `@`\n"
+            "  print @;\n"
+            "        ^\n",
+        )
+
+    def test_import_error_stays_one_line_without_source_snippet(self) -> None:
+        completed = self.run_compiler(input_text='import "./lib.cd";\n')
+
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(completed.stdout, "")
+        self.assertEqual(completed.stderr, "Import error: import is not supported from stdin\n")
+
+
 if __name__ == "__main__":
     unittest.main(argv=[sys.argv[0]])

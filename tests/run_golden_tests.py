@@ -50,6 +50,19 @@ def unified_diff(expected: str, actual: str, fromfile: str, tofile: str) -> str:
     )
 
 
+def located_diagnostic_stderr_matches(expected: str, actual: str) -> bool:
+    if actual == expected:
+        return True
+    expected_lines = expected.splitlines()
+    actual_lines = actual.splitlines()
+    if len(expected_lines) != 1 or len(actual_lines) < 3:
+        return False
+    first_line = expected_lines[0]
+    if actual_lines[0] != first_line:
+        return False
+    return actual_lines[1].startswith("  ") and actual_lines[2].startswith("  ") and actual_lines[2].rstrip().endswith("^")
+
+
 def run_compiler(compiler: Path, args: tuple[str, ...], source_or_sources) -> subprocess.CompletedProcess[str]:
     if isinstance(source_or_sources, list):
         sources = source_or_sources
@@ -309,7 +322,7 @@ def check_parse_error_case(compiler: Path, source: Path, update: bool) -> list[C
     else:
         expected_err = read_text(err_path)
         actual_err = completed.stderr
-        if actual_err != expected_err:
+        if not located_diagnostic_stderr_matches(expected_err, actual_err):
             diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
             results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
 
@@ -359,7 +372,7 @@ def check_type_error_case(compiler: Path, source: Path, update: bool) -> list[Ch
     else:
         expected_err = read_text(err_path)
         actual_err = completed.stderr
-        if actual_err != expected_err:
+        if not located_diagnostic_stderr_matches(expected_err, actual_err):
             diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
             results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
 

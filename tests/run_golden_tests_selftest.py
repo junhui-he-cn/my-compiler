@@ -335,5 +335,73 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertEqual(results[0].name, "import_errors/input default(ast)")
 
 
+    def test_parse_error_one_line_expected_accepts_actual_source_snippet(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            parse_dir = golden_dir / "parse_errors"
+            parse_dir.mkdir(parents=True)
+            (parse_dir / "snippet.cd").write_text("print ;\n", encoding="utf-8")
+            (parse_dir / "snippet.err").write_text("Parse error at 1:7: expected expression\n", encoding="utf-8")
+            (parse_dir / "snippet.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="Parse error at 1:7: expected expression\n  print ;\n        ^\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+
+    def test_parse_error_multiline_expected_requires_exact_source_snippet(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            parse_dir = golden_dir / "parse_errors"
+            parse_dir.mkdir(parents=True)
+            (parse_dir / "snippet.cd").write_text("print ;\n", encoding="utf-8")
+            (parse_dir / "snippet.err").write_text(
+                "Parse error at 1:7: expected expression\n"
+                "  print ;\n"
+                "        ^\n",
+                encoding="utf-8",
+            )
+            (parse_dir / "snippet.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="Parse error at 1:7: expected expression\n  print ;\n       ^\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("stderr mismatch", results[0].message)
+
+    def test_import_error_one_line_expected_does_not_accept_extra_snippet(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            import_dir = golden_dir / "import_errors"
+            import_dir.mkdir(parents=True)
+            (import_dir / "missing.cd").write_text('import "./missing.cd";\n', encoding="utf-8")
+            (import_dir / "missing.err").write_text("Import error: failed to open import: missing.cd\n", encoding="utf-8")
+            (import_dir / "missing.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="Import error: failed to open import: missing.cd\n  import \"./missing.cd\";\n  ^\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("stderr mismatch", results[0].message)
+
+
 if __name__ == "__main__":
     raise SystemExit(unittest.main())
