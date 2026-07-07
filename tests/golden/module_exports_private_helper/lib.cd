@@ -1,0 +1,3 @@
+let secret = 40;
+fun inc(x) { return x + 1; }
+export fun answer() { return inc(secret) + 1; }

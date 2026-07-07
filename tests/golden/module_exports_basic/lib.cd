@@ -1,0 +1,3 @@
+export let value = 7;
+export fun add(a, b) { return a + b; }
+export struct Point { x: number, y: number }

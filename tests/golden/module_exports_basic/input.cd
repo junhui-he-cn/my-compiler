@@ -1,0 +1,5 @@
+import "./lib.cd";
+print value;
+print add(2, 3);
+let p: Point = Point { x: 4, y: 5 };
+print p.x + p.y;
