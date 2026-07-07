@@ -177,7 +177,7 @@ Each builtin should define behavior for both the IR interpreter and bytecode art
 
 ## Phase 14: Modules / Imports
 
-Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and `export let`, `export fun`, and `export struct` expose selected declarations to importers while keeping private helpers hidden. Namespaces, package search paths, separate compilation, re-export syntax, and file-aware diagnostics remain future work.
+Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and `export let`, `export fun`, and `export struct` expose selected declarations to importers while keeping private helpers hidden. Namespaces, package search paths, separate compilation, and re-export syntax remain future work.
 
 Goal: allow programs to be split across files.
 
@@ -196,11 +196,11 @@ Why late: modules affect diagnostics, CLI source management, test layout, and na
 
 Goal: improve ergonomics after the core language grows.
 
-Status: in progress. Phase 15A is implemented: located front-end diagnostics print the combined-source line and a caret while keeping the existing first diagnostic line stable. Phase 15B is implemented: anonymous function expressions beginning with `fun (` can appear directly as expression statements while named `fun name(...)` declarations keep their existing behavior. File-aware diagnostic remapping remains future work.
+Status: in progress. Phase 15A is implemented: located front-end diagnostics print the relevant source line and a caret while keeping one-line golden compatibility for broad fixtures. Phase 15B is implemented: anonymous function expressions beginning with `fun (` can appear directly as expression statements while named `fun name(...)` declarations keep their existing behavior. Phase 15C is implemented: imported-file and direct multi-file lexer, parser, and type diagnostics report source file paths with file-local snippets, while stdin and single-file pathless diagnostics remain supported and locationless diagnostics remain one-line.
 
 Suggested features:
 
-- Source snippets and carets for front-end diagnostics. Implemented for combined-source locations.
+- Source snippets and carets for front-end diagnostics. Implemented, with file-aware paths for imported files and direct multi-file inputs.
 - More parse recovery and multi-error reporting.
 - Clear handling for lambda expression statements that begin with `fun`. Implemented by parser disambiguation between `fun name` declarations and `fun (` expressions.
 - Compound assignment operators such as `+=`, after assignment targets are generalized.

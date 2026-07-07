@@ -137,7 +137,7 @@ Type error at 1:7: undefined variable `missing`
         ^
 ```
 
-Located front-end diagnostics include the combined-source line and a caret. Locationless diagnostics, including import, compile, and runtime errors, remain one-line messages.
+Located lexer, parser, and type diagnostics include a source line and caret. For imported files and direct multi-file inputs, diagnostics report the original file path plus file-local line and column. For stdin and single-file inputs without imports, diagnostics remain pathless. Locationless diagnostics, including import loading, compile, and runtime errors, remain one-line messages.
 
 ## Build
 
@@ -188,4 +188,4 @@ cargo run --manifest-path vm-rs/Cargo.toml -- dump program.cdbc
 cargo run --manifest-path vm-rs/Cargo.toml -- run program.cdbc
 ```
 
-If no file is provided, source is read from stdin. Diagnostics currently report line and column in the combined source rather than original file names.
+If no file is provided, source is read from stdin. Imported-file and direct multi-file front-end diagnostics report original file paths with file-local line and column; stdin diagnostics remain pathless.
