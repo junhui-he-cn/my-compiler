@@ -1,2 +1,2 @@
 import "./inner.cd";
-fun next() { return value + 1; }
+export fun next() { return value + 1; }

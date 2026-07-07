@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 enum class StaticType {
@@ -83,6 +84,7 @@ private:
         std::size_t scopeDepth = 0;
         std::size_t functionDepth = 0;
         bool explicitType = false;
+        bool imported = false;
     };
 
     struct FunctionReturnContext {
@@ -102,6 +104,7 @@ private:
     };
 
     using Scope = std::unordered_map<std::string, Binding>;
+    using ExportTable = std::unordered_map<std::string, Binding>;
 
     void beginScope();
     void endScope();
@@ -117,9 +120,14 @@ private:
         const LetStmt& statement,
         TypeInfo type,
         bool explicitType = false);
+    Binding declareImportedVariable(const Token& name, const Binding& importedBinding);
     std::string makeResolvedName(const std::string& sourceName);
 
     void checkStatement(const Stmt& statement);
+    void checkModule(const ModuleStmt& module);
+    void checkImport(const ImportStmt& statement);
+    void checkExport(const ExportStmt& statement);
+    const ModuleStmt* findModule(const Program& program, std::size_t moduleId) const;
     void checkStructDeclaration(const StructDeclStmt& statement);
     const StructTypeDecl* findStructType(const std::string& name) const;
     void checkFunction(const FunctionStmt& statement);
@@ -165,7 +173,13 @@ private:
 
     std::vector<Scope> scopes_;
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
+    std::unordered_map<std::size_t, ExportTable> moduleExports_;
+    std::unordered_map<std::size_t, std::unordered_map<std::string, StructTypeDecl>> moduleStructExports_;
+    std::unordered_map<std::size_t, std::unordered_set<std::size_t>> moduleImportedModules_;
+    std::unordered_set<std::size_t> checkedModules_;
+    std::vector<std::size_t> moduleStack_;
     ResolvedNames resolvedNames_;
+    const Program* currentProgram_ = nullptr;
     std::size_t nextResolvedName_ = 0;
     std::size_t functionDepth_ = 0;
     std::size_t loopDepth_ = 0;

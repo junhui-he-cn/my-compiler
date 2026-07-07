@@ -1,1 +1,1 @@
-let value = 41;
+export let value = 41;

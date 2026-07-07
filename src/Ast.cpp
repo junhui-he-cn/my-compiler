@@ -517,7 +517,7 @@ ModuleStmt::ModuleStmt(std::size_t moduleId, std::string path, std::vector<StmtP
 void ModuleStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
-    out << "Module " << moduleId << " " << path << (isEntry ? " entry" : "") << "\n";
+    out << "Module " << moduleId << (isEntry ? " entry" : "") << "\n";
     for (const auto& statement : statements) {
         statement->print(out, indent + 1);
     }

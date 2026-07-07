@@ -309,16 +309,43 @@ const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
     structTypes_.clear();
+    moduleExports_.clear();
+    moduleStructExports_.clear();
+    moduleImportedModules_.clear();
+    checkedModules_.clear();
+    moduleStack_.clear();
     resolvedNames_.clear();
+    currentProgram_ = &program;
     nextResolvedName_ = 0;
     functionDepth_ = 0;
     loopDepth_ = 0;
     returnContexts_.clear();
-    beginScope();
+
+    bool hasModules = false;
     for (const auto& statement : program.statements) {
-        checkStatement(*statement);
+        if (dynamic_cast<const ModuleStmt*>(statement.get())) {
+            hasModules = true;
+            break;
+        }
     }
-    endScope();
+
+    if (hasModules) {
+        for (const auto& statement : program.statements) {
+            if (const auto* module = dynamic_cast<const ModuleStmt*>(statement.get())) {
+                checkModule(*module);
+            } else {
+                checkStatement(*statement);
+            }
+        }
+    } else {
+        beginScope();
+        for (const auto& statement : program.statements) {
+            checkStatement(*statement);
+        }
+        endScope();
+    }
+
+    currentProgram_ = nullptr;
     return resolvedNames_;
 }
 
@@ -383,7 +410,7 @@ TypeChecker::Binding TypeChecker::declareVariable(
         throw TypeError(name, "variable `" + name.lexeme + "` already declared in this scope");
     }
 
-    Binding binding{std::move(type), makeResolvedName(name.lexeme), scopes_.size() - 1, functionDepth_, explicitType};
+    Binding binding{std::move(type), makeResolvedName(name.lexeme), scopes_.size() - 1, functionDepth_, explicitType, false};
     scope.emplace(name.lexeme, binding);
     return binding;
 }
@@ -398,6 +425,20 @@ TypeChecker::Binding TypeChecker::declareVariable(
     return binding;
 }
 
+TypeChecker::Binding TypeChecker::declareImportedVariable(const Token& name, const Binding& importedBinding)
+{
+    auto& scope = currentScope();
+    if (scope.find(name.lexeme) != scope.end()) {
+        throw TypeError(name, "variable `" + name.lexeme + "` already declared in this scope");
+    }
+
+    Binding binding = importedBinding;
+    binding.imported = true;
+    binding.scopeDepth = scopes_.size() - 1;
+    scope.emplace(name.lexeme, binding);
+    return binding;
+}
+
 std::string TypeChecker::makeResolvedName(const std::string& sourceName)
 {
     return sourceName + "#" + std::to_string(nextResolvedName_++);
@@ -405,6 +446,21 @@ std::string TypeChecker::makeResolvedName(const std::string& sourceName)
 
 void TypeChecker::checkStatement(const Stmt& statement)
 {
+    if (const auto* module = dynamic_cast<const ModuleStmt*>(&statement)) {
+        checkModule(*module);
+        return;
+    }
+
+    if (const auto* import = dynamic_cast<const ImportStmt*>(&statement)) {
+        checkImport(*import);
+        return;
+    }
+
+    if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement)) {
+        checkExport(*exportStmt);
+        return;
+    }
+
     if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(&statement)) {
         checkStructDeclaration(*structDecl);
         return;
@@ -487,6 +543,133 @@ void TypeChecker::checkStatement(const Stmt& statement)
     }
 
     throw TypeError("unsupported statement node");
+}
+
+const ModuleStmt* TypeChecker::findModule(const Program& program, std::size_t moduleId) const
+{
+    for (const auto& statement : program.statements) {
+        if (const auto* module = dynamic_cast<const ModuleStmt*>(statement.get())) {
+            if (module->moduleId == moduleId) {
+                return module;
+            }
+        }
+    }
+    return nullptr;
+}
+
+void TypeChecker::checkModule(const ModuleStmt& module)
+{
+    if (checkedModules_.find(module.moduleId) != checkedModules_.end()) {
+        return;
+    }
+
+    std::vector<Scope> savedScopes = std::move(scopes_);
+    std::unordered_map<std::string, StructTypeDecl> savedStructTypes = std::move(structTypes_);
+    const std::size_t savedFunctionDepth = functionDepth_;
+    const std::size_t savedLoopDepth = loopDepth_;
+    std::vector<FunctionReturnContext> savedReturnContexts = std::move(returnContexts_);
+
+    scopes_.clear();
+    structTypes_.clear();
+    functionDepth_ = 0;
+    loopDepth_ = 0;
+    returnContexts_.clear();
+
+    moduleStack_.push_back(module.moduleId);
+    beginScope();
+    for (const auto& statement : module.statements) {
+        checkStatement(*statement);
+    }
+    endScope();
+    moduleStack_.pop_back();
+
+    checkedModules_.insert(module.moduleId);
+
+    scopes_ = std::move(savedScopes);
+    structTypes_ = std::move(savedStructTypes);
+    functionDepth_ = savedFunctionDepth;
+    loopDepth_ = savedLoopDepth;
+    returnContexts_ = std::move(savedReturnContexts);
+}
+
+void TypeChecker::checkImport(const ImportStmt& statement)
+{
+    if (moduleStack_.empty()) {
+        throw TypeError(statement.keyword, "import declarations must be loaded before parsing");
+    }
+    if (!currentProgram_) {
+        throw TypeError(statement.keyword, "internal error: import without program");
+    }
+
+    const std::size_t currentModuleId = moduleStack_.back();
+    if (moduleImportedModules_[currentModuleId].find(statement.resolvedModuleId)
+        != moduleImportedModules_[currentModuleId].end()) {
+        return;
+    }
+    moduleImportedModules_[currentModuleId].insert(statement.resolvedModuleId);
+
+    const ModuleStmt* imported = findModule(*currentProgram_, statement.resolvedModuleId);
+    if (!imported) {
+        throw TypeError(statement.keyword, "internal error: unresolved import module");
+    }
+    checkModule(*imported);
+
+    const auto exports = moduleExports_.find(imported->moduleId);
+    if (exports != moduleExports_.end()) {
+        for (const auto& entry : exports->second) {
+            Token name{TokenType::Identifier, entry.first, statement.keyword.line, statement.keyword.column};
+            declareImportedVariable(name, entry.second);
+        }
+    }
+
+    const auto structExports = moduleStructExports_.find(imported->moduleId);
+    if (structExports != moduleStructExports_.end()) {
+        for (const auto& entry : structExports->second) {
+            if (structTypes_.find(entry.first) != structTypes_.end()) {
+                Token name{TokenType::Identifier, entry.first, statement.keyword.line, statement.keyword.column};
+                throw TypeError(name, "duplicate struct `" + entry.first + "`");
+            }
+            structTypes_.emplace(entry.first, entry.second);
+        }
+    }
+}
+
+void TypeChecker::checkExport(const ExportStmt& statement)
+{
+    if (moduleStack_.empty()) {
+        throw TypeError(statement.keyword, "`export` is only allowed at top level");
+    }
+
+    checkStatement(*statement.declaration);
+
+    if (const auto* let = dynamic_cast<const LetStmt*>(statement.declaration.get())) {
+        Binding* binding = findVariable(let->name.lexeme);
+        if (!binding) {
+            throw TypeError(let->name, "undefined variable `" + let->name.lexeme + "`");
+        }
+        moduleExports_[moduleStack_.back()].emplace(let->name.lexeme, *binding);
+        return;
+    }
+
+    if (const auto* function = dynamic_cast<const FunctionStmt*>(statement.declaration.get())) {
+        Binding* binding = findVariable(function->name.lexeme);
+        if (!binding) {
+            throw TypeError(function->name, "undefined function `" + function->name.lexeme + "`");
+        }
+        moduleExports_[moduleStack_.back()].emplace(function->name.lexeme, *binding);
+        return;
+    }
+
+    if (const auto* structure = dynamic_cast<const StructDeclStmt*>(statement.declaration.get())) {
+        const StructTypeDecl* structType = findStructType(structure->name.lexeme);
+        if (!structType) {
+            throw TypeError(structure->name, "unknown struct type `" + structure->name.lexeme + "`");
+        }
+        moduleStructExports_[moduleStack_.back()].emplace(structure->name.lexeme, *structType);
+        return;
+    }
+
+    throw TypeError(statement.keyword, "unsupported export declaration");
 }
 
 void TypeChecker::recordReturn(const Token& keyword, TypeInfo type)
