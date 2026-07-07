@@ -52,6 +52,22 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
 
 void IRCompiler::compileStatement(const Stmt& statement)
 {
+    if (const auto* module = dynamic_cast<const ModuleStmt*>(&statement)) {
+        for (const auto& child : module->statements) {
+            compileStatement(*child);
+        }
+        return;
+    }
+
+    if (dynamic_cast<const ImportStmt*>(&statement)) {
+        return;
+    }
+
+    if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement)) {
+        compileStatement(*exportStmt->declaration);
+        return;
+    }
+
     if (dynamic_cast<const StructDeclStmt*>(&statement)) {
         return;
     }
