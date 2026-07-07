@@ -154,6 +154,14 @@ std::string binaryTypesMessage(const BinaryExpr& expression, const TypeInfo& lef
         + typeInfoName(left) + " and " + typeInfoName(right);
 }
 
+void rethrowWithModuleContext(const DiagnosticError& error, const ModuleStmt& module)
+{
+    if (error.location()) {
+        throw FileDiagnosticError(error, DiagnosticSourceContext{module.path, module.source, false});
+    }
+    throw error;
+}
+
 } // namespace
 
 TypeError::TypeError(std::string message)
@@ -581,8 +589,14 @@ void TypeChecker::checkModule(const ModuleStmt& module)
 
     moduleStack_.push_back(module.moduleId);
     beginScope();
-    for (const auto& statement : module.statements) {
-        checkStatement(*statement);
+    try {
+        for (const auto& statement : module.statements) {
+            checkStatement(*statement);
+        }
+    } catch (const FileDiagnosticError&) {
+        throw;
+    } catch (const DiagnosticError& error) {
+        rethrowWithModuleContext(error, module);
     }
     endScope();
     moduleStack_.pop_back();
