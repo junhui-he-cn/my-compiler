@@ -1,0 +1,3 @@
+Parse error at /home/junhe/compiler/tests/golden/parse_errors/imported_file_parse_error_deps/lib.cd:1:20: expected expression
+  export let value = ;
+                     ^

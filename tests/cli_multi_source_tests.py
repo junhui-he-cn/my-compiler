@@ -123,6 +123,80 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.stdout, "relative\n")
             self.assertEqual(completed.stderr, "")
 
+    def test_imported_file_parse_error_reports_imported_file_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            lib = root / "lib.cd"
+            (root / "input.cd").write_text('import "./lib.cd";\nprint 1;\n', encoding="utf-8")
+            lib.write_text('export let value = ;\n', encoding="utf-8")
+
+            completed = self.run_compiler(str(root / "input.cd"))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Parse error at {lib}:1:20: expected expression\n"
+                "  export let value = ;\n"
+                "                     ^\n",
+            )
+
+    def test_imported_file_type_error_reports_imported_file_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            lib = root / "lib.cd"
+            (root / "input.cd").write_text('import "./lib.cd";\nprint value;\n', encoding="utf-8")
+            lib.write_text('export let value = missing;\n', encoding="utf-8")
+
+            completed = self.run_compiler(str(root / "input.cd"))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Type error at {lib}:1:20: undefined variable `missing`\n"
+                "  export let value = missing;\n"
+                "                     ^\n",
+            )
+
+    def test_direct_multi_file_parse_error_reports_own_file_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first = root / "first.cd"
+            second = root / "second.cd"
+            first.write_text('let ok = 1;\n', encoding="utf-8")
+            second.write_text('print ;\n', encoding="utf-8")
+
+            completed = self.run_compiler(str(first), str(second))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Parse error at {second}:1:7: expected expression\n"
+                "  print ;\n"
+                "        ^\n",
+            )
+
+    def test_direct_multi_file_type_error_reports_own_file_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first = root / "first.cd"
+            second = root / "second.cd"
+            first.write_text('let ok = 1;\n', encoding="utf-8")
+            second.write_text('print missing;\n', encoding="utf-8")
+
+            completed = self.run_compiler(str(first), str(second))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Type error at {second}:1:7: undefined variable `missing`\n"
+                "  print missing;\n"
+                "        ^\n",
+            )
+
     def test_import_text_inside_string_and_comment_is_ignored_by_loader(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
