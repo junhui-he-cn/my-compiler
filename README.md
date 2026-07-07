@@ -74,12 +74,12 @@ Named struct declarations define static field shapes:
 
 ```cd
 struct Person { name: string, age: number }
-let p: Person = { name: "Ada", age: 36 };
+let p = Person { name: "Ada", age: 36 };
 print p.name;
 p.age = 37;
 ```
 
-Named structs are static-only in this phase: runtime values remain anonymous struct values. Literal initialization of a named struct requires an exact field match, field order does not matter, and field access/assignment on known named struct values is statically checked. Constructor syntax such as `Person { ... }`, methods, recursive struct types, and runtime type names are not implemented yet.
+Named structs are static-only in this phase: runtime values remain anonymous struct values. Named constructor expressions such as `Person { name: "Ada", age: 36 }` infer the named static type, require an exact field match, and allow fields in any order. Annotated anonymous literals such as `let p: Person = { name: "Ada", age: 36 };` remain supported. Field access/assignment on known named struct values is statically checked. Constructor functions such as `Person(...)`, methods, recursive struct types, and runtime type names are not implemented yet.
 
 ```cd
 let person = { name: "Ada", age: 36 };

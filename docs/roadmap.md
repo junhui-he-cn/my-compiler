@@ -136,7 +136,7 @@ Recommended split:
 
 ## Phase 12: Records / Structs
 
-Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Constructor syntax, methods, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
+Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Methods, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
 
 Goal: add named fields and simple aggregate data.
 
@@ -147,7 +147,7 @@ Possible approaches:
 - Field assignment after mutation rules are clear: `person.age = 37`. Implemented for existing fields.
 - Dot/member call syntax for collection methods such as `xs.push(value)` and
   `xs.pop()`, if method-style collection APIs are still desired.
-- Named structs: `struct Person { name: string, age: number }`. Implemented as static-only type shapes.
+- Named structs: `struct Person { name: string, age: number }`. Implemented as static-only type shapes with `Person { ... }` constructor expressions.
 
 Keep methods, inheritance, and protocols out of the first records slice.
 

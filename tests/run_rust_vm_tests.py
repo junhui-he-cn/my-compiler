@@ -172,6 +172,7 @@ def main() -> int:
             "native_stdlib_push_pop",
             "struct_literals_field_access",
             "struct_identity_equality",
+            "struct_constructor_functions",
             "typed_array_runtime",
         }
         case_dirs.extend(path for path in discover_golden_cases(tests_root / "golden") if path.name in golden_allowlist)

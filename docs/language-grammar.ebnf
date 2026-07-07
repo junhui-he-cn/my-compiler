@@ -104,6 +104,8 @@ array       = "[", [ arguments ], "]" ;
 
 struct      = "{", [ fields ], "}" ;
 
+structConstructor = identifier, "{", [ fields ], "}" ;
+
 fields      = field,
               { ",", field } ;
 
@@ -120,6 +122,7 @@ primary     = functionExpr
             | number
             | string
             | array
+            | structConstructor
             | struct
             | identifier
             | "(", expression, ")" ;
