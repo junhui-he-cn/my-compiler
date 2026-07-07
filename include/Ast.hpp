@@ -137,6 +137,14 @@ struct StructExpr final : Expr {
     std::vector<StructField> fields;
 };
 
+struct StructConstructExpr final : Expr {
+    StructConstructExpr(Token name, std::vector<StructField> fields);
+    void print(std::ostream& out) const override;
+
+    Token name;
+    std::vector<StructField> fields;
+};
+
 struct StructFieldDecl {
     Token name;
     TypeAnnotation typeName;

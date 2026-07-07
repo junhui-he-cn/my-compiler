@@ -218,7 +218,7 @@ StmtPtr Parser::statement()
 
 StmtPtr Parser::ifStatement()
 {
-    ExprPtr condition = expression();
+    ExprPtr condition = conditionExpression();
     consume(TokenType::LeftBrace, "expected `{` after if condition");
     StmtPtr thenBranch = blockStatement();
 
@@ -233,7 +233,7 @@ StmtPtr Parser::ifStatement()
 
 StmtPtr Parser::whileStatement()
 {
-    ExprPtr condition = expression();
+    ExprPtr condition = conditionExpression();
     consume(TokenType::LeftBrace, "expected `{` after while condition");
     StmtPtr body = blockStatement();
     return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
@@ -296,6 +296,15 @@ StmtPtr Parser::expressionStatement()
 ExprPtr Parser::expression()
 {
     return assignment();
+}
+
+ExprPtr Parser::conditionExpression()
+{
+    const bool previousAllowStructConstructors = allowStructConstructors_;
+    allowStructConstructors_ = false;
+    ExprPtr result = expression();
+    allowStructConstructors_ = previousAllowStructConstructors;
+    return result;
 }
 
 ExprPtr Parser::assignment()
@@ -465,7 +474,7 @@ ExprPtr Parser::arrayLiteral(Token bracket)
     return std::make_unique<ArrayExpr>(std::move(bracket), std::move(elements));
 }
 
-ExprPtr Parser::structLiteral()
+std::vector<StructField> Parser::structLiteralFields()
 {
     std::vector<StructField> fields;
     if (!check(TokenType::RightBrace)) {
@@ -476,8 +485,23 @@ ExprPtr Parser::structLiteral()
             fields.push_back(StructField{std::move(name), std::move(value)});
         } while (match(TokenType::Comma));
     }
+    return fields;
+}
+
+ExprPtr Parser::structLiteral()
+{
+    std::vector<StructField> fields = structLiteralFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
     return std::make_unique<StructExpr>(std::move(fields));
+}
+
+ExprPtr Parser::structConstructor()
+{
+    Token name = consume(TokenType::Identifier, "expected struct constructor name");
+    consume(TokenType::LeftBrace, "expected `{` after struct constructor name");
+    std::vector<StructField> fields = structLiteralFields();
+    consume(TokenType::RightBrace, "expected `}` after struct fields");
+    return std::make_unique<StructConstructExpr>(std::move(name), std::move(fields));
 }
 
 ExprPtr Parser::functionExpression()
@@ -519,6 +543,9 @@ ExprPtr Parser::primary()
     }
     if (match(TokenType::LeftBrace)) {
         return structLiteral();
+    }
+    if (allowStructConstructors_ && check(TokenType::Identifier) && checkNext(TokenType::LeftBrace)) {
+        return structConstructor();
     }
     if (match(TokenType::Identifier)) {
         return std::make_unique<VariableExpr>(previous());

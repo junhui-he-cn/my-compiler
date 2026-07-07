@@ -358,6 +358,22 @@ void StructExpr::print(std::ostream& out) const
     out << ')';
 }
 
+StructConstructExpr::StructConstructExpr(Token name, std::vector<StructField> fields)
+    : name(std::move(name))
+    , fields(std::move(fields))
+{
+}
+
+void StructConstructExpr::print(std::ostream& out) const
+{
+    out << "(construct " << name.lexeme;
+    for (const StructField& field : fields) {
+        out << ' ' << field.name.lexeme << ": ";
+        writeExpr(out, field.value);
+    }
+    out << ')';
+}
+
 IndexExpr::IndexExpr(ExprPtr collection, Token bracket, ExprPtr index)
     : collection(std::move(collection))
     , bracket(std::move(bracket))

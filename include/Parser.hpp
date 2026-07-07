@@ -45,6 +45,7 @@ private:
 
     // Recursive descent expression grammar, ordered from lowest to highest precedence.
     ExprPtr expression();
+    ExprPtr conditionExpression();
     ExprPtr assignment();
     ExprPtr logicalOr();
     ExprPtr logicalAnd();
@@ -58,7 +59,9 @@ private:
     ExprPtr finishIndex(ExprPtr collection);
     ExprPtr finishFieldAccess(ExprPtr object);
     ExprPtr arrayLiteral(Token bracket);
+    std::vector<StructField> structLiteralFields();
     ExprPtr structLiteral();
+    ExprPtr structConstructor();
     ExprPtr functionExpression();
     ExprPtr primary();
 
@@ -73,4 +76,5 @@ private:
 
     std::vector<Token> tokens_;
     std::size_t current_ = 0;
+    bool allowStructConstructors_ = true;
 };
