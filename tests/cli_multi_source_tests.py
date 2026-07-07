@@ -97,9 +97,13 @@ class CliMultiSourceTests(unittest.TestCase):
             root = Path(temp_dir)
             nested = root / "nested"
             nested.mkdir()
-            (root / "input.cd").write_text('import "./nested/lib.cd";\nprint value;\n', encoding="utf-8")
-            (nested / "lib.cd").write_text('import "./inner.cd";\n', encoding="utf-8")
-            (nested / "inner.cd").write_text('let value = "relative";\n', encoding="utf-8")
+            (root / "input.cd").write_text('import "./nested/lib.cd";\nprint getValue();\n', encoding="utf-8")
+            (nested / "lib.cd").write_text(
+                'import "./inner.cd";\n'
+                'export fun getValue() { return value; }\n',
+                encoding="utf-8",
+            )
+            (nested / "inner.cd").write_text('export let value = "relative";\n', encoding="utf-8")
 
             completed = self.run_compiler("--run", str(root / "input.cd"))
 
