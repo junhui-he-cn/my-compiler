@@ -457,6 +457,10 @@ void TypeChecker::checkStatement(const Stmt& statement)
     }
 
     if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement)) {
+        if (moduleStack_.empty()) {
+            checkStatement(*exportStmt->declaration);
+            return;
+        }
         checkExport(*exportStmt);
         return;
     }

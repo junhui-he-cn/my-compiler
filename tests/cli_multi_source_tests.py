@@ -92,6 +92,18 @@ class CliMultiSourceTests(unittest.TestCase):
         self.assertEqual(completed.stdout, "")
         self.assertEqual(completed.stderr, "Import error: import is not supported from stdin\n")
 
+    def test_direct_cli_files_with_export_still_share_entry_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "lib.cd").write_text('export let value = "direct";\n', encoding="utf-8")
+            (root / "main.cd").write_text('print value;\n', encoding="utf-8")
+
+            completed = self.run_compiler("--run", str(root / "lib.cd"), str(root / "main.cd"))
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "direct\n")
+            self.assertEqual(completed.stderr, "")
+
     def test_import_path_resolves_relative_to_importing_file(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

@@ -47,6 +47,9 @@ StmtPtr Parser::declaration()
         return exportDeclaration();
     }
     if (match(TokenType::Import)) {
+        if (blockDepth_ != 0) {
+            throw ParseError(previous(), "`import` is only allowed at top level");
+        }
         return importDeclaration();
     }
     if (match(TokenType::Struct)) {

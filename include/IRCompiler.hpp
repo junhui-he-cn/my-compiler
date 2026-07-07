@@ -7,6 +7,8 @@
 
 #include <cstddef>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class IRCompileError final : public DiagnosticError {
@@ -20,6 +22,7 @@ public:
 
 private:
     void compileStatement(const Stmt& statement);
+    void compileModule(const ModuleStmt& module);
     void compileFunctionStatement(const FunctionStmt& function);
     void compileReturn(const ReturnStmt& statement);
     IRRegister compileExpression(const Expr& expression);
@@ -50,5 +53,7 @@ private:
 
     IRProgram ir_;
     const ResolvedNames* resolvedNames_ = nullptr;
+    std::unordered_map<std::size_t, const ModuleStmt*> modules_;
+    std::unordered_set<std::size_t> compiledModules_;
     std::vector<LoopContext> loopContexts_;
 };

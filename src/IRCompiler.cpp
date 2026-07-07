@@ -41,11 +41,20 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
 {
     ir_ = IRProgram();
     resolvedNames_ = &resolvedNames;
+    modules_.clear();
+    compiledModules_.clear();
     loopContexts_.clear();
+    for (const auto& statement : program.statements) {
+        if (const auto* module = dynamic_cast<const ModuleStmt*>(statement.get())) {
+            modules_.emplace(module->moduleId, module);
+        }
+    }
     for (const auto& statement : program.statements) {
         compileStatement(*statement);
     }
     resolvedNames_ = nullptr;
+    modules_.clear();
+    compiledModules_.clear();
     loopContexts_.clear();
     return std::move(ir_);
 }
@@ -53,13 +62,18 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
 void IRCompiler::compileStatement(const Stmt& statement)
 {
     if (const auto* module = dynamic_cast<const ModuleStmt*>(&statement)) {
-        for (const auto& child : module->statements) {
-            compileStatement(*child);
+        if (module->isEntry) {
+            compileModule(*module);
         }
         return;
     }
 
-    if (dynamic_cast<const ImportStmt*>(&statement)) {
+    if (const auto* import = dynamic_cast<const ImportStmt*>(&statement)) {
+        const auto found = modules_.find(import->resolvedModuleId);
+        if (found == modules_.end()) {
+            throw IRCompileError("internal error: unresolved import module");
+        }
+        compileModule(*found->second);
         return;
     }
 
@@ -152,6 +166,17 @@ void IRCompiler::compileStatement(const Stmt& statement)
     }
 
     throw IRCompileError("unsupported statement node");
+}
+
+void IRCompiler::compileModule(const ModuleStmt& module)
+{
+    if (compiledModules_.find(module.moduleId) != compiledModules_.end()) {
+        return;
+    }
+    compiledModules_.insert(module.moduleId);
+    for (const auto& child : module.statements) {
+        compileStatement(*child);
+    }
 }
 
 void IRCompiler::compileFunctionStatement(const FunctionStmt& function)

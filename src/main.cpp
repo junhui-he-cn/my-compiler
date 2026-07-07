@@ -25,12 +25,12 @@ void printUsage(const char* executable)
               << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n";
 }
 
-bool containsModuleToken(const SourceLoadResult& loadResult)
+bool containsImportToken(const SourceLoadResult& loadResult)
 {
     for (const SourceUnit& unit : loadResult.units) {
         Lexer lexer(unit.source);
         for (const Token& token : lexer.scanTokens()) {
-            if (token.type == TokenType::Import || token.type == TokenType::Export) {
+            if (token.type == TokenType::Import) {
                 return true;
             }
         }
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
                 std::cout << '\n';
             }
 
-            if (containsModuleToken(loadResult)) {
+            if (containsImportToken(loadResult)) {
                 program = buildModuleProgram(loadResult);
             } else {
                 Lexer lexer(source);
