@@ -3,6 +3,7 @@
 #include "IRCompiler.hpp"
 #include "IRInterpreter.hpp"
 #include "Lexer.hpp"
+#include "ModuleProgram.hpp"
 #include "Parser.hpp"
 #include "SourceManager.hpp"
 #include "TypeChecker.hpp"
@@ -22,6 +23,19 @@ void printUsage(const char* executable)
     std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [--run] [file ...]\n"
               << "       " << executable << " --emit-bytecode output.cdbc file [...]\n"
               << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n";
+}
+
+bool containsModuleToken(const SourceLoadResult& loadResult)
+{
+    for (const SourceUnit& unit : loadResult.units) {
+        Lexer lexer(unit.source);
+        for (const Token& token : lexer.scanTokens()) {
+            if (token.type == TokenType::Import || token.type == TokenType::Export) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -69,24 +83,42 @@ int main(int argc, char** argv)
     std::string source;
     try {
         SourceManager sourceManager;
-        source = inputPaths.empty()
-            ? sourceManager.loadStdin(std::cin)
-            : sourceManager.loadFiles(inputPaths);
+        Program program;
+        std::vector<Token> tokens;
 
-        // The front-end pipeline is intentionally simple: lex source text,
-        // parse tokens into an AST, then print the resulting tree.
-        Lexer lexer(source);
-        std::vector<Token> tokens = lexer.scanTokens();
-
-        if (showTokens) {
-            for (const Token& token : tokens) {
-                std::cout << token << '\n';
+        if (inputPaths.empty()) {
+            source = sourceManager.loadStdin(std::cin);
+            Lexer lexer(source);
+            tokens = lexer.scanTokens();
+            if (showTokens) {
+                for (const Token& token : tokens) {
+                    std::cout << token << '\n';
+                }
+                std::cout << '\n';
             }
-            std::cout << '\n';
-        }
+            Parser parser(tokens);
+            program = parser.parse();
+        } else {
+            SourceLoadResult loadResult = sourceManager.loadFileUnits(inputPaths);
+            source = loadResult.combinedSource;
+            if (showTokens) {
+                Lexer lexer(source);
+                tokens = lexer.scanTokens();
+                for (const Token& token : tokens) {
+                    std::cout << token << '\n';
+                }
+                std::cout << '\n';
+            }
 
-        Parser parser(tokens);
-        Program program = parser.parse();
+            if (containsModuleToken(loadResult)) {
+                program = buildModuleProgram(loadResult);
+            } else {
+                Lexer lexer(source);
+                tokens = lexer.scanTokens();
+                Parser parser(tokens);
+                program = parser.parse();
+            }
+        }
 
         TypeChecker typeChecker;
         const ResolvedNames& resolvedNames = typeChecker.check(program);
