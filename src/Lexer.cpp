@@ -233,6 +233,7 @@ void Lexer::identifier()
         {"continue", TokenType::Continue},
         {"if", TokenType::If},
         {"import", TokenType::Import},
+        {"export", TokenType::Export},
         {"else", TokenType::Else},
         {"fun", TokenType::Fun},
         {"let", TokenType::Let},
@@ -319,6 +320,8 @@ std::string tokenTypeName(TokenType type)
         return "If";
     case TokenType::Import:
         return "Import";
+    case TokenType::Export:
+        return "Export";
     case TokenType::Else:
         return "Else";
     case TokenType::Fun:

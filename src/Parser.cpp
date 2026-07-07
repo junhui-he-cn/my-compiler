@@ -40,6 +40,12 @@ Program Parser::parse()
 
 StmtPtr Parser::declaration()
 {
+    if (match(TokenType::Export)) {
+        if (blockDepth_ != 0) {
+            throw ParseError(previous(), "`export` is only allowed at top level");
+        }
+        return exportDeclaration();
+    }
     if (match(TokenType::Import)) {
         return importDeclaration();
     }
@@ -58,6 +64,27 @@ StmtPtr Parser::declaration()
         return letDeclaration();
     }
     return statement();
+}
+
+StmtPtr Parser::exportDeclaration()
+{
+    Token keyword = previous();
+    return std::make_unique<ExportStmt>(keyword, exportTargetDeclaration(keyword));
+}
+
+StmtPtr Parser::exportTargetDeclaration(const Token&)
+{
+    if (match(TokenType::Struct)) {
+        return structDeclaration();
+    }
+    if (check(TokenType::Fun) && checkNext(TokenType::Identifier)) {
+        advance();
+        return functionDeclaration();
+    }
+    if (match(TokenType::Let)) {
+        return letDeclaration();
+    }
+    throw ParseError(peek(), "expected `let`, `fun`, or `struct` after `export`");
 }
 
 StmtPtr Parser::structDeclaration()
@@ -97,11 +124,14 @@ StmtPtr Parser::functionDeclaration()
     consume(TokenType::RightParen, "expected `)` after function parameters");
     std::optional<TypeAnnotation> returnTypeName = optionalReturnType();
     consume(TokenType::LeftBrace, "expected `{` before function body");
+    ++blockDepth_;
+    std::vector<StmtPtr> body = blockStatements();
+    --blockDepth_;
     return std::make_unique<FunctionStmt>(
         std::move(name),
         std::move(parsedParameters),
         std::move(returnTypeName),
-        blockStatements());
+        std::move(body));
 }
 
 StmtPtr Parser::letDeclaration()
@@ -122,10 +152,10 @@ StmtPtr Parser::letDeclaration()
 
 StmtPtr Parser::importDeclaration()
 {
-    const Token keyword = previous();
-    consume(TokenType::String, "expected import path string");
+    Token keyword = previous();
+    Token path = consume(TokenType::String, "expected import path string");
     consume(TokenType::Semicolon, "expected `;` after import path");
-    throw ParseError(keyword, "import declarations must be loaded before parsing");
+    return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
 }
 
 std::vector<Parameter> Parser::parameters()
@@ -255,7 +285,10 @@ StmtPtr Parser::continueStatement()
 
 StmtPtr Parser::blockStatement()
 {
-    return std::make_unique<BlockStmt>(blockStatements());
+    ++blockDepth_;
+    std::vector<StmtPtr> statements = blockStatements();
+    --blockDepth_;
+    return std::make_unique<BlockStmt>(std::move(statements));
 }
 
 std::vector<StmtPtr> Parser::blockStatements()
@@ -513,11 +546,14 @@ ExprPtr Parser::functionExpression()
     consume(TokenType::RightParen, "expected `)` after function parameters");
     std::optional<TypeAnnotation> returnTypeName = optionalReturnType();
     consume(TokenType::LeftBrace, "expected `{` before function body");
+    ++blockDepth_;
+    std::vector<StmtPtr> body = blockStatements();
+    --blockDepth_;
     return std::make_unique<FunctionExpr>(
         std::move(keyword),
         std::move(parsedParameters),
         std::move(returnTypeName),
-        blockStatements());
+        std::move(body));
 }
 
 ExprPtr Parser::primary()

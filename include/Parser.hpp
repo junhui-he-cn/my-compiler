@@ -21,6 +21,8 @@ public:
 
 private:
     StmtPtr declaration();
+    StmtPtr exportDeclaration();
+    StmtPtr exportTargetDeclaration(const Token& exportKeyword);
     StmtPtr structDeclaration();
     std::vector<StructFieldDecl> structFields();
     StructFieldDecl structField();
@@ -77,4 +79,5 @@ private:
     std::vector<Token> tokens_;
     std::size_t current_ = 0;
     bool allowStructConstructors_ = true;
+    int blockDepth_ = 0;
 };

@@ -74,6 +74,28 @@ void writeReturnAnnotation(std::ostream& out, const std::optional<TypeAnnotation
 
 void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 {
+    if (const auto* module = dynamic_cast<const ModuleStmt*>(&stmt)) {
+        out << "(module " << module->moduleId;
+        for (const auto& child : module->statements) {
+            out << ' ';
+            writeInlineStmt(out, *child);
+        }
+        out << ')';
+        return;
+    }
+
+    if (const auto* import = dynamic_cast<const ImportStmt*>(&stmt)) {
+        out << "(import " << import->path.lexeme << ')';
+        return;
+    }
+
+    if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&stmt)) {
+        out << "(export ";
+        writeInlineStmt(out, *exportStmt->declaration);
+        out << ')';
+        return;
+    }
+
     if (const auto* returnStmt = dynamic_cast<const ReturnStmt*>(&stmt)) {
         out << "(return ";
         writeExpr(out, returnStmt->value);
@@ -457,6 +479,48 @@ void StructDeclStmt::print(std::ostream& out, int indent) const
         writeTypeAnnotation(out, fields[i].typeName);
     }
     out << "}\n";
+}
+
+ImportStmt::ImportStmt(Token keyword, Token path)
+    : keyword(std::move(keyword))
+    , path(std::move(path))
+{
+}
+
+void ImportStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Import " << path.lexeme << "\n";
+}
+
+ExportStmt::ExportStmt(Token keyword, StmtPtr declaration)
+    : keyword(std::move(keyword))
+    , declaration(std::move(declaration))
+{
+}
+
+void ExportStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Export\n";
+    declaration->print(out, indent + 1);
+}
+
+ModuleStmt::ModuleStmt(std::size_t moduleId, std::string path, std::vector<StmtPtr> statements, bool isEntry)
+    : moduleId(moduleId)
+    , path(std::move(path))
+    , statements(std::move(statements))
+    , isEntry(isEntry)
+{
+}
+
+void ModuleStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Module " << moduleId << " " << path << (isEntry ? " entry" : "") << "\n";
+    for (const auto& statement : statements) {
+        statement->print(out, indent + 1);
+    }
 }
 
 LetStmt::LetStmt(Token name, std::optional<TypeAnnotation> typeName, ExprPtr initializer)

@@ -2,6 +2,7 @@
 
 #include "Token.hpp"
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -197,6 +198,33 @@ struct StructDeclStmt final : Stmt {
 
     Token name;
     std::vector<StructFieldDecl> fields;
+};
+
+struct ImportStmt final : Stmt {
+    ImportStmt(Token keyword, Token path);
+    void print(std::ostream& out, int indent) const override;
+
+    Token keyword;
+    Token path;
+    std::size_t resolvedModuleId = static_cast<std::size_t>(-1);
+};
+
+struct ExportStmt final : Stmt {
+    ExportStmt(Token keyword, StmtPtr declaration);
+    void print(std::ostream& out, int indent) const override;
+
+    Token keyword;
+    StmtPtr declaration;
+};
+
+struct ModuleStmt final : Stmt {
+    ModuleStmt(std::size_t moduleId, std::string path, std::vector<StmtPtr> statements, bool isEntry);
+    void print(std::ostream& out, int indent) const override;
+
+    std::size_t moduleId;
+    std::string path;
+    std::vector<StmtPtr> statements;
+    bool isEntry = false;
 };
 
 struct LetStmt final : Stmt {
