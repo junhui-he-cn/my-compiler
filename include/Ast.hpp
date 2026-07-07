@@ -218,11 +218,12 @@ struct ExportStmt final : Stmt {
 };
 
 struct ModuleStmt final : Stmt {
-    ModuleStmt(std::size_t moduleId, std::string path, std::vector<StmtPtr> statements, bool isEntry);
+    ModuleStmt(std::size_t moduleId, std::string path, std::string source, std::vector<StmtPtr> statements, bool isEntry);
     void print(std::ostream& out, int indent) const override;
 
     std::size_t moduleId;
     std::string path;
+    std::string source;
     std::vector<StmtPtr> statements;
     bool isEntry = false;
 };

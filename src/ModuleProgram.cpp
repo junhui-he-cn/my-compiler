@@ -20,10 +20,19 @@ ImportStmt* asImport(StmtPtr& statement)
 
 std::vector<StmtPtr> parseUnit(const SourceUnit& unit)
 {
-    Lexer lexer(unit.source);
-    Parser parser(lexer.scanTokens());
-    Program parsed = parser.parse();
-    return std::move(parsed.statements);
+    try {
+        Lexer lexer(unit.source);
+        Parser parser(lexer.scanTokens());
+        Program parsed = parser.parse();
+        return std::move(parsed.statements);
+    } catch (const FileDiagnosticError&) {
+        throw;
+    } catch (const DiagnosticError& error) {
+        if (error.location()) {
+            throw FileDiagnosticError(error, DiagnosticSourceContext{unit.path, unit.source, false});
+        }
+        throw;
+    }
 }
 
 void patchImports(
@@ -65,6 +74,7 @@ Program buildModuleProgram(const SourceLoadResult& loadResult)
         program.statements.push_back(std::make_unique<ModuleStmt>(
             unit.id,
             unit.path,
+            unit.source,
             std::move(statements),
             unit.isEntry));
     }

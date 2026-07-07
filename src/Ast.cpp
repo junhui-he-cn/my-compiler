@@ -506,9 +506,10 @@ void ExportStmt::print(std::ostream& out, int indent) const
     declaration->print(out, indent + 1);
 }
 
-ModuleStmt::ModuleStmt(std::size_t moduleId, std::string path, std::vector<StmtPtr> statements, bool isEntry)
+ModuleStmt::ModuleStmt(std::size_t moduleId, std::string path, std::string source, std::vector<StmtPtr> statements, bool isEntry)
     : moduleId(moduleId)
     , path(std::move(path))
+    , source(std::move(source))
     , statements(std::move(statements))
     , isEntry(isEntry)
 {
