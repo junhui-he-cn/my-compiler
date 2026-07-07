@@ -31,6 +31,9 @@ Supported statements:
 let name = expression;
 let name: type = expression;
 import "path";
+export let name = expression;
+export fun name(parameter[: type]*) [: type] { declaration* }
+export struct Name { field: type, ... }
 struct Name { field: type, ... }
 print expression;
 if expression { declaration* } [else { declaration* }]
@@ -55,16 +58,26 @@ A top-level source file can load another source file with:
 import "./lib.cd";
 ```
 
-Imports are source-loading directives: the imported file is expanded at the
-import declaration's position before normal parsing, and the final program has
-one shared top-level scope. Import paths are resolved relative to the file that
-contains the import. Importing the same canonical file more than once is a
-no-op, which allows shared helper files to be imported through multiple paths
-in the source graph.
+Import paths are resolved relative to the file that contains the import.
+Imported files have module-private top-level scope. Only declarations marked
+with `export` are introduced into the importing file's top-level scope:
 
-This phase does not add namespaces, `export`, package search paths, separate
-compilation, or imports from stdin. `import` inside strings or `//` comments is
-ignored by the loader.
+```cd
+// lib.cd
+let hidden = 1;
+export fun visible() { return hidden + 1; }
+
+// main.cd
+import "./lib.cd";
+print visible();
+```
+
+Importing the same canonical file more than once is a no-op, which allows
+shared helper files to be imported through multiple paths in the source graph.
+This phase supports `export let`, `export fun`, and `export struct`. It does
+not add namespaces, `import ... as name`, re-export syntax, package search
+paths, separate compilation, or imports from stdin. `import` inside strings or
+`//` comments is ignored by the loader.
 
 Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated, and inferred or annotated return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
