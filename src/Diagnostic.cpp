@@ -34,6 +34,20 @@ std::size_t caretColumn(int column)
     return static_cast<std::size_t>(column - 1);
 }
 
+std::string formatFileDiagnosticFirstLine(const FileDiagnosticError& error)
+{
+    const auto& location = error.location();
+    if (!location || error.sourceContext().isStdin || error.sourceContext().path.empty()) {
+        return error.what();
+    }
+
+    return diagnosticKindName(error.kind()) + " error at "
+        + error.sourceContext().path + ":"
+        + std::to_string(location->line) + ":"
+        + std::to_string(location->column) + ": "
+        + error.message();
+}
+
 } // namespace
 
 std::string diagnosticKindName(DiagnosticKind kind)
@@ -90,6 +104,29 @@ std::string formatDiagnosticWithSource(const DiagnosticError& error, const std::
     return formatted.str();
 }
 
+std::string formatDiagnosticWithSourceContext(const FileDiagnosticError& error)
+{
+    if (!error.location()) {
+        return error.what();
+    }
+    if (error.sourceContext().isStdin || error.sourceContext().path.empty()) {
+        return formatDiagnosticWithSource(error, error.sourceContext().source);
+    }
+
+    std::ostringstream formatted;
+    formatted << formatFileDiagnosticFirstLine(error);
+
+    std::optional<std::string> line = sourceLineAt(error.sourceContext().source, error.location()->line);
+    if (!line) {
+        return formatted.str();
+    }
+
+    formatted << '\n'
+              << "  " << *line << '\n'
+              << "  " << std::string(caretColumn(error.location()->column), ' ') << '^';
+    return formatted.str();
+}
+
 DiagnosticError::DiagnosticError(DiagnosticKind kind, std::string message)
     : std::runtime_error(formatDiagnostic(kind, std::nullopt, message))
     , kind_(kind)
@@ -103,6 +140,25 @@ DiagnosticError::DiagnosticError(DiagnosticKind kind, SourceLocation location, s
     , location_(location)
     , message_(std::move(message))
 {
+}
+
+DiagnosticError::DiagnosticError(DiagnosticKind kind, std::optional<SourceLocation> location, std::string message)
+    : std::runtime_error(formatDiagnostic(kind, location, message))
+    , kind_(kind)
+    , location_(location)
+    , message_(std::move(message))
+{
+}
+
+FileDiagnosticError::FileDiagnosticError(const DiagnosticError& inner, DiagnosticSourceContext context)
+    : DiagnosticError(inner.kind(), inner.location(), inner.message())
+    , context_(std::move(context))
+{
+}
+
+const DiagnosticSourceContext& FileDiagnosticError::sourceContext() const
+{
+    return context_;
 }
 
 DiagnosticKind DiagnosticError::kind() const

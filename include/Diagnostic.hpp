@@ -18,10 +18,17 @@ struct SourceLocation {
     int column = 0;
 };
 
+struct DiagnosticSourceContext {
+    std::string path;
+    std::string source;
+    bool isStdin = false;
+};
+
 class DiagnosticError : public std::runtime_error {
 public:
     DiagnosticError(DiagnosticKind kind, std::string message);
     DiagnosticError(DiagnosticKind kind, SourceLocation location, std::string message);
+    DiagnosticError(DiagnosticKind kind, std::optional<SourceLocation> location, std::string message);
 
     DiagnosticKind kind() const;
     const std::optional<SourceLocation>& location() const;
@@ -33,9 +40,20 @@ private:
     std::string message_;
 };
 
+class FileDiagnosticError final : public DiagnosticError {
+public:
+    FileDiagnosticError(const DiagnosticError& inner, DiagnosticSourceContext context);
+
+    const DiagnosticSourceContext& sourceContext() const;
+
+private:
+    DiagnosticSourceContext context_;
+};
+
 std::string diagnosticKindName(DiagnosticKind kind);
 std::string formatDiagnostic(
     DiagnosticKind kind,
     const std::optional<SourceLocation>& location,
     const std::string& message);
 std::string formatDiagnosticWithSource(const DiagnosticError& error, const std::string& source);
+std::string formatDiagnosticWithSourceContext(const FileDiagnosticError& error);
