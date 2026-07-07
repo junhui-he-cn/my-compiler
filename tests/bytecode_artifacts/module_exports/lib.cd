@@ -1,0 +1,3 @@
+let base = 39;
+fun add3(x) { return x + 3; }
+export fun answer() { return add3(base); }

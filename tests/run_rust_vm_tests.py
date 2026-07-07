@@ -168,6 +168,7 @@ def main() -> int:
             "loop_break",
             "named_struct_types",
             "multi_file_functions",
+            "module_exports",
             "native_stdlib_math",
             "native_stdlib_push_pop",
             "struct_literals_field_access",
