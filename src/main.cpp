@@ -38,6 +38,54 @@ bool containsImportToken(const SourceLoadResult& loadResult)
     return false;
 }
 
+std::size_t sourceLineSpan(const std::string& source)
+{
+    if (source.empty()) {
+        return 0;
+    }
+    std::size_t lines = 1;
+    for (const char ch : source) {
+        if (ch == '\n') {
+            ++lines;
+        }
+    }
+    if (source.back() == '\n') {
+        --lines;
+    }
+    return lines;
+}
+
+std::optional<FileDiagnosticError> fileDiagnosticForCombinedLocation(
+    const DiagnosticError& error,
+    const SourceLoadResult& loadResult)
+{
+    if (!error.location()) {
+        return std::nullopt;
+    }
+
+    std::size_t startLine = 1;
+    for (const SourceUnit& unit : loadResult.units) {
+        const std::size_t span = sourceLineSpan(unit.source);
+        if (span == 0) {
+            continue;
+        }
+        const std::size_t diagnosticLine = static_cast<std::size_t>(error.location()->line);
+        if (diagnosticLine >= startLine && diagnosticLine < startLine + span) {
+            DiagnosticError remapped(
+                error.kind(),
+                SourceLocation{
+                    static_cast<int>(diagnosticLine - startLine + 1),
+                    error.location()->column,
+                },
+                error.message());
+            return FileDiagnosticError(remapped, DiagnosticSourceContext{unit.path, unit.source, false});
+        }
+        startLine += span;
+    }
+
+    return std::nullopt;
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -81,6 +129,8 @@ int main(int argc, char** argv)
     }
 
     std::string source;
+    std::optional<SourceLoadResult> fileLoadResult;
+    bool usedModuleProgram = false;
     try {
         SourceManager sourceManager;
         Program program;
@@ -99,8 +149,8 @@ int main(int argc, char** argv)
             Parser parser(tokens);
             program = parser.parse();
         } else {
-            SourceLoadResult loadResult = sourceManager.loadFileUnits(inputPaths);
-            source = loadResult.combinedSource;
+            fileLoadResult = sourceManager.loadFileUnits(inputPaths);
+            source = fileLoadResult->combinedSource;
             if (showTokens) {
                 Lexer lexer(source);
                 tokens = lexer.scanTokens();
@@ -110,8 +160,9 @@ int main(int argc, char** argv)
                 std::cout << '\n';
             }
 
-            if (containsImportToken(loadResult)) {
-                program = buildModuleProgram(loadResult);
+            if (containsImportToken(*fileLoadResult)) {
+                usedModuleProgram = true;
+                program = buildModuleProgram(*fileLoadResult);
             } else {
                 Lexer lexer(source);
                 tokens = lexer.scanTokens();
@@ -176,7 +227,17 @@ int main(int argc, char** argv)
             }
 
         }
+    } catch (const FileDiagnosticError& error) {
+        std::cerr << formatDiagnosticWithSourceContext(error) << '\n';
+        return 1;
     } catch (const DiagnosticError& error) {
+        if (fileLoadResult && !usedModuleProgram && fileLoadResult->units.size() > 1) {
+            std::optional<FileDiagnosticError> remapped = fileDiagnosticForCombinedLocation(error, *fileLoadResult);
+            if (remapped) {
+                std::cerr << formatDiagnosticWithSourceContext(*remapped) << '\n';
+                return 1;
+            }
+        }
         std::cerr << formatDiagnosticWithSource(error, source) << '\n';
         return 1;
     } catch (const std::exception& error) {

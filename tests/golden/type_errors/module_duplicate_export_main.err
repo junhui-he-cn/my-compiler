@@ -1,1 +1,3 @@
-Type error at 2:1: variable `value` already declared in this scope
+Type error at /home/junhe/compiler/tests/golden/type_errors/module_duplicate_export_main.cd:2:1: variable `value` already declared in this scope
+  import "./module_duplicate_export_deps/b.cd";
+  ^

@@ -1,1 +1,3 @@
-Parse error at 1:8: expected import path string, found Identifier `path`
+Parse error at /home/junhe/compiler/tests/golden/parse_errors/import_missing_path.cd:1:8: expected import path string, found Identifier `path`
+  import path;
+         ^
