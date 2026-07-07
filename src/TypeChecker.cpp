@@ -712,18 +712,18 @@ const TypeChecker::StructFieldType* TypeChecker::findStructField(
     return nullptr;
 }
 
-TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
-    const LetStmt& statement,
+TypeChecker::CheckedExpression TypeChecker::checkNamedStructFields(
+    const Token& diagnosticToken,
     const TypeInfo& declared,
-    const StructExpr& initializer)
+    const std::vector<StructField>& fields)
 {
     const StructTypeDecl* structType = declared.structName ? findStructType(*declared.structName) : nullptr;
     if (!structType) {
-        throw TypeError(statement.name, "unknown struct type `" + typeInfoName(declared) + "`");
+        throw TypeError(diagnosticToken, "unknown struct type `" + typeInfoName(declared) + "`");
     }
 
     std::unordered_map<std::string, const StructField*> literalFields;
-    for (const StructField& field : initializer.fields) {
+    for (const StructField& field : fields) {
         if (literalFields.find(field.name.lexeme) != literalFields.end()) {
             throw TypeError(field.name, "duplicate field `" + field.name.lexeme + "` in struct literal");
         }
@@ -733,7 +733,7 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
     for (const StructFieldType& expectedField : structType->fields) {
         const auto found = literalFields.find(expectedField.name.lexeme);
         if (found == literalFields.end()) {
-            throw TypeError(statement.name,
+            throw TypeError(diagnosticToken,
                 "missing field `" + expectedField.name.lexeme + "` for struct `" + structType->name.lexeme + "`");
         }
         const CheckedExpression actual = checkExpressionInfo(*found->second->value, &expectedField.type);
@@ -744,7 +744,7 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
         }
     }
 
-    for (const StructField& field : initializer.fields) {
+    for (const StructField& field : fields) {
         if (!findStructField(*structType, field.name.lexeme)) {
             throw TypeError(field.name,
                 "extra field `" + field.name.lexeme + "` for struct `" + structType->name.lexeme + "`");
@@ -752,6 +752,23 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
     }
 
     return CheckedExpression{declared};
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
+    const LetStmt& statement,
+    const TypeInfo& declared,
+    const StructExpr& initializer)
+{
+    return checkNamedStructFields(statement.name, declared, initializer.fields);
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(const StructConstructExpr& expression)
+{
+    const StructTypeDecl* structType = findStructType(expression.name.lexeme);
+    if (!structType) {
+        throw TypeError(expression.name, "unknown struct type `" + expression.name.lexeme + "`");
+    }
+    return checkNamedStructFields(expression.name, namedStructType(expression.name.lexeme), expression.fields);
 }
 
 TypeInfo TypeChecker::checkExpression(const Expr& expression)
@@ -902,6 +919,10 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
             checkExpression(*field.value);
         }
         return CheckedExpression{simpleType(StaticType::Struct)};
+    }
+
+    if (const auto* construct = dynamic_cast<const StructConstructExpr*>(&expression)) {
+        return checkStructConstructor(*construct);
     }
 
     if (const auto* field = dynamic_cast<const FieldAccessExpr*>(&expression)) {

@@ -145,10 +145,15 @@ private:
     TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkFieldAssignment(const FieldAssignExpr& expression);
+    CheckedExpression checkNamedStructFields(
+        const Token& diagnosticToken,
+        const TypeInfo& declared,
+        const std::vector<StructField>& fields);
     CheckedExpression checkNamedStructLiteralInitializer(
         const LetStmt& statement,
         const TypeInfo& declared,
         const StructExpr& initializer);
+    CheckedExpression checkStructConstructor(const StructConstructExpr& expression);
     const StructFieldType* findStructField(const StructTypeDecl& structType, const std::string& name) const;
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     TypeInfo resolveAnnotation(const TypeAnnotation& typeName) const;

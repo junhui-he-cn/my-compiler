@@ -1,0 +1,2 @@
+struct Person { name: string }
+let p = Person { name: "Ada", name: "Grace" };
