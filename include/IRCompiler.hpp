@@ -32,7 +32,9 @@ private:
     IRRegister emitNativeStdlibCall(const CallExpr& expression);
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
+    IRRegister emitStructFields(const std::vector<StructField>& fields);
     IRRegister emitStruct(const StructExpr& expression);
+    IRRegister emitStructConstructor(const StructConstructExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);
     IRRegister emitIndexAssign(const IndexAssignExpr& expression);
     IRRegister emitFieldAccess(const FieldAccessExpr& expression);

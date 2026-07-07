@@ -1,0 +1,14 @@
+struct Person { name: string, age: number }
+
+fun birthday(person: Person): Person {
+  person.age = person.age + 1;
+  return person;
+}
+
+fun makePerson(): Person {
+  return Person { age: 36, name: "Ada" };
+}
+
+let p = birthday(makePerson());
+print p.name;
+print p.age;

@@ -242,6 +242,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitStruct(*structExpr);
     }
 
+    if (const auto* construct = dynamic_cast<const StructConstructExpr*>(&expression)) {
+        return emitStructConstructor(*construct);
+    }
+
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
         return emitIndex(*index);
     }
@@ -333,17 +337,27 @@ IRRegister IRCompiler::emitArray(const ArrayExpr& expression)
     return ir_.emitArray(std::move(elements));
 }
 
-IRRegister IRCompiler::emitStruct(const StructExpr& expression)
+IRRegister IRCompiler::emitStructFields(const std::vector<StructField>& fields)
 {
     std::vector<std::size_t> names;
     std::vector<IRRegister> values;
-    names.reserve(expression.fields.size());
-    values.reserve(expression.fields.size());
-    for (const StructField& field : expression.fields) {
+    names.reserve(fields.size());
+    values.reserve(fields.size());
+    for (const StructField& field : fields) {
         names.push_back(ir_.addName(field.name.lexeme));
         values.push_back(compileExpression(*field.value));
     }
     return ir_.emitStruct(std::move(names), std::move(values));
+}
+
+IRRegister IRCompiler::emitStruct(const StructExpr& expression)
+{
+    return emitStructFields(expression.fields);
+}
+
+IRRegister IRCompiler::emitStructConstructor(const StructConstructExpr& expression)
+{
+    return emitStructFields(expression.fields);
 }
 
 IRRegister IRCompiler::emitIndex(const IndexExpr& expression)

@@ -1,0 +1,14 @@
+IR
+0000  v0 = constant #0 "Ada"
+0001  v1 = constant #1 36
+0002  v2 = struct {name: v0, age: v1}
+0003  store_var @2 p#0, v2
+0004  v3 = load_var @3 p#0
+0005  v4 = field v3.name
+0006  print v4
+0007  v5 = load_var @5 p#0
+0008  v6 = constant #2 37
+0009  v7 = assign_field v5.age, v6
+0010  v8 = load_var @7 p#0
+0011  v9 = field v8.age
+0012  print v9

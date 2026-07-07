@@ -1,0 +1,10 @@
+Program
+  Struct Person {name: string, age: number}
+  Fun birthday(person: Person): Person
+    Expr (= (field person age) (+ (field person age) 1))
+    Return person
+  Fun makePerson(): Person
+    Return (construct Person age: 36 name: "Ada")
+  Let p = (call birthday (call makePerson))
+  Print (field p name)
+  Print (field p age)
