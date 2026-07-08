@@ -28,6 +28,11 @@ void writeTypeAnnotation(std::ostream& out, const TypeAnnotation& annotation)
         return;
     }
 
+    if (annotation.kind == TypeAnnotation::Kind::Qualified) {
+        out << annotation.qualifier.lexeme << '.' << annotation.token.lexeme;
+        return;
+    }
+
     if (annotation.kind == TypeAnnotation::Kind::Array) {
         out << '[';
         writeTypeAnnotation(out, *annotation.elementType);
@@ -85,7 +90,11 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
     }
 
     if (const auto* import = dynamic_cast<const ImportStmt*>(&stmt)) {
-        out << "(import " << import->path.lexeme << ')';
+        out << "(import " << import->path.lexeme;
+        if (import->alias) {
+            out << " as " << import->alias->lexeme;
+        }
+        out << ')';
         return;
     }
 
@@ -202,6 +211,15 @@ TypeAnnotation TypeAnnotation::simple(Token token)
     TypeAnnotation result;
     result.kind = Kind::Simple;
     result.token = std::move(token);
+    return result;
+}
+
+TypeAnnotation TypeAnnotation::qualified(Token qualifier, Token name)
+{
+    TypeAnnotation result;
+    result.kind = Kind::Qualified;
+    result.qualifier = std::move(qualifier);
+    result.token = std::move(name);
     return result;
 }
 
@@ -382,15 +400,20 @@ void StructExpr::print(std::ostream& out) const
     out << ')';
 }
 
-StructConstructExpr::StructConstructExpr(Token name, std::vector<StructField> fields)
-    : name(std::move(name))
+StructConstructExpr::StructConstructExpr(std::optional<Token> qualifier, Token name, std::vector<StructField> fields)
+    : qualifier(std::move(qualifier))
+    , name(std::move(name))
     , fields(std::move(fields))
 {
 }
 
 void StructConstructExpr::print(std::ostream& out) const
 {
-    out << "(construct " << name.lexeme;
+    out << "(construct ";
+    if (qualifier) {
+        out << qualifier->lexeme << '.';
+    }
+    out << name.lexeme;
     for (const StructField& field : fields) {
         out << ' ' << field.name.lexeme << ": ";
         writeExpr(out, field.value);
@@ -483,16 +506,21 @@ void StructDeclStmt::print(std::ostream& out, int indent) const
     out << "}\n";
 }
 
-ImportStmt::ImportStmt(Token keyword, Token path)
+ImportStmt::ImportStmt(Token keyword, Token path, std::optional<Token> alias)
     : keyword(std::move(keyword))
     , path(std::move(path))
+    , alias(std::move(alias))
 {
 }
 
 void ImportStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
-    out << "Import " << path.lexeme << "\n";
+    out << "Import " << path.lexeme;
+    if (alias) {
+        out << " as " << alias->lexeme;
+    }
+    out << "\n";
 }
 
 ExportStmt::ExportStmt(Token keyword, std::vector<Token> names)

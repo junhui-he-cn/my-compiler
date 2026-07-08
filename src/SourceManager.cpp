@@ -90,6 +90,23 @@ bool parseImportDirective(
     path = source.substr(pathStart, index - pathStart);
     ++index;
     skipWhitespace(source, index);
+
+    if (index + 2 <= source.size()
+        && source.compare(index, 2, "as") == 0
+        && isBoundaryBefore(source, index)
+        && isBoundaryAfter(source, index + 2)) {
+        index += 2;
+        skipWhitespace(source, index);
+        if (index >= source.size() || !isIdentifierStart(source[index])) {
+            return false;
+        }
+        ++index;
+        while (index < source.size() && isIdentifierPart(source[index])) {
+            ++index;
+        }
+        skipWhitespace(source, index);
+    }
+
     if (index >= source.size() || source[index] != ';') {
         return false;
     }

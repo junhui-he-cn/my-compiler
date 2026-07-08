@@ -39,6 +39,7 @@ enum class TokenType {
     Continue,
     If,
     Import,
+    As,
     Export,
     Else,
     Fun,

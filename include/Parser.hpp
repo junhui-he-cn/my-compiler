@@ -63,6 +63,8 @@ private:
     std::vector<StructField> structLiteralFields();
     ExprPtr structLiteral();
     ExprPtr structConstructor();
+    ExprPtr qualifiedStructConstructor();
+    bool isQualifiedStructConstructorStart() const;
     ExprPtr functionExpression();
     ExprPtr primary();
 

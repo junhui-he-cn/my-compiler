@@ -24,16 +24,19 @@ using StmtPtr = std::unique_ptr<Stmt>;
 struct TypeAnnotation {
     enum class Kind {
         Simple,
+        Qualified,
         Function,
         Array,
     };
 
     static TypeAnnotation simple(Token token);
+    static TypeAnnotation qualified(Token qualifier, Token name);
     static TypeAnnotation function(Token token, std::vector<TypeAnnotation> parameterTypes, TypeAnnotation returnType);
     static TypeAnnotation array(Token token, TypeAnnotation elementType);
 
     Kind kind = Kind::Simple;
     Token token{TokenType::Identifier, "", 0, 0};
+    Token qualifier{TokenType::Identifier, "", 0, 0};
     std::vector<TypeAnnotation> parameterTypes;
     std::shared_ptr<TypeAnnotation> returnType;
     std::shared_ptr<TypeAnnotation> elementType;
@@ -139,9 +142,10 @@ struct StructExpr final : Expr {
 };
 
 struct StructConstructExpr final : Expr {
-    StructConstructExpr(Token name, std::vector<StructField> fields);
+    StructConstructExpr(std::optional<Token> qualifier, Token name, std::vector<StructField> fields);
     void print(std::ostream& out) const override;
 
+    std::optional<Token> qualifier;
     Token name;
     std::vector<StructField> fields;
 };
@@ -201,11 +205,12 @@ struct StructDeclStmt final : Stmt {
 };
 
 struct ImportStmt final : Stmt {
-    ImportStmt(Token keyword, Token path);
+    ImportStmt(Token keyword, Token path, std::optional<Token> alias);
     void print(std::ostream& out, int indent) const override;
 
     Token keyword;
     Token path;
+    std::optional<Token> alias;
     std::size_t resolvedModuleId = static_cast<std::size_t>(-1);
 };
 

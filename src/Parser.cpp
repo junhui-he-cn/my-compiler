@@ -149,8 +149,12 @@ StmtPtr Parser::importDeclaration()
 {
     Token keyword = previous();
     Token path = consume(TokenType::String, "expected import path string");
-    consume(TokenType::Semicolon, "expected `;` after import path");
-    return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
+    std::optional<Token> alias;
+    if (match(TokenType::As)) {
+        alias = consume(TokenType::Identifier, "expected namespace alias after `as`");
+    }
+    consume(TokenType::Semicolon, alias ? "expected `;` after import alias" : "expected `;` after import path");
+    return std::make_unique<ImportStmt>(std::move(keyword), std::move(path), std::move(alias));
 }
 
 std::vector<Parameter> Parser::parameters()
@@ -201,7 +205,12 @@ TypeAnnotation Parser::typeAnnotation(const std::string& simpleTypeMessage)
         return TypeAnnotation::function(std::move(keyword), std::move(parameterTypes), std::move(returnType));
     }
 
-    return TypeAnnotation::simple(consume(TokenType::Identifier, simpleTypeMessage));
+    Token name = consume(TokenType::Identifier, simpleTypeMessage);
+    if (match(TokenType::Dot)) {
+        Token member = consume(TokenType::Identifier, "expected type name after `.`");
+        return TypeAnnotation::qualified(std::move(name), std::move(member));
+    }
+    return TypeAnnotation::simple(std::move(name));
 }
 
 std::vector<TypeAnnotation> Parser::typeArguments()
@@ -529,7 +538,27 @@ ExprPtr Parser::structConstructor()
     consume(TokenType::LeftBrace, "expected `{` after struct constructor name");
     std::vector<StructField> fields = structLiteralFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
-    return std::make_unique<StructConstructExpr>(std::move(name), std::move(fields));
+    return std::make_unique<StructConstructExpr>(std::nullopt, std::move(name), std::move(fields));
+}
+
+bool Parser::isQualifiedStructConstructorStart() const
+{
+    return check(TokenType::Identifier)
+        && current_ + 3 < tokens_.size()
+        && tokens_[current_ + 1].type == TokenType::Dot
+        && tokens_[current_ + 2].type == TokenType::Identifier
+        && tokens_[current_ + 3].type == TokenType::LeftBrace;
+}
+
+ExprPtr Parser::qualifiedStructConstructor()
+{
+    Token qualifier = consume(TokenType::Identifier, "expected namespace alias before `.`");
+    consume(TokenType::Dot, "expected `.` after namespace alias");
+    Token name = consume(TokenType::Identifier, "expected struct constructor name after `.`");
+    consume(TokenType::LeftBrace, "expected `{` after struct constructor name");
+    std::vector<StructField> fields = structLiteralFields();
+    consume(TokenType::RightBrace, "expected `}` after struct fields");
+    return std::make_unique<StructConstructExpr>(std::move(qualifier), std::move(name), std::move(fields));
 }
 
 ExprPtr Parser::functionExpression()
@@ -574,6 +603,9 @@ ExprPtr Parser::primary()
     }
     if (match(TokenType::LeftBrace)) {
         return structLiteral();
+    }
+    if (allowStructConstructors_ && isQualifiedStructConstructorStart()) {
+        return qualifiedStructConstructor();
     }
     if (allowStructConstructors_ && check(TokenType::Identifier) && checkNext(TokenType::LeftBrace)) {
         return structConstructor();
