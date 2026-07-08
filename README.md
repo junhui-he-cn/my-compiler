@@ -30,7 +30,7 @@ Supported statements:
 ```text
 let name = expression;
 let name: type = expression;
-import "path";
+import "path" [as alias];
 export name[, name...];
 struct Name { field: type, ... }
 print expression;
@@ -44,7 +44,7 @@ return [expression];
 expression;
 ```
 
-Type annotations support `number`, `bool`, `string`, `nil`, named struct types, array types such as `[number]` and `[[string]]`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Array type annotations may be used in the same positions and carry static element types through indexing, index assignment, `push`, and `pop`. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and anonymous `struct`; non-empty unannotated array literals infer an element type only when all known elements have the same type. Mixed unannotated arrays and empty unannotated arrays remain dynamic arrays with unknown element type. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Generic types and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
+Type annotations support `number`, `bool`, `string`, `nil`, named struct types, namespaced struct types such as `math.Point`, array types such as `[number]` and `[[string]]`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Array type annotations may be used in the same positions and carry static element types through indexing, index assignment, `push`, and `pop`. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and anonymous `struct`; non-empty unannotated array literals infer an element type only when all known elements have the same type. Mixed unannotated arrays and empty unannotated arrays remain dynamic arrays with unknown element type. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Generic types and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
 
 `while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break;` exits the nearest enclosing `while`, and `continue;` skips to that loop's next condition check. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
 
@@ -71,13 +71,24 @@ import "./lib.cd";
 print visible();
 ```
 
+Using `import "path" as alias;` keeps exported names out of the importing
+file's top-level scope. Values and functions are accessed as `alias.name`, and
+exported struct types may be used as `alias.Type` in annotations and
+constructors such as `alias.Type { field: value }`:
+
+```cd
+// main.cd
+import "./lib.cd" as lib;
+print lib.visible();
+```
+
 Importing the same canonical file more than once is a no-op, which allows
 shared helper files to be imported through multiple paths in the source graph.
 This phase supports standalone export lists such as `export value;` and
 `export value, helper, Point;` for already-defined top-level variables,
-functions, and structs. It does not add namespaces, `import ... as name`,
-re-export syntax, package search paths, separate compilation, or imports from
-stdin. `import` inside strings or `//` comments is ignored by the loader.
+functions, and structs. It does not add re-export syntax, package search paths,
+separate compilation, or imports from stdin. `import` inside strings or `//`
+comments is ignored by the loader.
 
 Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated, and inferred or annotated return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 

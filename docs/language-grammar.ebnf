@@ -41,7 +41,8 @@ letDecl     = "let", identifier,
               [ ":", typeExpr ],
               "=", expression, ";" ;
 
-importDecl  = "import", string, ";" ;
+importDecl  = "import", string,
+              [ "as", identifier ], ";" ;
 
 exportDecl  = "export", identifier,
               { ",", identifier }, ";" ;
@@ -108,7 +109,7 @@ array       = "[", [ arguments ], "]" ;
 
 struct      = "{", [ fields ], "}" ;
 
-structConstructor = identifier, "{", [ fields ], "}" ;
+structConstructor = [ identifier, "." ], identifier, "{", [ fields ], "}" ;
 
 fields      = field,
               { ",", field } ;
@@ -133,11 +134,14 @@ primary     = functionExpr
 
 typeExpr    = arrayType
             | functionType
+            | qualifiedType
             | simpleType ;
 
 arrayType   = "[", typeExpr, "]" ;
 
 simpleType  = identifier ;
+
+qualifiedType = identifier, ".", identifier ;
 
 functionType = "fun", "(", [ typeArguments ], ")", ":", typeExpr ;
 

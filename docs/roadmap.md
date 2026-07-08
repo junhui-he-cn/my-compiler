@@ -177,7 +177,7 @@ Each builtin should define behavior for both the IR interpreter and bytecode art
 
 ## Phase 14: Modules / Imports
 
-Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and standalone export lists expose selected already-defined top-level declarations to importers while keeping private helpers hidden. Namespaces, package search paths, separate compilation, and re-export syntax remain future work.
+Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and standalone export lists expose selected already-defined top-level declarations to importers while keeping private helpers hidden. Phase 14D is implemented: namespace imports with `import "path" as name;` provide qualified access to exported values, functions, and structs without top-level name pollution. Package search paths, separate compilation, and re-export syntax remain future work.
 
 Goal: allow programs to be split across files.
 
@@ -187,12 +187,12 @@ Suggested features:
 - Deterministic path resolution relative to the importing file. Implemented.
 - Clear cycle handling. Implemented.
 - Standalone `export name[, name...];` lists for explicit cross-file visibility. Implemented.
+- Namespace imports with `import "path" as name;` for qualified access to exported values, functions, and structs. Implemented.
 - CLI behavior for multi-file source loading. Implemented for direct CLI inputs.
 - Golden fixtures that include secondary source files. Implemented.
 
 Remaining future work:
 
-- Namespace imports, such as an eventual `import "path" as name` form, so exported declarations do not have to enter the importing file's top-level scope directly.
 - Package or module search paths beyond explicit relative/absolute source paths.
 - Re-export syntax for forwarding declarations from one module through another.
 - Separate compilation or module artifacts instead of always recursively loading source and compiling one combined program.
