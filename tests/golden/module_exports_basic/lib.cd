@@ -1,3 +1,4 @@
-export let value = 7;
-export fun add(a, b) { return a + b; }
-export struct Point { x: number, y: number }
+let value = 7;
+fun add(a, b) { return a + b; }
+struct Point { x: number, y: number }
+export value, add, Point;

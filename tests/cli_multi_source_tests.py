@@ -95,7 +95,7 @@ class CliMultiSourceTests(unittest.TestCase):
     def test_direct_cli_files_with_export_still_share_entry_scope(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            (root / "lib.cd").write_text('export let value = "direct";\n', encoding="utf-8")
+            (root / "lib.cd").write_text('let value = "direct";\nexport value;\n', encoding="utf-8")
             (root / "main.cd").write_text('print value;\n', encoding="utf-8")
 
             completed = self.run_compiler("--run", str(root / "lib.cd"), str(root / "main.cd"))
@@ -112,10 +112,11 @@ class CliMultiSourceTests(unittest.TestCase):
             (root / "input.cd").write_text('import "./nested/lib.cd";\nprint getValue();\n', encoding="utf-8")
             (nested / "lib.cd").write_text(
                 'import "./inner.cd";\n'
-                'export fun getValue() { return value; }\n',
+                'fun getValue() { return value; }\n'
+                'export getValue;\n',
                 encoding="utf-8",
             )
-            (nested / "inner.cd").write_text('export let value = "relative";\n', encoding="utf-8")
+            (nested / "inner.cd").write_text('let value = "relative";\nexport value;\n', encoding="utf-8")
 
             completed = self.run_compiler("--run", str(root / "input.cd"))
 
@@ -128,7 +129,7 @@ class CliMultiSourceTests(unittest.TestCase):
             root = Path(temp_dir)
             lib = root / "lib.cd"
             (root / "input.cd").write_text('import "./lib.cd";\nprint 1;\n', encoding="utf-8")
-            lib.write_text('export let value = ;\n', encoding="utf-8")
+            lib.write_text('let value = ;\nexport value;\n', encoding="utf-8")
 
             completed = self.run_compiler(str(root / "input.cd"))
 
@@ -136,9 +137,9 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.stdout, "")
             self.assertEqual(
                 completed.stderr,
-                f"Parse error at {lib}:1:20: expected expression\n"
-                "  export let value = ;\n"
-                "                     ^\n",
+                f"Parse error at {lib}:1:13: expected expression\n"
+                "  let value = ;\n"
+                "              ^\n",
             )
 
     def test_imported_file_type_error_reports_imported_file_path(self) -> None:
@@ -146,7 +147,7 @@ class CliMultiSourceTests(unittest.TestCase):
             root = Path(temp_dir)
             lib = root / "lib.cd"
             (root / "input.cd").write_text('import "./lib.cd";\nprint value;\n', encoding="utf-8")
-            lib.write_text('export let value = missing;\n', encoding="utf-8")
+            lib.write_text('let value = missing;\nexport value;\n', encoding="utf-8")
 
             completed = self.run_compiler(str(root / "input.cd"))
 
@@ -154,9 +155,9 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.stdout, "")
             self.assertEqual(
                 completed.stderr,
-                f"Type error at {lib}:1:20: undefined variable `missing`\n"
-                "  export let value = missing;\n"
-                "                     ^\n",
+                f"Type error at {lib}:1:13: undefined variable `missing`\n"
+                "  let value = missing;\n"
+                "              ^\n",
             )
 
     def test_direct_multi_file_parse_error_reports_own_file_path(self) -> None:
