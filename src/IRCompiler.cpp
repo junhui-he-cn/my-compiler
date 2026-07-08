@@ -417,6 +417,9 @@ IRRegister IRCompiler::emitIndexAssign(const IndexAssignExpr& expression)
 
 IRRegister IRCompiler::emitFieldAccess(const FieldAccessExpr& expression)
 {
+    if (resolvedNames_->hasFieldAccess(expression)) {
+        return ir_.emitLoadVar(resolvedNames_->fieldAccessName(expression));
+    }
     IRRegister object = compileExpression(*expression.object);
     return ir_.emitField(object, expression.name.lexeme);
 }

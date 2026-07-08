@@ -47,6 +47,8 @@ public:
     bool hasVariable(const VariableExpr& expression) const;
     const std::string& variableName(const VariableExpr& expression) const;
     const std::string& assignmentName(const AssignExpr& expression) const;
+    bool hasFieldAccess(const FieldAccessExpr& expression) const;
+    const std::string& fieldAccessName(const FieldAccessExpr& expression) const;
 
 private:
     friend class TypeChecker;
@@ -59,6 +61,7 @@ private:
     void recordParameters(const FunctionExpr& expression, std::vector<std::string> names);
     void recordVariable(const VariableExpr& expression, std::string name);
     void recordAssignment(const AssignExpr& expression, std::string name);
+    void recordFieldAccess(const FieldAccessExpr& expression, std::string name);
 
     std::unordered_map<const LetStmt*, std::string> letNames_;
     std::unordered_map<const FunctionStmt*, std::string> functionNames_;
@@ -67,6 +70,7 @@ private:
     std::unordered_map<const FunctionExpr*, std::vector<std::string>> functionExpressionParameterNames_;
     std::unordered_map<const VariableExpr*, std::string> variableNames_;
     std::unordered_map<const AssignExpr*, std::string> assignmentNames_;
+    std::unordered_map<const FieldAccessExpr*, std::string> fieldAccessNames_;
 };
 
 class TypeChecker {
@@ -106,6 +110,13 @@ private:
     using Scope = std::unordered_map<std::string, Binding>;
     using ExportTable = std::unordered_map<std::string, Binding>;
 
+    struct NamespaceImport {
+        ExportTable values;
+        std::unordered_map<std::string, StructTypeDecl> structs;
+    };
+
+    using NamespaceTable = std::unordered_map<std::string, NamespaceImport>;
+
     void beginScope();
     void endScope();
     Scope& currentScope();
@@ -122,6 +133,11 @@ private:
         bool explicitType = false);
     Binding declareImportedVariable(const Token& name, const Binding& importedBinding);
     std::string makeResolvedName(const std::string& sourceName);
+    NamespaceTable& currentNamespaceTable();
+    const NamespaceImport* findNamespace(const std::string& alias) const;
+    void declareNamespaceAlias(const ImportStmt& statement, NamespaceImport imported);
+    std::string qualifiedStructName(const Token& qualifier, const Token& name) const;
+    std::string structConstructorTypeName(const StructConstructExpr& expression) const;
 
     void checkStatement(const Stmt& statement);
     void checkModule(const ModuleStmt& module);
@@ -176,6 +192,7 @@ private:
     std::unordered_map<std::size_t, ExportTable> moduleExports_;
     std::unordered_map<std::size_t, std::unordered_map<std::string, StructTypeDecl>> moduleStructExports_;
     std::unordered_map<std::size_t, std::unordered_set<std::string>> moduleLocalStructNames_;
+    std::unordered_map<std::size_t, NamespaceTable> moduleNamespaces_;
     std::unordered_map<std::size_t, std::unordered_set<std::size_t>> moduleImportedModules_;
     std::unordered_set<std::size_t> checkedModules_;
     std::vector<std::size_t> moduleStack_;

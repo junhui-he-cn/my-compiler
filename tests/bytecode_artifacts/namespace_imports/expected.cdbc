@@ -1,0 +1,33 @@
+cdbc 0.1
+
+constants:
+  c0 = number 39
+  c1 = nil
+  c2 = number 3
+  c3 = nil
+
+names:
+  n0 = "base#0"
+  n1 = "answer#1"
+  n2 = "base#0"
+  n3 = "answer#1"
+  n4 = "answer#1"
+
+main registers=5:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = constant c1
+  store_var n1, r1
+  r2 = make_function f0
+  assign_var n3, r2
+  r3 = load_var n4
+  r4 = call r3 []
+  print r4
+
+function f0 name="answer" arity=0 registers=4:
+  r0 = load_var n2
+  r1 = constant c2
+  r2 = add r0, r1
+  return r2
+  r3 = constant c3
+  return r3

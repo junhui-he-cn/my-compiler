@@ -267,6 +267,20 @@ const std::string& ResolvedNames::assignmentName(const AssignExpr& expression) c
     return found->second;
 }
 
+bool ResolvedNames::hasFieldAccess(const FieldAccessExpr& expression) const
+{
+    return fieldAccessNames_.find(&expression) != fieldAccessNames_.end();
+}
+
+const std::string& ResolvedNames::fieldAccessName(const FieldAccessExpr& expression) const
+{
+    const auto found = fieldAccessNames_.find(&expression);
+    if (found == fieldAccessNames_.end()) {
+        throw std::logic_error("missing resolved field access name");
+    }
+    return found->second;
+}
+
 void ResolvedNames::clear()
 {
     letNames_.clear();
@@ -276,6 +290,7 @@ void ResolvedNames::clear()
     functionExpressionParameterNames_.clear();
     variableNames_.clear();
     assignmentNames_.clear();
+    fieldAccessNames_.clear();
 }
 
 void ResolvedNames::recordLet(const LetStmt& statement, std::string name)
@@ -313,6 +328,11 @@ void ResolvedNames::recordAssignment(const AssignExpr& expression, std::string n
     assignmentNames_.emplace(&expression, std::move(name));
 }
 
+void ResolvedNames::recordFieldAccess(const FieldAccessExpr& expression, std::string name)
+{
+    fieldAccessNames_.emplace(&expression, std::move(name));
+}
+
 const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
@@ -320,6 +340,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     moduleExports_.clear();
     moduleStructExports_.clear();
     moduleLocalStructNames_.clear();
+    moduleNamespaces_.clear();
     moduleImportedModules_.clear();
     checkedModules_.clear();
     moduleStack_.clear();
@@ -607,6 +628,63 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     returnContexts_ = std::move(savedReturnContexts);
 }
 
+TypeChecker::NamespaceTable& TypeChecker::currentNamespaceTable()
+{
+    if (moduleStack_.empty()) {
+        throw TypeError("namespace imports require a module context");
+    }
+    return moduleNamespaces_[moduleStack_.back()];
+}
+
+const TypeChecker::NamespaceImport* TypeChecker::findNamespace(const std::string& alias) const
+{
+    if (moduleStack_.empty()) {
+        return nullptr;
+    }
+    const auto table = moduleNamespaces_.find(moduleStack_.back());
+    if (table == moduleNamespaces_.end()) {
+        return nullptr;
+    }
+    const auto found = table->second.find(alias);
+    return found == table->second.end() ? nullptr : &found->second;
+}
+
+std::string TypeChecker::qualifiedStructName(const Token& qualifier, const Token& name) const
+{
+    return qualifier.lexeme + "." + name.lexeme;
+}
+
+std::string TypeChecker::structConstructorTypeName(const StructConstructExpr& expression) const
+{
+    if (expression.qualifier) {
+        return qualifiedStructName(*expression.qualifier, expression.name);
+    }
+    return expression.name.lexeme;
+}
+
+void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceImport imported)
+{
+    if (!statement.alias) {
+        throw TypeError(statement.keyword, "internal error: namespace import without alias");
+    }
+
+    const Token& alias = *statement.alias;
+    NamespaceTable& namespaces = currentNamespaceTable();
+    if (namespaces.find(alias.lexeme) != namespaces.end()
+        || currentScope().find(alias.lexeme) != currentScope().end()
+        || structTypes_.find(alias.lexeme) != structTypes_.end()) {
+        throw TypeError(alias, "namespace alias `" + alias.lexeme + "` conflicts with an existing declaration");
+    }
+
+    for (const auto& entry : imported.structs) {
+        StructTypeDecl qualified = entry.second;
+        qualified.name.lexeme = alias.lexeme + "." + entry.first;
+        structTypes_.emplace(qualified.name.lexeme, std::move(qualified));
+    }
+
+    namespaces.emplace(alias.lexeme, std::move(imported));
+}
+
 void TypeChecker::checkImport(const ImportStmt& statement)
 {
     if (moduleStack_.empty()) {
@@ -617,17 +695,33 @@ void TypeChecker::checkImport(const ImportStmt& statement)
     }
 
     const std::size_t currentModuleId = moduleStack_.back();
-    if (moduleImportedModules_[currentModuleId].find(statement.resolvedModuleId)
+    if (!statement.alias && moduleImportedModules_[currentModuleId].find(statement.resolvedModuleId)
         != moduleImportedModules_[currentModuleId].end()) {
         return;
     }
-    moduleImportedModules_[currentModuleId].insert(statement.resolvedModuleId);
+    if (!statement.alias) {
+        moduleImportedModules_[currentModuleId].insert(statement.resolvedModuleId);
+    }
 
     const ModuleStmt* imported = findModule(*currentProgram_, statement.resolvedModuleId);
     if (!imported) {
         throw TypeError(statement.keyword, "internal error: unresolved import module");
     }
     checkModule(*imported);
+
+    if (statement.alias) {
+        NamespaceImport namespaceImport;
+        const auto exports = moduleExports_.find(imported->moduleId);
+        if (exports != moduleExports_.end()) {
+            namespaceImport.values = exports->second;
+        }
+        const auto structExports = moduleStructExports_.find(imported->moduleId);
+        if (structExports != moduleStructExports_.end()) {
+            namespaceImport.structs = structExports->second;
+        }
+        declareNamespaceAlias(statement, std::move(namespaceImport));
+        return;
+    }
 
     const auto exports = moduleExports_.find(imported->moduleId);
     if (exports != moduleExports_.end()) {
@@ -963,11 +1057,23 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
 
 TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(const StructConstructExpr& expression)
 {
-    const StructTypeDecl* structType = findStructType(expression.name.lexeme);
-    if (!structType) {
-        throw TypeError(expression.name, "unknown struct type `" + expression.name.lexeme + "`");
+    if (expression.qualifier) {
+        const NamespaceImport* namespaceImport = findNamespace(expression.qualifier->lexeme);
+        if (!namespaceImport) {
+            throw TypeError(*expression.qualifier, "unknown module namespace `" + expression.qualifier->lexeme + "`");
+        }
+        if (namespaceImport->structs.find(expression.name.lexeme) == namespaceImport->structs.end()) {
+            throw TypeError(expression.name,
+                "module namespace `" + expression.qualifier->lexeme + "` has no exported type `" + expression.name.lexeme + "`");
+        }
     }
-    return checkNamedStructFields(expression.name, namedStructType(expression.name.lexeme), expression.fields);
+
+    const std::string typeName = structConstructorTypeName(expression);
+    const StructTypeDecl* structType = findStructType(typeName);
+    if (!structType) {
+        throw TypeError(expression.name, "unknown struct type `" + typeName + "`");
+    }
+    return checkNamedStructFields(expression.name, namedStructType(typeName), expression.fields);
 }
 
 TypeInfo TypeChecker::checkExpression(const Expr& expression)
@@ -1042,6 +1148,9 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
         const Binding* binding = findVariable(variable->name.lexeme);
         if (!binding) {
+            if (findNamespace(variable->name.lexeme)) {
+                throw TypeError(variable->name, "namespace alias `" + variable->name.lexeme + "` is not a value");
+            }
             throw TypeError(variable->name, "undefined variable `" + variable->name.lexeme + "`");
         }
         resolvedNames_.recordVariable(*variable, binding->resolvedName);
@@ -1051,6 +1160,9 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
         Binding* target = findVariable(assign->name.lexeme);
         if (!target) {
+            if (findNamespace(assign->name.lexeme)) {
+                throw TypeError(assign->name, "cannot assign to namespace alias `" + assign->name.lexeme + "`");
+            }
             throw TypeError(assign->name, "undefined variable `" + assign->name.lexeme + "`");
         }
 
@@ -1125,6 +1237,17 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* field = dynamic_cast<const FieldAccessExpr*>(&expression)) {
+        if (const auto* variable = dynamic_cast<const VariableExpr*>(field->object.get())) {
+            if (const NamespaceImport* namespaceImport = findNamespace(variable->name.lexeme)) {
+                const auto found = namespaceImport->values.find(field->name.lexeme);
+                if (found == namespaceImport->values.end()) {
+                    throw TypeError(field->name,
+                        "module namespace `" + variable->name.lexeme + "` has no exported member `" + field->name.lexeme + "`");
+                }
+                resolvedNames_.recordFieldAccess(*field, found->second.resolvedName);
+                return CheckedExpression{found->second.type};
+            }
+        }
         const TypeInfo object = checkExpression(*field->object);
         if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
             throw TypeError(field->name, "can only access fields on structs");
@@ -1371,6 +1494,18 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
             parameterTypes.push_back(resolveAnnotation(parameter));
         }
         return functionType(std::move(parameterTypes), resolveAnnotation(*typeName.returnType));
+    }
+
+    if (typeName.kind == TypeAnnotation::Kind::Qualified) {
+        const NamespaceImport* namespaceImport = findNamespace(typeName.qualifier.lexeme);
+        if (!namespaceImport) {
+            throw TypeError(typeName.qualifier, "unknown module namespace `" + typeName.qualifier.lexeme + "`");
+        }
+        if (namespaceImport->structs.find(typeName.token.lexeme) == namespaceImport->structs.end()) {
+            throw TypeError(typeName.token,
+                "module namespace `" + typeName.qualifier.lexeme + "` has no exported type `" + typeName.token.lexeme + "`");
+        }
+        return namedStructType(qualifiedStructName(typeName.qualifier, typeName.token));
     }
 
     if (typeName.token.lexeme == "number") {
