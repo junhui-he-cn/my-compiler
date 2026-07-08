@@ -144,4 +144,4 @@ typeArguments = typeExpr,
                 { ",", typeExpr } ;
 identifier  = letter, { letter | digit | "_" } ;
 number      = digit, { digit }, [ ".", digit, { digit } ] ;
-string      = "\"", { character }, "\"" ;
+string      = '"', { character }, '"' ;

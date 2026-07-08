@@ -188,7 +188,14 @@ Suggested features:
 - Clear cycle handling. Implemented.
 - `export let`, `export fun`, and `export struct` for explicit cross-file visibility. Implemented.
 - CLI behavior for multi-file source loading. Implemented for direct CLI inputs.
-- Golden fixtures that include secondary source files.
+- Golden fixtures that include secondary source files. Implemented.
+
+Remaining future work:
+
+- Namespace imports, such as an eventual `import "path" as name` form, so exported declarations do not have to enter the importing file's top-level scope directly.
+- Package or module search paths beyond explicit relative/absolute source paths.
+- Re-export syntax for forwarding declarations from one module through another.
+- Separate compilation or module artifacts instead of always recursively loading source and compiling one combined program.
 
 Why late: modules affect diagnostics, CLI source management, test layout, and name resolution across compilation units.
 
