@@ -22,7 +22,6 @@ public:
 private:
     StmtPtr declaration();
     StmtPtr exportDeclaration();
-    StmtPtr exportTargetDeclaration(const Token& exportKeyword);
     StmtPtr structDeclaration();
     std::vector<StructFieldDecl> structFields();
     StructFieldDecl structField();

@@ -77,8 +77,7 @@ void IRCompiler::compileStatement(const Stmt& statement)
         return;
     }
 
-    if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement)) {
-        compileStatement(*exportStmt->declaration);
+    if (dynamic_cast<const ExportStmt*>(&statement)) {
         return;
     }
 

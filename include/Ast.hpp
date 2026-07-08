@@ -210,11 +210,11 @@ struct ImportStmt final : Stmt {
 };
 
 struct ExportStmt final : Stmt {
-    ExportStmt(Token keyword, StmtPtr declaration);
+    ExportStmt(Token keyword, std::vector<Token> names);
     void print(std::ostream& out, int indent) const override;
 
     Token keyword;
-    StmtPtr declaration;
+    std::vector<Token> names;
 };
 
 struct ModuleStmt final : Stmt {

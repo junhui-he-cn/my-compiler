@@ -72,22 +72,14 @@ StmtPtr Parser::declaration()
 StmtPtr Parser::exportDeclaration()
 {
     Token keyword = previous();
-    return std::make_unique<ExportStmt>(keyword, exportTargetDeclaration(keyword));
-}
+    std::vector<Token> names;
 
-StmtPtr Parser::exportTargetDeclaration(const Token&)
-{
-    if (match(TokenType::Struct)) {
-        return structDeclaration();
+    names.push_back(consume(TokenType::Identifier, "expected identifier after `export`"));
+    while (match(TokenType::Comma)) {
+        names.push_back(consume(TokenType::Identifier, "expected identifier after `,` in export list"));
     }
-    if (check(TokenType::Fun) && checkNext(TokenType::Identifier)) {
-        advance();
-        return functionDeclaration();
-    }
-    if (match(TokenType::Let)) {
-        return letDeclaration();
-    }
-    throw ParseError(peek(), "expected `let`, `fun`, or `struct` after `export`");
+    consume(TokenType::Semicolon, "expected `;` after export list");
+    return std::make_unique<ExportStmt>(std::move(keyword), std::move(names));
 }
 
 StmtPtr Parser::structDeclaration()

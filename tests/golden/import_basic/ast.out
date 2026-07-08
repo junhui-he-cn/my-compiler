@@ -1,8 +1,8 @@
 Program
   Module 0
-    Export
-      Fun add(a, b)
-        Return (+ a b)
+    Fun add(a, b)
+      Return (+ a b)
+    Export add
   Module 1 entry
     Import "./lib.cd"
     Print (call add 1 2)

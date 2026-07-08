@@ -175,6 +175,7 @@ private:
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
     std::unordered_map<std::size_t, ExportTable> moduleExports_;
     std::unordered_map<std::size_t, std::unordered_map<std::string, StructTypeDecl>> moduleStructExports_;
+    std::unordered_map<std::size_t, std::unordered_set<std::string>> moduleLocalStructNames_;
     std::unordered_map<std::size_t, std::unordered_set<std::size_t>> moduleImportedModules_;
     std::unordered_set<std::size_t> checkedModules_;
     std::vector<std::size_t> moduleStack_;

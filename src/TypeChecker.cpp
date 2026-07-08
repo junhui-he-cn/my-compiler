@@ -319,6 +319,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     structTypes_.clear();
     moduleExports_.clear();
     moduleStructExports_.clear();
+    moduleLocalStructNames_.clear();
     moduleImportedModules_.clear();
     checkedModules_.clear();
     moduleStack_.clear();
@@ -465,10 +466,6 @@ void TypeChecker::checkStatement(const Stmt& statement)
     }
 
     if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement)) {
-        if (moduleStack_.empty()) {
-            checkStatement(*exportStmt->declaration);
-            return;
-        }
         checkExport(*exportStmt);
         return;
     }
@@ -654,40 +651,38 @@ void TypeChecker::checkImport(const ImportStmt& statement)
 
 void TypeChecker::checkExport(const ExportStmt& statement)
 {
-    if (moduleStack_.empty()) {
-        throw TypeError(statement.keyword, "`export` is only allowed at top level");
-    }
+    const bool inModule = !moduleStack_.empty();
+    const std::size_t moduleId = inModule ? moduleStack_.back() : 0;
 
-    checkStatement(*statement.declaration);
+    for (const auto& name : statement.names) {
+        bool exported = false;
 
-    if (const auto* let = dynamic_cast<const LetStmt*>(statement.declaration.get())) {
-        Binding* binding = findVariable(let->name.lexeme);
-        if (!binding) {
-            throw TypeError(let->name, "undefined variable `" + let->name.lexeme + "`");
+        if (Binding* binding = findVariable(name.lexeme)) {
+            if (binding->scopeDepth == 0 && !binding->imported) {
+                if (inModule) {
+                    moduleExports_[moduleId].emplace(name.lexeme, *binding);
+                }
+                exported = true;
+            }
         }
-        moduleExports_[moduleStack_.back()].emplace(let->name.lexeme, *binding);
-        return;
-    }
 
-    if (const auto* function = dynamic_cast<const FunctionStmt*>(statement.declaration.get())) {
-        Binding* binding = findVariable(function->name.lexeme);
-        if (!binding) {
-            throw TypeError(function->name, "undefined function `" + function->name.lexeme + "`");
+        if (inModule) {
+            const auto localStructs = moduleLocalStructNames_.find(moduleId);
+            if (localStructs != moduleLocalStructNames_.end()
+                && localStructs->second.find(name.lexeme) != localStructs->second.end()) {
+                if (const StructTypeDecl* structType = findStructType(name.lexeme)) {
+                    moduleStructExports_[moduleId].emplace(name.lexeme, *structType);
+                    exported = true;
+                }
+            }
+        } else if (findStructType(name.lexeme)) {
+            exported = true;
         }
-        moduleExports_[moduleStack_.back()].emplace(function->name.lexeme, *binding);
-        return;
-    }
 
-    if (const auto* structure = dynamic_cast<const StructDeclStmt*>(statement.declaration.get())) {
-        const StructTypeDecl* structType = findStructType(structure->name.lexeme);
-        if (!structType) {
-            throw TypeError(structure->name, "unknown struct type `" + structure->name.lexeme + "`");
+        if (!exported) {
+            throw TypeError(name, "cannot export undefined name `" + name.lexeme + "`");
         }
-        moduleStructExports_[moduleStack_.back()].emplace(structure->name.lexeme, *structType);
-        return;
     }
-
-    throw TypeError(statement.keyword, "unsupported export declaration");
 }
 
 void TypeChecker::recordReturn(const Token& keyword, TypeInfo type)
@@ -782,6 +777,9 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
     }
 
     structTypes_.emplace(statement.name.lexeme, std::move(declaration));
+    if (!moduleStack_.empty()) {
+        moduleLocalStructNames_[moduleStack_.back()].insert(statement.name.lexeme);
+    }
 }
 
 void TypeChecker::checkFunction(const FunctionStmt& statement)

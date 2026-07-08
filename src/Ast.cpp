@@ -90,8 +90,10 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
     }
 
     if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&stmt)) {
-        out << "(export ";
-        writeInlineStmt(out, *exportStmt->declaration);
+        out << "(export";
+        for (const auto& name : exportStmt->names) {
+            out << ' ' << name.lexeme;
+        }
         out << ')';
         return;
     }
@@ -493,17 +495,20 @@ void ImportStmt::print(std::ostream& out, int indent) const
     out << "Import " << path.lexeme << "\n";
 }
 
-ExportStmt::ExportStmt(Token keyword, StmtPtr declaration)
+ExportStmt::ExportStmt(Token keyword, std::vector<Token> names)
     : keyword(std::move(keyword))
-    , declaration(std::move(declaration))
+    , names(std::move(names))
 {
 }
 
 void ExportStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
-    out << "Export\n";
-    declaration->print(out, indent + 1);
+    out << "Export";
+    for (const auto& name : names) {
+        out << ' ' << name.lexeme;
+    }
+    out << "\n";
 }
 
 ModuleStmt::ModuleStmt(std::size_t moduleId, std::string path, std::string source, std::vector<StmtPtr> statements, bool isEntry)
