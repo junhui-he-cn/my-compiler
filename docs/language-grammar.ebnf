@@ -43,7 +43,8 @@ letDecl     = "let", identifier,
 
 importDecl  = "import", string, ";" ;
 
-exportDecl  = "export", ( structDecl | funDecl | letDecl ) ;
+exportDecl  = "export", identifier,
+              { ",", identifier }, ";" ;
 
 ifStmt      = "if", expression, block,
               [ "else", block ] ;

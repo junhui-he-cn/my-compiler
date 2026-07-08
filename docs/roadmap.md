@@ -177,7 +177,7 @@ Each builtin should define behavior for both the IR interpreter and bytecode art
 
 ## Phase 14: Modules / Imports
 
-Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and `export let`, `export fun`, and `export struct` expose selected declarations to importers while keeping private helpers hidden. Namespaces, package search paths, separate compilation, and re-export syntax remain future work.
+Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and standalone export lists expose selected already-defined top-level declarations to importers while keeping private helpers hidden. Namespaces, package search paths, separate compilation, and re-export syntax remain future work.
 
 Goal: allow programs to be split across files.
 
@@ -186,7 +186,7 @@ Suggested features:
 - `import "path";` source loading. Implemented.
 - Deterministic path resolution relative to the importing file. Implemented.
 - Clear cycle handling. Implemented.
-- `export let`, `export fun`, and `export struct` for explicit cross-file visibility. Implemented.
+- Standalone `export name[, name...];` lists for explicit cross-file visibility. Implemented.
 - CLI behavior for multi-file source loading. Implemented for direct CLI inputs.
 - Golden fixtures that include secondary source files. Implemented.
 
