@@ -1,0 +1,2 @@
+let lib = 1;
+import "../namespace_import_value/lib.cd" as lib;

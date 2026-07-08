@@ -1,0 +1,2 @@
+import "../namespace_import_struct/lib.cd" as shapes;
+let p: shapes.Missing = nil;

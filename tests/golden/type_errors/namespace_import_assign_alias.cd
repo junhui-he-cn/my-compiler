@@ -1,0 +1,2 @@
+import "../namespace_import_value/lib.cd" as lib;
+lib = 1;

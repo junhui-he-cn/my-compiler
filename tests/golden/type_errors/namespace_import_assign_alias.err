@@ -1,0 +1,3 @@
+Type error at /home/junhe/compiler/tests/golden/type_errors/namespace_import_assign_alias.cd:2:1: cannot assign to namespace alias `lib`
+  lib = 1;
+  ^

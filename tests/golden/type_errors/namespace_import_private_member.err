@@ -1,0 +1,3 @@
+Type error at /home/junhe/compiler/tests/golden/type_errors/namespace_import_private_member.cd:2:11: module namespace `lib` has no exported member `hidden`
+  print lib.hidden;
+            ^

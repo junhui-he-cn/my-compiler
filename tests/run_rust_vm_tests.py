@@ -169,6 +169,7 @@ def main() -> int:
             "named_struct_types",
             "multi_file_functions",
             "module_exports",
+            "namespace_imports",
             "native_stdlib_math",
             "native_stdlib_push_pop",
             "struct_literals_field_access",

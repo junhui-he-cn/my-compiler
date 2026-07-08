@@ -1,0 +1,2 @@
+let value = "a";
+export value;
