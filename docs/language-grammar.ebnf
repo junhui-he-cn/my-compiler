@@ -5,6 +5,7 @@ program     = { declaration } ;
 declaration = importDecl
             | exportDecl
             | structDecl
+            | implDecl
             | funDecl
             | letDecl
             | statement ;
@@ -26,6 +27,14 @@ funDecl     = "fun", identifier,
 
 structDecl  = "struct", identifier,
               "{", [ structFields ], "}" ;
+
+implDecl    = "impl", identifier,
+              "{", { methodDecl }, "}" ;
+
+methodDecl  = "fun", identifier,
+              "(", [ parameters ], ")",
+              [ ":", typeExpr ],
+              block ;
 
 structFields = structField,
                { ",", structField } ;

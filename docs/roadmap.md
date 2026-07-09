@@ -10,7 +10,7 @@ Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-
 
 The language currently supports:
 
-- Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, top-level `import`, blocks, and expression statements.
+- Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, `struct`, top-level `impl`, top-level `import`, blocks, and expression statements.
 - Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, builtin member calls, function expressions, grouping, unary operators, binary/logical operators, assignment expressions, and numeric variable compound assignment.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
@@ -153,7 +153,7 @@ Recommended split:
 
 ## Phase 12: Records / Structs
 
-Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Phase 12E is implemented: builtin member-call sugar supports selected array/string helpers (`push`, `pop`, `len`, `substr`, `charAt`) while full user-defined methods remain future work. Methods, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
+Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Phase 12E is implemented: builtin member-call sugar supports selected array/string helpers (`push`, `pop`, `len`, `substr`, `charAt`). Phase 12F is implemented: local named structs can define statically resolved methods in `impl` blocks, with `this` bound to the receiver and method calls lowered to ordinary function calls. Methods on imported structs, method export/import behavior, dynamic dispatch, inheritance, overloading, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
 
 Goal: add named fields and simple aggregate data.
 
@@ -165,9 +165,10 @@ Possible approaches:
 - Builtin member-call sugar for collection/string helpers such as `xs.push(value)`,
   `xs.pop()`, `xs.len()`, and `text.substr(start, length)`. Implemented.
 - Named structs: `struct Person { name: string, age: number }`. Implemented as static-only type shapes with `Person { ... }` constructor expressions.
-- Full user-defined methods, `this`, struct methods, and optional chaining remain future work.
+- Local named struct methods in `impl` blocks with implicit `this`. Implemented for local named structs.
+- Exported/imported methods, dynamic dispatch, inheritance, overloading, and optional chaining remain future work.
 
-Keep methods, inheritance, and protocols out of the first records slice.
+Keep inheritance, protocols, dynamic dispatch, and method export/import behavior out of the first records slice.
 
 Likely touch points:
 

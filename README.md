@@ -115,7 +115,20 @@ print p.name;
 p.age = 37;
 ```
 
-Named structs are static-only in this phase: runtime values remain anonymous struct values. Named constructor expressions such as `Person { name: "Ada", age: 36 }` infer the named static type, require an exact field match, and allow fields in any order. Annotated anonymous literals such as `let p: Person = { name: "Ada", age: 36 };` remain supported. Field access/assignment on known named struct values is statically checked. Constructor functions such as `Person(...)`, methods, recursive struct types, and runtime type names are not implemented yet.
+Named structs are static-only in this phase: runtime values remain anonymous struct values. Named constructor expressions such as `Person { name: "Ada", age: 36 }` infer the named static type, require an exact field match, and allow fields in any order. Annotated anonymous literals such as `let p: Person = { name: "Ada", age: 36 };` remain supported. Field access/assignment on known named struct values is statically checked. Constructor functions such as `Person(...)`, recursive struct types, and runtime type names are not implemented yet.
+
+Local named structs may define first-slice methods in top-level `impl` blocks. Methods are statically resolved on known named struct receiver types, and method calls lower to ordinary function calls with the receiver passed as implicit `this`:
+
+```cd
+struct Person { name: string }
+impl Person {
+  fun greet(): string { return this.name; }
+}
+let p: Person = Person { name: "Ada" };
+print p.greet();
+```
+
+Inside a method, `this` has the impl struct type; field assignment through `this.field = value` mutates the receiver. Methods on anonymous or imported/namespaced structs, method export/import behavior, inheritance, overloading, dynamic dispatch, static methods, and function-valued field calls are not implemented yet.
 
 ```cd
 let person = { name: "Ada", age: 36 };
@@ -132,7 +145,7 @@ The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(n
 
 The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use byte offsets, matching the current `len(string)` byte-length behavior; offsets must be finite integer numbers and in bounds. User bindings with the same names shadow these builtins.
 
-Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `substr`, or `charAt` do not shadow member-call sugar. User-defined methods, `this`, and struct methods are not implemented yet.
+Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `substr`, or `charAt` do not shadow member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: `"nil"`, `"number"`, `"bool"`, `"string"`, `"function"`, `"array"`, or `"struct"`. Named struct values return `"struct"`, and arrays return `"array"` regardless of static element type. A user binding named `typeOf` shadows the builtin.
 
@@ -145,7 +158,7 @@ Supported expressions:
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Compound assignment: `name += expression`, `name -= expression`, `name *= expression`, and `name /= expression` update an existing numeric variable and evaluate to the assigned value. This first slice supports variable targets only; array index and struct field compound assignment are not implemented yet.
-- Calls: `callee(argument*)`
+- Calls: `callee(argument*)` and member calls `receiver.method(argument*)`
 - Indexing: `array[index]` reads an element. Indexes must be integer numbers in range.
 - Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element and length mutation through `push(array, value)` and `pop(array)`.
 - Struct field assignment: `object.field = value` mutates an existing field and evaluates to the assigned value. Structs are reference values, so aliases observe field mutation. Assigning a missing field is a runtime error.
