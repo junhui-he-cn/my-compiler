@@ -1,0 +1,27 @@
+cdbc 0.1
+
+constants:
+  c0 = number 1
+  c1 = number 2
+
+names:
+  n0 = "xs#0"
+  n1 = "xs#0"
+  n2 = "push"
+  n3 = "xs#0"
+  n4 = "xs#0"
+  n5 = "pop"
+
+main registers=9:
+  r0 = constant c0
+  r1 = array [r0]
+  store_var n0, r1
+  r2 = load_var n1
+  r3 = constant c1
+  r4 = native_call n2 [r2, r3]
+  r5 = load_var n3
+  r6 = len r5
+  print r6
+  r7 = load_var n4
+  r8 = native_call n5 [r7]
+  print r8
