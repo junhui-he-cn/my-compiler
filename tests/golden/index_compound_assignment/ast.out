@@ -1,0 +1,8 @@
+Program
+  Let xs: [number] = (array 10 4)
+  Expr (+= (index xs 0) 5)
+  Print (index xs 0)
+  Print (-= (index xs 0) 3)
+  Print (*= (index xs 0) 2)
+  Print (/= (index xs 0) 4)
+  Print (index xs 1)

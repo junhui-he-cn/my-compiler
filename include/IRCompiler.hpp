@@ -48,8 +48,10 @@ private:
     IRRegister emitCompoundAssign(const CompoundAssignExpr& expression);
     IROp compoundAssignmentOp(TokenType op) const;
     IRRegister emitIndexAssign(const IndexAssignExpr& expression);
+    IRRegister emitIndexCompoundAssign(const IndexCompoundAssignExpr& expression);
     IRRegister emitFieldAccess(const FieldAccessExpr& expression);
     IRRegister emitFieldAssign(const FieldAssignExpr& expression);
+    IRRegister emitFieldCompoundAssign(const FieldCompoundAssignExpr& expression);
     IRRegister emitUnary(TokenType op, IRRegister value);
     IRRegister emitBinary(TokenType op, IRRegister left, IRRegister right);
     IRRegister emitLogical(const LogicalExpr& expression);

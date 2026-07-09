@@ -383,6 +383,14 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitCompoundAssign(*compound);
     }
 
+    if (const auto* indexCompound = dynamic_cast<const IndexCompoundAssignExpr*>(&expression)) {
+        return emitIndexCompoundAssign(*indexCompound);
+    }
+
+    if (const auto* fieldCompound = dynamic_cast<const FieldCompoundAssignExpr*>(&expression)) {
+        return emitFieldCompoundAssign(*fieldCompound);
+    }
+
     if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(&expression)) {
         return emitIndexAssign(*indexAssign);
     }
@@ -631,6 +639,21 @@ IRRegister IRCompiler::emitIndexAssign(const IndexAssignExpr& expression)
     return ir_.emitAssignIndex(collection, index, value);
 }
 
+IRRegister IRCompiler::emitIndexCompoundAssign(const IndexCompoundAssignExpr& expression)
+{
+    IRRegister collection = compileExpression(*expression.collection);
+    IRRegister index = compileExpression(*expression.index);
+    IRRegister oldValue = ir_.emitIndex(collection, index);
+    IRRegister checkedOldValue = ir_.emitAssertNumber(
+        oldValue, "`" + expression.op.lexeme + "` expects number target");
+    IRRegister value = compileExpression(*expression.value);
+    IRRegister checkedValue = ir_.emitAssertNumber(
+        value, "`" + expression.op.lexeme + "` expects number value");
+    IRRegister result = ir_.emitBinary(compoundAssignmentOp(expression.op.type), checkedOldValue, checkedValue);
+    ir_.emitAssignIndex(collection, index, result);
+    return result;
+}
+
 IRRegister IRCompiler::emitFieldAccess(const FieldAccessExpr& expression)
 {
     if (resolvedNames_->hasFieldAccess(expression)) {
@@ -645,6 +668,20 @@ IRRegister IRCompiler::emitFieldAssign(const FieldAssignExpr& expression)
     IRRegister object = compileExpression(*expression.object);
     IRRegister value = compileExpression(*expression.value);
     return ir_.emitAssignField(object, expression.name.lexeme, value);
+}
+
+IRRegister IRCompiler::emitFieldCompoundAssign(const FieldCompoundAssignExpr& expression)
+{
+    IRRegister object = compileExpression(*expression.object);
+    IRRegister oldValue = ir_.emitField(object, expression.name.lexeme);
+    IRRegister checkedOldValue = ir_.emitAssertNumber(
+        oldValue, "`" + expression.op.lexeme + "` expects number target");
+    IRRegister value = compileExpression(*expression.value);
+    IRRegister checkedValue = ir_.emitAssertNumber(
+        value, "`" + expression.op.lexeme + "` expects number value");
+    IRRegister result = ir_.emitBinary(compoundAssignmentOp(expression.op.type), checkedOldValue, checkedValue);
+    ir_.emitAssignField(object, expression.name.lexeme, result);
+    return result;
 }
 
 IRRegister IRCompiler::emitUnary(TokenType op, IRRegister value)
