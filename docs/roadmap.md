@@ -109,7 +109,7 @@ Recommended split:
 
 ## Phase 11: Loop Control and For Loops
 
-Status: in progress. Phase 11A is implemented: `break;` exits the nearest `while`, and `continue;` skips to the nearest `while` condition check. `for` loop syntax remains future work.
+Status: in progress. Phase 11A is implemented: `break;` exits the nearest `while`, and `continue;` skips to the nearest `while` condition check. Phase 11B is implemented: C-style `for` loops support optional initializer, condition, and increment clauses, with `continue;` running the increment before the next condition check. Array `for-in` iteration remains future work.
 
 Goal: make iteration practical and structured.
 
@@ -118,7 +118,8 @@ Suggested features:
 - `break;` exits the nearest loop.
 - `continue;` starts the next nearest loop iteration.
 - Type errors for `break` and `continue` outside loops.
-- A later `for` form after array iteration and mutation semantics are clearer.
+- C-style `for` loop syntax and lowering. Implemented.
+- A later `for-in` form for array iteration after iteration semantics are clearer.
 
 Likely touch points:
 
@@ -132,7 +133,7 @@ Likely touch points:
 Recommended split:
 
 - Phase 11A: `break` / `continue` for existing `while` loops. Implemented.
-- Phase 11B: `for` loop syntax and lowering.
+- Phase 11B: C-style `for` loop syntax and lowering. Implemented.
 
 ## Phase 12: Records / Structs
 

@@ -12,6 +12,7 @@ declaration = importDecl
 statement   = printStmt
             | ifStmt
             | whileStmt
+            | forStmt
             | breakStmt
             | continueStmt
             | returnStmt
@@ -51,6 +52,17 @@ ifStmt      = "if", expression, block,
               [ "else", block ] ;
 
 whileStmt   = "while", expression, block ;
+
+forStmt     = "for", [ forInitializer ], ";",
+              [ expression ], ";",
+              [ expression ], block ;
+
+forInitializer = letForInitializer
+               | expression ;
+
+letForInitializer = "let", identifier,
+                    [ ":", typeExpr ],
+                    "=", expression ;
 
 breakStmt   = "break", ";" ;
 

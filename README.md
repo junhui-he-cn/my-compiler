@@ -36,6 +36,7 @@ struct Name { field: type, ... }
 print expression;
 if expression { declaration* } [else { declaration* }]
 while expression { declaration* }
+for [initializer]; [condition]; [increment] { declaration* }
 break;
 continue;
 fun name(parameter[: type]*) [: type] { declaration* }
@@ -46,7 +47,7 @@ expression;
 
 Type annotations support `number`, `bool`, `string`, `nil`, named struct types, namespaced struct types such as `math.Point`, array types such as `[number]` and `[[string]]`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Array type annotations may be used in the same positions and carry static element types through indexing, index assignment, `push`, and `pop`. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and anonymous `struct`; non-empty unannotated array literals infer an element type only when all known elements have the same type. Mixed unannotated arrays and empty unannotated arrays remain dynamic arrays with unknown element type. Known function signatures are checked for assignment compatibility, call argument types, and function returns. Generic types and nullable type syntax are not implemented yet. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
 
-`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `break;` exits the nearest enclosing `while`, and `continue;` skips to that loop's next condition check. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
+`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. `for` loops use C-style clauses: `for initializer; condition; increment { ... }`. Each clause is optional. A `let` initializer is scoped to the loop condition, body, and increment, and is not visible after the loop. `break;` exits the nearest enclosing loop. `continue;` in a `while` skips to that loop's next condition check, while `continue;` in a `for` loop evaluates the increment before checking the condition again. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop. Array `for-in` iteration is not implemented yet.
 
 ### Source imports
 
