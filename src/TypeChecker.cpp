@@ -1376,6 +1376,40 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         }
         return CheckedExpression{simpleType(StaticType::Number)};
     }
+    case NativeFunctionKind::Str:
+        checkExpressionInfo(*expression.arguments[0]);
+        return CheckedExpression{simpleType(StaticType::String)};
+    case NativeFunctionKind::Substr: {
+        const CheckedExpression stringArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (stringArgument.type.kind != StaticType::Unknown && stringArgument.type.kind != StaticType::String) {
+            throw TypeError(expression.paren,
+                "substr expects string as first argument, got " + typeInfoName(stringArgument.type));
+        }
+        const CheckedExpression startArgument = checkExpressionInfo(*expression.arguments[1]);
+        if (startArgument.type.kind != StaticType::Unknown && startArgument.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "substr expects number as second argument, got " + typeInfoName(startArgument.type));
+        }
+        const CheckedExpression lengthArgument = checkExpressionInfo(*expression.arguments[2]);
+        if (lengthArgument.type.kind != StaticType::Unknown && lengthArgument.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "substr expects number as third argument, got " + typeInfoName(lengthArgument.type));
+        }
+        return CheckedExpression{simpleType(StaticType::String)};
+    }
+    case NativeFunctionKind::CharAt: {
+        const CheckedExpression stringArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (stringArgument.type.kind != StaticType::Unknown && stringArgument.type.kind != StaticType::String) {
+            throw TypeError(expression.paren,
+                "charAt expects string as first argument, got " + typeInfoName(stringArgument.type));
+        }
+        const CheckedExpression indexArgument = checkExpressionInfo(*expression.arguments[1]);
+        if (indexArgument.type.kind != StaticType::Unknown && indexArgument.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "charAt expects number as second argument, got " + typeInfoName(indexArgument.type));
+        }
+        return CheckedExpression{simpleType(StaticType::String)};
+    }
     }
 
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");

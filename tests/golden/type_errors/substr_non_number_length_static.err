@@ -1,0 +1,1 @@
+Type error at 1:23: substr expects number as third argument, got bool

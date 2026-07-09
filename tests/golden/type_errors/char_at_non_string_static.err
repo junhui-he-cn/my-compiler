@@ -1,0 +1,1 @@
+Type error at 1:15: charAt expects string as first argument, got bool

@@ -1,0 +1,2 @@
+let charAt = 123;
+charAt("x", 0);

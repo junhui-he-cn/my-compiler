@@ -10,6 +10,9 @@ enum class NativeFunctionKind {
     Floor,
     Ceil,
     Sqrt,
+    Str,
+    Substr,
+    CharAt,
 };
 
 struct NativeFunctionSignature {
