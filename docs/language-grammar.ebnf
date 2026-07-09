@@ -98,11 +98,11 @@ assignmentTarget = identifier
                  | call, "[", expression, "]"
                  | call, ".", identifier ;
 
-(* Assignment is right-associative. Plain `=` accepts variable, index, and field
-   targets (`name = value`, `array[index] = value`, and `object.field = value`);
-   compound assignment currently accepts variable targets only
-   (`name += value`, `name -= value`, `name *= value`, and `name /= value`) and
-   is numeric-only. All other left sides are parse errors. *)
+(* Assignment is right-associative. Plain `=` and compound assignment operators
+   accept variable, index, and field targets (`name = value`, `array[index] = value`,
+   `object.field = value`, `name += value`, `array[index] += value`, and
+   `object.field += value`). Compound assignment is numeric-only. All other left
+   sides are parse errors. *)
 
 logicalOr   = logicalAnd,
               { "||", logicalAnd } ;

@@ -11,7 +11,7 @@ Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-
 The language currently supports:
 
 - Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, `struct`, top-level `impl`, top-level `import`, blocks, and expression statements.
-- Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, builtin member calls, function expressions, grouping, unary operators, binary/logical operators, assignment expressions, and numeric variable compound assignment.
+- Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, builtin member calls, function expressions, grouping, unary operators, binary/logical operators, assignment expressions, and numeric compound assignment for variables, array elements, and struct fields.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
@@ -48,8 +48,8 @@ risk, and how well they build on recently completed work:
 
 1. **Phase 14E: module re-export and search paths** — revisit modules after
    the core language ergonomics above are stronger.
-2. **Phase 15E: index/field compound assignment** — extend compound assignment
-   beyond numeric variables if mutation ergonomics remain a priority.
+2. **Phase 15F: flow-sensitive nullable narrowing** — make nullable annotations
+   easier to use in real programs.
 
 Each slice should still start with a focused design spec and implementation
 plan before changing compiler behavior.
@@ -233,17 +233,17 @@ Why late: modules affect diagnostics, CLI source management, test layout, and na
 
 Goal: improve ergonomics after the core language grows.
 
-Status: in progress. Phase 15A is implemented: located front-end diagnostics print the relevant source line and a caret while keeping one-line golden compatibility for broad fixtures. Phase 15B is implemented: anonymous function expressions beginning with `fun (` can appear directly as expression statements while named `fun name(...)` declarations keep their existing behavior. Phase 15C is implemented: imported-file and direct multi-file lexer, parser, and type diagnostics report source file paths with file-local snippets, while stdin and single-file pathless diagnostics remain supported and locationless diagnostics remain one-line. Phase 15D is implemented for numeric variable compound assignment (`+=`, `-=`, `*=`, `/=`). Index and field compound assignment remain future work.
+Status: in progress. Phase 15A is implemented: located front-end diagnostics print the relevant source line and a caret while keeping one-line golden compatibility for broad fixtures. Phase 15B is implemented: anonymous function expressions beginning with `fun (` can appear directly as expression statements while named `fun name(...)` declarations keep their existing behavior. Phase 15C is implemented: imported-file and direct multi-file lexer, parser, and type diagnostics report source file paths with file-local snippets, while stdin and single-file pathless diagnostics remain supported and locationless diagnostics remain one-line. Phase 15D is implemented for numeric variable compound assignment (`+=`, `-=`, `*=`, `/=`). Phase 15E is implemented for numeric compound assignment on array index and struct field targets.
 
 Suggested features:
 
 - Source snippets and carets for front-end diagnostics. Implemented, with file-aware paths for imported files and direct multi-file inputs.
 - More parse recovery and multi-error reporting.
 - Clear handling for lambda expression statements that begin with `fun`. Implemented by parser disambiguation between `fun name` declarations and `fun (` expressions.
-- Compound assignment operators. Phase 15D is implemented for numeric variable
-  targets only (`name += expr`, `name -= expr`, `name *= expr`, `name /= expr`).
-  A later slice can extend compound assignment to `array[index]` and
-  `object.field` targets after assignment target reuse is designed.
+- Compound assignment operators. Phase 15D implemented numeric variable
+  targets (`name += expr`, `name -= expr`, `name *= expr`, `name /= expr`),
+  and Phase 15E extended the same numeric-only semantics to `array[index]`
+  and `object.field` targets.
 - Comments or doc comments if they are still missing.
 
 ## Deferred Backend Track
@@ -260,4 +260,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, or **Phase 15E: index/field compound assignment** if the priority is mutation ergonomics.
+Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, or **Phase 15F: flow-sensitive nullable narrowing** if the priority is type-system ergonomics.
