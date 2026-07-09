@@ -718,6 +718,25 @@ void ForStmt::print(std::ostream& out, int indent) const
     }
 }
 
+ForInStmt::ForInStmt(Token keyword, Token variable, ExprPtr iterable, StmtPtr body)
+    : keyword(std::move(keyword))
+    , variable(std::move(variable))
+    , iterable(std::move(iterable))
+    , body(std::move(body))
+{
+}
+
+void ForInStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "ForIn " << variable.lexeme << " in ";
+    writeExpr(out, iterable);
+    out << "\n";
+    if (body) {
+        body->print(out, indent + 1);
+    }
+}
+
 BreakStmt::BreakStmt(Token keyword)
     : keyword(std::move(keyword))
 {

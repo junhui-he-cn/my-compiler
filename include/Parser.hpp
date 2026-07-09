@@ -36,6 +36,7 @@ private:
     StmtPtr statement();
     StmtPtr ifStatement();
     StmtPtr forStatement();
+    StmtPtr forInStatement(Token keyword, Token variable);
     StmtPtr forInitializer();
     StmtPtr whileStatement();
     StmtPtr breakStatement();

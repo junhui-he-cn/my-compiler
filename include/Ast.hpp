@@ -291,6 +291,16 @@ struct ForStmt final : Stmt {
     StmtPtr body;
 };
 
+struct ForInStmt final : Stmt {
+    ForInStmt(Token keyword, Token variable, ExprPtr iterable, StmtPtr body);
+    void print(std::ostream& out, int indent) const override;
+
+    Token keyword;
+    Token variable;
+    ExprPtr iterable;
+    StmtPtr body;
+};
+
 struct BreakStmt final : Stmt {
     explicit BreakStmt(Token keyword);
     void print(std::ostream& out, int indent) const override;

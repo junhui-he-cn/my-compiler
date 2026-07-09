@@ -290,6 +290,15 @@ StmtPtr Parser::forStatement()
 {
     Token keyword = previous();
 
+    if (check(TokenType::In)) {
+        throw ParseError(peek(), "expected for loop initializer before `in`");
+    }
+    if (check(TokenType::Identifier) && checkNext(TokenType::In)) {
+        Token variable = advance();
+        advance();
+        return forInStatement(std::move(keyword), std::move(variable));
+    }
+
     StmtPtr initializer = forInitializer();
     consume(TokenType::Semicolon, "expected `;` after for initializer");
 
@@ -307,6 +316,17 @@ StmtPtr Parser::forStatement()
     StmtPtr body = blockStatement();
 
     return std::make_unique<ForStmt>(std::move(keyword), std::move(initializer), std::move(condition), std::move(increment), std::move(body));
+}
+
+StmtPtr Parser::forInStatement(Token keyword, Token variable)
+{
+    if (check(TokenType::LeftBrace)) {
+        throw ParseError(peek(), "expected expression");
+    }
+    ExprPtr iterable = conditionExpression();
+    consume(TokenType::LeftBrace, "expected `{` after for-in iterable");
+    StmtPtr body = blockStatement();
+    return std::make_unique<ForInStmt>(std::move(keyword), std::move(variable), std::move(iterable), std::move(body));
 }
 
 StmtPtr Parser::whileStatement()

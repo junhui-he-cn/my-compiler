@@ -40,6 +40,7 @@ enum class TokenType {
     For,
     If,
     Import,
+    In,
     As,
     Export,
     Else,
