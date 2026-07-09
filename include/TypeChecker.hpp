@@ -21,6 +21,7 @@ enum class StaticType {
     Function,
     Array,
     Struct,
+    Nullable,
 };
 
 struct TypeInfo {
@@ -29,6 +30,7 @@ struct TypeInfo {
     std::shared_ptr<TypeInfo> returnType;
     std::optional<std::string> structName;
     std::shared_ptr<TypeInfo> elementType;
+    std::shared_ptr<TypeInfo> nullableOf;
 };
 
 class TypeError final : public DiagnosticError {

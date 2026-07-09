@@ -44,6 +44,14 @@ TypeInfo functionType(std::vector<TypeInfo> parameterTypes, TypeInfo returnType)
     return result;
 }
 
+TypeInfo nullableType(TypeInfo innerType)
+{
+    TypeInfo result;
+    result.kind = StaticType::Nullable;
+    result.nullableOf = std::make_shared<TypeInfo>(std::move(innerType));
+    return result;
+}
+
 TypeInfo functionWithoutSignature()
 {
     TypeInfo result;
@@ -61,8 +69,17 @@ bool hasFunctionSignature(const TypeInfo& type)
     return type.kind == StaticType::Function && type.returnType != nullptr;
 }
 
+bool isNullable(const TypeInfo& type)
+{
+    return type.kind == StaticType::Nullable && type.nullableOf != nullptr;
+}
+
 std::string typeInfoName(const TypeInfo& type)
 {
+    if (isNullable(type)) {
+        return typeInfoName(*type.nullableOf) + "?";
+    }
+
     if (type.kind == StaticType::Struct && type.structName) {
         return *type.structName;
     }
@@ -91,6 +108,18 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
 {
     if (!isKnown(expected) || !isKnown(actual)) {
         return true;
+    }
+    if (isNullable(expected)) {
+        if (actual.kind == StaticType::Nil) {
+            return true;
+        }
+        if (isNullable(actual)) {
+            return compatible(*expected.nullableOf, *actual.nullableOf);
+        }
+        return compatible(*expected.nullableOf, actual);
+    }
+    if (isNullable(actual)) {
+        return false;
     }
     if (expected.kind != actual.kind) {
         return false;
@@ -193,6 +222,8 @@ std::string staticTypeName(StaticType type)
         return "array";
     case StaticType::Struct:
         return "struct";
+    case StaticType::Nullable:
+        return "nullable";
     }
 
     return "unknown";
@@ -1622,6 +1653,10 @@ TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssi
 
 TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
 {
+    if (typeName.kind == TypeAnnotation::Kind::Nullable) {
+        return nullableType(resolveAnnotation(*typeName.innerType));
+    }
+
     if (typeName.kind == TypeAnnotation::Kind::Array) {
         return arrayType(resolveAnnotation(*typeName.elementType));
     }

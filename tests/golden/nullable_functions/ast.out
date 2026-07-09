@@ -1,13 +1,15 @@
 Program
   Fun maybe(flag: bool): number?
     If flag
-      Block
-        Return 7
+      Then
+        Block
+          Return 7
     Return nil
   Fun describe(value: number?): string?
     If (== value nil)
-      Block
-        Return nil
+      Then
+        Block
+          Return nil
     Return "number"
   Print (call maybe true)
   Print (call maybe false)
