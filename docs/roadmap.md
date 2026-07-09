@@ -46,14 +46,12 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 The next recommended language slices are ordered by usefulness, implementation
 risk, and how well they build on recently completed work:
 
-1. **Phase 13C: `typeOf(value)` builtin** — add a small debug helper on the
-   existing shadowable `native_call` path.
-2. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
+1. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
    interacts with annotated variables, function returns, arrays, and structs.
-3. **Phase 12E: member calls** — consider method-style calls such as
+2. **Phase 12E: member calls** — consider method-style calls such as
    `xs.push(value)`, `xs.pop()`, and possibly string helpers after dot/call
    semantics are designed together.
-4. **Phase 14E: module re-export and search paths** — revisit modules after
+3. **Phase 14E: module re-export and search paths** — revisit modules after
    the core language ergonomics above are stronger.
 
 Each slice should still start with a focused design spec and implementation
@@ -195,16 +193,14 @@ Likely touch points:
 
 Goal: provide a small standard environment without introducing modules yet.
 
-Status: in progress. Phase 13A is implemented: `floor(number)`, `ceil(number)`, and `sqrt(number)` are shadowable native stdlib functions using the generic `native_call` path. A string helper slice is implemented with `str(value)`, `substr(string, start, length)`, and `charAt(string, index)` on the same shadowable native-call path. `len` remains supported through its legacy dedicated IR/bytecode opcode and still awaits migration if a unified builtin path becomes valuable.
+Status: in progress. Phase 13A is implemented: `floor(number)`, `ceil(number)`, and `sqrt(number)` are shadowable native stdlib functions using the generic `native_call` path. A string helper slice is implemented with `str(value)`, `substr(string, start, length)`, and `charAt(string, index)` on the same shadowable native-call path. Phase 13C is implemented: `typeOf(value)` returns runtime type names as strings on the shadowable native-call path. `len` remains supported through its legacy dedicated IR/bytecode opcode and still awaits migration if a unified builtin path becomes valuable.
 
 Suggested builtins:
 
 - Numeric helpers: `floor`, `ceil`, `sqrt`. Implemented.
 - String helpers: `str`, `substr`, `charAt`. Implemented.
 - Collection helpers: `len` plus additional helpers beyond the Phase 10 `push`/`pop` slice.
-- Debug helper: `typeOf`. Recommended as the next builtin slice because it is
-  small, useful for mixed runtime values, and exercises the established
-  `native_call` path without new syntax.
+- Debug helper: `typeOf`. Implemented for runtime type names (`nil`, `number`, `bool`, `string`, `function`, `array`, and `struct`).
 
 Each builtin should define behavior for both the IR interpreter and bytecode artifact/Rust VM paths, preferably through shared runtime machinery so semantics stay aligned.
 
@@ -274,8 +270,5 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 13C: `typeOf(value)`** if the priority is a very small stdlib
-slice that keeps extending the native builtin path.
-
-Choose **Phase 9G: nullable / `nil` compatibility** if the priority is stronger
+Start with **Phase 9G: nullable / `nil` compatibility** if the priority is stronger
 type-system foundations before adding more aggregate features.
