@@ -117,9 +117,12 @@ unary       = ( "!" | "-" ), unary
             | call ;
 
 call        = primary,
-              { "(", [ arguments ], ")"
+              { memberCall
+              | "(", [ arguments ], ")"
               | "[", expression, "]"
               | ".", identifier } ;
+
+memberCall  = ".", identifier, "(", [ arguments ], ")" ;
 
 arguments   = expression,
               { ",", expression } ;

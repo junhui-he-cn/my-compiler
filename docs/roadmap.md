@@ -11,7 +11,7 @@ Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-
 The language currently supports:
 
 - Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, top-level `import`, blocks, and expression statements.
-- Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, assignment expressions, and numeric variable compound assignment.
+- Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, builtin member calls, function expressions, grouping, unary operators, binary/logical operators, assignment expressions, and numeric variable compound assignment.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
@@ -46,11 +46,10 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 The next recommended language slices are ordered by usefulness, implementation
 risk, and how well they build on recently completed work:
 
-1. **Phase 12E: member calls** — consider method-style calls such as
-   `xs.push(value)`, `xs.pop()`, and possibly string helpers after dot/call
-   semantics are designed together.
-2. **Phase 14E: module re-export and search paths** — revisit modules after
+1. **Phase 14E: module re-export and search paths** — revisit modules after
    the core language ergonomics above are stronger.
+2. **Phase 15E: index/field compound assignment** — extend compound assignment
+   beyond numeric variables if mutation ergonomics remain a priority.
 
 Each slice should still start with a focused design spec and implementation
 plan before changing compiler behavior.
@@ -154,7 +153,7 @@ Recommended split:
 
 ## Phase 12: Records / Structs
 
-Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Methods, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
+Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Phase 12E is implemented: builtin member-call sugar supports selected array/string helpers (`push`, `pop`, `len`, `substr`, `charAt`) while full user-defined methods remain future work. Methods, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
 
 Goal: add named fields and simple aggregate data.
 
@@ -163,12 +162,10 @@ Possible approaches:
 - Struct literals first: `{ name: "Ada", age: 36 }`. Implemented.
 - Field access: `person.name`. Implemented.
 - Field assignment after mutation rules are clear: `person.age = 37`. Implemented for existing fields.
-- Dot/member call syntax for collection methods such as `xs.push(value)` and
-  `xs.pop()`, if method-style collection APIs are still desired.
+- Builtin member-call sugar for collection/string helpers such as `xs.push(value)`,
+  `xs.pop()`, `xs.len()`, and `text.substr(start, length)`. Implemented.
 - Named structs: `struct Person { name: string, age: number }`. Implemented as static-only type shapes with `Person { ... }` constructor expressions.
-- Member calls: `receiver.method(args...)` can be considered as Phase 12E
-  after deciding whether builtin method names are sugar for function-style
-  helpers or a general field-call mechanism.
+- Full user-defined methods, `this`, struct methods, and optional chaining remain future work.
 
 Keep methods, inheritance, and protocols out of the first records slice.
 
@@ -262,4 +259,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 12E: member calls** if the priority is method-style ergonomics for collection and string helpers.
+Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, or **Phase 15E: index/field compound assignment** if the priority is mutation ergonomics.

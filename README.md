@@ -132,6 +132,8 @@ The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(n
 
 The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use byte offsets, matching the current `len(string)` byte-length behavior; offsets must be finite integer numbers and in bounds. User bindings with the same names shadow these builtins.
 
+Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `substr`, or `charAt` do not shadow member-call sugar. User-defined methods, `this`, and struct methods are not implemented yet.
+
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: `"nil"`, `"number"`, `"bool"`, `"string"`, `"function"`, `"array"`, or `"struct"`. Named struct values return `"struct"`, and arrays return `"array"` regardless of static element type. A user binding named `typeOf` shadows the builtin.
 
 Supported expressions:
