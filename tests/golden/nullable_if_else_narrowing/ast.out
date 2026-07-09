@@ -1,0 +1,16 @@
+Program
+  Fun takesString(value: string): string
+    Return value
+  Let name: string? = "Ada"
+  If (group (== name nil))
+    Then
+      Block
+        Print "missing"
+    Else
+      Block
+        Print (call takesString name)
+  Let title: string? = "Dr"
+  If (group (!= nil title))
+    Then
+      Block
+        Print (call takesString title)

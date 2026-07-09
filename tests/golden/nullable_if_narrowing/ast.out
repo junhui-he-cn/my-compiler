@@ -1,0 +1,8 @@
+Program
+  Fun takesNumber(value: number): number
+    Return value
+  Let maybe: number? = 3
+  If (group (!= maybe nil))
+    Then
+      Block
+        Print (call takesNumber maybe)

@@ -497,9 +497,14 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* ifStmt = dynamic_cast<const IfStmt*>(&statement)) {
         checkExpression(*ifStmt->condition);
-        checkStatement(*ifStmt->thenBranch);
+        const IfNarrowing narrowing = ifNarrowing(*ifStmt->condition);
+        withOptionalNarrowing(narrowing.thenNarrowing, [&]() {
+            checkStatement(*ifStmt->thenBranch);
+        });
         if (ifStmt->elseBranch) {
-            checkStatement(*ifStmt->elseBranch);
+            withOptionalNarrowing(narrowing.elseNarrowing, [&]() {
+                checkStatement(*ifStmt->elseBranch);
+            });
         }
         return;
     }
@@ -1217,6 +1222,81 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     return checkExpressionInfo(expression, nullptr);
 }
 
+TypeInfo TypeChecker::variableType(const Binding& binding) const
+{
+    for (auto it = narrowings_.rbegin(); it != narrowings_.rend(); ++it) {
+        if (it->resolvedName == binding.resolvedName) {
+            return it->type;
+        }
+    }
+    return binding.type;
+}
+
+std::optional<TypeChecker::Narrowing> TypeChecker::nonNilNarrowingForVariable(const VariableExpr& variable)
+{
+    const Binding* binding = findVariable(variable.name.lexeme);
+    if (!binding || !isNullable(binding->type)) {
+        return std::nullopt;
+    }
+    return Narrowing{binding->resolvedName, *binding->type.nullableOf};
+}
+
+TypeChecker::IfNarrowing TypeChecker::ifNarrowing(const Expr& condition)
+{
+    const Expr* narrowedCondition = &condition;
+    while (const auto* grouping = dynamic_cast<const GroupingExpr*>(narrowedCondition)) {
+        narrowedCondition = grouping->expression.get();
+    }
+
+    const auto* binary = dynamic_cast<const BinaryExpr*>(narrowedCondition);
+    if (!binary || (binary->op.type != TokenType::BangEqual && binary->op.type != TokenType::EqualEqual)) {
+        return IfNarrowing{};
+    }
+
+    auto nilCheckedVariable = [](const Expr& left, const Expr& right) -> const VariableExpr* {
+        const auto* leftVariable = dynamic_cast<const VariableExpr*>(&left);
+        const auto* rightLiteral = dynamic_cast<const LiteralExpr*>(&right);
+        if (leftVariable && rightLiteral && rightLiteral->value == "nil") {
+            return leftVariable;
+        }
+        const auto* rightVariable = dynamic_cast<const VariableExpr*>(&right);
+        const auto* leftLiteral = dynamic_cast<const LiteralExpr*>(&left);
+        if (rightVariable && leftLiteral && leftLiteral->value == "nil") {
+            return rightVariable;
+        }
+        return nullptr;
+    };
+
+    const VariableExpr* variable = nilCheckedVariable(*binary->left, *binary->right);
+    if (!variable) {
+        return IfNarrowing{};
+    }
+
+    std::optional<Narrowing> narrowing = nonNilNarrowingForVariable(*variable);
+    if (!narrowing) {
+        return IfNarrowing{};
+    }
+
+    IfNarrowing result;
+    if (binary->op.type == TokenType::BangEqual) {
+        result.thenNarrowing = std::move(narrowing);
+    } else {
+        result.elseNarrowing = std::move(narrowing);
+    }
+    return result;
+}
+
+void TypeChecker::withOptionalNarrowing(const std::optional<Narrowing>& narrowing, const std::function<void()>& body)
+{
+    if (!narrowing) {
+        body();
+        return;
+    }
+    narrowings_.push_back(*narrowing);
+    body();
+    narrowings_.pop_back();
+}
+
 TypeInfo TypeChecker::inferArrayElementType(const ArrayExpr& expression)
 {
     std::optional<TypeInfo> current;
@@ -1285,7 +1365,7 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
             throw TypeError(variable->name, "undefined variable `" + variable->name.lexeme + "`");
         }
         resolvedNames_.recordVariable(*variable, binding->resolvedName);
-        return CheckedExpression{binding->type};
+        return CheckedExpression{variableType(*binding)};
     }
 
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
