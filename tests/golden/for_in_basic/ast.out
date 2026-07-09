@@ -1,0 +1,5 @@
+Program
+  Let xs = (array 1 2 3)
+  ForIn x in xs
+    Block
+      Print x
