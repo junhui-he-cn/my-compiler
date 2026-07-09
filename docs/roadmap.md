@@ -46,19 +46,17 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 The next recommended language slices are ordered by usefulness, implementation
 risk, and how well they build on recently completed work:
 
-1. **Phase 11C: array `for-in` iteration** — add `for item in array { ... }`
-   as the natural follow-up to C-style `for` loops and mutable arrays.
-2. **Phase 15D: compound assignment for variables** — start with
+1. **Phase 15D: compound assignment for variables** — start with
    `name += expr`, `name -= expr`, `name *= expr`, and `name /= expr` for
    numeric variables only; extend to index/field targets later.
-3. **Phase 13C: `typeOf(value)` builtin** — add a small debug helper on the
+2. **Phase 13C: `typeOf(value)` builtin** — add a small debug helper on the
    existing shadowable `native_call` path.
-4. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
+3. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
    interacts with annotated variables, function returns, arrays, and structs.
-5. **Phase 12E: member calls** — consider method-style calls such as
+4. **Phase 12E: member calls** — consider method-style calls such as
    `xs.push(value)`, `xs.pop()`, and possibly string helpers after dot/call
    semantics are designed together.
-6. **Phase 14E: module re-export and search paths** — revisit modules after
+5. **Phase 14E: module re-export and search paths** — revisit modules after
    the core language ergonomics above are stronger.
 
 Each slice should still start with a focused design spec and implementation
@@ -140,7 +138,7 @@ Recommended split:
 
 ## Phase 11: Loop Control and For Loops
 
-Status: in progress. Phase 11A is implemented: `break;` exits the nearest `while`, and `continue;` skips to the nearest `while` condition check. Phase 11B is implemented: C-style `for` loops support optional initializer, condition, and increment clauses, with `continue;` running the increment before the next condition check. Array `for-in` iteration remains future work.
+Status: implemented for the current loop slice. Phase 11A is implemented: `break;` exits the nearest `while`, and `continue;` skips to the nearest `while` condition check. Phase 11B is implemented: C-style `for` loops support optional initializer, condition, and increment clauses, with `continue;` running the increment before the next condition check. Phase 11C is implemented: `for item in array { ... }` iterates arrays with a body-scoped item binding, length snapshot semantics, and `break` / `continue` support.
 
 Goal: make iteration practical and structured.
 
@@ -150,7 +148,7 @@ Suggested features:
 - `continue;` starts the next nearest loop iteration.
 - Type errors for `break` and `continue` outside loops.
 - C-style `for` loop syntax and lowering. Implemented.
-- A later `for-in` form for array iteration after iteration semantics are clearer.
+- Array `for-in` loop syntax and lowering. Implemented.
 
 Likely touch points:
 
@@ -165,11 +163,7 @@ Recommended split:
 
 - Phase 11A: `break` / `continue` for existing `while` loops. Implemented.
 - Phase 11B: C-style `for` loop syntax and lowering. Implemented.
-- Phase 11C: array `for-in` iteration. Recommended next feature slice:
-  `for item in xs { ... }` should introduce a loop-scoped item binding,
-  support `break` and `continue`, statically check known non-array iterables,
-  and runtime-check unknown iterables. Keep map/range iterators out of the
-  first slice.
+- Phase 11C: array `for-in` iteration. Implemented for arrays only; strings, maps, ranges, and custom iterators remain out of scope.
 
 ## Phase 12: Records / Structs
 
@@ -284,10 +278,7 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 11C: array `for-in` iteration** if the priority is the most
-useful language feature that builds directly on recent loop and array work.
-
-Choose **Phase 15D: compound assignment for variables** if the priority is
+Start with **Phase 15D: compound assignment for variables** if the priority is
 ergonomics with a smaller syntax/lowering slice.
 
 Choose **Phase 13C: `typeOf(value)`** if the priority is a very small stdlib

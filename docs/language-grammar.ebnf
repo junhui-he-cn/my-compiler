@@ -53,9 +53,13 @@ ifStmt      = "if", expression, block,
 
 whileStmt   = "while", expression, block ;
 
-forStmt     = "for", [ forInitializer ], ";",
+forStmt     = "for", ( forInClause | cForClause ), block ;
+
+forInClause = identifier, "in", expression ;
+
+cForClause  = [ forInitializer ], ";",
               [ expression ], ";",
-              [ expression ], block ;
+              [ expression ] ;
 
 forInitializer = letForInitializer
                | expression ;
