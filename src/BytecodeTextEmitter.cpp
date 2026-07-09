@@ -193,6 +193,9 @@ void writeInstruction(std::ostream& out, const BytecodeInstruction& instruction)
     case BytecodeOp::AssertArray:
         out << reg(requireDest(instruction)) << " = assert_array " << reg(requireLeft(instruction));
         break;
+    case BytecodeOp::AssertNumber:
+        out << reg(requireDest(instruction)) << " = assert_number " << reg(requireLeft(instruction)) << ", " << nameRef(instruction.operand);
+        break;
     case BytecodeOp::Print:
         out << "print " << reg(requireLeft(instruction));
         break;

@@ -104,6 +104,11 @@ pub enum Instruction {
         dest: usize,
         value: usize,
     },
+    AssertNumber {
+        dest: usize,
+        value: usize,
+        message: usize,
+    },
     Print {
         value: usize,
     },

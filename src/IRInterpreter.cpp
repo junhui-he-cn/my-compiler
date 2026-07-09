@@ -207,6 +207,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
         case IROp::AssertArray:
             writeRegister(frame, readDest(instruction), executeAssertArray(frame, readLeft(instruction)));
             break;
+        case IROp::AssertNumber:
+            writeRegister(frame, readDest(instruction), executeAssertNumber(program, frame, readLeft(instruction), instruction.operand));
+            break;
         case IROp::Print:
             output_ << valueToString(readRegister(frame, readLeft(instruction))) << '\n';
             break;
@@ -590,6 +593,15 @@ Value IRInterpreter::executeAssertArray(const Frame& frame, IRRegister value)
     const Value& input = readRegister(frame, value);
     if (input.type() != Value::Type::Array) {
         throw IRRuntimeError("for-in expects array");
+    }
+    return input;
+}
+
+Value IRInterpreter::executeAssertNumber(const IRProgram& program, const Frame& frame, IRRegister value, std::size_t messageIndex)
+{
+    const Value& input = readRegister(frame, value);
+    if (input.type() != Value::Type::Number) {
+        throw IRRuntimeError(readName(program, messageIndex));
     }
     return input;
 }

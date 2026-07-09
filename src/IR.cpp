@@ -40,6 +40,7 @@ bool isBinary(IROp op)
     case IROp::AssignField:
     case IROp::Len:
     case IROp::AssertArray:
+    case IROp::AssertNumber:
     case IROp::Print:
     case IROp::Return:
     case IROp::Negate:
@@ -237,6 +238,11 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
         if (instruction.left) {
             out << " " << *instruction.left;
         }
+    } else if (instruction.op == IROp::AssertNumber) {
+        if (instruction.left) {
+            out << " " << *instruction.left;
+        }
+        printNameOperand(out, program, instruction.operand);
     } else if (instruction.op == IROp::Print) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -423,6 +429,13 @@ IRRegister IRProgram::emitAssertArray(IRRegister value)
     return dest;
 }
 
+IRRegister IRProgram::emitAssertNumber(IRRegister value, std::string message)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::AssertNumber, dest, value, std::nullopt, {}, addName(std::move(message))});
+    return dest;
+}
+
 void IRProgram::emitPrint(IRRegister value)
 {
     emit(IRInstruction{IROp::Print, std::nullopt, value, std::nullopt, {}, 0});
@@ -591,6 +604,8 @@ std::string irOpName(IROp op)
         return "len";
     case IROp::AssertArray:
         return "assert_array";
+    case IROp::AssertNumber:
+        return "assert_number";
     case IROp::Print:
         return "print";
     case IROp::Return:

@@ -379,6 +379,14 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                 dest,
                 value: parse_register(line, operands)?,
             }),
+            "assert_number" => {
+                let (value, message) = split_once(line, operands, ", ")?;
+                Ok(Instruction::AssertNumber {
+                    dest,
+                    value: parse_register(line, value)?,
+                    message: parse_name_ref(line, message)?,
+                })
+            }
             "negate" => Ok(Instruction::Negate {
                 dest,
                 value: parse_register(line, operands)?,
@@ -516,6 +524,9 @@ fn format_instruction(instruction: &Instruction) -> String {
         } => format!("r{} = assign_field r{}, n{}, r{}", dest, object, name, value),
         Instruction::Len { dest, value } => format!("r{} = len r{}", dest, value),
         Instruction::AssertArray { dest, value } => format!("r{} = assert_array r{}", dest, value),
+        Instruction::AssertNumber { dest, value, message } => {
+            format!("r{} = assert_number r{}, n{}", dest, value, message)
+        }
         Instruction::Print { value } => format!("print r{}", value),
         Instruction::Return { value } => format!("return r{}", value),
         Instruction::Negate { dest, value } => format!("r{} = negate r{}", dest, value),

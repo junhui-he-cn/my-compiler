@@ -344,6 +344,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return value;
     }
 
+    if (const auto* compound = dynamic_cast<const CompoundAssignExpr*>(&expression)) {
+        return emitCompoundAssign(*compound);
+    }
+
     if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(&expression)) {
         return emitIndexAssign(*indexAssign);
     }
@@ -510,6 +514,36 @@ IRRegister IRCompiler::emitIndex(const IndexExpr& expression)
     IRRegister collection = compileExpression(*expression.collection);
     IRRegister index = compileExpression(*expression.index);
     return ir_.emitIndex(collection, index);
+}
+
+IROp IRCompiler::compoundAssignmentOp(TokenType op) const
+{
+    switch (op) {
+    case TokenType::PlusEqual:
+        return IROp::Add;
+    case TokenType::MinusEqual:
+        return IROp::Subtract;
+    case TokenType::StarEqual:
+        return IROp::Multiply;
+    case TokenType::SlashEqual:
+        return IROp::Divide;
+    default:
+        throw IRCompileError("unsupported compound assignment operator: " + tokenTypeName(op));
+    }
+}
+
+IRRegister IRCompiler::emitCompoundAssign(const CompoundAssignExpr& expression)
+{
+    const std::string& name = resolvedNames_->compoundAssignmentName(expression);
+    const IRRegister oldValue = ir_.emitLoadVar(name);
+    const IRRegister checkedOldValue = ir_.emitAssertNumber(
+        oldValue, "`" + expression.op.lexeme + "` expects number variable");
+    const IRRegister value = compileExpression(*expression.value);
+    const IRRegister checkedValue = ir_.emitAssertNumber(
+        value, "`" + expression.op.lexeme + "` expects number value");
+    const IRRegister result = ir_.emitBinary(compoundAssignmentOp(expression.op.type), checkedOldValue, checkedValue);
+    ir_.emitAssignVar(name, result);
+    return result;
 }
 
 IRRegister IRCompiler::emitIndexAssign(const IndexAssignExpr& expression)

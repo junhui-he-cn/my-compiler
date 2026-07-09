@@ -152,6 +152,8 @@ def main() -> int:
             "bytecode_functions_closures",
             "bytecode_smoke",
             "bytecode_variables",
+            "compound_assignment_basic",
+            "compound_assignment_expression_result",
             "for_in_basic",
             "for_in_control",
             "for_in_empty",

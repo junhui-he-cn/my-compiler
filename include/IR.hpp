@@ -29,6 +29,7 @@ enum class IROp {
     AssignField,
     Len,
     AssertArray,
+    AssertNumber,
     Print,
     Return,
     Negate,
@@ -90,6 +91,7 @@ public:
     IRRegister emitAssignField(IRRegister object, std::string fieldName, IRRegister value);
     IRRegister emitLen(IRRegister value);
     IRRegister emitAssertArray(IRRegister value);
+    IRRegister emitAssertNumber(IRRegister value, std::string message);
     void emitPrint(IRRegister value);
     void emitReturn(IRRegister value);
     IRRegister emitUnary(IROp op, IRRegister value);

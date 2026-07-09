@@ -289,6 +289,14 @@ impl<'a> VM<'a> {
                     }
                     self.write_register(frame, *dest, input)?;
                 }
+                Instruction::AssertNumber { dest, value, message } => {
+                    let input = self.read_register(frame, *value)?;
+                    if !matches!(input, Value::Number(_)) {
+                        let message = self.read_name(*message)?;
+                        return Err(RuntimeError::new(message));
+                    }
+                    self.write_register(frame, *dest, input)?;
+                }
                 Instruction::Return { value } => {
                     return Ok(Some(self.read_register(frame, *value)?))
                 }

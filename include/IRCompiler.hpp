@@ -42,6 +42,8 @@ private:
     IRRegister emitStruct(const StructExpr& expression);
     IRRegister emitStructConstructor(const StructConstructExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);
+    IRRegister emitCompoundAssign(const CompoundAssignExpr& expression);
+    IROp compoundAssignmentOp(TokenType op) const;
     IRRegister emitIndexAssign(const IndexAssignExpr& expression);
     IRRegister emitFieldAccess(const FieldAccessExpr& expression);
     IRRegister emitFieldAssign(const FieldAssignExpr& expression);
