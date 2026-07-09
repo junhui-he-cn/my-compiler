@@ -135,6 +135,11 @@ private:
         std::string resolvedName;
     };
 
+    struct IndexTargetTypes {
+        TypeInfo collection;
+        TypeInfo index;
+    };
+
     using Scope = std::unordered_map<std::string, Binding>;
     using ExportTable = std::unordered_map<std::string, Binding>;
     using MethodTable = std::unordered_map<std::string, std::unordered_map<std::string, MethodInfo>>;
@@ -201,11 +206,21 @@ private:
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
     bool isNativeStdlibCall(const CallExpr& expression) const;
     CheckedExpression checkNativeStdlibCall(const CallExpr& expression);
+    IndexTargetTypes checkIndexTarget(
+        const Expr& collection,
+        const Expr& index,
+        const Token& bracket,
+        const std::string& nonArrayMessage);
     TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkIndexCompoundAssignment(const IndexCompoundAssignExpr& expression);
+    const StructFieldType* checkStructFieldTarget(
+        const Expr& object,
+        const Token& name,
+        const std::string& nonStructMessage);
     CheckedExpression checkFieldAssignment(const FieldAssignExpr& expression);
     CheckedExpression checkFieldCompoundAssignment(const FieldCompoundAssignExpr& expression);
+    void checkKnownNumber(const Token& token, const TypeInfo& type, const std::string& messagePrefix) const;
     CheckedExpression checkNamedStructFields(
         const Token& diagnosticToken,
         const TypeInfo& declared,

@@ -621,14 +621,23 @@ IRRegister IRCompiler::emitCompoundAssign(const CompoundAssignExpr& expression)
 {
     const std::string& name = resolvedNames_->compoundAssignmentName(expression);
     const IRRegister oldValue = ir_.emitLoadVar(name);
-    const IRRegister checkedOldValue = ir_.emitAssertNumber(
-        oldValue, "`" + expression.op.lexeme + "` expects number variable");
-    const IRRegister value = compileExpression(*expression.value);
-    const IRRegister checkedValue = ir_.emitAssertNumber(
-        value, "`" + expression.op.lexeme + "` expects number value");
-    const IRRegister result = ir_.emitBinary(compoundAssignmentOp(expression.op.type), checkedOldValue, checkedValue);
+    const IRRegister result = emitCompoundAssignmentResult(
+        expression.op, oldValue, *expression.value, "`" + expression.op.lexeme + "` expects number variable");
     ir_.emitAssignVar(name, result);
     return result;
+}
+
+IRRegister IRCompiler::emitCompoundAssignmentResult(
+    const Token& op,
+    IRRegister oldValue,
+    const Expr& valueExpression,
+    const std::string& targetMessage)
+{
+    const IRRegister checkedOldValue = ir_.emitAssertNumber(oldValue, targetMessage);
+    const IRRegister value = compileExpression(valueExpression);
+    const IRRegister checkedValue = ir_.emitAssertNumber(
+        value, "`" + op.lexeme + "` expects number value");
+    return ir_.emitBinary(compoundAssignmentOp(op.type), checkedOldValue, checkedValue);
 }
 
 IRRegister IRCompiler::emitIndexAssign(const IndexAssignExpr& expression)
@@ -644,12 +653,8 @@ IRRegister IRCompiler::emitIndexCompoundAssign(const IndexCompoundAssignExpr& ex
     IRRegister collection = compileExpression(*expression.collection);
     IRRegister index = compileExpression(*expression.index);
     IRRegister oldValue = ir_.emitIndex(collection, index);
-    IRRegister checkedOldValue = ir_.emitAssertNumber(
-        oldValue, "`" + expression.op.lexeme + "` expects number target");
-    IRRegister value = compileExpression(*expression.value);
-    IRRegister checkedValue = ir_.emitAssertNumber(
-        value, "`" + expression.op.lexeme + "` expects number value");
-    IRRegister result = ir_.emitBinary(compoundAssignmentOp(expression.op.type), checkedOldValue, checkedValue);
+    IRRegister result = emitCompoundAssignmentResult(
+        expression.op, oldValue, *expression.value, "`" + expression.op.lexeme + "` expects number target");
     ir_.emitAssignIndex(collection, index, result);
     return result;
 }
@@ -674,12 +679,8 @@ IRRegister IRCompiler::emitFieldCompoundAssign(const FieldCompoundAssignExpr& ex
 {
     IRRegister object = compileExpression(*expression.object);
     IRRegister oldValue = ir_.emitField(object, expression.name.lexeme);
-    IRRegister checkedOldValue = ir_.emitAssertNumber(
-        oldValue, "`" + expression.op.lexeme + "` expects number target");
-    IRRegister value = compileExpression(*expression.value);
-    IRRegister checkedValue = ir_.emitAssertNumber(
-        value, "`" + expression.op.lexeme + "` expects number value");
-    IRRegister result = ir_.emitBinary(compoundAssignmentOp(expression.op.type), checkedOldValue, checkedValue);
+    IRRegister result = emitCompoundAssignmentResult(
+        expression.op, oldValue, *expression.value, "`" + expression.op.lexeme + "` expects number target");
     ir_.emitAssignField(object, expression.name.lexeme, result);
     return result;
 }

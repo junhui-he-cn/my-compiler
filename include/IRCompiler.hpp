@@ -46,6 +46,11 @@ private:
     IRRegister emitStructConstructor(const StructConstructExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);
     IRRegister emitCompoundAssign(const CompoundAssignExpr& expression);
+    IRRegister emitCompoundAssignmentResult(
+        const Token& op,
+        IRRegister oldValue,
+        const Expr& value,
+        const std::string& targetMessage);
     IROp compoundAssignmentOp(TokenType op) const;
     IRRegister emitIndexAssign(const IndexAssignExpr& expression);
     IRRegister emitIndexCompoundAssign(const IndexCompoundAssignExpr& expression);

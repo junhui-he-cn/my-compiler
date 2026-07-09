@@ -1497,14 +1497,8 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         }
 
         const CheckedExpression value = checkExpressionInfo(*compound->value);
-        if (target->type.kind != StaticType::Unknown && target->type.kind != StaticType::Number) {
-            throw TypeError(compound->op,
-                "`" + compound->op.lexeme + "` expects number variable, got " + typeInfoName(target->type));
-        }
-        if (value.type.kind != StaticType::Unknown && value.type.kind != StaticType::Number) {
-            throw TypeError(compound->op,
-                "`" + compound->op.lexeme + "` expects number value, got " + typeInfoName(value.type));
-        }
+        checkKnownNumber(compound->op, target->type, "`" + compound->op.lexeme + "` expects number variable, got ");
+        checkKnownNumber(compound->op, value.type, "`" + compound->op.lexeme + "` expects number value, got ");
 
         if (!isKnown(target->type)) {
             target->type = simpleType(StaticType::Number);
@@ -1934,39 +1928,45 @@ TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression
     return CheckedExpression{unknownType()};
 }
 
+TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
+    const Expr& collectionExpression,
+    const Expr& indexExpression,
+    const Token& bracket,
+    const std::string& nonArrayMessage)
+{
+    IndexTargetTypes result {
+        checkExpression(collectionExpression),
+        checkExpression(indexExpression),
+    };
+
+    if (result.collection.kind != StaticType::Unknown && result.collection.kind != StaticType::Array) {
+        throw TypeError(bracket, nonArrayMessage);
+    }
+
+    if (result.index.kind != StaticType::Unknown && result.index.kind != StaticType::Number) {
+        throw TypeError(bracket, "array index must be number");
+    }
+
+    return result;
+}
+
 TypeInfo TypeChecker::checkIndex(const IndexExpr& expression)
 {
-    const TypeInfo collection = checkExpression(*expression.collection);
-    const TypeInfo index = checkExpression(*expression.index);
+    const IndexTargetTypes target = checkIndexTarget(
+        *expression.collection, *expression.index, expression.bracket, "can only index arrays");
 
-    if (collection.kind != StaticType::Unknown && collection.kind != StaticType::Array) {
-        throw TypeError(expression.bracket, "can only index arrays");
-    }
-
-    if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
-        throw TypeError(expression.bracket, "array index must be number");
-    }
-
-    if (collection.kind == StaticType::Array && collection.elementType) {
-        return *collection.elementType;
+    if (target.collection.kind == StaticType::Array && target.collection.elementType) {
+        return *target.collection.elementType;
     }
     return unknownType();
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssignExpr& expression)
 {
-    const TypeInfo collection = checkExpression(*expression.collection);
-    const TypeInfo index = checkExpression(*expression.index);
+    const IndexTargetTypes target = checkIndexTarget(
+        *expression.collection, *expression.index, expression.bracket, "can only assign array elements");
 
-    if (collection.kind != StaticType::Unknown && collection.kind != StaticType::Array) {
-        throw TypeError(expression.bracket, "can only assign array elements");
-    }
-
-    if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
-        throw TypeError(expression.bracket, "array index must be number");
-    }
-
-    const TypeInfo* expectedElement = collection.elementType.get();
+    const TypeInfo* expectedElement = target.collection.elementType.get();
     const CheckedExpression value = checkExpressionInfo(*expression.value, expectedElement);
     if (expectedElement && !compatible(*expectedElement, value.type)) {
         throw TypeError(expression.bracket,
@@ -1979,48 +1979,50 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
 
 TypeChecker::CheckedExpression TypeChecker::checkIndexCompoundAssignment(const IndexCompoundAssignExpr& expression)
 {
-    const TypeInfo collection = checkExpression(*expression.collection);
-    const TypeInfo index = checkExpression(*expression.index);
+    const IndexTargetTypes target = checkIndexTarget(
+        *expression.collection, *expression.index, expression.bracket, "can only assign array elements");
 
-    if (collection.kind != StaticType::Unknown && collection.kind != StaticType::Array) {
-        throw TypeError(expression.bracket, "can only assign array elements");
-    }
-    if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
-        throw TypeError(expression.bracket, "array index must be number");
-    }
-
-    if (collection.kind == StaticType::Array && collection.elementType
-        && collection.elementType->kind != StaticType::Unknown
-        && collection.elementType->kind != StaticType::Number) {
-        throw TypeError(expression.op,
-            "compound assignment target must be number, got " + typeInfoName(*collection.elementType));
+    if (target.collection.kind == StaticType::Array && target.collection.elementType) {
+        checkKnownNumber(expression.op, *target.collection.elementType, "compound assignment target must be number, got ");
     }
 
     const CheckedExpression value = checkExpressionInfo(*expression.value);
-    if (value.type.kind != StaticType::Unknown && value.type.kind != StaticType::Number) {
-        throw TypeError(expression.op,
-            "compound assignment value must be number, got " + typeInfoName(value.type));
-    }
+    checkKnownNumber(expression.op, value.type, "compound assignment value must be number, got ");
 
     return CheckedExpression{simpleType(StaticType::Number)};
 }
 
-TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssignExpr& expression)
+const TypeChecker::StructFieldType* TypeChecker::checkStructFieldTarget(
+    const Expr& objectExpression,
+    const Token& name,
+    const std::string& nonStructMessage)
 {
-    const TypeInfo object = checkExpression(*expression.object);
-    const CheckedExpression value = checkExpressionInfo(*expression.value);
+    const TypeInfo object = checkExpression(objectExpression);
 
     if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
-        throw TypeError(expression.name, "can only assign fields on structs");
+        throw TypeError(name, nonStructMessage);
     }
 
     if (object.kind == StaticType::Struct && object.structName) {
         const StructTypeDecl* structType = findStructType(*object.structName);
-        const StructFieldType* structField = structType ? findStructField(*structType, expression.name.lexeme) : nullptr;
+        const StructFieldType* structField = structType ? findStructField(*structType, name.lexeme) : nullptr;
         if (!structField) {
-            throw TypeError(expression.name,
-                "struct `" + *object.structName + "` has no field `" + expression.name.lexeme + "`");
+            throw TypeError(name,
+                "struct `" + *object.structName + "` has no field `" + name.lexeme + "`");
         }
+        return structField;
+    }
+
+    return nullptr;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssignExpr& expression)
+{
+    const StructFieldType* structField = checkStructFieldTarget(
+        *expression.object, expression.name, "can only assign fields on structs");
+    const CheckedExpression value = checkExpressionInfo(*expression.value);
+
+    if (structField) {
         if (!compatible(structField->type, value.type)) {
             throw TypeError(expression.name,
                 "field `" + expression.name.lexeme + "` expects " + typeInfoName(structField->type)
@@ -2034,31 +2036,23 @@ TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssi
 
 TypeChecker::CheckedExpression TypeChecker::checkFieldCompoundAssignment(const FieldCompoundAssignExpr& expression)
 {
-    const TypeInfo object = checkExpression(*expression.object);
-    if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
-        throw TypeError(expression.name, "can only assign fields on structs");
-    }
-
-    if (object.kind == StaticType::Struct && object.structName) {
-        const StructTypeDecl* structType = findStructType(*object.structName);
-        const StructFieldType* structField = structType ? findStructField(*structType, expression.name.lexeme) : nullptr;
-        if (!structField) {
-            throw TypeError(expression.name,
-                "struct `" + *object.structName + "` has no field `" + expression.name.lexeme + "`");
-        }
-        if (structField->type.kind != StaticType::Unknown && structField->type.kind != StaticType::Number) {
-            throw TypeError(expression.op,
-                "compound assignment target must be number, got " + typeInfoName(structField->type));
-        }
+    const StructFieldType* structField = checkStructFieldTarget(
+        *expression.object, expression.name, "can only assign fields on structs");
+    if (structField) {
+        checkKnownNumber(expression.op, structField->type, "compound assignment target must be number, got ");
     }
 
     const CheckedExpression value = checkExpressionInfo(*expression.value);
-    if (value.type.kind != StaticType::Unknown && value.type.kind != StaticType::Number) {
-        throw TypeError(expression.op,
-            "compound assignment value must be number, got " + typeInfoName(value.type));
-    }
+    checkKnownNumber(expression.op, value.type, "compound assignment value must be number, got ");
 
     return CheckedExpression{simpleType(StaticType::Number)};
+}
+
+void TypeChecker::checkKnownNumber(const Token& token, const TypeInfo& type, const std::string& messagePrefix) const
+{
+    if (type.kind != StaticType::Unknown && type.kind != StaticType::Number) {
+        throw TypeError(token, messagePrefix + typeInfoName(type));
+    }
 }
 
 TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
