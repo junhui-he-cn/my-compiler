@@ -443,7 +443,26 @@ ExprPtr Parser::assignment()
         throw ParseError(equals, "invalid assignment target");
     }
 
+    if (matchCompoundAssignment()) {
+        Token op = previous();
+        ExprPtr value = assignment();
+
+        if (const auto* variable = dynamic_cast<const VariableExpr*>(expr.get())) {
+            return std::make_unique<CompoundAssignExpr>(variable->name, std::move(op), std::move(value));
+        }
+
+        throw ParseError(op, "invalid compound assignment target");
+    }
+
     return expr;
+}
+
+bool Parser::matchCompoundAssignment()
+{
+    return match(TokenType::PlusEqual)
+        || match(TokenType::MinusEqual)
+        || match(TokenType::StarEqual)
+        || match(TokenType::SlashEqual);
 }
 
 ExprPtr Parser::logicalOr()

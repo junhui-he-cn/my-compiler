@@ -292,6 +292,20 @@ void AssignExpr::print(std::ostream& out) const
     out << ')';
 }
 
+CompoundAssignExpr::CompoundAssignExpr(Token name, Token op, ExprPtr value)
+    : name(std::move(name))
+    , op(std::move(op))
+    , value(std::move(value))
+{
+}
+
+void CompoundAssignExpr::print(std::ostream& out) const
+{
+    out << '(' << op.lexeme << ' ' << name.lexeme << ' ';
+    writeExpr(out, value);
+    out << ')';
+}
+
 IndexAssignExpr::IndexAssignExpr(ExprPtr collection, Token bracket, ExprPtr index, ExprPtr value)
     : collection(std::move(collection))
     , bracket(std::move(bracket))

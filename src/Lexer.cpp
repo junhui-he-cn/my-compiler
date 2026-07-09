@@ -113,13 +113,13 @@ void Lexer::scanToken()
         addToken(TokenType::Dot);
         break;
     case '+':
-        addToken(TokenType::Plus);
+        addToken(match('=') ? TokenType::PlusEqual : TokenType::Plus);
         break;
     case '-':
-        addToken(TokenType::Minus);
+        addToken(match('=') ? TokenType::MinusEqual : TokenType::Minus);
         break;
     case '*':
-        addToken(TokenType::Star);
+        addToken(match('=') ? TokenType::StarEqual : TokenType::Star);
         break;
     case '/':
         if (match('/')) {
@@ -129,7 +129,7 @@ void Lexer::scanToken()
                 advance();
             }
         } else {
-            addToken(TokenType::Slash);
+            addToken(match('=') ? TokenType::SlashEqual : TokenType::Slash);
         }
         break;
     case '!':
@@ -289,6 +289,14 @@ std::string tokenTypeName(TokenType type)
         return "Star";
     case TokenType::Slash:
         return "Slash";
+    case TokenType::PlusEqual:
+        return "PlusEqual";
+    case TokenType::MinusEqual:
+        return "MinusEqual";
+    case TokenType::StarEqual:
+        return "StarEqual";
+    case TokenType::SlashEqual:
+        return "SlashEqual";
     case TokenType::Bang:
         return "Bang";
     case TokenType::BangEqual:

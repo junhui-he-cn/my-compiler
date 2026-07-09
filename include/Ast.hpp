@@ -69,6 +69,15 @@ struct AssignExpr final : Expr {
     ExprPtr value;
 };
 
+struct CompoundAssignExpr final : Expr {
+    CompoundAssignExpr(Token name, Token op, ExprPtr value);
+    void print(std::ostream& out) const override;
+
+    Token name;
+    Token op;
+    ExprPtr value;
+};
+
 struct IndexAssignExpr final : Expr {
     IndexAssignExpr(ExprPtr collection, Token bracket, ExprPtr index, ExprPtr value);
     void print(std::ostream& out) const override;

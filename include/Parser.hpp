@@ -53,6 +53,7 @@ private:
     ExprPtr expression();
     ExprPtr conditionExpression();
     ExprPtr assignment();
+    bool matchCompoundAssignment();
     ExprPtr logicalOr();
     ExprPtr logicalAnd();
     ExprPtr equality();
