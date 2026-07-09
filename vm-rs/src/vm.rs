@@ -505,6 +505,7 @@ impl<'a> VM<'a> {
             "str" => self.execute_native_str(arguments),
             "substr" => self.execute_native_substr(arguments),
             "charAt" => self.execute_native_char_at(arguments),
+            "typeOf" => self.execute_native_type_of(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
                 name
@@ -650,6 +651,13 @@ impl<'a> VM<'a> {
         let value = String::from_utf8(bytes.to_vec())
             .map_err(|_| RuntimeError::new("charAt produced invalid utf-8"))?;
         Ok(Value::string(value))
+    }
+
+    fn execute_native_type_of(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("typeOf expects 1 arguments"));
+        }
+        Ok(Value::string(arguments[0].type_name()))
     }
 
     fn read_name(&self, index: usize) -> Result<String, RuntimeError> {

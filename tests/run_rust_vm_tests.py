@@ -181,6 +181,7 @@ def main() -> int:
             "native_stdlib_math",
             "native_stdlib_push_pop",
             "native_stdlib_strings",
+            "native_stdlib_typeof",
             "struct_literals_field_access",
             "struct_identity_equality",
             "struct_constructor_functions",

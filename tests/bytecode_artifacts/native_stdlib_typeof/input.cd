@@ -1,0 +1,4 @@
+print typeOf(nil);
+print typeOf(1);
+print typeOf([1]);
+print typeOf({ x: 1 });
