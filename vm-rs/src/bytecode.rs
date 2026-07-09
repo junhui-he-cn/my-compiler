@@ -100,6 +100,10 @@ pub enum Instruction {
         dest: usize,
         value: usize,
     },
+    AssertArray {
+        dest: usize,
+        value: usize,
+    },
     Print {
         value: usize,
     },

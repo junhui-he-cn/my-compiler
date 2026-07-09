@@ -1,0 +1,12 @@
+Program
+  ForIn x in (array 1 2 3 4 5)
+    Block
+      If (== x 2)
+        Then
+          Block
+            Continue
+      If (== x 5)
+        Then
+          Block
+            Break
+      Print x

@@ -1,0 +1,6 @@
+Program
+  Let xs: [number] = (array 1 2)
+  ForIn x in xs
+    Block
+      Let y: number = x
+      Print y

@@ -60,6 +60,7 @@ private:
     Value executeField(const IRProgram& program, const Frame& frame, IRRegister object, std::size_t fieldNameIndex);
     Value executeAssignField(const IRProgram& program, const Frame& frame, IRRegister object, std::size_t fieldNameIndex, IRRegister value);
     Value executeLen(const Frame& frame, IRRegister value);
+    Value executeAssertArray(const Frame& frame, IRRegister value);
     Value executeNativeCall(const IRProgram& program, const Frame& frame, std::size_t nameIndex, const std::vector<IRRegister>& arguments);
     Value executeNativePush(const Frame& frame, const std::vector<IRRegister>& arguments);
     Value executeNativePop(const Frame& frame, const std::vector<IRRegister>& arguments);

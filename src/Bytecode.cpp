@@ -39,6 +39,7 @@ bool isBinary(BytecodeOp op)
     case BytecodeOp::Field:
     case BytecodeOp::AssignField:
     case BytecodeOp::Len:
+    case BytecodeOp::AssertArray:
     case BytecodeOp::Print:
     case BytecodeOp::Return:
     case BytecodeOp::Negate:
@@ -209,7 +210,7 @@ void printInstruction(
         if (!instruction.arguments.empty()) {
             out << ", " << instruction.arguments.front();
         }
-    } else if (instruction.op == BytecodeOp::Len) {
+    } else if (instruction.op == BytecodeOp::Len || instruction.op == BytecodeOp::AssertArray) {
         if (instruction.left) {
             out << " " << *instruction.left;
         }
@@ -349,6 +350,8 @@ std::string bytecodeOpName(BytecodeOp op)
         return "assign_field";
     case BytecodeOp::Len:
         return "len";
+    case BytecodeOp::AssertArray:
+        return "assert_array";
     case BytecodeOp::Print:
         return "print";
     case BytecodeOp::Return:

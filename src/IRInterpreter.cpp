@@ -204,6 +204,9 @@ IRInterpreter::ExecutionResult IRInterpreter::executeInstructions(
         case IROp::Len:
             writeRegister(frame, readDest(instruction), executeLen(frame, readLeft(instruction)));
             break;
+        case IROp::AssertArray:
+            writeRegister(frame, readDest(instruction), executeAssertArray(frame, readLeft(instruction)));
+            break;
         case IROp::Print:
             output_ << valueToString(readRegister(frame, readLeft(instruction))) << '\n';
             break;
@@ -580,6 +583,15 @@ Value IRInterpreter::executeLen(const Frame& frame, IRRegister value)
         return Value::number(static_cast<double>(input.asString().size()));
     }
     throw IRRuntimeError("len expects array or string");
+}
+
+Value IRInterpreter::executeAssertArray(const Frame& frame, IRRegister value)
+{
+    const Value& input = readRegister(frame, value);
+    if (input.type() != Value::Type::Array) {
+        throw IRRuntimeError("for-in expects array");
+    }
+    return input;
 }
 
 Value IRInterpreter::executeNativeCall(

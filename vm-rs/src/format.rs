@@ -375,6 +375,10 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                 dest,
                 value: parse_register(line, operands)?,
             }),
+            "assert_array" => Ok(Instruction::AssertArray {
+                dest,
+                value: parse_register(line, operands)?,
+            }),
             "negate" => Ok(Instruction::Negate {
                 dest,
                 value: parse_register(line, operands)?,
@@ -511,6 +515,7 @@ fn format_instruction(instruction: &Instruction) -> String {
             value,
         } => format!("r{} = assign_field r{}, n{}, r{}", dest, object, name, value),
         Instruction::Len { dest, value } => format!("r{} = len r{}", dest, value),
+        Instruction::AssertArray { dest, value } => format!("r{} = assert_array r{}", dest, value),
         Instruction::Print { value } => format!("print r{}", value),
         Instruction::Return { value } => format!("return r{}", value),
         Instruction::Negate { dest, value } => format!("r{} = negate r{}", dest, value),
@@ -856,7 +861,7 @@ mod tests {
 
     #[test]
     fn parses_all_opcode_shapes() {
-        let source = "cdbc 0.1\n\nconstants:\n  c0 = nil\n  c1 = number 1.5\n  c2 = bool true\n  c3 = string \"hello\"\n\nnames:\n  n0 = \"x#0\"\n\nmain registers=35:\n  r0 = constant c0\n  r1 = make_function f0\n  r2 = array [r0, r1]\n  r3 = move r2\n  r4 = load_var n0\n  store_var n0, r4\n  assign_var n0, r4\n  r5 = call r1 [r0, r2]\n  r6 = index r2, r0\n  r7 = assign_index r2, r0, r1\n  r8 = len r2\n  print r8\n  return r8\n  r9 = negate r8\n  r10 = not r8\n  r11 = add r8, r9\n  r12 = subtract r8, r9\n  r13 = multiply r8, r9\n  r14 = divide r8, r9\n  r15 = equal r8, r9\n  r16 = not_equal r8, r9\n  r17 = greater r8, r9\n  r18 = greater_equal r8, r9\n  r19 = less r8, r9\n  r20 = less_equal r8, r9\n  jump 27\n  jump_if_false r20, 28\n  jump_if_true r20, 29\n\nfunction f0 name=\"id\" arity=1 registers=1:\n  param 0 = \"arg#0\"\n  return r0\n";
+        let source = "cdbc 0.1\n\nconstants:\n  c0 = nil\n  c1 = number 1.5\n  c2 = bool true\n  c3 = string \"hello\"\n\nnames:\n  n0 = \"x#0\"\n\nmain registers=36:\n  r0 = constant c0\n  r1 = make_function f0\n  r2 = array [r0, r1]\n  r3 = move r2\n  r4 = load_var n0\n  store_var n0, r4\n  assign_var n0, r4\n  r5 = call r1 [r0, r2]\n  r6 = index r2, r0\n  r7 = assign_index r2, r0, r1\n  r8 = len r2\n  print r8\n  return r8\n  r9 = negate r8\n  r10 = not r8\n  r11 = add r8, r9\n  r12 = subtract r8, r9\n  r13 = multiply r8, r9\n  r14 = divide r8, r9\n  r15 = equal r8, r9\n  r16 = not_equal r8, r9\n  r17 = greater r8, r9\n  r18 = greater_equal r8, r9\n  r19 = less r8, r9\n  r20 = less_equal r8, r9\n  jump 27\n  jump_if_false r20, 28\n  jump_if_true r20, 29\n\nfunction f0 name=\"id\" arity=1 registers=1:\n  param 0 = \"arg#0\"\n  return r0\n";
         let program = parse_program(source).expect("parse all opcode shapes");
         assert_eq!(format_program(&program), source);
     }

@@ -282,6 +282,13 @@ impl<'a> VM<'a> {
                     let length = self.execute_len(value)?;
                     self.write_register(frame, *dest, length)?;
                 }
+                Instruction::AssertArray { dest, value } => {
+                    let input = self.read_register(frame, *value)?;
+                    if !matches!(input, Value::Array(_)) {
+                        return Err(RuntimeError::new("for-in expects array"));
+                    }
+                    self.write_register(frame, *dest, input)?;
+                }
                 Instruction::Return { value } => {
                     return Ok(Some(self.read_register(frame, *value)?))
                 }

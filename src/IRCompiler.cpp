@@ -152,6 +152,11 @@ void IRCompiler::compileStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* forInStmt = dynamic_cast<const ForInStmt*>(&statement)) {
+        compileForIn(*forInStmt);
+        return;
+    }
+
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const IRRegister value = compileExpression(*let->initializer);
         ir_.emitStoreVar(resolvedNames_->letName(*let), value);
@@ -259,6 +264,65 @@ void IRCompiler::compileFor(const ForStmt& statement)
     if (exitJump != static_cast<std::size_t>(-1)) {
         ir_.patchJump(exitJump);
     }
+    for (const std::size_t breakJump : loop.breakJumps) {
+        ir_.patchJump(breakJump);
+    }
+}
+
+std::string IRCompiler::makeSyntheticName(const std::string& prefix)
+{
+    return "__" + prefix + "#" + std::to_string(nextSyntheticName_++);
+}
+
+void IRCompiler::compileForIn(const ForInStmt& statement)
+{
+    const std::string iterableName = makeSyntheticName("for_in_iter");
+    const std::string indexName = makeSyntheticName("for_in_index");
+    const std::string lengthName = makeSyntheticName("for_in_len");
+    const std::string itemName = resolvedNames_->forInVariableName(statement);
+
+    const IRRegister iterableValue = compileExpression(*statement.iterable);
+    const IRRegister arrayValue = ir_.emitAssertArray(iterableValue);
+    ir_.emitStoreVar(iterableName, arrayValue);
+
+    const IRRegister zero = ir_.emitConstant(Value::number(0));
+    ir_.emitStoreVar(indexName, zero);
+
+    const IRRegister initialItem = ir_.emitConstant(Value::nil());
+    ir_.emitStoreVar(itemName, initialItem);
+
+    const IRRegister loadedArrayForLen = ir_.emitLoadVar(iterableName);
+    const IRRegister length = ir_.emitLen(loadedArrayForLen);
+    ir_.emitStoreVar(lengthName, length);
+
+    const std::size_t loopStart = ir_.instructionCount();
+    const IRRegister currentIndex = ir_.emitLoadVar(indexName);
+    const IRRegister currentLength = ir_.emitLoadVar(lengthName);
+    const IRRegister condition = ir_.emitBinary(IROp::Less, currentIndex, currentLength);
+    const std::size_t exitJump = ir_.emitJumpIfFalse(condition);
+
+    const IRRegister arrayForElement = ir_.emitLoadVar(iterableName);
+    const IRRegister indexForElement = ir_.emitLoadVar(indexName);
+    const IRRegister item = ir_.emitIndex(arrayForElement, indexForElement);
+    ir_.emitAssignVar(itemName, item);
+
+    const std::size_t jumpOverIncrement = ir_.emitJump();
+    const std::size_t incrementStart = ir_.instructionCount();
+    const IRRegister indexBeforeIncrement = ir_.emitLoadVar(indexName);
+    const IRRegister one = ir_.emitConstant(Value::number(1));
+    const IRRegister nextIndex = ir_.emitBinary(IROp::Add, indexBeforeIncrement, one);
+    ir_.emitAssignVar(indexName, nextIndex);
+    ir_.emitJumpTo(loopStart);
+
+    ir_.patchJump(jumpOverIncrement);
+
+    loopContexts_.push_back(LoopContext{incrementStart, {}});
+    compileStatement(*statement.body);
+    LoopContext loop = std::move(loopContexts_.back());
+    loopContexts_.pop_back();
+
+    ir_.emitJumpTo(incrementStart);
+    ir_.patchJump(exitJump);
     for (const std::size_t breakJump : loop.breakJumps) {
         ir_.patchJump(breakJump);
     }

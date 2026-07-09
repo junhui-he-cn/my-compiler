@@ -28,6 +28,7 @@ enum class BytecodeOp {
     Field,
     AssignField,
     Len,
+    AssertArray,
     Print,
     Return,
     Negate,

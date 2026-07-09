@@ -1,0 +1,7 @@
+Program
+  Let xs = (array 1 2)
+  ForIn x in xs
+    Block
+      Print x
+      Expr (call push xs (+ x 10))
+  Print xs

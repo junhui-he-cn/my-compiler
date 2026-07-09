@@ -1,0 +1,56 @@
+cdbc 0.1
+
+constants:
+  c0 = number 1
+  c1 = number 2
+  c2 = number 3
+  c3 = number 0
+  c4 = nil
+  c5 = number 1
+
+names:
+  n0 = "__for_in_iter#0"
+  n1 = "__for_in_index#1"
+  n2 = "x#0"
+  n3 = "__for_in_iter#0"
+  n4 = "__for_in_len#2"
+  n5 = "__for_in_index#1"
+  n6 = "__for_in_len#2"
+  n7 = "__for_in_iter#0"
+  n8 = "__for_in_index#1"
+  n9 = "x#0"
+  n10 = "__for_in_index#1"
+  n11 = "__for_in_index#1"
+  n12 = "x#0"
+
+main registers=19:
+  r0 = constant c0
+  r1 = constant c1
+  r2 = constant c2
+  r3 = array [r0, r1, r2]
+  r4 = assert_array r3
+  store_var n0, r4
+  r5 = constant c3
+  store_var n1, r5
+  r6 = constant c4
+  store_var n2, r6
+  r7 = load_var n3
+  r8 = len r7
+  store_var n4, r8
+  r9 = load_var n5
+  r10 = load_var n6
+  r11 = less r9, r10
+  jump_if_false r11, 30
+  r12 = load_var n7
+  r13 = load_var n8
+  r14 = index r12, r13
+  assign_var n9, r14
+  jump 27
+  r15 = load_var n10
+  r16 = constant c5
+  r17 = add r15, r16
+  assign_var n11, r17
+  jump 13
+  r18 = load_var n12
+  print r18
+  jump 22

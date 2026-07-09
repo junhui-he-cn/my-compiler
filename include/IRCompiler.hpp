@@ -32,6 +32,8 @@ private:
     void compileBreak(const BreakStmt& statement);
     void compileContinue(const ContinueStmt& statement);
     void compileFor(const ForStmt& statement);
+    void compileForIn(const ForInStmt& statement);
+    std::string makeSyntheticName(const std::string& prefix);
     IRRegister emitLenCall(const CallExpr& expression);
     IRRegister emitNativeStdlibCall(const CallExpr& expression);
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
@@ -57,4 +59,5 @@ private:
     std::unordered_map<std::size_t, const ModuleStmt*> modules_;
     std::unordered_set<std::size_t> compiledModules_;
     std::vector<LoopContext> loopContexts_;
+    std::size_t nextSyntheticName_ = 0;
 };

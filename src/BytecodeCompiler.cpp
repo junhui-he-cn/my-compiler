@@ -81,6 +81,8 @@ BytecodeOp lowerOp(IROp op)
         return BytecodeOp::AssignField;
     case IROp::Len:
         return BytecodeOp::Len;
+    case IROp::AssertArray:
+        return BytecodeOp::AssertArray;
     case IROp::Print:
         return BytecodeOp::Print;
     case IROp::Return:
