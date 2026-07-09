@@ -364,6 +364,26 @@ void IndexAssignExpr::print(std::ostream& out) const
     out << ')';
 }
 
+IndexCompoundAssignExpr::IndexCompoundAssignExpr(ExprPtr collection, Token bracket, ExprPtr index, Token op, ExprPtr value)
+    : collection(std::move(collection))
+    , bracket(std::move(bracket))
+    , index(std::move(index))
+    , op(std::move(op))
+    , value(std::move(value))
+{
+}
+
+void IndexCompoundAssignExpr::print(std::ostream& out) const
+{
+    out << '(' << op.lexeme << " (index ";
+    writeExpr(out, collection);
+    out << ' ';
+    writeExpr(out, index);
+    out << ") ";
+    writeExpr(out, value);
+    out << ')';
+}
+
 UnaryExpr::UnaryExpr(Token op, ExprPtr right)
     : op(std::move(op))
     , right(std::move(right))
@@ -550,6 +570,23 @@ FieldAssignExpr::FieldAssignExpr(ExprPtr object, Token name, ExprPtr value)
 void FieldAssignExpr::print(std::ostream& out) const
 {
     out << "(= (field ";
+    writeExpr(out, object);
+    out << ' ' << name.lexeme << ") ";
+    writeExpr(out, value);
+    out << ')';
+}
+
+FieldCompoundAssignExpr::FieldCompoundAssignExpr(ExprPtr object, Token name, Token op, ExprPtr value)
+    : object(std::move(object))
+    , name(std::move(name))
+    , op(std::move(op))
+    , value(std::move(value))
+{
+}
+
+void FieldCompoundAssignExpr::print(std::ostream& out) const
+{
+    out << '(' << op.lexeme << " (field ";
     writeExpr(out, object);
     out << ' ' << name.lexeme << ") ";
     writeExpr(out, value);

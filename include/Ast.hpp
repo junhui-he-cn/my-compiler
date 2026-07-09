@@ -100,6 +100,17 @@ struct IndexAssignExpr final : Expr {
     ExprPtr value;
 };
 
+struct IndexCompoundAssignExpr final : Expr {
+    IndexCompoundAssignExpr(ExprPtr collection, Token bracket, ExprPtr index, Token op, ExprPtr value);
+    void print(std::ostream& out) const override;
+
+    ExprPtr collection;
+    Token bracket;
+    ExprPtr index;
+    Token op;
+    ExprPtr value;
+};
+
 struct UnaryExpr final : Expr {
     UnaryExpr(Token op, ExprPtr right);
     void print(std::ostream& out) const override;
@@ -209,6 +220,16 @@ struct FieldAssignExpr final : Expr {
 
     ExprPtr object;
     Token name;
+    ExprPtr value;
+};
+
+struct FieldCompoundAssignExpr final : Expr {
+    FieldCompoundAssignExpr(ExprPtr object, Token name, Token op, ExprPtr value);
+    void print(std::ostream& out) const override;
+
+    ExprPtr object;
+    Token name;
+    Token op;
     ExprPtr value;
 };
 

@@ -498,6 +498,20 @@ ExprPtr Parser::assignment()
             return std::make_unique<CompoundAssignExpr>(variable->name, std::move(op), std::move(value));
         }
 
+        if (auto* index = dynamic_cast<IndexExpr*>(expr.get())) {
+            ExprPtr collection = std::move(index->collection);
+            Token bracket = std::move(index->bracket);
+            ExprPtr indexExpression = std::move(index->index);
+            return std::make_unique<IndexCompoundAssignExpr>(
+                std::move(collection), std::move(bracket), std::move(indexExpression), std::move(op), std::move(value));
+        }
+
+        if (auto* field = dynamic_cast<FieldAccessExpr*>(expr.get())) {
+            ExprPtr object = std::move(field->object);
+            Token name = std::move(field->name);
+            return std::make_unique<FieldCompoundAssignExpr>(std::move(object), std::move(name), std::move(op), std::move(value));
+        }
+
         throw ParseError(op, "invalid compound assignment target");
     }
 
