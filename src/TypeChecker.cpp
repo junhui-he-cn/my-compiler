@@ -267,6 +267,15 @@ const std::string& ResolvedNames::assignmentName(const AssignExpr& expression) c
     return found->second;
 }
 
+const std::string& ResolvedNames::compoundAssignmentName(const CompoundAssignExpr& expression) const
+{
+    const auto found = compoundAssignmentNames_.find(&expression);
+    if (found == compoundAssignmentNames_.end()) {
+        throw std::logic_error("missing resolved compound assignment name");
+    }
+    return found->second;
+}
+
 const std::string& ResolvedNames::forInVariableName(const ForInStmt& statement) const
 {
     const auto found = forInVariableNames_.find(&statement);
@@ -299,6 +308,7 @@ void ResolvedNames::clear()
     functionExpressionParameterNames_.clear();
     variableNames_.clear();
     assignmentNames_.clear();
+    compoundAssignmentNames_.clear();
     forInVariableNames_.clear();
     fieldAccessNames_.clear();
 }
@@ -336,6 +346,11 @@ void ResolvedNames::recordVariable(const VariableExpr& expression, std::string n
 void ResolvedNames::recordAssignment(const AssignExpr& expression, std::string name)
 {
     assignmentNames_.emplace(&expression, std::move(name));
+}
+
+void ResolvedNames::recordCompoundAssignment(const CompoundAssignExpr& expression, std::string name)
+{
+    compoundAssignmentNames_.emplace(&expression, std::move(name));
 }
 
 void ResolvedNames::recordForInVariable(const ForInStmt& statement, std::string name)
@@ -1258,6 +1273,32 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
 
         resolvedNames_.recordAssignment(*assign, target->resolvedName);
         return CheckedExpression{target->type};
+    }
+
+    if (const auto* compound = dynamic_cast<const CompoundAssignExpr*>(&expression)) {
+        Binding* target = findVariable(compound->name.lexeme);
+        if (!target) {
+            if (findNamespace(compound->name.lexeme)) {
+                throw TypeError(compound->name, "cannot assign to namespace alias `" + compound->name.lexeme + "`");
+            }
+            throw TypeError(compound->name, "undefined variable `" + compound->name.lexeme + "`");
+        }
+
+        const CheckedExpression value = checkExpressionInfo(*compound->value);
+        if (target->type.kind != StaticType::Unknown && target->type.kind != StaticType::Number) {
+            throw TypeError(compound->op,
+                "`" + compound->op.lexeme + "` expects number variable, got " + typeInfoName(target->type));
+        }
+        if (value.type.kind != StaticType::Unknown && value.type.kind != StaticType::Number) {
+            throw TypeError(compound->op,
+                "`" + compound->op.lexeme + "` expects number value, got " + typeInfoName(value.type));
+        }
+
+        if (!isKnown(target->type)) {
+            target->type = simpleType(StaticType::Number);
+        }
+        resolvedNames_.recordCompoundAssignment(*compound, target->resolvedName);
+        return CheckedExpression{simpleType(StaticType::Number)};
     }
 
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {

@@ -47,6 +47,7 @@ public:
     bool hasVariable(const VariableExpr& expression) const;
     const std::string& variableName(const VariableExpr& expression) const;
     const std::string& assignmentName(const AssignExpr& expression) const;
+    const std::string& compoundAssignmentName(const CompoundAssignExpr& expression) const;
     const std::string& forInVariableName(const ForInStmt& statement) const;
     bool hasFieldAccess(const FieldAccessExpr& expression) const;
     const std::string& fieldAccessName(const FieldAccessExpr& expression) const;
@@ -62,6 +63,7 @@ private:
     void recordParameters(const FunctionExpr& expression, std::vector<std::string> names);
     void recordVariable(const VariableExpr& expression, std::string name);
     void recordAssignment(const AssignExpr& expression, std::string name);
+    void recordCompoundAssignment(const CompoundAssignExpr& expression, std::string name);
     void recordForInVariable(const ForInStmt& statement, std::string name);
     void recordFieldAccess(const FieldAccessExpr& expression, std::string name);
 
@@ -72,6 +74,7 @@ private:
     std::unordered_map<const FunctionExpr*, std::vector<std::string>> functionExpressionParameterNames_;
     std::unordered_map<const VariableExpr*, std::string> variableNames_;
     std::unordered_map<const AssignExpr*, std::string> assignmentNames_;
+    std::unordered_map<const CompoundAssignExpr*, std::string> compoundAssignmentNames_;
     std::unordered_map<const ForInStmt*, std::string> forInVariableNames_;
     std::unordered_map<const FieldAccessExpr*, std::string> fieldAccessNames_;
 };
