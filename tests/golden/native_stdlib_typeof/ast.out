@@ -6,8 +6,7 @@ Program
   Print (call typeOf (fun () (return nil)))
   Print (call typeOf (array 1))
   Print (call typeOf (struct x: 1))
-  Struct Box
-    field value: number
+  Struct Box {value: number}
   Print (call typeOf (construct Box value: 1))
   Let typeOf = (fun (value) (return "shadowed"))
   Print (call typeOf 123)

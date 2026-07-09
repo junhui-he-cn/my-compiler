@@ -1494,6 +1494,9 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         }
         return CheckedExpression{simpleType(StaticType::String)};
     }
+    case NativeFunctionKind::TypeOf:
+        checkExpressionInfo(*expression.arguments[0]);
+        return CheckedExpression{simpleType(StaticType::String)};
     }
 
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");

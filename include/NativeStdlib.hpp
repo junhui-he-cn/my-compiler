@@ -13,6 +13,7 @@ enum class NativeFunctionKind {
     Str,
     Substr,
     CharAt,
+    TypeOf,
 };
 
 struct NativeFunctionSignature {
