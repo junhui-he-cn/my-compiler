@@ -1,0 +1,13 @@
+Program
+  Print (call typeOf nil)
+  Print (call typeOf 1)
+  Print (call typeOf true)
+  Print (call typeOf "x")
+  Print (call typeOf (fun () (return nil)))
+  Print (call typeOf (array 1))
+  Print (call typeOf (struct x: 1))
+  Struct Box
+    field value: number
+  Print (call typeOf (construct Box value: 1))
+  Let typeOf = (fun (value) (return "shadowed"))
+  Print (call typeOf 123)
