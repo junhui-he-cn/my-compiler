@@ -1,0 +1,2 @@
+fun id(x) { return x; }
+substr("abc", 0, id(false));

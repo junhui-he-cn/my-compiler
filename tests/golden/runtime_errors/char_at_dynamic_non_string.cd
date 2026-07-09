@@ -1,0 +1,2 @@
+fun id(x) { return x; }
+charAt(id(123), 0);

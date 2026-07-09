@@ -33,6 +33,17 @@ Value divideNumber(double left, double right)
     return Value::number(left / right);
 }
 
+std::size_t checkedIntegerIndex(double value, const std::string& integerMessage, const std::string& boundsMessage, std::size_t upperBoundInclusive)
+{
+    if (!std::isfinite(value) || std::floor(value) != value) {
+        throw IRRuntimeError(integerMessage);
+    }
+    if (value < 0.0 || value > static_cast<double>(upperBoundInclusive)) {
+        throw IRRuntimeError(boundsMessage);
+    }
+    return static_cast<std::size_t>(value);
+}
+
 Value greaterNumber(double left, double right)
 {
     return Value::boolean(left > right);
@@ -593,6 +604,15 @@ Value IRInterpreter::executeNativeCall(
     if (name == "sqrt") {
         return executeNativeSqrt(frame, arguments);
     }
+    if (name == "str") {
+        return executeNativeStr(frame, arguments);
+    }
+    if (name == "substr") {
+        return executeNativeSubstr(frame, arguments);
+    }
+    if (name == "charAt") {
+        return executeNativeCharAt(frame, arguments);
+    }
     throw IRRuntimeError("unknown native stdlib function `" + name + "`");
 }
 
@@ -664,6 +684,66 @@ Value IRInterpreter::executeNativeSqrt(const Frame& frame, const std::vector<IRR
         throw IRRuntimeError("sqrt expects non-negative number");
     }
     return Value::number(std::sqrt(value.asNumber()));
+}
+
+Value IRInterpreter::executeNativeStr(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 1) {
+        throw IRRuntimeError("str expects 1 arguments");
+    }
+    return Value::string(valueToString(readRegister(frame, arguments[0])));
+}
+
+Value IRInterpreter::executeNativeSubstr(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 3) {
+        throw IRRuntimeError("substr expects 3 arguments");
+    }
+    const Value& source = readRegister(frame, arguments[0]);
+    if (source.type() != Value::Type::String) {
+        throw IRRuntimeError("substr expects string as first argument");
+    }
+    const Value& startValue = readRegister(frame, arguments[1]);
+    if (startValue.type() != Value::Type::Number) {
+        throw IRRuntimeError("substr expects number as second argument");
+    }
+    const Value& lengthValue = readRegister(frame, arguments[2]);
+    if (lengthValue.type() != Value::Type::Number) {
+        throw IRRuntimeError("substr expects number as third argument");
+    }
+
+    const std::string& text = source.asString();
+    const std::size_t start = checkedIntegerIndex(
+        startValue.asNumber(), "substr expects integer start offset", "substr start offset out of bounds", text.size());
+    const std::size_t length = checkedIntegerIndex(
+        lengthValue.asNumber(), "substr expects integer length", "substr length out of bounds", text.size());
+    if (length > text.size() - start) {
+        throw IRRuntimeError("substr length out of bounds");
+    }
+    return Value::string(text.substr(start, length));
+}
+
+Value IRInterpreter::executeNativeCharAt(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 2) {
+        throw IRRuntimeError("charAt expects 2 arguments");
+    }
+    const Value& source = readRegister(frame, arguments[0]);
+    if (source.type() != Value::Type::String) {
+        throw IRRuntimeError("charAt expects string as first argument");
+    }
+    const Value& indexValue = readRegister(frame, arguments[1]);
+    if (indexValue.type() != Value::Type::Number) {
+        throw IRRuntimeError("charAt expects number as second argument");
+    }
+
+    const std::string& text = source.asString();
+    if (text.empty()) {
+        throw IRRuntimeError("charAt index out of bounds");
+    }
+    const std::size_t index = checkedIntegerIndex(
+        indexValue.asNumber(), "charAt expects integer index", "charAt index out of bounds", text.size() - 1);
+    return Value::string(std::string(1, text[index]));
 }
 
 Value IRInterpreter::executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double))
