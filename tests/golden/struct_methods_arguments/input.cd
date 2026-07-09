@@ -1,0 +1,11 @@
+struct Box { value: number }
+
+impl Box {
+  fun add(amount: number): number {
+    return this.value + amount;
+  }
+}
+
+let b: Box = Box { value: 10 };
+let result: number = b.add(5) + 1;
+print result;

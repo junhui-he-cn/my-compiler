@@ -1,0 +1,18 @@
+struct Counter { value: number }
+
+impl Counter {
+  fun incBy(delta: number): nil {
+    this.value = this.value + delta;
+    return nil;
+  }
+
+  fun valueNow(): number {
+    return this.value;
+  }
+}
+
+let c: Counter = Counter { value: 1 };
+let alias = c;
+c.incBy(4);
+print c.valueNow();
+print alias.value;

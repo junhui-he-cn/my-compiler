@@ -1,0 +1,15 @@
+struct Person { name: string, age: number }
+
+impl Person {
+  fun label(): string {
+    return this.name + "!";
+  }
+
+  fun nextAge(): number {
+    return this.age + 1;
+  }
+}
+
+let p: Person = Person { name: "Ada", age: 36 };
+print p.label();
+print p.nextAge();
