@@ -556,6 +556,24 @@ void TypeChecker::checkStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* forStmt = dynamic_cast<const ForStmt*>(&statement)) {
+        beginScope();
+        if (forStmt->initializer) {
+            checkStatement(*forStmt->initializer);
+        }
+        if (forStmt->condition) {
+            checkExpression(*forStmt->condition);
+        }
+        if (forStmt->increment) {
+            checkExpression(*forStmt->increment);
+        }
+        ++loopDepth_;
+        checkStatement(*forStmt->body);
+        --loopDepth_;
+        endScope();
+        return;
+    }
+
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const CheckedExpression declared = checkLetInitializer(*let);
         declareVariable(*let, declared.type, let->typeName.has_value());
