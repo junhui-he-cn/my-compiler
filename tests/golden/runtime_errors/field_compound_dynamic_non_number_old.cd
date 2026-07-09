@@ -1,0 +1,2 @@
+let value = { count: "bad" };
+value.count += 1;

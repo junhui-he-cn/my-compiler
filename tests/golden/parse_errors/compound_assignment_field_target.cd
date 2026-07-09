@@ -1,2 +1,0 @@
-let s = { value: 1 };
-s.value += 1;

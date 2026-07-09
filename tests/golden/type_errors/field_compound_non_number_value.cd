@@ -1,0 +1,3 @@
+struct Counter { value: number }
+let c: Counter = Counter { value: 1 };
+c.value += "bad";
