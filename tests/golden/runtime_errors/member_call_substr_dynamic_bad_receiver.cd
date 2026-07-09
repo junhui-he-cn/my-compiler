@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+id(123).substr(0, 1);

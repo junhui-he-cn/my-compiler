@@ -1,0 +1,1 @@
+Type error at 1:13: substr expects string receiver, got array
