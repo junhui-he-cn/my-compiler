@@ -41,6 +41,29 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 15. Language polish and diagnostics
 ```
 
+## Near-Term Development Queue
+
+The next recommended language slices are ordered by usefulness, implementation
+risk, and how well they build on recently completed work:
+
+1. **Phase 11C: array `for-in` iteration** — add `for item in array { ... }`
+   as the natural follow-up to C-style `for` loops and mutable arrays.
+2. **Phase 15D: compound assignment for variables** — start with
+   `name += expr`, `name -= expr`, `name *= expr`, and `name /= expr` for
+   numeric variables only; extend to index/field targets later.
+3. **Phase 13C: `typeOf(value)` builtin** — add a small debug helper on the
+   existing shadowable `native_call` path.
+4. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
+   interacts with annotated variables, function returns, arrays, and structs.
+5. **Phase 12E: member calls** — consider method-style calls such as
+   `xs.push(value)`, `xs.pop()`, and possibly string helpers after dot/call
+   semantics are designed together.
+6. **Phase 14E: module re-export and search paths** — revisit modules after
+   the core language ergonomics above are stronger.
+
+Each slice should still start with a focused design spec and implementation
+plan before changing compiler behavior.
+
 ## Phase 9: Richer Type System
 
 Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Phase 9E is implemented: function type annotations use `fun(...): ...` syntax and support static signature checks for annotated variables, parameters, returns, assignments, and calls. Phase 9F is implemented: array type annotations use `[type]` syntax and known element types flow through array literals, indexing, index assignment, `push`, and `pop`.
@@ -51,7 +74,8 @@ Suggested future features:
 
 - Deeper collection inference while preserving mixed-array dynamic escape hatches.
 - Deeper inference for currently unknown function parameters and call results.
-- A clear compatibility rule for `nil`.
+- A clear compatibility rule for `nil`, likely as Phase 9G before adding broad
+  nullable syntax.
 
 Likely touch points:
 
@@ -74,6 +98,13 @@ Completed fourth slice: named functions and function expressions accept optional
 Completed fifth slice: function type annotations use `fun(type, ...): type` syntax in `let`, parameter, and return annotations, with static signature checks for assignments, calls, and returns.
 
 Completed sixth slice: array type annotations use `[type]` syntax in `let`, parameter, return, and struct field annotations. Known array element types are checked for literals, indexing, index assignment, `push`, and `pop`, while mixed unannotated arrays remain a dynamic escape hatch.
+
+Recommended next slice:
+
+- Phase 9G: define nullable / `nil` compatibility. Start by deciding whether
+  `nil` is assignable only to explicit nullable annotations, whether a `type?`
+  syntax is needed now, and how function return checking reports missing or
+  possibly-`nil` values.
 
 ## Phase 10: Array Mutation and Collection Builtins
 
@@ -134,6 +165,11 @@ Recommended split:
 
 - Phase 11A: `break` / `continue` for existing `while` loops. Implemented.
 - Phase 11B: C-style `for` loop syntax and lowering. Implemented.
+- Phase 11C: array `for-in` iteration. Recommended next feature slice:
+  `for item in xs { ... }` should introduce a loop-scoped item binding,
+  support `break` and `continue`, statically check known non-array iterables,
+  and runtime-check unknown iterables. Keep map/range iterators out of the
+  first slice.
 
 ## Phase 12: Records / Structs
 
@@ -149,6 +185,9 @@ Possible approaches:
 - Dot/member call syntax for collection methods such as `xs.push(value)` and
   `xs.pop()`, if method-style collection APIs are still desired.
 - Named structs: `struct Person { name: string, age: number }`. Implemented as static-only type shapes with `Person { ... }` constructor expressions.
+- Member calls: `receiver.method(args...)` can be considered as Phase 12E
+  after deciding whether builtin method names are sugar for function-style
+  helpers or a general field-call mechanism.
 
 Keep methods, inheritance, and protocols out of the first records slice.
 
@@ -172,7 +211,9 @@ Suggested builtins:
 - Numeric helpers: `floor`, `ceil`, `sqrt`. Implemented.
 - String helpers: `str`, `substr`, `charAt`. Implemented.
 - Collection helpers: `len` plus additional helpers beyond the Phase 10 `push`/`pop` slice.
-- Debug helper: `typeOf` if useful for mixed runtime values.
+- Debug helper: `typeOf`. Recommended as the next builtin slice because it is
+  small, useful for mixed runtime values, and exercises the established
+  `native_call` path without new syntax.
 
 Each builtin should define behavior for both the IR interpreter and bytecode artifact/Rust VM paths, preferably through shared runtime machinery so semantics stay aligned.
 
@@ -198,6 +239,17 @@ Remaining future work:
 - Re-export syntax for forwarding declarations from one module through another.
 - Separate compilation or module artifacts instead of always recursively loading source and compiling one combined program.
 
+Recommended split:
+
+- Phase 14E: re-export syntax for forwarding declarations from one module
+  through another, for example after deciding between `export name from
+  "path";` and `export { name } from "path";`.
+- Phase 14F: package/module search paths for less verbose imports. This should
+  come after re-export rules because it affects source resolution and
+  diagnostics more broadly.
+- Phase 14G: separate compilation or module artifacts. Treat this as a larger
+  compiler/backend design effort, not a small language polish task.
+
 Why late: modules affect diagnostics, CLI source management, test layout, and name resolution across compilation units.
 
 ## Phase 15: Language Polish and Diagnostics
@@ -211,7 +263,11 @@ Suggested features:
 - Source snippets and carets for front-end diagnostics. Implemented, with file-aware paths for imported files and direct multi-file inputs.
 - More parse recovery and multi-error reporting.
 - Clear handling for lambda expression statements that begin with `fun`. Implemented by parser disambiguation between `fun name` declarations and `fun (` expressions.
-- Compound assignment operators such as `+=`, after assignment targets are generalized.
+- Compound assignment operators. Recommended Phase 15D should start with
+  numeric variable targets only (`name += expr`, `name -= expr`, `name *= expr`,
+  `name /= expr`) to keep parsing, type checking, and lowering small. A later
+  slice can extend compound assignment to `array[index]` and `object.field`
+  targets after assignment target reuse is designed.
 - Comments or doc comments if they are still missing.
 
 ## Deferred Backend Track
@@ -228,6 +284,14 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 9: Richer Type System** if the priority is stronger foundations for records, mutable arrays, and builtin APIs.
+Start with **Phase 11C: array `for-in` iteration** if the priority is the most
+useful language feature that builds directly on recent loop and array work.
 
-Choose **Phase 13: Standard Builtins** if the priority is expanding the native stdlib foundation beyond the implemented `push` / `pop`, `floor` / `ceil` / `sqrt`, and `str` / `substr` / `charAt` helpers.
+Choose **Phase 15D: compound assignment for variables** if the priority is
+ergonomics with a smaller syntax/lowering slice.
+
+Choose **Phase 13C: `typeOf(value)`** if the priority is a very small stdlib
+slice that keeps extending the native builtin path.
+
+Choose **Phase 9G: nullable / `nil` compatibility** if the priority is stronger
+type-system foundations before adding more aggregate features.
