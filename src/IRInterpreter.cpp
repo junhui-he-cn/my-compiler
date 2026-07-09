@@ -637,6 +637,9 @@ Value IRInterpreter::executeNativeCall(
     if (name == "charAt") {
         return executeNativeCharAt(frame, arguments);
     }
+    if (name == "typeOf") {
+        return executeNativeTypeOf(frame, arguments);
+    }
     throw IRRuntimeError("unknown native stdlib function `" + name + "`");
 }
 
@@ -768,6 +771,14 @@ Value IRInterpreter::executeNativeCharAt(const Frame& frame, const std::vector<I
     const std::size_t index = checkedIntegerIndex(
         indexValue.asNumber(), "charAt expects integer index", "charAt index out of bounds", text.size() - 1);
     return Value::string(std::string(1, text[index]));
+}
+
+Value IRInterpreter::executeNativeTypeOf(const Frame& frame, const std::vector<IRRegister>& arguments)
+{
+    if (arguments.size() != 1) {
+        throw IRRuntimeError("typeOf expects 1 arguments");
+    }
+    return Value::string(typeName(readRegister(frame, arguments[0]).type()));
 }
 
 Value IRInterpreter::executeUnaryNumber(const Frame& frame, const std::string& opName, IRRegister value, Value (*operation)(double))

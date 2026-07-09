@@ -71,6 +71,7 @@ private:
     Value executeNativeStr(const Frame& frame, const std::vector<IRRegister>& arguments);
     Value executeNativeSubstr(const Frame& frame, const std::vector<IRRegister>& arguments);
     Value executeNativeCharAt(const Frame& frame, const std::vector<IRRegister>& arguments);
+    Value executeNativeTypeOf(const Frame& frame, const std::vector<IRRegister>& arguments);
 
     std::ostream& output_;
     std::shared_ptr<Environment> globals_ = std::make_shared<Environment>();

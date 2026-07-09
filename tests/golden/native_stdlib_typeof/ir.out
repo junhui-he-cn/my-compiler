@@ -1,0 +1,46 @@
+IR
+0000  v0 = constant #0 nil
+0001  v1 = native_call @0 typeOf(v0)
+0002  print v1
+0003  v2 = constant #1 1
+0004  v3 = native_call @1 typeOf(v2)
+0005  print v3
+0006  v4 = constant #2 true
+0007  v5 = native_call @2 typeOf(v4)
+0008  print v5
+0009  v6 = constant #3 "x"
+0010  v7 = native_call @3 typeOf(v6)
+0011  print v7
+0012  v8 = make_function $0 <lambda>/0
+0013  v9 = native_call @4 typeOf(v8)
+0014  print v9
+0015  v10 = constant #6 1
+0016  v11 = array [v10]
+0017  v12 = native_call @5 typeOf(v11)
+0018  print v12
+0019  v13 = constant #7 1
+0020  v14 = struct {x: v13}
+0021  v15 = native_call @7 typeOf(v14)
+0022  print v15
+0023  v16 = constant #8 1
+0024  v17 = struct {value: v16}
+0025  v18 = native_call @9 typeOf(v17)
+0026  print v18
+0027  v19 = make_function $1 <lambda>/1
+0028  store_var @10 typeOf#1, v19
+0029  v20 = load_var @11 typeOf#1
+0030  v21 = constant #11 123
+0031  v22 = call v20(v21)
+0032  print v22
+
+function $0 <lambda>()
+0000  v0 = constant #4 nil
+0001  return v0
+0002  v1 = constant #5 nil
+0003  return v1
+
+function $1 <lambda>(value#0)
+0000  v0 = constant #9 "shadowed"
+0001  return v0
+0002  v1 = constant #10 nil
+0003  return v1
