@@ -10,7 +10,7 @@ The language currently supports variables, lexical blocks, `if`/`else`,
 element assignment, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
-and `sqrt`.
+`sqrt`, `str`, `substr`, and `charAt`.
 
 The compiler pipeline includes:
 
@@ -118,6 +118,8 @@ The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3]
 The native stdlib functions `push(array, value)` and `pop(array)` mutate arrays in place. `push` appends a value and returns `nil`; `pop` removes and returns the last value. When an array has a known element type, `push` statically checks the appended value and `pop` returns that element type. Arrays are reference values, so aliases observe length changes. Calling `pop([])` is a runtime error. User bindings named `push` or `pop` shadow the stdlib functions, matching `len` shadowing behavior.
 
 The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(number)` each return a number. `sqrt` rejects negative inputs at runtime. User bindings with the same names shadow these stdlib functions.
+
+The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use byte offsets, matching the current `len(string)` byte-length behavior; offsets must be finite integer numbers and in bounds. User bindings with the same names shadow these builtins.
 
 Supported expressions:
 
