@@ -1,0 +1,2 @@
+struct Box { value: number }
+let box: Box = Box { value: nil };

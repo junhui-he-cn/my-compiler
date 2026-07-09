@@ -1,0 +1,13 @@
+struct Box { value: number? }
+let box: Box = Box { value: nil };
+print box.value;
+box.value = 5;
+print box.value;
+let maybeBox: Box? = nil;
+print maybeBox;
+let values: [number?] = [1, nil, 3];
+print values;
+push(values, nil);
+print values;
+let maybeValues: [number]? = nil;
+print maybeValues;

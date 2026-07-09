@@ -1,0 +1,8 @@
+let age: number? = nil;
+print age;
+age = 42;
+print age;
+age = nil;
+print age;
+let label: string? = "ok";
+print label;

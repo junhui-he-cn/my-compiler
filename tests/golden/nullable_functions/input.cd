@@ -1,0 +1,18 @@
+fun maybe(flag: bool): number? {
+  if flag {
+    return 7;
+  }
+  return nil;
+}
+
+fun describe(value: number?): string? {
+  if value == nil {
+    return nil;
+  }
+  return "number";
+}
+
+print maybe(true);
+print maybe(false);
+print describe(3);
+print describe(nil);
