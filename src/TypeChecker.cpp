@@ -275,6 +275,24 @@ const std::vector<std::string>& ResolvedNames::parameterNames(const FunctionExpr
     return found->second;
 }
 
+const std::string& ResolvedNames::methodName(const MethodDecl& method) const
+{
+    const auto found = methodNames_.find(&method);
+    if (found == methodNames_.end()) {
+        throw std::logic_error("missing resolved method name");
+    }
+    return found->second;
+}
+
+const std::vector<std::string>& ResolvedNames::methodParameterNames(const MethodDecl& method) const
+{
+    const auto found = methodParameterNames_.find(&method);
+    if (found == methodParameterNames_.end()) {
+        throw std::logic_error("missing resolved method parameter names");
+    }
+    return found->second;
+}
+
 bool ResolvedNames::hasVariable(const VariableExpr& expression) const
 {
     return variableNames_.find(&expression) != variableNames_.end();
@@ -344,6 +362,15 @@ const std::string& ResolvedNames::memberCallCalleeName(const MemberCallExpr& exp
     return found->second;
 }
 
+bool ResolvedNames::memberCallPassesReceiver(const MemberCallExpr& expression) const
+{
+    const auto found = memberCallPassesReceiver_.find(&expression);
+    if (found == memberCallPassesReceiver_.end()) {
+        throw std::logic_error("missing member call receiver mode");
+    }
+    return found->second;
+}
+
 void ResolvedNames::clear()
 {
     letNames_.clear();
@@ -351,12 +378,15 @@ void ResolvedNames::clear()
     parameterNames_.clear();
     functionExpressionNames_.clear();
     functionExpressionParameterNames_.clear();
+    methodNames_.clear();
+    methodParameterNames_.clear();
     variableNames_.clear();
     assignmentNames_.clear();
     compoundAssignmentNames_.clear();
     forInVariableNames_.clear();
     fieldAccessNames_.clear();
     memberCallCalleeNames_.clear();
+    memberCallPassesReceiver_.clear();
 }
 
 void ResolvedNames::recordLet(const LetStmt& statement, std::string name)
@@ -384,6 +414,16 @@ void ResolvedNames::recordParameters(const FunctionExpr& expression, std::vector
     functionExpressionParameterNames_.emplace(&expression, std::move(names));
 }
 
+void ResolvedNames::recordMethod(const MethodDecl& method, std::string name)
+{
+    methodNames_.emplace(&method, std::move(name));
+}
+
+void ResolvedNames::recordMethodParameters(const MethodDecl& method, std::vector<std::string> names)
+{
+    methodParameterNames_.emplace(&method, std::move(names));
+}
+
 void ResolvedNames::recordVariable(const VariableExpr& expression, std::string name)
 {
     variableNames_.emplace(&expression, std::move(name));
@@ -409,15 +449,17 @@ void ResolvedNames::recordFieldAccess(const FieldAccessExpr& expression, std::st
     fieldAccessNames_.emplace(&expression, std::move(name));
 }
 
-void ResolvedNames::recordMemberCallCallee(const MemberCallExpr& expression, std::string name)
+void ResolvedNames::recordMemberCallCallee(const MemberCallExpr& expression, std::string name, bool passesReceiver)
 {
     memberCallCalleeNames_.emplace(&expression, std::move(name));
+    memberCallPassesReceiver_.emplace(&expression, passesReceiver);
 }
 
 const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
     structTypes_.clear();
+    methods_.clear();
     moduleExports_.clear();
     moduleStructExports_.clear();
     moduleLocalStructNames_.clear();
@@ -577,6 +619,11 @@ void TypeChecker::checkStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* impl = dynamic_cast<const ImplStmt*>(&statement)) {
+        checkImpl(*impl);
+        return;
+    }
+
     if (const auto* function = dynamic_cast<const FunctionStmt*>(&statement)) {
         checkFunction(*function);
         return;
@@ -722,12 +769,14 @@ void TypeChecker::checkModule(const ModuleStmt& module)
 
     std::vector<Scope> savedScopes = std::move(scopes_);
     std::unordered_map<std::string, StructTypeDecl> savedStructTypes = std::move(structTypes_);
+    MethodTable savedMethods = std::move(methods_);
     const std::size_t savedFunctionDepth = functionDepth_;
     const std::size_t savedLoopDepth = loopDepth_;
     std::vector<FunctionReturnContext> savedReturnContexts = std::move(returnContexts_);
 
     scopes_.clear();
     structTypes_.clear();
+    methods_.clear();
     functionDepth_ = 0;
     loopDepth_ = 0;
     returnContexts_.clear();
@@ -750,6 +799,7 @@ void TypeChecker::checkModule(const ModuleStmt& module)
 
     scopes_ = std::move(savedScopes);
     structTypes_ = std::move(savedStructTypes);
+    methods_ = std::move(savedMethods);
     functionDepth_ = savedFunctionDepth;
     loopDepth_ = savedLoopDepth;
     returnContexts_ = std::move(savedReturnContexts);
@@ -1000,6 +1050,117 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
     structTypes_.emplace(statement.name.lexeme, std::move(declaration));
     if (!moduleStack_.empty()) {
         moduleLocalStructNames_[moduleStack_.back()].insert(statement.name.lexeme);
+    }
+}
+
+bool TypeChecker::isBuiltinMemberName(const std::string& name) const
+{
+    return name == "push" || name == "pop" || name == "len" || name == "substr" || name == "charAt";
+}
+
+const TypeChecker::MethodInfo* TypeChecker::findMethod(const std::string& structName, const std::string& methodName) const
+{
+    const auto structFound = methods_.find(structName);
+    if (structFound == methods_.end()) {
+        return nullptr;
+    }
+    const auto methodFound = structFound->second.find(methodName);
+    return methodFound == structFound->second.end() ? nullptr : &methodFound->second;
+}
+
+void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method)
+{
+    auto& structMethods = methods_[statement.typeName.lexeme];
+    if (structMethods.find(method.name.lexeme) != structMethods.end()) {
+        throw TypeError(method.name, "duplicate method `" + method.name.lexeme + "` for struct `" + statement.typeName.lexeme + "`");
+    }
+    if (findStructField(structType, method.name.lexeme)) {
+        throw TypeError(method.name,
+            "method `" + method.name.lexeme + "` conflicts with field `" + method.name.lexeme + "` on struct `" + statement.typeName.lexeme + "`");
+    }
+    if (isBuiltinMemberName(method.name.lexeme)) {
+        throw TypeError(method.name, "method `" + method.name.lexeme + "` conflicts with builtin member call `" + method.name.lexeme + "`");
+    }
+
+    std::vector<TypeInfo> parameterTypes;
+    parameterTypes.reserve(method.parameters.size());
+    for (const Parameter& parameter : method.parameters) {
+        parameterTypes.push_back(parameter.typeName
+            ? resolveAnnotation(*parameter.typeName)
+            : unknownType());
+    }
+
+    std::optional<TypeInfo> expectedReturnType;
+    if (method.returnTypeName) {
+        expectedReturnType = resolveAnnotation(*method.returnTypeName);
+    }
+
+    MethodInfo info;
+    info.declaration = &method;
+    info.receiverType = namedStructType(statement.typeName.lexeme);
+    info.parameterTypes = std::move(parameterTypes);
+    info.returnType = expectedReturnType ? *expectedReturnType : unknownType();
+    info.resolvedName = makeResolvedName("__method_" + statement.typeName.lexeme + "_" + method.name.lexeme);
+    resolvedNames_.recordMethod(method, info.resolvedName);
+    structMethods.emplace(method.name.lexeme, std::move(info));
+}
+
+void TypeChecker::checkMethodBody(const std::string& structName, const MethodInfo& method)
+{
+    const MethodDecl& declaration = *method.declaration;
+
+    beginScope();
+    ++functionDepth_;
+    const std::size_t enclosingLoopDepth = loopDepth_;
+    loopDepth_ = 0;
+
+    std::vector<std::string> parameterNames;
+    Token thisToken{TokenType::Identifier, "this", declaration.name.line, declaration.name.column};
+    Binding thisBinding = declareVariable(thisToken, method.receiverType, true);
+    parameterNames.push_back(thisBinding.resolvedName);
+
+    for (std::size_t i = 0; i < declaration.parameters.size(); ++i) {
+        const Parameter& parameter = declaration.parameters[i];
+        Binding parameterBinding = declareVariable(parameter.name, method.parameterTypes[i], parameter.typeName.has_value());
+        parameterNames.push_back(parameterBinding.resolvedName);
+    }
+    resolvedNames_.recordMethodParameters(declaration, std::move(parameterNames));
+
+    std::optional<TypeInfo> expectedReturnType;
+    if (declaration.returnTypeName) {
+        expectedReturnType = method.returnType;
+    }
+
+    const TypeInfo returnType = checkFunctionBody(
+        declaration.body,
+        expectedReturnType,
+        declaration.name,
+        structName + "." + declaration.name.lexeme);
+
+    loopDepth_ = enclosingLoopDepth;
+    --functionDepth_;
+    endScope();
+
+    auto& stored = methods_[structName][declaration.name.lexeme];
+    stored.returnType = returnType;
+}
+
+void TypeChecker::checkImpl(const ImplStmt& statement)
+{
+    const StructTypeDecl* structType = findStructType(statement.typeName.lexeme);
+    if (!structType) {
+        throw TypeError(statement.typeName, "unknown struct type `" + statement.typeName.lexeme + "` in impl");
+    }
+
+    for (const MethodDecl& method : statement.methods) {
+        registerMethodSignature(*structType, statement, method);
+    }
+    for (const MethodDecl& method : statement.methods) {
+        const MethodInfo* info = findMethod(statement.typeName.lexeme, method.name.lexeme);
+        if (!info) {
+            throw TypeError(method.name, "internal error: missing method signature");
+        }
+        checkMethodBody(statement.typeName.lexeme, *info);
     }
 }
 
@@ -1569,7 +1730,7 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
                 throw TypeError(expression.name,
                     "module namespace `" + variable->name.lexeme + "` has no exported member `" + name + "`");
             }
-            resolvedNames_.recordMemberCallCallee(expression, found->second.resolvedName);
+            resolvedNames_.recordMemberCallCallee(expression, found->second.resolvedName, false);
 
             const TypeInfo& calleeType = found->second.type;
             std::vector<CheckedExpression> arguments;
@@ -1685,6 +1846,33 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
             throw TypeError(expression.paren, "charAt expects number as first argument, got " + typeInfoName(index.type));
         }
         return CheckedExpression{simpleType(StaticType::String)};
+    }
+
+    const CheckedExpression receiver = checkExpressionInfo(*expression.receiver);
+    if (receiver.type.kind == StaticType::Struct && receiver.type.structName) {
+        const MethodInfo* method = findMethod(*receiver.type.structName, name);
+        if (!method) {
+            throw TypeError(expression.paren, "struct `" + *receiver.type.structName + "` has no method `" + name + "`");
+        }
+        if (expression.arguments.size() != method->parameterTypes.size()) {
+            throw TypeError(expression.paren,
+                "expected " + std::to_string(method->parameterTypes.size()) + " arguments but got " + std::to_string(expression.arguments.size()));
+        }
+        for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
+            const CheckedExpression argument = checkExpressionInfo(*expression.arguments[i], &method->parameterTypes[i]);
+            if (!compatible(method->parameterTypes[i], argument.type)) {
+                throw TypeError(expression.paren,
+                    "argument " + std::to_string(i + 1) + " expects " + typeInfoName(method->parameterTypes[i])
+                        + ", got " + typeInfoName(argument.type));
+            }
+        }
+        resolvedNames_.recordMemberCallCallee(expression, method->resolvedName, true);
+        return CheckedExpression{method->returnType};
+    }
+
+    if (receiver.type.kind == StaticType::Unknown
+        || (receiver.type.kind != StaticType::Array && receiver.type.kind != StaticType::String)) {
+        throw TypeError(expression.paren, "can only call methods on known named structs");
     }
 
     throw TypeError(expression.paren, "unknown member call `" + name + "`");

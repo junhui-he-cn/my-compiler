@@ -46,6 +46,8 @@ public:
     const std::vector<std::string>& parameterNames(const FunctionStmt& statement) const;
     const std::string& functionName(const FunctionExpr& expression) const;
     const std::vector<std::string>& parameterNames(const FunctionExpr& expression) const;
+    const std::string& methodName(const MethodDecl& method) const;
+    const std::vector<std::string>& methodParameterNames(const MethodDecl& method) const;
     bool hasVariable(const VariableExpr& expression) const;
     const std::string& variableName(const VariableExpr& expression) const;
     const std::string& assignmentName(const AssignExpr& expression) const;
@@ -55,6 +57,7 @@ public:
     const std::string& fieldAccessName(const FieldAccessExpr& expression) const;
     bool hasMemberCallCallee(const MemberCallExpr& expression) const;
     const std::string& memberCallCalleeName(const MemberCallExpr& expression) const;
+    bool memberCallPassesReceiver(const MemberCallExpr& expression) const;
 
 private:
     friend class TypeChecker;
@@ -65,24 +68,29 @@ private:
     void recordParameters(const FunctionStmt& statement, std::vector<std::string> names);
     void recordFunction(const FunctionExpr& expression, std::string name);
     void recordParameters(const FunctionExpr& expression, std::vector<std::string> names);
+    void recordMethod(const MethodDecl& method, std::string name);
+    void recordMethodParameters(const MethodDecl& method, std::vector<std::string> names);
     void recordVariable(const VariableExpr& expression, std::string name);
     void recordAssignment(const AssignExpr& expression, std::string name);
     void recordCompoundAssignment(const CompoundAssignExpr& expression, std::string name);
     void recordForInVariable(const ForInStmt& statement, std::string name);
     void recordFieldAccess(const FieldAccessExpr& expression, std::string name);
-    void recordMemberCallCallee(const MemberCallExpr& expression, std::string name);
+    void recordMemberCallCallee(const MemberCallExpr& expression, std::string name, bool passesReceiver);
 
     std::unordered_map<const LetStmt*, std::string> letNames_;
     std::unordered_map<const FunctionStmt*, std::string> functionNames_;
     std::unordered_map<const FunctionStmt*, std::vector<std::string>> parameterNames_;
     std::unordered_map<const FunctionExpr*, std::string> functionExpressionNames_;
     std::unordered_map<const FunctionExpr*, std::vector<std::string>> functionExpressionParameterNames_;
+    std::unordered_map<const MethodDecl*, std::string> methodNames_;
+    std::unordered_map<const MethodDecl*, std::vector<std::string>> methodParameterNames_;
     std::unordered_map<const VariableExpr*, std::string> variableNames_;
     std::unordered_map<const AssignExpr*, std::string> assignmentNames_;
     std::unordered_map<const CompoundAssignExpr*, std::string> compoundAssignmentNames_;
     std::unordered_map<const ForInStmt*, std::string> forInVariableNames_;
     std::unordered_map<const FieldAccessExpr*, std::string> fieldAccessNames_;
     std::unordered_map<const MemberCallExpr*, std::string> memberCallCalleeNames_;
+    std::unordered_map<const MemberCallExpr*, bool> memberCallPassesReceiver_;
 };
 
 class TypeChecker {
@@ -119,8 +127,17 @@ private:
         std::vector<StructFieldType> fields;
     };
 
+    struct MethodInfo {
+        const MethodDecl* declaration = nullptr;
+        TypeInfo receiverType;
+        std::vector<TypeInfo> parameterTypes;
+        TypeInfo returnType;
+        std::string resolvedName;
+    };
+
     using Scope = std::unordered_map<std::string, Binding>;
     using ExportTable = std::unordered_map<std::string, Binding>;
+    using MethodTable = std::unordered_map<std::string, std::unordered_map<std::string, MethodInfo>>;
 
     struct NamespaceImport {
         ExportTable values;
@@ -157,6 +174,11 @@ private:
     void checkExport(const ExportStmt& statement);
     const ModuleStmt* findModule(const Program& program, std::size_t moduleId) const;
     void checkStructDeclaration(const StructDeclStmt& statement);
+    void checkImpl(const ImplStmt& statement);
+    void registerMethodSignature(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method);
+    void checkMethodBody(const std::string& structName, const MethodInfo& method);
+    const MethodInfo* findMethod(const std::string& structName, const std::string& methodName) const;
+    bool isBuiltinMemberName(const std::string& name) const;
     const StructTypeDecl* findStructType(const std::string& name) const;
     void checkFunction(const FunctionStmt& statement);
     TypeInfo checkFunctionBody(
@@ -202,6 +224,7 @@ private:
 
     std::vector<Scope> scopes_;
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
+    MethodTable methods_;
     std::unordered_map<std::size_t, ExportTable> moduleExports_;
     std::unordered_map<std::size_t, std::unordered_map<std::string, StructTypeDecl>> moduleStructExports_;
     std::unordered_map<std::size_t, std::unordered_set<std::string>> moduleLocalStructNames_;
