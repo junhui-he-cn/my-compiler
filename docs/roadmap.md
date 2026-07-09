@@ -264,13 +264,12 @@ Recently completed cleanup:
   are split into `TypeUtils`, reducing `src/TypeChecker.cpp` size.
 - Parser assignment-target construction is shared between plain `=` and
   compound-assignment parsing, reducing duplicated target destructuring.
+- Struct method type-checking now uses focused helpers for parameter/return
+  type resolution, method-name conflict checks, and struct method call
+  argument validation.
 
 Recommended future cleanup slices:
 
-- **Extract struct and method type-checking helpers.** Group named-struct field
-  lookup, method lookup, method/builtin conflict checks, and field access /
-  assignment validation so future struct features do not keep growing the main
-  expression checker.
 - **Consider a unified assignment AST only after more target forms appear.**
   Current separate nodes (`AssignExpr`, `IndexAssignExpr`, `FieldAssignExpr`,
   and their compound variants) are acceptable, but a future `AssignmentTarget`

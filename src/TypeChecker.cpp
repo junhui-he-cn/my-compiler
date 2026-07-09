@@ -886,6 +886,26 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
     return name == "push" || name == "pop" || name == "len" || name == "substr" || name == "charAt";
 }
 
+std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
+{
+    std::vector<TypeInfo> parameterTypes;
+    parameterTypes.reserve(parameters.size());
+    for (const Parameter& parameter : parameters) {
+        parameterTypes.push_back(parameter.typeName
+            ? resolveAnnotation(*parameter.typeName)
+            : unknownType());
+    }
+    return parameterTypes;
+}
+
+std::optional<TypeInfo> TypeChecker::resolveOptionalReturnType(const std::optional<TypeAnnotation>& returnTypeName)
+{
+    if (!returnTypeName) {
+        return std::nullopt;
+    }
+    return resolveAnnotation(*returnTypeName);
+}
+
 const TypeChecker::MethodInfo* TypeChecker::findMethod(const std::string& structName, const std::string& methodName) const
 {
     const auto structFound = methods_.find(structName);
@@ -896,10 +916,9 @@ const TypeChecker::MethodInfo* TypeChecker::findMethod(const std::string& struct
     return methodFound == structFound->second.end() ? nullptr : &methodFound->second;
 }
 
-void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method)
+void TypeChecker::checkMethodNameAvailable(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method) const
 {
-    auto& structMethods = methods_[statement.typeName.lexeme];
-    if (structMethods.find(method.name.lexeme) != structMethods.end()) {
+    if (findMethod(statement.typeName.lexeme, method.name.lexeme)) {
         throw TypeError(method.name, "duplicate method `" + method.name.lexeme + "` for struct `" + statement.typeName.lexeme + "`");
     }
     if (findStructField(structType, method.name.lexeme)) {
@@ -909,20 +928,15 @@ void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, cons
     if (isBuiltinMemberName(method.name.lexeme)) {
         throw TypeError(method.name, "method `" + method.name.lexeme + "` conflicts with builtin member call `" + method.name.lexeme + "`");
     }
+}
 
-    std::vector<TypeInfo> parameterTypes;
-    parameterTypes.reserve(method.parameters.size());
-    for (const Parameter& parameter : method.parameters) {
-        parameterTypes.push_back(parameter.typeName
-            ? resolveAnnotation(*parameter.typeName)
-            : unknownType());
-    }
+void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method)
+{
+    checkMethodNameAvailable(structType, statement, method);
 
-    std::optional<TypeInfo> expectedReturnType;
-    if (method.returnTypeName) {
-        expectedReturnType = resolveAnnotation(*method.returnTypeName);
-    }
-
+    auto& structMethods = methods_[statement.typeName.lexeme];
+    std::vector<TypeInfo> parameterTypes = resolveParameterTypes(method.parameters);
+    std::optional<TypeInfo> expectedReturnType = resolveOptionalReturnType(method.returnTypeName);
     MethodInfo info;
     info.declaration = &method;
     info.receiverType = namedStructType(statement.typeName.lexeme);
@@ -980,15 +994,16 @@ void TypeChecker::checkImpl(const ImplStmt& statement)
         throw TypeError(statement.typeName, "unknown struct type `" + statement.typeName.lexeme + "` in impl");
     }
 
+    auto& structMethods = methods_[statement.typeName.lexeme];
     for (const MethodDecl& method : statement.methods) {
         registerMethodSignature(*structType, statement, method);
     }
     for (const MethodDecl& method : statement.methods) {
-        const MethodInfo* info = findMethod(statement.typeName.lexeme, method.name.lexeme);
-        if (!info) {
+        const auto info = structMethods.find(method.name.lexeme);
+        if (info == structMethods.end()) {
             throw TypeError(method.name, "internal error: missing method signature");
         }
-        checkMethodBody(statement.typeName.lexeme, *info);
+        checkMethodBody(statement.typeName.lexeme, info->second);
     }
 }
 
@@ -1548,6 +1563,35 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
 }
 
+void TypeChecker::checkMethodArguments(const MemberCallExpr& expression, const MethodInfo& method)
+{
+    if (expression.arguments.size() != method.parameterTypes.size()) {
+        throw TypeError(expression.paren,
+            "expected " + std::to_string(method.parameterTypes.size()) + " arguments but got " + std::to_string(expression.arguments.size()));
+    }
+    for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
+        const CheckedExpression argument = checkExpressionInfo(*expression.arguments[i], &method.parameterTypes[i]);
+        if (!compatible(method.parameterTypes[i], argument.type)) {
+            throw TypeError(expression.paren,
+                "argument " + std::to_string(i + 1) + " expects " + typeInfoName(method.parameterTypes[i])
+                    + ", got " + typeInfoName(argument.type));
+        }
+    }
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkStructMethodCall(const MemberCallExpr& expression, const TypeInfo& receiverType)
+{
+    const std::string& name = expression.name.lexeme;
+    const MethodInfo* method = findMethod(*receiverType.structName, name);
+    if (!method) {
+        throw TypeError(expression.paren, "struct `" + *receiverType.structName + "` has no method `" + name + "`");
+    }
+
+    checkMethodArguments(expression, *method);
+    resolvedNames_.recordMemberCallCallee(expression, method->resolvedName, true);
+    return CheckedExpression{method->returnType};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr& expression)
 {
     const std::string& name = expression.name.lexeme;
@@ -1680,24 +1724,7 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
 
     const CheckedExpression receiver = checkExpressionInfo(*expression.receiver);
     if (receiver.type.kind == StaticType::Struct && receiver.type.structName) {
-        const MethodInfo* method = findMethod(*receiver.type.structName, name);
-        if (!method) {
-            throw TypeError(expression.paren, "struct `" + *receiver.type.structName + "` has no method `" + name + "`");
-        }
-        if (expression.arguments.size() != method->parameterTypes.size()) {
-            throw TypeError(expression.paren,
-                "expected " + std::to_string(method->parameterTypes.size()) + " arguments but got " + std::to_string(expression.arguments.size()));
-        }
-        for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
-            const CheckedExpression argument = checkExpressionInfo(*expression.arguments[i], &method->parameterTypes[i]);
-            if (!compatible(method->parameterTypes[i], argument.type)) {
-                throw TypeError(expression.paren,
-                    "argument " + std::to_string(i + 1) + " expects " + typeInfoName(method->parameterTypes[i])
-                        + ", got " + typeInfoName(argument.type));
-            }
-        }
-        resolvedNames_.recordMemberCallCallee(expression, method->resolvedName, true);
-        return CheckedExpression{method->returnType};
+        return checkStructMethodCall(expression, receiver.type);
     }
 
     if (receiver.type.kind == StaticType::Unknown

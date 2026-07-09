@@ -160,8 +160,13 @@ private:
     const ModuleStmt* findModule(const Program& program, std::size_t moduleId) const;
     void checkStructDeclaration(const StructDeclStmt& statement);
     void checkImpl(const ImplStmt& statement);
+    std::vector<TypeInfo> resolveParameterTypes(const std::vector<Parameter>& parameters);
+    std::optional<TypeInfo> resolveOptionalReturnType(const std::optional<TypeAnnotation>& returnTypeName);
+    void checkMethodNameAvailable(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method) const;
     void registerMethodSignature(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method);
     void checkMethodBody(const std::string& structName, const MethodInfo& method);
+    void checkMethodArguments(const MemberCallExpr& expression, const MethodInfo& method);
+    CheckedExpression checkStructMethodCall(const MemberCallExpr& expression, const TypeInfo& receiverType);
     const MethodInfo* findMethod(const std::string& structName, const std::string& methodName) const;
     bool isBuiltinMemberName(const std::string& name) const;
     const StructTypeDecl* findStructType(const std::string& name) const;
@@ -236,4 +241,3 @@ private:
     std::size_t loopDepth_ = 0;
     std::vector<FunctionReturnContext> returnContexts_;
 };
-
