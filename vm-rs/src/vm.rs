@@ -487,6 +487,9 @@ impl<'a> VM<'a> {
             "floor" => self.execute_native_floor(arguments),
             "ceil" => self.execute_native_ceil(arguments),
             "sqrt" => self.execute_native_sqrt(arguments),
+            "str" => self.execute_native_str(arguments),
+            "substr" => self.execute_native_substr(arguments),
+            "charAt" => self.execute_native_char_at(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
                 name
@@ -550,6 +553,88 @@ impl<'a> VM<'a> {
             return Err(RuntimeError::new("sqrt expects non-negative number"));
         }
         Ok(Value::number(value.sqrt()))
+    }
+
+    fn checked_integer_index(
+        value: f64,
+        integer_message: &'static str,
+        bounds_message: &'static str,
+        upper_bound_inclusive: usize,
+    ) -> Result<usize, RuntimeError> {
+        if !value.is_finite() || value.floor() != value {
+            return Err(RuntimeError::new(integer_message));
+        }
+        if value < 0.0 || value > upper_bound_inclusive as f64 {
+            return Err(RuntimeError::new(bounds_message));
+        }
+        Ok(value as usize)
+    }
+
+    fn execute_native_str(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("str expects 1 arguments"));
+        }
+        Ok(Value::string(arguments[0].to_string()))
+    }
+
+    fn execute_native_substr(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 3 {
+            return Err(RuntimeError::new("substr expects 3 arguments"));
+        }
+        let Value::String(text) = &arguments[0] else {
+            return Err(RuntimeError::new("substr expects string as first argument"));
+        };
+        let Value::Number(start_value) = &arguments[1] else {
+            return Err(RuntimeError::new("substr expects number as second argument"));
+        };
+        let Value::Number(length_value) = &arguments[2] else {
+            return Err(RuntimeError::new("substr expects number as third argument"));
+        };
+
+        let start = Self::checked_integer_index(
+            *start_value,
+            "substr expects integer start offset",
+            "substr start offset out of bounds",
+            text.len(),
+        )?;
+        let length = Self::checked_integer_index(
+            *length_value,
+            "substr expects integer length",
+            "substr length out of bounds",
+            text.len(),
+        )?;
+        if length > text.len() - start {
+            return Err(RuntimeError::new("substr length out of bounds"));
+        }
+        let bytes = &text.as_bytes()[start..start + length];
+        let value = String::from_utf8(bytes.to_vec())
+            .map_err(|_| RuntimeError::new("substr produced invalid utf-8"))?;
+        Ok(Value::string(value))
+    }
+
+    fn execute_native_char_at(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("charAt expects 2 arguments"));
+        }
+        let Value::String(text) = &arguments[0] else {
+            return Err(RuntimeError::new("charAt expects string as first argument"));
+        };
+        let Value::Number(index_value) = &arguments[1] else {
+            return Err(RuntimeError::new("charAt expects number as second argument"));
+        };
+        if text.is_empty() {
+            return Err(RuntimeError::new("charAt index out of bounds"));
+        }
+        let index = Self::checked_integer_index(
+            *index_value,
+            "charAt expects integer index",
+            "charAt index out of bounds",
+            text.len() - 1,
+        )?;
+        let bytes = &text.as_bytes()[index..index + 1];
+        let value = String::from_utf8(bytes.to_vec())
+            .map_err(|_| RuntimeError::new("charAt produced invalid utf-8"))?;
+        Ok(Value::string(value))
     }
 
     fn read_name(&self, index: usize) -> Result<String, RuntimeError> {

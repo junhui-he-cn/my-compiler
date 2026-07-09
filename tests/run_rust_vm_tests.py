@@ -172,6 +172,7 @@ def main() -> int:
             "namespace_imports",
             "native_stdlib_math",
             "native_stdlib_push_pop",
+            "native_stdlib_strings",
             "struct_literals_field_access",
             "struct_identity_equality",
             "struct_constructor_functions",
