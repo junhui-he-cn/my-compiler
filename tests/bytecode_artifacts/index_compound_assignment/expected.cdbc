@@ -1,0 +1,31 @@
+cdbc 0.1
+
+constants:
+  c0 = number 1
+  c1 = number 0
+  c2 = number 2
+  c3 = number 0
+
+names:
+  n0 = "xs#0"
+  n1 = "xs#0"
+  n2 = "`+=` expects number target"
+  n3 = "`+=` expects number value"
+  n4 = "xs#0"
+
+main registers=13:
+  r0 = constant c0
+  r1 = array [r0]
+  store_var n0, r1
+  r2 = load_var n1
+  r3 = constant c1
+  r4 = index r2, r3
+  r5 = assert_number r4, n2
+  r6 = constant c2
+  r7 = assert_number r6, n3
+  r8 = add r5, r7
+  r9 = assign_index r2, r3, r8
+  r10 = load_var n4
+  r11 = constant c3
+  r12 = index r10, r11
+  print r12

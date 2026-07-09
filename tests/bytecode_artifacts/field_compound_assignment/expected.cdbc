@@ -1,0 +1,31 @@
+cdbc 0.1
+
+constants:
+  c0 = number 1
+  c1 = number 2
+
+names:
+  n0 = "value"
+  n1 = "c#0"
+  n2 = "c#0"
+  n3 = "value"
+  n4 = "`+=` expects number target"
+  n5 = "`+=` expects number value"
+  n6 = "value"
+  n7 = "c#0"
+  n8 = "value"
+
+main registers=11:
+  r0 = constant c0
+  r1 = struct {n0: r0}
+  store_var n1, r1
+  r2 = load_var n2
+  r3 = field r2, n3
+  r4 = assert_number r3, n4
+  r5 = constant c1
+  r6 = assert_number r5, n5
+  r7 = add r4, r6
+  r8 = assign_field r2, n6, r7
+  r9 = load_var n7
+  r10 = field r9, n8
+  print r10
