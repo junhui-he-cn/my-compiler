@@ -133,6 +133,16 @@ struct CallExpr final : Expr {
     std::vector<ExprPtr> arguments;
 };
 
+struct MemberCallExpr final : Expr {
+    MemberCallExpr(ExprPtr receiver, Token name, Token paren, std::vector<ExprPtr> arguments);
+    void print(std::ostream& out) const override;
+
+    ExprPtr receiver;
+    Token name;
+    Token paren;
+    std::vector<ExprPtr> arguments;
+};
+
 struct ArrayExpr final : Expr {
     ArrayExpr(Token bracket, std::vector<ExprPtr> elements);
     void print(std::ostream& out) const override;

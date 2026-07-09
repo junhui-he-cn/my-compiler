@@ -53,6 +53,8 @@ public:
     const std::string& forInVariableName(const ForInStmt& statement) const;
     bool hasFieldAccess(const FieldAccessExpr& expression) const;
     const std::string& fieldAccessName(const FieldAccessExpr& expression) const;
+    bool hasMemberCallCallee(const MemberCallExpr& expression) const;
+    const std::string& memberCallCalleeName(const MemberCallExpr& expression) const;
 
 private:
     friend class TypeChecker;
@@ -68,6 +70,7 @@ private:
     void recordCompoundAssignment(const CompoundAssignExpr& expression, std::string name);
     void recordForInVariable(const ForInStmt& statement, std::string name);
     void recordFieldAccess(const FieldAccessExpr& expression, std::string name);
+    void recordMemberCallCallee(const MemberCallExpr& expression, std::string name);
 
     std::unordered_map<const LetStmt*, std::string> letNames_;
     std::unordered_map<const FunctionStmt*, std::string> functionNames_;
@@ -79,6 +82,7 @@ private:
     std::unordered_map<const CompoundAssignExpr*, std::string> compoundAssignmentNames_;
     std::unordered_map<const ForInStmt*, std::string> forInVariableNames_;
     std::unordered_map<const FieldAccessExpr*, std::string> fieldAccessNames_;
+    std::unordered_map<const MemberCallExpr*, std::string> memberCallCalleeNames_;
 };
 
 class TypeChecker {
@@ -170,6 +174,7 @@ private:
     TypeInfo inferArrayElementType(const ArrayExpr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
     CheckedExpression checkCall(const CallExpr& expression);
+    CheckedExpression checkMemberCall(const MemberCallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
     bool isNativeStdlibCall(const CallExpr& expression) const;

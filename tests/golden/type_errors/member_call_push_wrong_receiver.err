@@ -1,1 +1,1 @@
-Type error at 1:8: push expects array receiver, got number
+Type error at 1:9: push expects array receiver, got number

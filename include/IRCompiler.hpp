@@ -27,6 +27,7 @@ private:
     void compileReturn(const ReturnStmt& statement);
     IRRegister compileExpression(const Expr& expression);
     IRRegister emitCall(const CallExpr& expression);
+    IRRegister emitMemberCall(const MemberCallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;
     bool isNativeStdlibCall(const CallExpr& expression) const;
     void compileBreak(const BreakStmt& statement);

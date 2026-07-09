@@ -330,6 +330,20 @@ const std::string& ResolvedNames::fieldAccessName(const FieldAccessExpr& express
     return found->second;
 }
 
+bool ResolvedNames::hasMemberCallCallee(const MemberCallExpr& expression) const
+{
+    return memberCallCalleeNames_.find(&expression) != memberCallCalleeNames_.end();
+}
+
+const std::string& ResolvedNames::memberCallCalleeName(const MemberCallExpr& expression) const
+{
+    const auto found = memberCallCalleeNames_.find(&expression);
+    if (found == memberCallCalleeNames_.end()) {
+        throw std::logic_error("missing resolved member call callee name");
+    }
+    return found->second;
+}
+
 void ResolvedNames::clear()
 {
     letNames_.clear();
@@ -342,6 +356,7 @@ void ResolvedNames::clear()
     compoundAssignmentNames_.clear();
     forInVariableNames_.clear();
     fieldAccessNames_.clear();
+    memberCallCalleeNames_.clear();
 }
 
 void ResolvedNames::recordLet(const LetStmt& statement, std::string name)
@@ -392,6 +407,11 @@ void ResolvedNames::recordForInVariable(const ForInStmt& statement, std::string 
 void ResolvedNames::recordFieldAccess(const FieldAccessExpr& expression, std::string name)
 {
     fieldAccessNames_.emplace(&expression, std::move(name));
+}
+
+void ResolvedNames::recordMemberCallCallee(const MemberCallExpr& expression, std::string name)
+{
+    memberCallCalleeNames_.emplace(&expression, std::move(name));
 }
 
 const ResolvedNames& TypeChecker::check(const Program& program)
@@ -1354,6 +1374,10 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         return checkCall(*call);
     }
 
+    if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(&expression)) {
+        return checkMemberCall(*memberCall);
+    }
+
     if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
         return checkArrayLiteral(*array, expectedType);
     }
@@ -1531,6 +1555,139 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     }
 
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr& expression)
+{
+    const std::string& name = expression.name.lexeme;
+    const std::size_t arity = expression.arguments.size();
+
+    if (const auto* variable = dynamic_cast<const VariableExpr*>(expression.receiver.get())) {
+        if (const NamespaceImport* namespaceImport = findNamespace(variable->name.lexeme)) {
+            const auto found = namespaceImport->values.find(name);
+            if (found == namespaceImport->values.end()) {
+                throw TypeError(expression.name,
+                    "module namespace `" + variable->name.lexeme + "` has no exported member `" + name + "`");
+            }
+            resolvedNames_.recordMemberCallCallee(expression, found->second.resolvedName);
+
+            const TypeInfo& calleeType = found->second.type;
+            std::vector<CheckedExpression> arguments;
+            arguments.reserve(expression.arguments.size());
+
+            if (calleeType.kind == StaticType::Function && hasFunctionSignature(calleeType)) {
+                if (calleeType.parameterTypes.size() != expression.arguments.size()) {
+                    throw TypeError(expression.paren, "expected " + std::to_string(calleeType.parameterTypes.size())
+                        + " arguments but got " + std::to_string(expression.arguments.size()));
+                }
+                for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
+                    arguments.push_back(checkExpressionInfo(*expression.arguments[i], &calleeType.parameterTypes[i]));
+                }
+            } else {
+                for (const auto& argument : expression.arguments) {
+                    arguments.push_back(checkExpressionInfo(*argument));
+                }
+            }
+
+            if (calleeType.kind != StaticType::Unknown && calleeType.kind != StaticType::Function) {
+                throw TypeError(expression.paren, "can only call functions");
+            }
+
+            if (calleeType.kind == StaticType::Function && hasFunctionSignature(calleeType)) {
+                for (std::size_t i = 0; i < arguments.size(); ++i) {
+                    const TypeInfo& expected = calleeType.parameterTypes[i];
+                    const TypeInfo& actual = arguments[i].type;
+                    if (!compatible(expected, actual)) {
+                        throw TypeError(expression.paren,
+                            "argument " + std::to_string(i + 1) + " expects " + typeInfoName(expected)
+                                + ", got " + typeInfoName(actual));
+                    }
+                }
+                return CheckedExpression{*calleeType.returnType};
+            }
+
+            return CheckedExpression{unknownType()};
+        }
+    }
+
+    auto expectArity = [&](std::size_t expected) {
+        if (arity != expected) {
+            throw TypeError(expression.paren,
+                "expected " + std::to_string(expected) + " arguments but got " + std::to_string(arity));
+        }
+    };
+
+    auto checkReceiver = [&]() {
+        return checkExpressionInfo(*expression.receiver);
+    };
+
+    if (name == "push") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren, "push expects array receiver, got " + typeInfoName(receiver.type));
+        }
+        const TypeInfo* expectedElement = receiver.type.elementType.get();
+        const CheckedExpression value = checkExpressionInfo(*expression.arguments[0], expectedElement);
+        if (expectedElement && !compatible(*expectedElement, value.type)) {
+            throw TypeError(expression.paren,
+                "push value expects " + typeInfoName(*expectedElement) + ", got " + typeInfoName(value.type));
+        }
+        return CheckedExpression{simpleType(StaticType::Nil)};
+    }
+
+    if (name == "pop") {
+        expectArity(0);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren, "pop expects array receiver, got " + typeInfoName(receiver.type));
+        }
+        if (receiver.type.kind == StaticType::Array && receiver.type.elementType) {
+            return CheckedExpression{*receiver.type.elementType};
+        }
+        return CheckedExpression{unknownType()};
+    }
+
+    if (name == "len") {
+        expectArity(0);
+        const CheckedExpression receiver = checkReceiver();
+        if (isKnown(receiver.type) && receiver.type.kind != StaticType::Array && receiver.type.kind != StaticType::String) {
+            throw TypeError(expression.paren, "len expects array or string receiver, got " + typeInfoName(receiver.type));
+        }
+        return CheckedExpression{simpleType(StaticType::Number)};
+    }
+
+    if (name == "substr") {
+        expectArity(2);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::String) {
+            throw TypeError(expression.paren, "substr expects string receiver, got " + typeInfoName(receiver.type));
+        }
+        const CheckedExpression start = checkExpressionInfo(*expression.arguments[0]);
+        if (start.type.kind != StaticType::Unknown && start.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren, "substr expects number as first argument, got " + typeInfoName(start.type));
+        }
+        const CheckedExpression length = checkExpressionInfo(*expression.arguments[1]);
+        if (length.type.kind != StaticType::Unknown && length.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren, "substr expects number as second argument, got " + typeInfoName(length.type));
+        }
+        return CheckedExpression{simpleType(StaticType::String)};
+    }
+
+    if (name == "charAt") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::String) {
+            throw TypeError(expression.paren, "charAt expects string receiver, got " + typeInfoName(receiver.type));
+        }
+        const CheckedExpression index = checkExpressionInfo(*expression.arguments[0]);
+        if (index.type.kind != StaticType::Unknown && index.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren, "charAt expects number as first argument, got " + typeInfoName(index.type));
+        }
+        return CheckedExpression{simpleType(StaticType::String)};
+    }
+
+    throw TypeError(expression.paren, "unknown member call `" + name + "`");
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression)

@@ -581,6 +581,13 @@ ExprPtr Parser::finishCall(ExprPtr callee)
         } while (match(TokenType::Comma));
     }
     Token paren = consume(TokenType::RightParen, "expected `)` after arguments");
+
+    if (auto* field = dynamic_cast<FieldAccessExpr*>(callee.get())) {
+        ExprPtr receiver = std::move(field->object);
+        Token name = std::move(field->name);
+        return std::make_unique<MemberCallExpr>(std::move(receiver), std::move(name), std::move(paren), std::move(arguments));
+    }
+
     return std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments));
 }
 

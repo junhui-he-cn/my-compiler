@@ -415,6 +415,26 @@ void CallExpr::print(std::ostream& out) const
     out << ')';
 }
 
+MemberCallExpr::MemberCallExpr(ExprPtr receiver, Token name, Token paren, std::vector<ExprPtr> arguments)
+    : receiver(std::move(receiver))
+    , name(std::move(name))
+    , paren(std::move(paren))
+    , arguments(std::move(arguments))
+{
+}
+
+void MemberCallExpr::print(std::ostream& out) const
+{
+    out << "(member-call ";
+    writeExpr(out, receiver);
+    out << ' ' << name.lexeme;
+    for (const auto& argument : arguments) {
+        out << ' ';
+        writeExpr(out, argument);
+    }
+    out << ')';
+}
+
 ArrayExpr::ArrayExpr(Token bracket, std::vector<ExprPtr> elements)
     : bracket(std::move(bracket))
     , elements(std::move(elements))

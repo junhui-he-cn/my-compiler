@@ -383,6 +383,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitCall(*call);
     }
 
+    if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(&expression)) {
+        return emitMemberCall(*memberCall);
+    }
+
     if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
         return emitArray(*array);
     }
@@ -457,6 +461,41 @@ IRRegister IRCompiler::emitNativeStdlibCall(const CallExpr& expression)
         arguments.push_back(compileExpression(*argument));
     }
     return ir_.emitNativeCall(variable->name.lexeme, std::move(arguments));
+}
+
+IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
+{
+    if (resolvedNames_->hasMemberCallCallee(expression)) {
+        const IRRegister callee = ir_.emitLoadVar(resolvedNames_->memberCallCalleeName(expression));
+        std::vector<IRRegister> arguments;
+        for (const auto& argument : expression.arguments) {
+            arguments.push_back(compileExpression(*argument));
+        }
+        return ir_.emitCall(callee, std::move(arguments));
+    }
+
+    const IRRegister receiver = compileExpression(*expression.receiver);
+
+    if (expression.name.lexeme == "len") {
+        if (!expression.arguments.empty()) {
+            throw IRCompileError("len member call expects no arguments");
+        }
+        return ir_.emitLen(receiver);
+    }
+
+    if (expression.name.lexeme == "push"
+        || expression.name.lexeme == "pop"
+        || expression.name.lexeme == "substr"
+        || expression.name.lexeme == "charAt") {
+        std::vector<IRRegister> arguments;
+        arguments.push_back(receiver);
+        for (const auto& argument : expression.arguments) {
+            arguments.push_back(compileExpression(*argument));
+        }
+        return ir_.emitNativeCall(expression.name.lexeme, std::move(arguments));
+    }
+
+    throw IRCompileError("unknown member call `" + expression.name.lexeme + "`");
 }
 
 IRRegister IRCompiler::emitCall(const CallExpr& expression)
