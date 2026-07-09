@@ -17,6 +17,33 @@ std::string expectedFunStartMessage(const Token& token)
     return message.str();
 }
 
+template <typename VariableBuilder, typename IndexBuilder, typename FieldBuilder>
+ExprPtr buildAssignmentTarget(
+    ExprPtr& expr,
+    VariableBuilder variableBuilder,
+    IndexBuilder indexBuilder,
+    FieldBuilder fieldBuilder)
+{
+    if (const auto* variable = dynamic_cast<const VariableExpr*>(expr.get())) {
+        return variableBuilder(variable->name);
+    }
+
+    if (auto* index = dynamic_cast<IndexExpr*>(expr.get())) {
+        ExprPtr collection = std::move(index->collection);
+        Token bracket = std::move(index->bracket);
+        ExprPtr indexExpression = std::move(index->index);
+        return indexBuilder(std::move(collection), std::move(bracket), std::move(indexExpression));
+    }
+
+    if (auto* field = dynamic_cast<FieldAccessExpr*>(expr.get())) {
+        ExprPtr object = std::move(field->object);
+        Token name = std::move(field->name);
+        return fieldBuilder(std::move(object), std::move(name));
+    }
+
+    return nullptr;
+}
+
 } // namespace
 
 ParseError::ParseError(const Token& token, const std::string& message)
@@ -469,22 +496,20 @@ ExprPtr Parser::assignment()
         Token equals = previous();
         ExprPtr value = assignment();
 
-        if (const auto* variable = dynamic_cast<const VariableExpr*>(expr.get())) {
-            return std::make_unique<AssignExpr>(variable->name, std::move(value));
-        }
-
-        if (auto* index = dynamic_cast<IndexExpr*>(expr.get())) {
-            ExprPtr collection = std::move(index->collection);
-            Token bracket = std::move(index->bracket);
-            ExprPtr indexExpression = std::move(index->index);
-            return std::make_unique<IndexAssignExpr>(
-                std::move(collection), std::move(bracket), std::move(indexExpression), std::move(value));
-        }
-
-        if (auto* field = dynamic_cast<FieldAccessExpr*>(expr.get())) {
-            ExprPtr object = std::move(field->object);
-            Token name = std::move(field->name);
-            return std::make_unique<FieldAssignExpr>(std::move(object), std::move(name), std::move(value));
+        ExprPtr assignment = buildAssignmentTarget(
+            expr,
+            [&](Token name) -> ExprPtr {
+                return std::make_unique<AssignExpr>(std::move(name), std::move(value));
+            },
+            [&](ExprPtr collection, Token bracket, ExprPtr indexExpression) -> ExprPtr {
+                return std::make_unique<IndexAssignExpr>(
+                    std::move(collection), std::move(bracket), std::move(indexExpression), std::move(value));
+            },
+            [&](ExprPtr object, Token name) -> ExprPtr {
+                return std::make_unique<FieldAssignExpr>(std::move(object), std::move(name), std::move(value));
+            });
+        if (assignment) {
+            return assignment;
         }
 
         throw ParseError(equals, "invalid assignment target");
@@ -494,22 +519,20 @@ ExprPtr Parser::assignment()
         Token op = previous();
         ExprPtr value = assignment();
 
-        if (const auto* variable = dynamic_cast<const VariableExpr*>(expr.get())) {
-            return std::make_unique<CompoundAssignExpr>(variable->name, std::move(op), std::move(value));
-        }
-
-        if (auto* index = dynamic_cast<IndexExpr*>(expr.get())) {
-            ExprPtr collection = std::move(index->collection);
-            Token bracket = std::move(index->bracket);
-            ExprPtr indexExpression = std::move(index->index);
-            return std::make_unique<IndexCompoundAssignExpr>(
-                std::move(collection), std::move(bracket), std::move(indexExpression), std::move(op), std::move(value));
-        }
-
-        if (auto* field = dynamic_cast<FieldAccessExpr*>(expr.get())) {
-            ExprPtr object = std::move(field->object);
-            Token name = std::move(field->name);
-            return std::make_unique<FieldCompoundAssignExpr>(std::move(object), std::move(name), std::move(op), std::move(value));
+        ExprPtr assignment = buildAssignmentTarget(
+            expr,
+            [&](Token name) -> ExprPtr {
+                return std::make_unique<CompoundAssignExpr>(std::move(name), std::move(op), std::move(value));
+            },
+            [&](ExprPtr collection, Token bracket, ExprPtr indexExpression) -> ExprPtr {
+                return std::make_unique<IndexCompoundAssignExpr>(
+                    std::move(collection), std::move(bracket), std::move(indexExpression), std::move(op), std::move(value));
+            },
+            [&](ExprPtr object, Token name) -> ExprPtr {
+                return std::make_unique<FieldCompoundAssignExpr>(std::move(object), std::move(name), std::move(op), std::move(value));
+            });
+        if (assignment) {
+            return assignment;
         }
 
         throw ParseError(op, "invalid compound assignment target");

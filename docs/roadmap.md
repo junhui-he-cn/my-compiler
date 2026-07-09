@@ -262,6 +262,8 @@ Recently completed cleanup:
   index, and field targets.
 - Type utility helpers and `TypeInfo` construction/naming/compatibility logic
   are split into `TypeUtils`, reducing `src/TypeChecker.cpp` size.
+- Parser assignment-target construction is shared between plain `=` and
+  compound-assignment parsing, reducing duplicated target destructuring.
 
 Recommended future cleanup slices:
 
@@ -269,10 +271,6 @@ Recommended future cleanup slices:
   lookup, method lookup, method/builtin conflict checks, and field access /
   assignment validation so future struct features do not keep growing the main
   expression checker.
-- **Refactor parser assignment-target construction.** `Parser::assignment`
-  still has parallel logic for plain assignment and compound assignment targets.
-  A small `ParsedAssignmentTarget` helper or equivalent local abstraction would
-  make future target forms less error-prone.
 - **Consider a unified assignment AST only after more target forms appear.**
   Current separate nodes (`AssignExpr`, `IndexAssignExpr`, `FieldAssignExpr`,
   and their compound variants) are acceptable, but a future `AssignmentTarget`
