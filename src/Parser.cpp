@@ -55,6 +55,12 @@ StmtPtr Parser::declaration()
     if (match(TokenType::Struct)) {
         return structDeclaration();
     }
+    if (match(TokenType::Impl)) {
+        if (blockDepth_ != 0) {
+            throw ParseError(previous(), "`impl` is only allowed at top level");
+        }
+        return implDeclaration();
+    }
     if (check(TokenType::Fun) && checkNext(TokenType::Identifier)) {
         advance();
         return functionDeclaration();
@@ -108,6 +114,37 @@ StructFieldDecl Parser::structField()
     consume(TokenType::Colon, "expected `:` after struct field name");
     TypeAnnotation typeName = typeAnnotation("expected struct field type after `:`");
     return StructFieldDecl{std::move(name), std::move(typeName)};
+}
+
+StmtPtr Parser::implDeclaration()
+{
+    Token typeName = consume(TokenType::Identifier, "expected struct name after `impl`");
+    consume(TokenType::LeftBrace, "expected `{` after impl type name");
+    std::vector<MethodDecl> methods;
+    while (!check(TokenType::RightBrace) && !isAtEnd()) {
+        methods.push_back(methodDeclaration());
+    }
+    consume(TokenType::RightBrace, "expected `}` after impl methods");
+    return std::make_unique<ImplStmt>(std::move(typeName), std::move(methods));
+}
+
+MethodDecl Parser::methodDeclaration()
+{
+    consume(TokenType::Fun, "expected `fun` method declaration in impl block");
+    Token name = consume(TokenType::Identifier, "expected method name after `fun`");
+    consume(TokenType::LeftParen, "expected `(` after method name");
+    std::vector<Parameter> parsedParameters = parameters();
+    consume(TokenType::RightParen, "expected `)` after method parameters");
+    std::optional<TypeAnnotation> returnTypeName = optionalReturnType();
+    consume(TokenType::LeftBrace, "expected `{` before method body");
+    ++blockDepth_;
+    std::vector<StmtPtr> body = blockStatements();
+    --blockDepth_;
+    return MethodDecl(
+        std::move(name),
+        std::move(parsedParameters),
+        std::move(returnTypeName),
+        std::move(body));
 }
 
 StmtPtr Parser::functionDeclaration()

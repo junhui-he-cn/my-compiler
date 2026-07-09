@@ -23,6 +23,8 @@ private:
     StmtPtr declaration();
     StmtPtr exportDeclaration();
     StmtPtr structDeclaration();
+    StmtPtr implDeclaration();
+    MethodDecl methodDeclaration();
     std::vector<StructFieldDecl> structFields();
     StructFieldDecl structField();
     StmtPtr functionDeclaration();

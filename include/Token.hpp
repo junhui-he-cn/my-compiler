@@ -44,6 +44,7 @@ enum class TokenType {
     Continue,
     For,
     If,
+    Impl,
     Import,
     In,
     As,

@@ -214,6 +214,22 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         return;
     }
 
+    if (const auto* implStmt = dynamic_cast<const ImplStmt*>(&stmt)) {
+        out << "(impl " << implStmt->typeName.lexeme;
+        for (const MethodDecl& method : implStmt->methods) {
+            out << " (method " << method.name.lexeme;
+            writeParameterList(out, method.parameters);
+            writeReturnAnnotation(out, method.returnTypeName);
+            for (const auto& child : method.body) {
+                out << ' ';
+                writeInlineStmt(out, *child);
+            }
+            out << ')';
+        }
+        out << ')';
+        return;
+    }
+
     if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(&stmt)) {
         out << "(struct " << structDecl->name.lexeme;
         for (const StructFieldDecl& field : structDecl->fields) {
@@ -272,6 +288,14 @@ TypeAnnotation TypeAnnotation::nullable(Token token, TypeAnnotation innerType)
     result.token = std::move(token);
     result.innerType = std::make_shared<TypeAnnotation>(std::move(innerType));
     return result;
+}
+
+MethodDecl::MethodDecl(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
+    : name(std::move(name))
+    , parameters(std::move(parameters))
+    , returnTypeName(std::move(returnTypeName))
+    , body(std::move(body))
+{
 }
 
 LiteralExpr::LiteralExpr(std::string value)
@@ -570,6 +594,28 @@ void StructDeclStmt::print(std::ostream& out, int indent) const
         writeTypeAnnotation(out, fields[i].typeName);
     }
     out << "}\n";
+}
+
+ImplStmt::ImplStmt(Token typeName, std::vector<MethodDecl> methods)
+    : typeName(std::move(typeName))
+    , methods(std::move(methods))
+{
+}
+
+void ImplStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Impl " << typeName.lexeme << '\n';
+    for (const MethodDecl& method : methods) {
+        writeIndent(out, indent + 1);
+        out << "Method " << method.name.lexeme;
+        writeParameterList(out, method.parameters);
+        writeReturnAnnotation(out, method.returnTypeName);
+        out << '\n';
+        for (const auto& statement : method.body) {
+            statement->print(out, indent + 2);
+        }
+    }
 }
 
 ImportStmt::ImportStmt(Token keyword, Token path, std::optional<Token> alias)

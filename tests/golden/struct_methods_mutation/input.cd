@@ -1,7 +1,7 @@
 struct Counter { value: number }
 
 impl Counter {
-  fun incBy(delta: number): nil {
+  fun incBy(delta: number) {
     this.value = this.value + delta;
     return nil;
   }

@@ -50,6 +50,15 @@ struct Parameter {
     std::optional<TypeAnnotation> typeName;
 };
 
+struct MethodDecl {
+    MethodDecl(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
+
+    Token name;
+    std::vector<Parameter> parameters;
+    std::optional<TypeAnnotation> returnTypeName;
+    std::vector<StmtPtr> body;
+};
+
 struct LiteralExpr final : Expr {
     explicit LiteralExpr(std::string value);
     void print(std::ostream& out) const override;
@@ -224,6 +233,14 @@ struct StructDeclStmt final : Stmt {
 
     Token name;
     std::vector<StructFieldDecl> fields;
+};
+
+struct ImplStmt final : Stmt {
+    ImplStmt(Token typeName, std::vector<MethodDecl> methods);
+    void print(std::ostream& out, int indent) const override;
+
+    Token typeName;
+    std::vector<MethodDecl> methods;
 };
 
 struct ImportStmt final : Stmt {
