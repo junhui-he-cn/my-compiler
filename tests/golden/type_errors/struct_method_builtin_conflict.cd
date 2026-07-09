@@ -1,0 +1,5 @@
+struct Bag { value: number }
+
+impl Bag {
+  fun len(): number { return this.value; }
+}

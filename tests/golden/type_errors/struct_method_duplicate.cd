@@ -1,0 +1,6 @@
+struct Person { name: string }
+
+impl Person {
+  fun greet(): string { return this.name; }
+  fun greet(): string { return this.name; }
+}

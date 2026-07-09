@@ -1,0 +1,3 @@
+impl Missing {
+  fun value(): number { return 1; }
+}
