@@ -1,0 +1,7 @@
+Program
+  Let x = 1
+  Print (+= x 2)
+  Print (-= x 1)
+  Print (*= x 5)
+  Print (/= x 2)
+  Print x
