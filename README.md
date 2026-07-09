@@ -7,7 +7,7 @@ Rust bytecode VM.
 
 The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, indexing, array
-element assignment, structs, field access and assignment, short-circuit logical
+element assignment, numeric variable compound assignment, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, and `charAt`.
@@ -130,6 +130,7 @@ Supported expressions:
 - Function expressions: `fun (parameter[: type]*) [: type] { declaration* }`, including direct expression statements such as `fun () { return nil; };`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
+- Compound assignment: `name += expression`, `name -= expression`, `name *= expression`, and `name /= expression` update an existing numeric variable and evaluate to the assigned value. This first slice supports variable targets only; array index and struct field compound assignment are not implemented yet.
 - Calls: `callee(argument*)`
 - Indexing: `array[index]` reads an element. Indexes must be integer numbers in range.
 - Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element and length mutation through `push(array, value)` and `pop(array)`.

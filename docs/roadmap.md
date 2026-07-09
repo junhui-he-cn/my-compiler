@@ -11,7 +11,7 @@ Deferred backend milestone: Phase 3B removed the old C++ bytecode VM and its in-
 The language currently supports:
 
 - Statements: `let`, `print`, `if`/`else`, `while`, `break`, `continue`, `fun`, `return`, top-level `import`, blocks, and expression statements.
-- Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, and assignment expressions.
+- Expressions: literals, arrays, indexing, array index assignment, structs, field access, field assignment, variables, calls, function expressions, grouping, unary operators, binary/logical operators, assignment expressions, and numeric variable compound assignment.
 - Lexical scopes resolved during type checking.
 - Explicit `let` annotations for `number`, `bool`, `string`, and `nil`.
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
@@ -46,17 +46,14 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 The next recommended language slices are ordered by usefulness, implementation
 risk, and how well they build on recently completed work:
 
-1. **Phase 15D: compound assignment for variables** — start with
-   `name += expr`, `name -= expr`, `name *= expr`, and `name /= expr` for
-   numeric variables only; extend to index/field targets later.
-2. **Phase 13C: `typeOf(value)` builtin** — add a small debug helper on the
+1. **Phase 13C: `typeOf(value)` builtin** — add a small debug helper on the
    existing shadowable `native_call` path.
-3. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
+2. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
    interacts with annotated variables, function returns, arrays, and structs.
-4. **Phase 12E: member calls** — consider method-style calls such as
+3. **Phase 12E: member calls** — consider method-style calls such as
    `xs.push(value)`, `xs.pop()`, and possibly string helpers after dot/call
    semantics are designed together.
-5. **Phase 14E: module re-export and search paths** — revisit modules after
+4. **Phase 14E: module re-export and search paths** — revisit modules after
    the core language ergonomics above are stronger.
 
 Each slice should still start with a focused design spec and implementation
@@ -250,18 +247,17 @@ Why late: modules affect diagnostics, CLI source management, test layout, and na
 
 Goal: improve ergonomics after the core language grows.
 
-Status: in progress. Phase 15A is implemented: located front-end diagnostics print the relevant source line and a caret while keeping one-line golden compatibility for broad fixtures. Phase 15B is implemented: anonymous function expressions beginning with `fun (` can appear directly as expression statements while named `fun name(...)` declarations keep their existing behavior. Phase 15C is implemented: imported-file and direct multi-file lexer, parser, and type diagnostics report source file paths with file-local snippets, while stdin and single-file pathless diagnostics remain supported and locationless diagnostics remain one-line.
+Status: in progress. Phase 15A is implemented: located front-end diagnostics print the relevant source line and a caret while keeping one-line golden compatibility for broad fixtures. Phase 15B is implemented: anonymous function expressions beginning with `fun (` can appear directly as expression statements while named `fun name(...)` declarations keep their existing behavior. Phase 15C is implemented: imported-file and direct multi-file lexer, parser, and type diagnostics report source file paths with file-local snippets, while stdin and single-file pathless diagnostics remain supported and locationless diagnostics remain one-line. Phase 15D is implemented for numeric variable compound assignment (`+=`, `-=`, `*=`, `/=`). Index and field compound assignment remain future work.
 
 Suggested features:
 
 - Source snippets and carets for front-end diagnostics. Implemented, with file-aware paths for imported files and direct multi-file inputs.
 - More parse recovery and multi-error reporting.
 - Clear handling for lambda expression statements that begin with `fun`. Implemented by parser disambiguation between `fun name` declarations and `fun (` expressions.
-- Compound assignment operators. Recommended Phase 15D should start with
-  numeric variable targets only (`name += expr`, `name -= expr`, `name *= expr`,
-  `name /= expr`) to keep parsing, type checking, and lowering small. A later
-  slice can extend compound assignment to `array[index]` and `object.field`
-  targets after assignment target reuse is designed.
+- Compound assignment operators. Phase 15D is implemented for numeric variable
+  targets only (`name += expr`, `name -= expr`, `name *= expr`, `name /= expr`).
+  A later slice can extend compound assignment to `array[index]` and
+  `object.field` targets after assignment target reuse is designed.
 - Comments or doc comments if they are still missing.
 
 ## Deferred Backend Track
@@ -278,10 +274,7 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 15D: compound assignment for variables** if the priority is
-ergonomics with a smaller syntax/lowering slice.
-
-Choose **Phase 13C: `typeOf(value)`** if the priority is a very small stdlib
+Start with **Phase 13C: `typeOf(value)`** if the priority is a very small stdlib
 slice that keeps extending the native builtin path.
 
 Choose **Phase 9G: nullable / `nil` compatibility** if the priority is stronger
