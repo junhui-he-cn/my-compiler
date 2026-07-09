@@ -203,7 +203,9 @@ private:
     CheckedExpression checkNativeStdlibCall(const CallExpr& expression);
     TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
+    CheckedExpression checkIndexCompoundAssignment(const IndexCompoundAssignExpr& expression);
     CheckedExpression checkFieldAssignment(const FieldAssignExpr& expression);
+    CheckedExpression checkFieldCompoundAssignment(const FieldCompoundAssignExpr& expression);
     CheckedExpression checkNamedStructFields(
         const Token& diagnosticToken,
         const TypeInfo& declared,

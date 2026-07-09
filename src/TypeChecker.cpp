@@ -1586,12 +1586,20 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         return checkFieldAssignment(*fieldAssign);
     }
 
+    if (const auto* fieldCompound = dynamic_cast<const FieldCompoundAssignExpr*>(&expression)) {
+        return checkFieldCompoundAssignment(*fieldCompound);
+    }
+
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
         return CheckedExpression{checkIndex(*index)};
     }
 
     if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(&expression)) {
         return checkIndexAssignment(*indexAssign);
+    }
+
+    if (const auto* indexCompound = dynamic_cast<const IndexCompoundAssignExpr*>(&expression)) {
+        return checkIndexCompoundAssignment(*indexCompound);
     }
 
     throw TypeError("unsupported expression node");
@@ -1969,6 +1977,34 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
     return value;
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkIndexCompoundAssignment(const IndexCompoundAssignExpr& expression)
+{
+    const TypeInfo collection = checkExpression(*expression.collection);
+    const TypeInfo index = checkExpression(*expression.index);
+
+    if (collection.kind != StaticType::Unknown && collection.kind != StaticType::Array) {
+        throw TypeError(expression.bracket, "can only assign array elements");
+    }
+    if (index.kind != StaticType::Unknown && index.kind != StaticType::Number) {
+        throw TypeError(expression.bracket, "array index must be number");
+    }
+
+    if (collection.kind == StaticType::Array && collection.elementType
+        && collection.elementType->kind != StaticType::Unknown
+        && collection.elementType->kind != StaticType::Number) {
+        throw TypeError(expression.op,
+            "compound assignment target must be number, got " + typeInfoName(*collection.elementType));
+    }
+
+    const CheckedExpression value = checkExpressionInfo(*expression.value);
+    if (value.type.kind != StaticType::Unknown && value.type.kind != StaticType::Number) {
+        throw TypeError(expression.op,
+            "compound assignment value must be number, got " + typeInfoName(value.type));
+    }
+
+    return CheckedExpression{simpleType(StaticType::Number)};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssignExpr& expression)
 {
     const TypeInfo object = checkExpression(*expression.object);
@@ -1994,6 +2030,35 @@ TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssi
     }
 
     return value;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkFieldCompoundAssignment(const FieldCompoundAssignExpr& expression)
+{
+    const TypeInfo object = checkExpression(*expression.object);
+    if (object.kind != StaticType::Unknown && object.kind != StaticType::Struct) {
+        throw TypeError(expression.name, "can only assign fields on structs");
+    }
+
+    if (object.kind == StaticType::Struct && object.structName) {
+        const StructTypeDecl* structType = findStructType(*object.structName);
+        const StructFieldType* structField = structType ? findStructField(*structType, expression.name.lexeme) : nullptr;
+        if (!structField) {
+            throw TypeError(expression.name,
+                "struct `" + *object.structName + "` has no field `" + expression.name.lexeme + "`");
+        }
+        if (structField->type.kind != StaticType::Unknown && structField->type.kind != StaticType::Number) {
+            throw TypeError(expression.op,
+                "compound assignment target must be number, got " + typeInfoName(structField->type));
+        }
+    }
+
+    const CheckedExpression value = checkExpressionInfo(*expression.value);
+    if (value.type.kind != StaticType::Unknown && value.type.kind != StaticType::Number) {
+        throw TypeError(expression.op,
+            "compound assignment value must be number, got " + typeInfoName(value.type));
+    }
+
+    return CheckedExpression{simpleType(StaticType::Number)};
 }
 
 TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const

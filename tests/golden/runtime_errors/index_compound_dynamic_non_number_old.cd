@@ -1,2 +1,3 @@
-let xs = ["bad"];
+let xs = [];
+push(xs, "bad");
 xs[0] += 1;
