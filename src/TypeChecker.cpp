@@ -1248,6 +1248,19 @@ TypeChecker::IfNarrowing TypeChecker::ifNarrowing(const Expr& condition)
         narrowedCondition = grouping->expression.get();
     }
 
+    if (const auto* logical = dynamic_cast<const LogicalExpr*>(narrowedCondition)) {
+        const IfNarrowing left = ifNarrowing(*logical->left);
+        const IfNarrowing right = ifNarrowing(*logical->right);
+
+        IfNarrowing result;
+        if (logical->op.type == TokenType::AmpersandAmpersand) {
+            result.thenNarrowing = left.thenNarrowing ? left.thenNarrowing : right.thenNarrowing;
+        } else if (logical->op.type == TokenType::PipePipe) {
+            result.elseNarrowing = left.elseNarrowing ? left.elseNarrowing : right.elseNarrowing;
+        }
+        return result;
+    }
+
     const auto* binary = dynamic_cast<const BinaryExpr*>(narrowedCondition);
     if (!binary || (binary->op.type != TokenType::BangEqual && binary->op.type != TokenType::EqualEqual)) {
         return IfNarrowing{};

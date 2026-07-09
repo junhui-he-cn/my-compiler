@@ -48,8 +48,9 @@ risk, and how well they build on recently completed work:
 
 1. **Phase 14E: module re-export and search paths** — revisit modules after
    the core language ergonomics above are stronger.
-2. **Phase 15G: broader nullable/dataflow narrowing** — extend the first direct
-   `if` nil-check slice to logical compositions, loops, fields, or post-branch flow.
+2. **Phase 15G: broader nullable/dataflow narrowing** — continue after the
+   implemented direct/logical `if` nil-check slices into loops, fields, indexes,
+   or post-branch flow.
 3. **Code health slice: front-end refactoring** — keep the compiler maintainable
    after the recent module, struct method, builtin, and compound-assignment
    feature growth.
@@ -59,7 +60,7 @@ plan before changing compiler behavior.
 
 ## Phase 9: Richer Type System
 
-Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Phase 9E is implemented: function type annotations use `fun(...): ...` syntax and support static signature checks for annotated variables, parameters, returns, assignments, and calls. Phase 9F is implemented: array type annotations use `[type]` syntax and known element types flow through array literals, indexing, index assignment, `push`, and `pop`. Phase 9G is implemented: nullable annotations use postfix `?`, allowing `nil` only where `T?` is expected. Phase 15F's first slice is implemented: direct `if` nil-checks narrow simple variables from `T?` to `T` in the proven non-nil branch.
+Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Phase 9E is implemented: function type annotations use `fun(...): ...` syntax and support static signature checks for annotated variables, parameters, returns, assignments, and calls. Phase 9F is implemented: array type annotations use `[type]` syntax and known element types flow through array literals, indexing, index assignment, `push`, and `pop`. Phase 9G is implemented: nullable annotations use postfix `?`, allowing `nil` only where `T?` is expected. Phase 15F's first slice is implemented: direct `if` nil-checks narrow simple variables from `T?` to `T` in the proven non-nil branch. Phase 15G's first logical slice is implemented: conservative `&&` guards narrow the `then` branch and conservative `||` guards narrow the `else` branch for simple variables.
 
 Goal: evolve the current annotation checker into a more useful static type layer.
 
@@ -67,7 +68,7 @@ Suggested future features:
 
 - Deeper collection inference while preserving mixed-array dynamic escape hatches.
 - Deeper inference for currently unknown function parameters and call results.
-- Broader flow-sensitive nullable narrowing beyond the implemented direct `if` nil-check slice, such as logical compositions, loops, fields, array elements, and post-branch flow.
+- Broader flow-sensitive nullable narrowing beyond the implemented direct/logical `if` nil-check slices, such as loops, fields, array elements, and post-branch flow.
 
 Likely touch points:
 
@@ -91,7 +92,7 @@ Completed fifth slice: function type annotations use `fun(type, ...): type` synt
 
 Completed sixth slice: array type annotations use `[type]` syntax in `let`, parameter, return, and struct field annotations. Known array element types are checked for literals, indexing, index assignment, `push`, and `pop`, while mixed unannotated arrays remain a dynamic escape hatch.
 
-Completed seventh slice: nullable annotations use postfix `?`, so `nil` is assignable to `T?` while non-nullable `T` remains protected. First-slice nullable narrowing is implemented for direct `if` nil-checks on simple variables; broader flow-sensitive narrowing remains future work.
+Completed seventh slice: nullable annotations use postfix `?`, so `nil` is assignable to `T?` while non-nullable `T` remains protected. Nullable narrowing is implemented for direct `if` nil-checks and conservative logical `&&` / `||` combinations on simple variables; broader flow-sensitive narrowing remains future work.
 
 ## Phase 10: Array Mutation and Collection Builtins
 
@@ -295,4 +296,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, **Phase 15G: broader nullable/dataflow narrowing** if the priority is type-system ergonomics, or a small **Code Health** slice if the next feature would otherwise deepen `TypeChecker` / parser duplication.
+Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, continue **Phase 15G: broader nullable/dataflow narrowing** if the priority is type-system ergonomics, or a small **Code Health** slice if the next feature would otherwise deepen `TypeChecker` / parser duplication.
