@@ -199,7 +199,11 @@ TypeAnnotation Parser::typeAnnotation(const std::string& simpleTypeMessage)
         Token bracket = previous();
         TypeAnnotation elementType = typeAnnotation("expected array element type after `[`");
         consume(TokenType::RightBracket, "expected `]` after array element type");
-        return TypeAnnotation::array(std::move(bracket), std::move(elementType));
+        TypeAnnotation annotation = TypeAnnotation::array(std::move(bracket), std::move(elementType));
+        if (match(TokenType::Question)) {
+            annotation = TypeAnnotation::nullable(previous(), std::move(annotation));
+        }
+        return annotation;
     }
 
     if (match(TokenType::Fun)) {
@@ -213,11 +217,17 @@ TypeAnnotation Parser::typeAnnotation(const std::string& simpleTypeMessage)
     }
 
     Token name = consume(TokenType::Identifier, simpleTypeMessage);
+    TypeAnnotation annotation;
     if (match(TokenType::Dot)) {
         Token member = consume(TokenType::Identifier, "expected type name after `.`");
-        return TypeAnnotation::qualified(std::move(name), std::move(member));
+        annotation = TypeAnnotation::qualified(std::move(name), std::move(member));
+    } else {
+        annotation = TypeAnnotation::simple(std::move(name));
     }
-    return TypeAnnotation::simple(std::move(name));
+    if (match(TokenType::Question)) {
+        annotation = TypeAnnotation::nullable(previous(), std::move(annotation));
+    }
+    return annotation;
 }
 
 std::vector<TypeAnnotation> Parser::typeArguments()

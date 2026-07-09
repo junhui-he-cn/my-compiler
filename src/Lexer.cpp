@@ -112,6 +112,9 @@ void Lexer::scanToken()
     case '.':
         addToken(TokenType::Dot);
         break;
+    case '?':
+        addToken(TokenType::Question);
+        break;
     case '+':
         addToken(match('=') ? TokenType::PlusEqual : TokenType::Plus);
         break;
@@ -281,6 +284,8 @@ std::string tokenTypeName(TokenType type)
         return "Comma";
     case TokenType::Dot:
         return "Dot";
+    case TokenType::Question:
+        return "Question";
     case TokenType::Plus:
         return "Plus";
     case TokenType::Minus:

@@ -40,6 +40,12 @@ void writeTypeAnnotation(std::ostream& out, const TypeAnnotation& annotation)
         return;
     }
 
+    if (annotation.kind == TypeAnnotation::Kind::Nullable) {
+        writeTypeAnnotation(out, *annotation.innerType);
+        out << '?';
+        return;
+    }
+
     out << "fun(";
     for (std::size_t i = 0; i < annotation.parameterTypes.size(); ++i) {
         if (i != 0) {
@@ -256,6 +262,15 @@ TypeAnnotation TypeAnnotation::array(Token token, TypeAnnotation elementType)
     result.kind = Kind::Array;
     result.token = std::move(token);
     result.elementType = std::make_shared<TypeAnnotation>(std::move(elementType));
+    return result;
+}
+
+TypeAnnotation TypeAnnotation::nullable(Token token, TypeAnnotation innerType)
+{
+    TypeAnnotation result;
+    result.kind = Kind::Nullable;
+    result.token = std::move(token);
+    result.innerType = std::make_shared<TypeAnnotation>(std::move(innerType));
     return result;
 }
 

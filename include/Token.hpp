@@ -15,6 +15,7 @@ enum class TokenType {
     Semicolon,
     Comma,
     Dot,
+    Question,
 
     Plus,
     Minus,

@@ -27,12 +27,14 @@ struct TypeAnnotation {
         Qualified,
         Function,
         Array,
+        Nullable,
     };
 
     static TypeAnnotation simple(Token token);
     static TypeAnnotation qualified(Token qualifier, Token name);
     static TypeAnnotation function(Token token, std::vector<TypeAnnotation> parameterTypes, TypeAnnotation returnType);
     static TypeAnnotation array(Token token, TypeAnnotation elementType);
+    static TypeAnnotation nullable(Token token, TypeAnnotation innerType);
 
     Kind kind = Kind::Simple;
     Token token{TokenType::Identifier, "", 0, 0};
@@ -40,6 +42,7 @@ struct TypeAnnotation {
     std::vector<TypeAnnotation> parameterTypes;
     std::shared_ptr<TypeAnnotation> returnType;
     std::shared_ptr<TypeAnnotation> elementType;
+    std::shared_ptr<TypeAnnotation> innerType;
 };
 
 struct Parameter {
