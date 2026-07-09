@@ -1,0 +1,50 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = number 1
+  c2 = nil
+  c3 = nil
+  c4 = number 1
+
+names:
+  n0 = "__method_Counter_inc#0"
+  n1 = "this#1"
+  n2 = "this#1"
+  n3 = "value"
+  n4 = "value"
+  n5 = "__method_Counter_inc#0"
+  n6 = "value"
+  n7 = "c#2"
+  n8 = "__method_Counter_inc#0"
+  n9 = "c#2"
+  n10 = "c#2"
+  n11 = "value"
+
+main registers=9:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = make_function f0
+  assign_var n5, r1
+  r2 = constant c4
+  r3 = struct {n6: r2}
+  store_var n7, r3
+  r4 = load_var n8
+  r5 = load_var n9
+  r6 = call r4 [r5]
+  r7 = load_var n10
+  r8 = field r7, n11
+  print r8
+
+function f0 name="inc" arity=1 registers=8:
+  param 0 = "this#1"
+  r0 = load_var n1
+  r1 = load_var n2
+  r2 = field r1, n3
+  r3 = constant c1
+  r4 = add r2, r3
+  r5 = assign_field r0, n4, r4
+  r6 = constant c2
+  return r6
+  r7 = constant c3
+  return r7

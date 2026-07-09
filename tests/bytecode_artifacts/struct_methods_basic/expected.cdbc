@@ -1,0 +1,40 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = string "!"
+  c2 = nil
+  c3 = string "Ada"
+
+names:
+  n0 = "__method_Person_label#0"
+  n1 = "this#1"
+  n2 = "name"
+  n3 = "__method_Person_label#0"
+  n4 = "name"
+  n5 = "p#2"
+  n6 = "__method_Person_label#0"
+  n7 = "p#2"
+
+main registers=7:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = make_function f0
+  assign_var n3, r1
+  r2 = constant c3
+  r3 = struct {n4: r2}
+  store_var n5, r3
+  r4 = load_var n6
+  r5 = load_var n7
+  r6 = call r4 [r5]
+  print r6
+
+function f0 name="label" arity=1 registers=5:
+  param 0 = "this#1"
+  r0 = load_var n1
+  r1 = field r0, n2
+  r2 = constant c1
+  r3 = add r1, r2
+  return r3
+  r4 = constant c2
+  return r4
