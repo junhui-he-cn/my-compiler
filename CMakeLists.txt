@@ -27,6 +27,7 @@ add_executable(compiler_design
     src/Parser.cpp
     src/SourceManager.cpp
     src/TypeChecker.cpp
+    src/TypeUtils.cpp
     src/Value.cpp
     src/main.cpp
 )

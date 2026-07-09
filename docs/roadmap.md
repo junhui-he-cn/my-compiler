@@ -260,13 +260,11 @@ Recently completed cleanup:
   fields, and numeric compound-assignment operands.
 - Shared compound-assignment result lowering in `IRCompiler` for variable,
   index, and field targets.
+- Type utility helpers and `TypeInfo` construction/naming/compatibility logic
+  are split into `TypeUtils`, reducing `src/TypeChecker.cpp` size.
 
 Recommended future cleanup slices:
 
-- **Split type utility helpers out of `src/TypeChecker.cpp`.** Move reusable
-  helpers such as `unknownType`, `simpleType`, `arrayType`, `functionType`,
-  `nullableType`, `typeInfoName`, and `compatible` into a focused type utility
-  module. Keep this as behavior-preserving refactoring with no golden refresh.
 - **Extract struct and method type-checking helpers.** Group named-struct field
   lookup, method lookup, method/builtin conflict checks, and field access /
   assignment validation so future struct features do not keep growing the main

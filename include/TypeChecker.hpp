@@ -3,6 +3,7 @@
 #include "Ast.hpp"
 #include "Diagnostic.hpp"
 #include "Token.hpp"
+#include "TypeUtils.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -11,27 +12,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-enum class StaticType {
-    Unknown,
-    Nil,
-    Number,
-    Bool,
-    String,
-    Function,
-    Array,
-    Struct,
-    Nullable,
-};
-
-struct TypeInfo {
-    StaticType kind = StaticType::Unknown;
-    std::vector<TypeInfo> parameterTypes;
-    std::shared_ptr<TypeInfo> returnType;
-    std::optional<std::string> structName;
-    std::shared_ptr<TypeInfo> elementType;
-    std::shared_ptr<TypeInfo> nullableOf;
-};
 
 class TypeError final : public DiagnosticError {
 public:
@@ -257,4 +237,3 @@ private:
     std::vector<FunctionReturnContext> returnContexts_;
 };
 
-std::string staticTypeName(StaticType type);
