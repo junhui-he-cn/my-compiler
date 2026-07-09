@@ -205,6 +205,13 @@ To refresh golden files after an intentional output change:
 python3 tests/run_golden_tests.py ./build/compiler_design --update
 ```
 
+By default, `--update` rewrites only expected files that already exist, so a success fixture with only `run.out` will not accidentally create `ast.out`, `ir.out`, or `bytecode.out`. Use `--update-missing` when you intentionally want to create missing success outputs, and use `--case <substring>` to refresh or run only matching fixtures:
+
+```sh
+python3 tests/run_golden_tests.py ./build/compiler_design --update --case my_fixture
+python3 tests/run_golden_tests.py ./build/compiler_design --update --update-missing --case my_fixture
+```
+
 ## Run
 
 ```sh

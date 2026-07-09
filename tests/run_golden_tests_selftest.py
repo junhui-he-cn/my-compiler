@@ -63,6 +63,80 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertFalse(results[0].passed)
         self.assertIn("no golden test checks", results[0].message)
 
+    def test_update_rewrites_only_existing_success_outputs_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "safe_update_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "ast.out").write_text("old ast\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(root, stdout="new ast\n")
+
+            results = run_golden_tests.run_all(
+                compiler,
+                golden_dir,
+                update=True,
+                update_missing=False,
+            )
+
+            self.assertEqual(len(results), 1)
+            self.assertTrue(results[0].passed)
+            self.assertEqual((case_dir / "ast.out").read_text(encoding="utf-8"), "new ast\n")
+            self.assertFalse((case_dir / "ir.out").exists())
+            self.assertFalse((case_dir / "bytecode.out").exists())
+            self.assertFalse((case_dir / "run.out").exists())
+
+    def test_update_missing_creates_missing_success_outputs_explicitly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "update_missing_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "ast.out").write_text("old ast\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(root, stdout="new output\n")
+
+            results = run_golden_tests.run_all(
+                compiler,
+                golden_dir,
+                update=True,
+                update_missing=True,
+            )
+
+            self.assertEqual(len(results), 4)
+            self.assertTrue(all(result.passed for result in results), results)
+            for golden_name in ("ast.out", "ir.out", "bytecode.out", "run.out"):
+                self.assertEqual(
+                    (case_dir / golden_name).read_text(encoding="utf-8"),
+                    "new output\n",
+                )
+
+    def test_case_filter_limits_success_cases_by_substring(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            wanted_dir = golden_dir / "wanted_case"
+            skipped_dir = golden_dir / "skipped_case"
+            wanted_dir.mkdir(parents=True)
+            skipped_dir.mkdir(parents=True)
+            (wanted_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (wanted_dir / "ast.out").write_text("ok\n", encoding="utf-8")
+            (skipped_dir / "input.cd").write_text("print 2;\n", encoding="utf-8")
+            (skipped_dir / "ast.out").write_text("ok\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(root, stdout="ok\n")
+
+            results = run_golden_tests.run_all(
+                compiler,
+                golden_dir,
+                update=False,
+                case_filters=("wanted",),
+            )
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "wanted_case default(ast)")
+
     def test_success_case_with_unexpected_stderr_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

@@ -110,14 +110,20 @@ def discover_import_error_cases(golden_dir: Path) -> list[Path]:
     return sorted(import_dir.glob("*.cd"))
 
 
-def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[CheckResult]:
+def check_success_case(
+    compiler: Path,
+    case_dir: Path,
+    update: bool,
+    update_missing: bool = False,
+) -> list[CheckResult]:
     sources = compiler_inputs(case_dir)
     results: list[CheckResult] = []
     expected_golden_names = tuple(golden_name for _, _, golden_name in SUCCESS_CHECKS)
 
-    if not update and not any(
+    if not any(
         (case_dir / golden_name).exists() for golden_name in expected_golden_names
-    ):
+    ) and (not update or not update_missing):
+        update_hint = " Pass --update-missing with --update to create them." if update else ""
         return [
             CheckResult(
                 case_dir.name,
@@ -125,13 +131,17 @@ def check_success_case(compiler: Path, case_dir: Path, update: bool) -> list[Che
                 (
                     f"FAIL {case_dir.name} has no expected files; "
                     f"expected at least one of: {', '.join(expected_golden_names)}"
+                    f"{update_hint}"
                 ),
             )
         ]
 
     for display_name, args, golden_name in SUCCESS_CHECKS:
         golden_path = case_dir / golden_name
-        if not update and not golden_path.exists():
+        if update:
+            if not update_missing and not golden_path.exists():
+                continue
+        elif not golden_path.exists():
             continue
 
         completed = run_compiler(compiler, args, sources)
@@ -446,23 +456,38 @@ def check_import_error_case(compiler: Path, source: Path, update: bool) -> list[
 
     return results
 
-def run_all(compiler: Path, golden_dir: Path, update: bool) -> list[CheckResult]:
+def case_matches(case_name: str, case_filters: tuple[str, ...]) -> bool:
+    return not case_filters or any(case_filter in case_name for case_filter in case_filters)
+
+
+def run_all(
+    compiler: Path,
+    golden_dir: Path,
+    update: bool,
+    update_missing: bool = False,
+    case_filters: tuple[str, ...] = (),
+) -> list[CheckResult]:
     results: list[CheckResult] = []
 
     for case_dir in discover_success_cases(golden_dir):
-        results.extend(check_success_case(compiler, case_dir, update))
+        if case_matches(case_dir.name, case_filters):
+            results.extend(check_success_case(compiler, case_dir, update, update_missing))
 
     for source in discover_runtime_error_cases(golden_dir):
-        results.extend(check_runtime_error_case(compiler, source, update))
+        if case_matches(f"runtime_errors/{source.stem}", case_filters):
+            results.extend(check_runtime_error_case(compiler, source, update))
 
     for source in discover_parse_error_cases(golden_dir):
-        results.extend(check_parse_error_case(compiler, source, update))
+        if case_matches(f"parse_errors/{source.stem}", case_filters):
+            results.extend(check_parse_error_case(compiler, source, update))
 
     for source in discover_type_error_cases(golden_dir):
-        results.extend(check_type_error_case(compiler, source, update))
+        if case_matches(f"type_errors/{source.stem}", case_filters):
+            results.extend(check_type_error_case(compiler, source, update))
 
     for source in discover_import_error_cases(golden_dir):
-        results.extend(check_import_error_case(compiler, source, update))
+        if case_matches(f"import_errors/{source.stem}", case_filters):
+            results.extend(check_import_error_case(compiler, source, update))
 
     if not results:
         results.append(CheckResult("golden", False, "FAIL golden tests found no golden test checks/results"))
@@ -474,7 +499,22 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run compiler CLI golden tests.")
     parser.add_argument("compiler", type=Path, help="Path to compiler_design executable")
     parser.add_argument("--update", action="store_true", help="Rewrite golden files from current compiler output")
-    return parser.parse_args()
+    parser.add_argument(
+        "--update-missing",
+        action="store_true",
+        help="With --update, also create missing expected files for success fixtures",
+    )
+    parser.add_argument(
+        "--case",
+        dest="case_filters",
+        action="append",
+        default=[],
+        help="Only run/update cases whose fixture name contains this substring; may be repeated",
+    )
+    args = parser.parse_args()
+    if args.update_missing and not args.update:
+        parser.error("--update-missing requires --update")
+    return args
 
 
 def main() -> int:
@@ -490,7 +530,13 @@ def main() -> int:
         print(f"golden directory not found: {golden_dir}", file=sys.stderr)
         return 64
 
-    results = run_all(compiler, golden_dir, args.update)
+    results = run_all(
+        compiler,
+        golden_dir,
+        args.update,
+        args.update_missing,
+        tuple(args.case_filters),
+    )
     failed = [result for result in results if not result.passed]
 
     for failure in failed:

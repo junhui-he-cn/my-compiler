@@ -57,7 +57,7 @@ To refresh golden files after an intentional output change:
 python3 tests/run_golden_tests.py ./build/compiler_design --update
 ```
 
-Review refreshed goldens before committing them.
+`--update` rewrites only expected files that already exist. Use `--case <substring>` to limit refreshes to specific fixtures, and add `--update-missing` only when you intentionally want to create missing success outputs such as `ast.out`, `ir.out`, `bytecode.out`, or `run.out`. Review refreshed goldens before committing them.
 
 ## Language Extension Workflow
 
