@@ -1,0 +1,1 @@
+Type error at 3:7: cannot initialize `y` of type string with number

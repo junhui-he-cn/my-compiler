@@ -267,6 +267,15 @@ const std::string& ResolvedNames::assignmentName(const AssignExpr& expression) c
     return found->second;
 }
 
+const std::string& ResolvedNames::forInVariableName(const ForInStmt& statement) const
+{
+    const auto found = forInVariableNames_.find(&statement);
+    if (found == forInVariableNames_.end()) {
+        throw std::logic_error("missing resolved for-in variable name");
+    }
+    return found->second;
+}
+
 bool ResolvedNames::hasFieldAccess(const FieldAccessExpr& expression) const
 {
     return fieldAccessNames_.find(&expression) != fieldAccessNames_.end();
@@ -290,6 +299,7 @@ void ResolvedNames::clear()
     functionExpressionParameterNames_.clear();
     variableNames_.clear();
     assignmentNames_.clear();
+    forInVariableNames_.clear();
     fieldAccessNames_.clear();
 }
 
@@ -326,6 +336,11 @@ void ResolvedNames::recordVariable(const VariableExpr& expression, std::string n
 void ResolvedNames::recordAssignment(const AssignExpr& expression, std::string name)
 {
     assignmentNames_.emplace(&expression, std::move(name));
+}
+
+void ResolvedNames::recordForInVariable(const ForInStmt& statement, std::string name)
+{
+    forInVariableNames_.emplace(&statement, std::move(name));
 }
 
 void ResolvedNames::recordFieldAccess(const FieldAccessExpr& expression, std::string name)
@@ -569,6 +584,34 @@ void TypeChecker::checkStatement(const Stmt& statement)
         }
         ++loopDepth_;
         checkStatement(*forStmt->body);
+        --loopDepth_;
+        endScope();
+        return;
+    }
+
+    if (const auto* forInStmt = dynamic_cast<const ForInStmt*>(&statement)) {
+        const TypeInfo iterableType = checkExpression(*forInStmt->iterable);
+        if (iterableType.kind != StaticType::Unknown && iterableType.kind != StaticType::Array) {
+            throw TypeError(forInStmt->variable,
+                "for-in expects array, got " + typeInfoName(iterableType));
+        }
+
+        TypeInfo elementType = unknownType();
+        if (iterableType.kind == StaticType::Array && iterableType.elementType) {
+            elementType = *iterableType.elementType;
+        }
+
+        beginScope();
+        const Binding itemBinding = declareVariable(forInStmt->variable, elementType, false);
+        resolvedNames_.recordForInVariable(*forInStmt, itemBinding.resolvedName);
+        ++loopDepth_;
+        if (const auto* body = dynamic_cast<const BlockStmt*>(forInStmt->body.get())) {
+            for (const auto& bodyStatement : body->statements) {
+                checkStatement(*bodyStatement);
+            }
+        } else {
+            checkStatement(*forInStmt->body);
+        }
         --loopDepth_;
         endScope();
         return;

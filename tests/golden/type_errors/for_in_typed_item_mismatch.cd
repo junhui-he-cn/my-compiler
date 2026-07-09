@@ -1,0 +1,4 @@
+let xs: [number] = [1];
+for x in xs {
+  let y: string = x;
+}
