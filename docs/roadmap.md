@@ -50,6 +50,9 @@ risk, and how well they build on recently completed work:
    the core language ergonomics above are stronger.
 2. **Phase 15F: flow-sensitive nullable narrowing** — make nullable annotations
    easier to use in real programs.
+3. **Code health slice: front-end refactoring** — keep the compiler maintainable
+   after the recent module, struct method, builtin, and compound-assignment
+   feature growth.
 
 Each slice should still start with a focused design spec and implementation
 plan before changing compiler behavior.
@@ -246,6 +249,43 @@ Suggested features:
   and `object.field` targets.
 - Comments or doc comments if they are still missing.
 
+## Code Health / Refactoring Backlog
+
+Goal: keep feature work cheap by reducing duplication and oversized front-end
+hotspots without changing language behavior or golden outputs.
+
+Recently completed cleanup:
+
+- Shared assignment-target checking in `TypeChecker` for array indexes, struct
+  fields, and numeric compound-assignment operands.
+- Shared compound-assignment result lowering in `IRCompiler` for variable,
+  index, and field targets.
+
+Recommended future cleanup slices:
+
+- **Split type utility helpers out of `src/TypeChecker.cpp`.** Move reusable
+  helpers such as `unknownType`, `simpleType`, `arrayType`, `functionType`,
+  `nullableType`, `typeInfoName`, and `compatible` into a focused type utility
+  module. Keep this as behavior-preserving refactoring with no golden refresh.
+- **Extract struct and method type-checking helpers.** Group named-struct field
+  lookup, method lookup, method/builtin conflict checks, and field access /
+  assignment validation so future struct features do not keep growing the main
+  expression checker.
+- **Refactor parser assignment-target construction.** `Parser::assignment`
+  still has parallel logic for plain assignment and compound assignment targets.
+  A small `ParsedAssignmentTarget` helper or equivalent local abstraction would
+  make future target forms less error-prone.
+- **Consider a unified assignment AST only after more target forms appear.**
+  Current separate nodes (`AssignExpr`, `IndexAssignExpr`, `FieldAssignExpr`,
+  and their compound variants) are acceptable, but a future `AssignmentTarget`
+  representation may reduce AST/type-checker/lowering duplication if assignment
+  variants continue to grow.
+- **Defer visitor-style AST dispatch until dynamic-cast chains become blocking.**
+  `TypeChecker::checkExpressionInfo` and `IRCompiler::compileExpression` are
+  long but still workable. A visitor or explicit `ExprKind` enum would be a
+  larger architecture change and should be planned as its own behavior-preserving
+  refactor.
+
 ## Deferred Backend Track
 
 The old C++ bytecode VM has been removed. Future backend work targets the Rust `compiler-design-vm` project and `.cdbc` bytecode artifacts:
@@ -260,4 +300,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, or **Phase 15F: flow-sensitive nullable narrowing** if the priority is type-system ergonomics.
+Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, **Phase 15F: flow-sensitive nullable narrowing** if the priority is type-system ergonomics, or a small **Code Health** slice if the next feature would otherwise deepen `TypeChecker` / parser duplication.
