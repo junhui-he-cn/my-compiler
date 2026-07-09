@@ -1,0 +1,41 @@
+cdbc 0.1
+
+constants:
+  c0 = number 0
+  c1 = number 0
+  c2 = number 4
+  c3 = number 1
+
+names:
+  n0 = "total#0"
+  n1 = "i#1"
+  n2 = "i#1"
+  n3 = "i#1"
+  n4 = "i#1"
+  n5 = "total#0"
+  n6 = "i#1"
+  n7 = "total#0"
+  n8 = "total#0"
+
+main registers=12:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = constant c1
+  store_var n1, r1
+  r2 = load_var n2
+  r3 = constant c2
+  r4 = less r2, r3
+  jump_if_false r4, 19
+  jump 14
+  r5 = load_var n3
+  r6 = constant c3
+  r7 = add r5, r6
+  assign_var n4, r7
+  jump 4
+  r8 = load_var n5
+  r9 = load_var n6
+  r10 = add r8, r9
+  assign_var n7, r10
+  jump 9
+  r11 = load_var n8
+  print r11

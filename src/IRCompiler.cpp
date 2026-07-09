@@ -147,6 +147,11 @@ void IRCompiler::compileStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* forStmt = dynamic_cast<const ForStmt*>(&statement)) {
+        compileFor(*forStmt);
+        return;
+    }
+
     if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
         const IRRegister value = compileExpression(*let->initializer);
         ir_.emitStoreVar(resolvedNames_->letName(*let), value);
@@ -221,6 +226,42 @@ void IRCompiler::compileContinue(const ContinueStmt&)
         throw IRCompileError("`continue` can only be used inside a loop");
     }
     ir_.emitJumpTo(loopContexts_.back().continueTarget);
+}
+
+void IRCompiler::compileFor(const ForStmt& statement)
+{
+    if (statement.initializer) {
+        compileStatement(*statement.initializer);
+    }
+
+    const std::size_t loopStart = ir_.instructionCount();
+    std::size_t exitJump = static_cast<std::size_t>(-1);
+    if (statement.condition) {
+        const IRRegister condition = compileExpression(*statement.condition);
+        exitJump = ir_.emitJumpIfFalse(condition);
+    }
+
+    const std::size_t jumpOverIncrement = ir_.emitJump();
+    const std::size_t incrementStart = ir_.instructionCount();
+    if (statement.increment) {
+        compileExpression(*statement.increment);
+    }
+    ir_.emitJumpTo(loopStart);
+
+    ir_.patchJump(jumpOverIncrement);
+
+    loopContexts_.push_back(LoopContext{incrementStart, {}});
+    compileStatement(*statement.body);
+    LoopContext loop = std::move(loopContexts_.back());
+    loopContexts_.pop_back();
+
+    ir_.emitJumpTo(incrementStart);
+    if (exitJump != static_cast<std::size_t>(-1)) {
+        ir_.patchJump(exitJump);
+    }
+    for (const std::size_t breakJump : loop.breakJumps) {
+        ir_.patchJump(breakJump);
+    }
 }
 
 IRRegister IRCompiler::compileExpression(const Expr& expression)

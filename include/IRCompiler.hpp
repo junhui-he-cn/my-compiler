@@ -31,6 +31,7 @@ private:
     bool isNativeStdlibCall(const CallExpr& expression) const;
     void compileBreak(const BreakStmt& statement);
     void compileContinue(const ContinueStmt& statement);
+    void compileFor(const ForStmt& statement);
     IRRegister emitLenCall(const CallExpr& expression);
     IRRegister emitNativeStdlibCall(const CallExpr& expression);
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
