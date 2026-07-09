@@ -46,12 +46,10 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 The next recommended language slices are ordered by usefulness, implementation
 risk, and how well they build on recently completed work:
 
-1. **Phase 9G: nullable / `nil` compatibility rules** — clarify how `nil`
-   interacts with annotated variables, function returns, arrays, and structs.
-2. **Phase 12E: member calls** — consider method-style calls such as
+1. **Phase 12E: member calls** — consider method-style calls such as
    `xs.push(value)`, `xs.pop()`, and possibly string helpers after dot/call
    semantics are designed together.
-3. **Phase 14E: module re-export and search paths** — revisit modules after
+2. **Phase 14E: module re-export and search paths** — revisit modules after
    the core language ergonomics above are stronger.
 
 Each slice should still start with a focused design spec and implementation
@@ -59,7 +57,7 @@ plan before changing compiler behavior.
 
 ## Phase 9: Richer Type System
 
-Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Phase 9E is implemented: function type annotations use `fun(...): ...` syntax and support static signature checks for annotated variables, parameters, returns, assignments, and calls. Phase 9F is implemented: array type annotations use `[type]` syntax and known element types flow through array literals, indexing, index assignment, `push`, and `pop`.
+Status: in progress. Phase 9A is implemented: unannotated `let` bindings infer known initializer types and use those types for later assignment checks. Phase 9B is implemented: known function values carry arity for static argument-count checks. Phase 9C is implemented: known function values carry conservative inferred return types for call-result checking. Phase 9D is implemented: named functions and function expressions support optional parameter and return annotations for `number`, `bool`, `string`, and `nil`. Phase 9E is implemented: function type annotations use `fun(...): ...` syntax and support static signature checks for annotated variables, parameters, returns, assignments, and calls. Phase 9F is implemented: array type annotations use `[type]` syntax and known element types flow through array literals, indexing, index assignment, `push`, and `pop`. Phase 9G is implemented: nullable annotations use postfix `?`, allowing `nil` only where `T?` is expected while keeping flow-sensitive narrowing as future work.
 
 Goal: evolve the current annotation checker into a more useful static type layer.
 
@@ -67,8 +65,7 @@ Suggested future features:
 
 - Deeper collection inference while preserving mixed-array dynamic escape hatches.
 - Deeper inference for currently unknown function parameters and call results.
-- A clear compatibility rule for `nil`, likely as Phase 9G before adding broad
-  nullable syntax.
+- Flow-sensitive nullable narrowing after checks such as `x != nil`.
 
 Likely touch points:
 
@@ -92,12 +89,7 @@ Completed fifth slice: function type annotations use `fun(type, ...): type` synt
 
 Completed sixth slice: array type annotations use `[type]` syntax in `let`, parameter, return, and struct field annotations. Known array element types are checked for literals, indexing, index assignment, `push`, and `pop`, while mixed unannotated arrays remain a dynamic escape hatch.
 
-Recommended next slice:
-
-- Phase 9G: define nullable / `nil` compatibility. Start by deciding whether
-  `nil` is assignable only to explicit nullable annotations, whether a `type?`
-  syntax is needed now, and how function return checking reports missing or
-  possibly-`nil` values.
+Completed seventh slice: nullable annotations use postfix `?`, so `nil` is assignable to `T?` while non-nullable `T` remains protected. Flow-sensitive narrowing remains future work.
 
 ## Phase 10: Array Mutation and Collection Builtins
 
@@ -270,5 +262,4 @@ Before starting a backend implementation phase, create a dedicated backend desig
 
 ## Near-Term Recommendation
 
-Start with **Phase 9G: nullable / `nil` compatibility** if the priority is stronger
-type-system foundations before adding more aggregate features.
+Start with **Phase 12E: member calls** if the priority is method-style ergonomics for collection and string helpers.

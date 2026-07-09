@@ -151,7 +151,12 @@ primary     = functionExpr
             | identifier
             | "(", expression, ")" ;
 
-typeExpr    = arrayType
+typeExpr    = nullableType ;
+
+nullableType = primaryType,
+               [ "?" ] ;
+
+primaryType = arrayType
             | functionType
             | qualifiedType
             | simpleType ;
@@ -163,6 +168,9 @@ simpleType  = identifier ;
 qualifiedType = identifier, ".", identifier ;
 
 functionType = "fun", "(", [ typeArguments ], ")", ":", typeExpr ;
+
+(* `T?` means `T` or `nil`. This slice supports nullable function parameter and
+   return types, but not nullable function values such as `(fun(number): string)?`. *)
 
 typeArguments = typeExpr,
                 { ",", typeExpr } ;
