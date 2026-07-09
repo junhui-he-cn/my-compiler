@@ -1,0 +1,10 @@
+Program
+  Struct Person {name: string, age: number}
+  Impl Person
+    Method label(): string
+      Return (+ (field this name) "!")
+    Method nextAge(): number
+      Return (+ (field this age) 1)
+  Let p: Person = (construct Person name: "Ada" age: 36)
+  Print (member-call p label)
+  Print (member-call p nextAge)

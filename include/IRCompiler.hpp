@@ -24,6 +24,8 @@ private:
     void compileStatement(const Stmt& statement);
     void compileModule(const ModuleStmt& module);
     void compileFunctionStatement(const FunctionStmt& function);
+    void compileImpl(const ImplStmt& statement);
+    void compileMethod(const MethodDecl& method);
     void compileReturn(const ReturnStmt& statement);
     IRRegister compileExpression(const Expr& expression);
     IRRegister emitCall(const CallExpr& expression);

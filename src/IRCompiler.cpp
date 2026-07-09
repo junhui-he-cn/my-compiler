@@ -85,6 +85,11 @@ void IRCompiler::compileStatement(const Stmt& statement)
         return;
     }
 
+    if (const auto* impl = dynamic_cast<const ImplStmt*>(&statement)) {
+        compileImpl(*impl);
+        return;
+    }
+
     if (const auto* function = dynamic_cast<const FunctionStmt*>(&statement)) {
         compileFunctionStatement(*function);
         return;
@@ -209,6 +214,36 @@ void IRCompiler::compileFunctionStatement(const FunctionStmt& function)
     const std::size_t functionIndex = ir_.endFunction();
     IRRegister value = ir_.emitMakeFunction(functionIndex);
     ir_.emitAssignVar(functionName, value);
+}
+
+void IRCompiler::compileImpl(const ImplStmt& statement)
+{
+    for (const MethodDecl& method : statement.methods) {
+        compileMethod(method);
+    }
+}
+
+void IRCompiler::compileMethod(const MethodDecl& method)
+{
+    const std::string methodName = resolvedNames_->methodName(method);
+    IRRegister placeholder = ir_.emitConstant(Value::nil());
+    ir_.emitStoreVar(methodName, placeholder);
+
+    std::vector<std::string> parameters = resolvedNames_->methodParameterNames(method);
+    ir_.beginFunction(method.name.lexeme, std::move(parameters));
+
+    std::vector<LoopContext> enclosingLoopContexts = std::move(loopContexts_);
+    loopContexts_.clear();
+    for (const auto& statement : method.body) {
+        compileStatement(*statement);
+    }
+    IRRegister nilValue = ir_.emitConstant(Value::nil());
+    ir_.emitReturn(nilValue);
+    loopContexts_ = std::move(enclosingLoopContexts);
+
+    const std::size_t functionIndex = ir_.endFunction();
+    IRRegister value = ir_.emitMakeFunction(functionIndex);
+    ir_.emitAssignVar(methodName, value);
 }
 
 void IRCompiler::compileReturn(const ReturnStmt& statement)
@@ -468,6 +503,9 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
     if (resolvedNames_->hasMemberCallCallee(expression)) {
         const IRRegister callee = ir_.emitLoadVar(resolvedNames_->memberCallCalleeName(expression));
         std::vector<IRRegister> arguments;
+        if (resolvedNames_->memberCallPassesReceiver(expression)) {
+            arguments.push_back(compileExpression(*expression.receiver));
+        }
         for (const auto& argument : expression.arguments) {
             arguments.push_back(compileExpression(*argument));
         }

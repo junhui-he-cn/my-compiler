@@ -1,0 +1,8 @@
+Program
+  Struct Box {value: number}
+  Impl Box
+    Method add(amount: number): number
+      Return (+ (field this value) amount)
+  Let b: Box = (construct Box value: 10)
+  Let result: number = (+ (member-call b add 5) 1)
+  Print result

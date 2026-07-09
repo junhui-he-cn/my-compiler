@@ -1,0 +1,13 @@
+Program
+  Struct Counter {value: number}
+  Impl Counter
+    Method incBy(delta: number)
+      Expr (= (field this value) (+ (field this value) delta))
+      Return nil
+    Method valueNow(): number
+      Return (field this value)
+  Let c: Counter = (construct Counter value: 1)
+  Let alias = c
+  Expr (member-call c incBy 4)
+  Print (member-call c valueNow)
+  Print (field alias value)
