@@ -169,6 +169,23 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         return;
     }
 
+    if (const auto* forStmt = dynamic_cast<const ForStmt*>(&stmt)) {
+        out << "(for ";
+        if (forStmt->initializer) {
+            writeInlineStmt(out, *forStmt->initializer);
+        } else {
+            out << "nil";
+        }
+        out << ' ';
+        writeExpr(out, forStmt->condition);
+        out << ' ';
+        writeExpr(out, forStmt->increment);
+        out << ' ';
+        writeInlineStmt(out, *forStmt->body);
+        out << ')';
+        return;
+    }
+
     if (dynamic_cast<const BreakStmt*>(&stmt)) {
         out << "(break)";
         return;
@@ -653,6 +670,46 @@ void WhileStmt::print(std::ostream& out, int indent) const
     out << "While ";
     writeExpr(out, condition);
     out << '\n';
+
+    writeIndent(out, indent + 1);
+    out << "Body\n";
+    if (body) {
+        body->print(out, indent + 2);
+    }
+}
+
+ForStmt::ForStmt(Token keyword, StmtPtr initializer, ExprPtr condition, ExprPtr increment, StmtPtr body)
+    : keyword(std::move(keyword))
+    , initializer(std::move(initializer))
+    , condition(std::move(condition))
+    , increment(std::move(increment))
+    , body(std::move(body))
+{
+}
+
+void ForStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "For\n";
+
+    writeIndent(out, indent + 1);
+    out << "Initializer\n";
+    if (initializer) {
+        initializer->print(out, indent + 2);
+    } else {
+        writeIndent(out, indent + 2);
+        out << "nil\n";
+    }
+
+    writeIndent(out, indent + 1);
+    out << "Condition ";
+    writeExpr(out, condition);
+    out << "\n";
+
+    writeIndent(out, indent + 1);
+    out << "Increment ";
+    writeExpr(out, increment);
+    out << "\n";
 
     writeIndent(out, indent + 1);
     out << "Body\n";

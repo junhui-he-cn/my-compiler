@@ -35,6 +35,8 @@ private:
     std::optional<TypeAnnotation> optionalReturnType();
     StmtPtr statement();
     StmtPtr ifStatement();
+    StmtPtr forStatement();
+    StmtPtr forInitializer();
     StmtPtr whileStatement();
     StmtPtr breakStatement();
     StmtPtr continueStatement();
@@ -42,6 +44,8 @@ private:
     std::vector<StmtPtr> blockStatements();
     StmtPtr printStatement();
     StmtPtr returnStatement();
+    StmtPtr letDeclarationNoSemicolon(const std::string& terminatorMessage);
+    StmtPtr expressionStatementNoSemicolon();
     StmtPtr expressionStatement();
 
     // Recursive descent expression grammar, ordered from lowest to highest precedence.

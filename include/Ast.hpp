@@ -280,6 +280,17 @@ struct WhileStmt final : Stmt {
     StmtPtr body;
 };
 
+struct ForStmt final : Stmt {
+    ForStmt(Token keyword, StmtPtr initializer, ExprPtr condition, ExprPtr increment, StmtPtr body);
+    void print(std::ostream& out, int indent) const override;
+
+    Token keyword;
+    StmtPtr initializer;
+    ExprPtr condition;
+    ExprPtr increment;
+    StmtPtr body;
+};
+
 struct BreakStmt final : Stmt {
     explicit BreakStmt(Token keyword);
     void print(std::ostream& out, int indent) const override;

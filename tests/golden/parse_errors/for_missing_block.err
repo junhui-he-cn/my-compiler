@@ -1,1 +1,3 @@
-Parse error at 1:39: expected `{` after for clauses
+Parse error at 1:33: expected `{` after for clauses, found Print `print`
+  for let i = 0; i < 3; i = i + 1 print i;
+                                  ^

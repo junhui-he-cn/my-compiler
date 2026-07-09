@@ -129,7 +129,7 @@ StmtPtr Parser::functionDeclaration()
         std::move(body));
 }
 
-StmtPtr Parser::letDeclaration()
+StmtPtr Parser::letDeclarationNoSemicolon(const std::string& terminatorMessage)
 {
     Token name = consume(TokenType::Identifier, "expected variable name after `let`");
 
@@ -141,8 +141,15 @@ StmtPtr Parser::letDeclaration()
     consume(TokenType::Equal, "expected `=` after variable declaration");
     ExprPtr initializer = expression();
 
-    consume(TokenType::Semicolon, "expected `;` after variable declaration");
+    if (!terminatorMessage.empty()) {
+        consume(TokenType::Semicolon, terminatorMessage);
+    }
     return std::make_unique<LetStmt>(std::move(name), std::move(typeName), std::move(initializer));
+}
+
+StmtPtr Parser::letDeclaration()
+{
+    return letDeclarationNoSemicolon("expected `;` after variable declaration");
 }
 
 StmtPtr Parser::importDeclaration()
@@ -232,6 +239,9 @@ StmtPtr Parser::statement()
     if (match(TokenType::If)) {
         return ifStatement();
     }
+    if (match(TokenType::For)) {
+        return forStatement();
+    }
     if (match(TokenType::While)) {
         return whileStatement();
     }
@@ -263,6 +273,40 @@ StmtPtr Parser::ifStatement()
     }
 
     return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+StmtPtr Parser::forInitializer()
+{
+    if (check(TokenType::Semicolon)) {
+        return nullptr;
+    }
+    if (match(TokenType::Let)) {
+        return letDeclarationNoSemicolon("");
+    }
+    return expressionStatementNoSemicolon();
+}
+
+StmtPtr Parser::forStatement()
+{
+    Token keyword = previous();
+
+    StmtPtr initializer = forInitializer();
+    consume(TokenType::Semicolon, "expected `;` after for initializer");
+
+    ExprPtr condition;
+    if (!check(TokenType::Semicolon)) {
+        condition = expression();
+    }
+    consume(TokenType::Semicolon, "expected `;` after for condition");
+
+    ExprPtr increment;
+    if (!check(TokenType::LeftBrace)) {
+        increment = expression();
+    }
+    consume(TokenType::LeftBrace, "expected `{` after for clauses");
+    StmtPtr body = blockStatement();
+
+    return std::make_unique<ForStmt>(std::move(keyword), std::move(initializer), std::move(condition), std::move(increment), std::move(body));
 }
 
 StmtPtr Parser::whileStatement()
@@ -323,11 +367,17 @@ StmtPtr Parser::returnStatement()
     return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
 }
 
-StmtPtr Parser::expressionStatement()
+StmtPtr Parser::expressionStatementNoSemicolon()
 {
     ExprPtr value = expression();
-    consume(TokenType::Semicolon, "expected `;` after expression");
     return std::make_unique<ExpressionStmt>(std::move(value));
+}
+
+StmtPtr Parser::expressionStatement()
+{
+    StmtPtr statement = expressionStatementNoSemicolon();
+    consume(TokenType::Semicolon, "expected `;` after expression");
+    return statement;
 }
 
 ExprPtr Parser::expression()

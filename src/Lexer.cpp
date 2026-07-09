@@ -231,6 +231,7 @@ void Lexer::identifier()
     static const std::unordered_map<std::string, TokenType> keywords = {
         {"break", TokenType::Break},
         {"continue", TokenType::Continue},
+        {"for", TokenType::For},
         {"if", TokenType::If},
         {"import", TokenType::Import},
         {"as", TokenType::As},
@@ -317,6 +318,8 @@ std::string tokenTypeName(TokenType type)
         return "Break";
     case TokenType::Continue:
         return "Continue";
+    case TokenType::For:
+        return "For";
     case TokenType::If:
         return "If";
     case TokenType::Import:

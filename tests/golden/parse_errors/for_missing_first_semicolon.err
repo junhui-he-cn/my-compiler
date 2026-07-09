@@ -1,1 +1,3 @@
-Parse error at 1:15: expected `;` after for initializer
+Parse error at 1:15: expected `;` after for initializer, found Identifier `i`
+  for let i = 0 i < 3; i = i + 1 {
+                ^

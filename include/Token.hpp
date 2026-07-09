@@ -37,6 +37,7 @@ enum class TokenType {
 
     Break,
     Continue,
+    For,
     If,
     Import,
     As,
