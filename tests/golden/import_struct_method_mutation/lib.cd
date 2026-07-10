@@ -1,0 +1,10 @@
+struct Counter { value: number }
+
+impl Counter {
+  fun inc(delta: number): number {
+    this.value += delta;
+    return this.value;
+  }
+}
+
+export Counter;

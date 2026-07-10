@@ -1,0 +1,12 @@
+struct Point { x: number, y: number }
+struct Box { point: Point }
+
+impl Box {
+  fun replace(point: Point): Point {
+    let old: Point = this.point;
+    this.point = point;
+    return old;
+  }
+}
+
+export Point, Box;

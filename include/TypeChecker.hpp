@@ -147,6 +147,16 @@ private:
     void checkMethodArguments(const MemberCallExpr& expression, const MethodInfo& method);
     CheckedExpression checkStructMethodCall(const MemberCallExpr& expression, const TypeInfo& receiverType);
     const MethodInfo* findMethod(const std::string& structName, const std::string& methodName) const;
+    MethodSignature methodSignatureFromInfo(const MethodInfo& method) const;
+    MethodInfo methodInfoFromSignature(const MethodSignature& signature) const;
+    TypeInfo qualifyNamespaceType(const TypeInfo& type, const std::string& alias, const ModuleStructExports& structs) const;
+    MethodSignature qualifyNamespaceMethodSignature(const MethodSignature& signature, const std::string& alias, const ModuleStructExports& structs) const;
+    void importMethodExports(
+        const Token& diagnosticToken,
+        const ModuleMethodExports& methodExports,
+        const std::string* namespaceAlias = nullptr,
+        const ModuleStructExports* namespaceStructs = nullptr);
+    void recordStructMethodExports(std::size_t moduleId, const std::string& structName);
     bool isBuiltinMemberName(const std::string& name) const;
     const StructTypeDecl* findStructType(const std::string& name) const;
     void checkFunction(const FunctionStmt& statement);

@@ -681,9 +681,13 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
     for (const auto& entry : imported.structs) {
         StructTypeDecl qualified = entry.second;
         qualified.name.lexeme = alias.lexeme + "." + entry.first;
+        for (StructFieldType& field : qualified.fields) {
+            field.type = qualifyNamespaceType(field.type, alias.lexeme, imported.structs);
+        }
         structTypes_.emplace(qualified.name.lexeme, std::move(qualified));
     }
 
+    importMethodExports(alias, imported.methods, &alias.lexeme, &imported.structs);
     moduleSymbols_.recordNamespace(moduleId, alias.lexeme, std::move(imported));
 }
 
@@ -715,6 +719,9 @@ void TypeChecker::checkImport(const ImportStmt& statement)
         if (const ModuleStructExports* structExports = moduleSymbols_.structExports(imported->moduleId)) {
             namespaceImport.structs = *structExports;
         }
+        if (const ModuleMethodExports* methodExports = moduleSymbols_.methodExports(imported->moduleId)) {
+            namespaceImport.methods = *methodExports;
+        }
         declareNamespaceAlias(statement, std::move(namespaceImport));
         return;
     }
@@ -734,6 +741,10 @@ void TypeChecker::checkImport(const ImportStmt& statement)
             }
             structTypes_.emplace(entry.first, entry.second);
         }
+    }
+
+    if (const ModuleMethodExports* methodExports = moduleSymbols_.methodExports(imported->moduleId)) {
+        importMethodExports(statement.keyword, *methodExports);
     }
 }
 
@@ -758,6 +769,7 @@ void TypeChecker::checkExport(const ExportStmt& statement)
             if (moduleSymbols_.isLocalStruct(moduleId, name.lexeme)) {
                 if (const StructTypeDecl* structType = findStructType(name.lexeme)) {
                     moduleSymbols_.recordStructExport(moduleId, name.lexeme, *structType);
+                    recordStructMethodExports(moduleId, name.lexeme);
                     exported = true;
                 }
             }
@@ -901,6 +913,105 @@ const TypeChecker::MethodInfo* TypeChecker::findMethod(const std::string& struct
     }
     const auto methodFound = structFound->second.find(methodName);
     return methodFound == structFound->second.end() ? nullptr : &methodFound->second;
+}
+
+MethodSignature TypeChecker::methodSignatureFromInfo(const MethodInfo& method) const
+{
+    MethodSignature signature;
+    signature.receiverType = method.receiverType;
+    signature.parameterTypes = method.parameterTypes;
+    signature.returnType = method.returnType;
+    signature.resolvedName = method.resolvedName;
+    return signature;
+}
+
+TypeChecker::MethodInfo TypeChecker::methodInfoFromSignature(const MethodSignature& signature) const
+{
+    MethodInfo info;
+    info.receiverType = signature.receiverType;
+    info.parameterTypes = signature.parameterTypes;
+    info.returnType = signature.returnType;
+    info.resolvedName = signature.resolvedName;
+    return info;
+}
+
+TypeInfo TypeChecker::qualifyNamespaceType(
+    const TypeInfo& type,
+    const std::string& alias,
+    const ModuleStructExports& structs) const
+{
+    TypeInfo result = type;
+    if (result.kind == StaticType::Struct && result.structName && structs.find(*result.structName) != structs.end()) {
+        result.structName = alias + "." + *result.structName;
+        return result;
+    }
+    if (result.kind == StaticType::Array && result.elementType) {
+        result.elementType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.elementType, alias, structs));
+        return result;
+    }
+    if (isNullable(result) && result.nullableOf) {
+        result.nullableOf = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.nullableOf, alias, structs));
+        return result;
+    }
+    if (result.kind == StaticType::Function && result.returnType) {
+        for (TypeInfo& parameter : result.parameterTypes) {
+            parameter = qualifyNamespaceType(parameter, alias, structs);
+        }
+        result.returnType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.returnType, alias, structs));
+    }
+    return result;
+}
+
+MethodSignature TypeChecker::qualifyNamespaceMethodSignature(
+    const MethodSignature& signature,
+    const std::string& alias,
+    const ModuleStructExports& structs) const
+{
+    MethodSignature result = signature;
+    result.receiverType = qualifyNamespaceType(result.receiverType, alias, structs);
+    for (TypeInfo& parameter : result.parameterTypes) {
+        parameter = qualifyNamespaceType(parameter, alias, structs);
+    }
+    result.returnType = qualifyNamespaceType(result.returnType, alias, structs);
+    return result;
+}
+
+void TypeChecker::importMethodExports(
+    const Token& diagnosticToken,
+    const ModuleMethodExports& methodExports,
+    const std::string* namespaceAlias,
+    const ModuleStructExports* namespaceStructs)
+{
+    for (const auto& structEntry : methodExports) {
+        std::string structName = structEntry.first;
+        if (namespaceAlias) {
+            structName = *namespaceAlias + "." + structName;
+        }
+
+        auto& table = methods_[structName];
+        for (const auto& methodEntry : structEntry.second) {
+            MethodSignature signature = methodEntry.second;
+            if (namespaceAlias && namespaceStructs) {
+                signature = qualifyNamespaceMethodSignature(signature, *namespaceAlias, *namespaceStructs);
+            }
+            if (table.find(methodEntry.first) != table.end()) {
+                throw TypeError(diagnosticToken,
+                    "duplicate method `" + methodEntry.first + "` for struct `" + structName + "`");
+            }
+            table.emplace(methodEntry.first, methodInfoFromSignature(signature));
+        }
+    }
+}
+
+void TypeChecker::recordStructMethodExports(std::size_t moduleId, const std::string& structName)
+{
+    const auto methods = methods_.find(structName);
+    if (methods == methods_.end()) {
+        return;
+    }
+    for (const auto& method : methods->second) {
+        moduleSymbols_.recordMethodExport(moduleId, structName, method.first, methodSignatureFromInfo(method.second));
+    }
 }
 
 void TypeChecker::checkMethodNameAvailable(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method) const
