@@ -34,11 +34,9 @@ language semantics before adding broader module ergonomics or backend depth.
 
 ### M1: Complete Existing Language Semantics
 
-1. Narrow nullable simple variables inside `while` and conditional `for` loop
-   bodies when the loop condition proves them non-nil.
-2. Preserve simple-variable narrowing after terminating branches, such as an
+1. Preserve simple-variable narrowing after terminating branches, such as an
    `if (value == nil) { return; }` guard.
-3. Add contextual lambda typing from an expected function type; do not attempt
+2. Add contextual lambda typing from an expected function type; do not attempt
    global parameter-type inference as part of this slice.
 
 ### M2: Module Ergonomics
@@ -60,8 +58,7 @@ language semantics before adding broader module ergonomics or backend depth.
 The immediate dependency order is:
 
 ```text
-loop-body nullable narrowing
--> post-branch nullable narrowing
+post-branch nullable narrowing
 -> re-export
 -> search paths
 ```
@@ -82,11 +79,10 @@ Future work:
   Avoid global parameter-type inference until there is a stronger inference
   design.
 - Broaden flow-sensitive nullable narrowing in this order:
-  1. loop conditions that narrow simple variables inside `while` and conditional
-     `for` bodies;
-  2. post-branch facts when one branch definitely terminates;
-  3. fields and array elements only after defining sound invalidation rules for
+  1. post-branch facts when one branch definitely terminates;
+  2. fields and array elements only after defining sound invalidation rules for
      mutable aliases and function calls.
+  Do not plan loop-condition narrowing for `while` or conditional `for` bodies.
 
 Likely touch points:
 
@@ -176,8 +172,6 @@ Future work:
 - Add parser recovery and multi-error reporting.
 - Decide whether comments or doc comments need language-level documentation or
   additional syntax support.
-- Apply proven non-nil facts from `while` and conditional `for` conditions inside
-  their loop bodies.
 - Propagate simple-variable facts past `if` statements when the opposite branch
   definitely terminates with `return`.
 - Defer field and index narrowing until a design accounts for mutation through
@@ -226,9 +220,7 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-imported struct methods
--> loop-body nullable narrowing
--> post-branch nullable narrowing
+post-branch nullable narrowing
 -> Phase 14E re-export
 -> Phase 14F search paths
 ```
