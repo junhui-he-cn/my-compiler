@@ -85,7 +85,6 @@ class GoldenRunnerQualityTests(unittest.TestCase):
             self.assertEqual((case_dir / "ast.out").read_text(encoding="utf-8"), "new ast\n")
             self.assertFalse((case_dir / "ir.out").exists())
             self.assertFalse((case_dir / "bytecode.out").exists())
-            self.assertFalse((case_dir / "run.out").exists())
 
     def test_update_missing_creates_missing_success_outputs_explicitly(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -104,13 +103,14 @@ class GoldenRunnerQualityTests(unittest.TestCase):
                 update_missing=True,
             )
 
-            self.assertEqual(len(results), 4)
+            self.assertEqual(len(results), 3)
             self.assertTrue(all(result.passed for result in results), results)
-            for golden_name in ("ast.out", "ir.out", "bytecode.out", "run.out"):
+            for golden_name in ("ast.out", "ir.out", "bytecode.out"):
                 self.assertEqual(
                     (case_dir / golden_name).read_text(encoding="utf-8"),
                     "new output\n",
                 )
+            self.assertFalse((case_dir / "run.out").exists())
 
     def test_case_filter_limits_success_cases_by_substring(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -154,6 +154,22 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertIn("unexpected stderr", results[0].message)
         self.assertIn("warning", results[0].message)
 
+    def test_run_out_only_success_case_is_owned_by_rust_vm_runner(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "run_only_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "run.out").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(root, stdout="unexpected compiler output\n")
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+        self.assertIn("no golden test checks", results[0].message)
+
     def test_default_ast_check_name_does_not_look_like_missing_cli_flag(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -171,51 +187,22 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertIn("default_ast_case default(ast)", results[0].message)
         self.assertNotIn("--ast", results[0].message)
 
-    def test_runtime_error_case_with_unexpected_stdout_fails(self) -> None:
+    def test_runtime_error_cases_are_not_checked_by_compiler_golden_runner(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             golden_dir = root / "golden"
             runtime_dir = golden_dir / "runtime_errors"
             runtime_dir.mkdir(parents=True)
-            (runtime_dir / "stdout_leak.cd").write_text("1 / 0;\n", encoding="utf-8")
-            (runtime_dir / "stdout_leak.run.err").write_text("runtime error\n", encoding="utf-8")
-            (runtime_dir / "stdout_leak.exit").write_text("70\n", encoding="utf-8")
-            compiler = self.make_fake_compiler(
-                root,
-                stdout="unexpected output\n",
-                stderr="runtime error\n",
-                returncode=70,
-            )
+            (runtime_dir / "division_by_zero.cd").write_text("1 / 0;\n", encoding="utf-8")
+            (runtime_dir / "division_by_zero.run.err").write_text("Runtime error: division by zero\n", encoding="utf-8")
+            (runtime_dir / "division_by_zero.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(root)
 
             results = run_golden_tests.run_all(compiler, golden_dir, update=False)
 
         self.assertEqual(len(results), 1)
         self.assertFalse(results[0].passed)
-        self.assertIn("unexpected stdout", results[0].message)
-        self.assertIn("unexpected output", results[0].message)
-
-
-    def test_runtime_error_case_without_run_err_fails_for_run_mode(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            golden_dir = root / "golden"
-            runtime_dir = golden_dir / "runtime_errors"
-            runtime_dir.mkdir(parents=True)
-            (runtime_dir / "missing_run_err.cd").write_text("1 / 0;\n", encoding="utf-8")
-            compiler = self.make_fake_compiler(
-                root,
-                stderr="runtime error\n",
-                returncode=70,
-            )
-
-            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
-
-        self.assertEqual(len(results), 2)
-        self.assertTrue(all(not result.passed for result in results))
-        combined_messages = "\n".join(result.message for result in results)
-        self.assertIn("missing expected stderr file", combined_messages)
-        self.assertIn("missing expected exit file", combined_messages)
-        self.assertIn("runtime_errors/missing_run_err --run", combined_messages)
+        self.assertIn("no golden test checks", results[0].message)
 
     def test_parse_error_case_checks_default_mode_stderr_exit_and_stdout(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -340,7 +327,7 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertTrue(results[0].passed)
         self.assertEqual(results[0].name, "bytecode_case --bytecode")
 
-    def test_success_case_args_txt_replaces_default_input_path(self) -> None:
+    def test_success_case_args_txt_replaces_default_input_path_for_ir(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             case_dir = root / "multi_file"
@@ -348,19 +335,19 @@ class GoldenRunnerQualityTests(unittest.TestCase):
             (case_dir / "lib.cd").write_text("print 1;\n", encoding="utf-8")
             (case_dir / "main.cd").write_text("print 2;\n", encoding="utf-8")
             (case_dir / "args.txt").write_text("lib.cd main.cd\n", encoding="utf-8")
-            (case_dir / "run.out").write_text("1\n2\n", encoding="utf-8")
+            (case_dir / "ir.out").write_text("ir\n", encoding="utf-8")
 
             commands: list[list[str]] = []
 
             def fake_run(command, text, capture_output, check):
                 commands.append([str(part) for part in command])
-                return subprocess.CompletedProcess(command, 0, "1\n2\n", "")
+                return subprocess.CompletedProcess(command, 0, "ir\n", "")
 
             with unittest.mock.patch.object(run_golden_tests.subprocess, "run", side_effect=fake_run):
                 results = run_golden_tests.check_success_case(Path("compiler"), case_dir, False)
 
             self.assertTrue(all(result.passed for result in results), results)
-            self.assertIn(["compiler", "--run", str(case_dir / "lib.cd"), str(case_dir / "main.cd")], commands)
+            self.assertIn(["compiler", "--ir", str(case_dir / "lib.cd"), str(case_dir / "main.cd")], commands)
 
 
     def test_import_error_case_checks_default_mode_stderr_exit_and_stdout(self) -> None:

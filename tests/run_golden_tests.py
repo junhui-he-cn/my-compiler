@@ -19,7 +19,6 @@ SUCCESS_CHECKS = (
     ("default(ast)", (), "ast.out"),
     ("--ir", ("--ir",), "ir.out"),
     ("--bytecode", ("--bytecode",), "bytecode.out"),
-    ("--run", ("--run",), "run.out"),
 )
 
 
@@ -82,13 +81,6 @@ def discover_success_cases(golden_dir: Path) -> list[Path]:
     )
 
 
-def discover_runtime_error_cases(golden_dir: Path) -> list[Path]:
-    runtime_dir = golden_dir / "runtime_errors"
-    if not runtime_dir.is_dir():
-        return []
-    return sorted(runtime_dir.glob("*.cd"))
-
-
 def discover_parse_error_cases(golden_dir: Path) -> list[Path]:
     parse_dir = golden_dir / "parse_errors"
     if not parse_dir.is_dir():
@@ -118,11 +110,10 @@ def check_success_case(
 ) -> list[CheckResult]:
     sources = compiler_inputs(case_dir)
     results: list[CheckResult] = []
-    expected_golden_names = tuple(golden_name for _, _, golden_name in SUCCESS_CHECKS)
+    compiler_golden_names = tuple(golden_name for _, _, golden_name in SUCCESS_CHECKS)
+    fixture_marker_names = (*compiler_golden_names, "run.out")
 
-    if not any(
-        (case_dir / golden_name).exists() for golden_name in expected_golden_names
-    ) and (not update or not update_missing):
+    if not any((case_dir / golden_name).exists() for golden_name in fixture_marker_names):
         update_hint = " Pass --update-missing with --update to create them." if update else ""
         return [
             CheckResult(
@@ -130,11 +121,14 @@ def check_success_case(
                 False,
                 (
                     f"FAIL {case_dir.name} has no expected files; "
-                    f"expected at least one of: {', '.join(expected_golden_names)}"
+                    f"expected at least one of: {', '.join(fixture_marker_names)}"
                     f"{update_hint}"
                 ),
             )
         ]
+
+    if not any((case_dir / golden_name).exists() for golden_name in compiler_golden_names):
+        return []
 
     for display_name, args, golden_name in SUCCESS_CHECKS:
         golden_path = case_dir / golden_name
@@ -184,81 +178,6 @@ def check_success_case(
             results.append(CheckResult(check_name, True))
 
     return results
-
-
-def unexpected_runtime_stdout_result(case_name: str, stdout: str) -> CheckResult:
-    return CheckResult(
-        case_name,
-        False,
-        (
-            f"FAIL {case_name} produced unexpected stdout for runtime error\n\n"
-            f"STDOUT:\n{stdout}"
-        ),
-    )
-
-
-def check_runtime_error_execution(
-    compiler: Path,
-    source: Path,
-    update: bool,
-    args: tuple[str, ...],
-    err_suffix: str,
-    exit_suffix: str,
-    display_name: str,
-    optional_when_missing: bool = False,
-) -> list[CheckResult]:
-    stem = source.with_suffix("")
-    err_path = stem.with_suffix(err_suffix)
-    exit_path = stem.with_suffix(exit_suffix)
-    case_name = f"runtime_errors/{source.stem} {display_name}"
-
-    if not update and optional_when_missing and not err_path.exists():
-        if not exit_path.exists():
-            return []
-        return [CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}")]
-
-    completed = run_compiler(compiler, args, source)
-
-    if update:
-        write_text(err_path, completed.stderr)
-        write_text(exit_path, f"{completed.returncode}\n")
-        if completed.stdout:
-            return [unexpected_runtime_stdout_result(case_name, completed.stdout)]
-        return [CheckResult(case_name, True)]
-
-    results: list[CheckResult] = []
-
-    if completed.stdout:
-        results.append(unexpected_runtime_stdout_result(case_name, completed.stdout))
-
-    if not err_path.exists():
-        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
-    else:
-        expected_err = read_text(err_path)
-        actual_err = completed.stderr
-        if actual_err != expected_err:
-            diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
-            results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
-
-    if not exit_path.exists():
-        results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected exit file: {exit_path}"))
-    else:
-        expected_exit_text = read_text(exit_path).strip()
-        actual_exit_text = str(completed.returncode)
-        if actual_exit_text != expected_exit_text:
-            results.append(
-                CheckResult(
-                    case_name,
-                    False,
-                    f"FAIL {case_name} exit code mismatch\nexpected: {expected_exit_text}\nactual: {actual_exit_text}",
-                )
-            )
-
-    if not results:
-        results.append(CheckResult(case_name, True))
-
-    return results
-
 
 
 def unexpected_parse_stdout_result(case_name: str, stdout: str) -> CheckResult:
@@ -472,10 +391,6 @@ def run_all(
     for case_dir in discover_success_cases(golden_dir):
         if case_matches(case_dir.name, case_filters):
             results.extend(check_success_case(compiler, case_dir, update, update_missing))
-
-    for source in discover_runtime_error_cases(golden_dir):
-        if case_matches(f"runtime_errors/{source.stem}", case_filters):
-            results.extend(check_runtime_error_case(compiler, source, update))
 
     for source in discover_parse_error_cases(golden_dir):
         if case_matches(f"parse_errors/{source.stem}", case_filters):
