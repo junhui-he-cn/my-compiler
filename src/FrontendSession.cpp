@@ -247,10 +247,14 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
     Program directProgram;
     try {
         Lexer lexer(combinedSource_);
-        directDisplayTokens_ = lexer.scanTokens();
-        Parser parser(directDisplayTokens_);
-        directProgram = parser.parse();
-        hasImports = programLoadsSource(directProgram);
+        directDisplayTokens_ = lexer.scanTokensUntil(TokenType::Import);
+        hasImports = !directDisplayTokens_.empty()
+            && directDisplayTokens_.back().type == TokenType::Import;
+        if (!hasImports) {
+            Parser parser(directDisplayTokens_);
+            directProgram = parser.parse();
+            hasImports = programLoadsSource(directProgram);
+        }
     } catch (const DiagnosticError& error) {
         if (const std::optional<FileDiagnosticError> remapped = remapDirectDiagnostic(error)) {
             throw *remapped;
