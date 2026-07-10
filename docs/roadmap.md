@@ -32,10 +32,6 @@ For exact implemented grammar and user behavior, see
 The front end remains the main scaling constraint. Prefer finishing existing
 language semantics before adding broader module ergonomics or backend depth.
 
-### M0: Front-End Stabilization
-
-1. Add optional ASan/UBSan build configurations as a dedicated guardrail slice.
-
 ### M1: Complete Existing Language Semantics
 
 1. Support methods on exported/imported structs, including namespaced structs.
