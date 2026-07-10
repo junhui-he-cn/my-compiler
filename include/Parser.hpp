@@ -77,7 +77,9 @@ private:
     ExprPtr primary();
 
     bool match(TokenType type);
+    bool matchContextualIdentifier(const std::string& lexeme);
     bool check(TokenType type) const;
+    bool checkContextualIdentifier(const std::string& lexeme) const;
     bool checkNext(TokenType type) const;
     Token advance();
     bool isAtEnd() const;

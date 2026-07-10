@@ -77,7 +77,14 @@ void IRCompiler::compileStatement(const Stmt& statement)
         return;
     }
 
-    if (dynamic_cast<const ExportStmt*>(&statement)) {
+    if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement)) {
+        if (exportStmt->sourcePath) {
+            const auto found = modules_.find(exportStmt->resolvedModuleId);
+            if (found == modules_.end()) {
+                throw IRCompileError("internal error: unresolved re-export module");
+            }
+            compileModule(*found->second);
+        }
         return;
     }
 

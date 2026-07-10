@@ -72,6 +72,22 @@ bool hasImportToken(const std::vector<Token>& tokens)
     });
 }
 
+bool statementLoadsSource(const Stmt& statement)
+{
+    if (dynamic_cast<const ImportStmt*>(&statement)) {
+        return true;
+    }
+    const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement);
+    return exportStmt && exportStmt->sourcePath.has_value();
+}
+
+bool programLoadsSource(const Program& program)
+{
+    return std::any_of(program.statements.begin(), program.statements.end(), [](const StmtPtr& statement) {
+        return statementLoadsSource(*statement);
+    });
+}
+
 std::string importPath(const Token& token)
 {
     if (token.lexeme.size() >= 2 && token.lexeme.front() == '"' && token.lexeme.back() == '"') {
@@ -176,13 +192,19 @@ Program FrontendSession::loadStdin(std::istream& input)
         throw DiagnosticError(DiagnosticKind::Import, "import is not supported from stdin");
     }
 
+    Program parsedProgram;
+    parsedProgram.statements = std::move(parsed.statements);
+    if (programLoadsSource(parsedProgram)) {
+        throw DiagnosticError(DiagnosticKind::Import, "import is not supported from stdin");
+    }
+
     units_.push_back(ParsedUnit{
         0,
         "<stdin>",
         "<stdin>",
         std::move(source),
         std::move(parsed.tokens),
-        std::move(parsed.statements),
+        std::move(parsedProgram.statements),
         true,
     });
     entryUnitIds_.push_back(0);
@@ -222,11 +244,13 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
     for (const DirectInput& input : directInputs_) {
         appendWithNewlineSeparation(combinedSource_, input.source);
     }
+    Program directProgram;
     try {
         Lexer lexer(combinedSource_);
-        directDisplayTokens_ = lexer.scanTokensUntil(TokenType::Import);
-        hasImports = !directDisplayTokens_.empty()
-            && directDisplayTokens_.back().type == TokenType::Import;
+        directDisplayTokens_ = lexer.scanTokens();
+        Parser parser(directDisplayTokens_);
+        directProgram = parser.parse();
+        hasImports = programLoadsSource(directProgram);
     } catch (const DiagnosticError& error) {
         if (const std::optional<FileDiagnosticError> remapped = remapDirectDiagnostic(error)) {
             throw *remapped;
@@ -235,15 +259,7 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
     }
 
     if (!hasImports) {
-        try {
-            Parser parser(directDisplayTokens_);
-            return parser.parse();
-        } catch (const DiagnosticError& error) {
-            if (const std::optional<FileDiagnosticError> remapped = remapDirectDiagnostic(error)) {
-                throw *remapped;
-            }
-            throw;
-        }
+        return directProgram;
     }
 
     directInputs_.clear();
@@ -338,13 +354,20 @@ std::size_t FrontendSession::loadFile(
         };
 
         for (StmtPtr& statement : unit.statements) {
-            auto* import = dynamic_cast<ImportStmt*>(statement.get());
-            if (!import) {
+            if (auto* import = dynamic_cast<ImportStmt*>(statement.get())) {
+                hasImports_ = true;
+                const std::filesystem::path resolvedPath = normalizedPath.parent_path() / importPath(import->path);
+                import->resolvedModuleId = loadFile(resolvedPath.string(), true, false, true);
+                continue;
+            }
+
+            auto* exportStmt = dynamic_cast<ExportStmt*>(statement.get());
+            if (!exportStmt || !exportStmt->sourcePath) {
                 continue;
             }
             hasImports_ = true;
-            const std::filesystem::path resolvedPath = normalizedPath.parent_path() / importPath(import->path);
-            import->resolvedModuleId = loadFile(resolvedPath.string(), true, false, true);
+            const std::filesystem::path resolvedPath = normalizedPath.parent_path() / importPath(*exportStmt->sourcePath);
+            exportStmt->resolvedModuleId = loadFile(resolvedPath.string(), true, false, true);
         }
 
         unit.id = units_.size();

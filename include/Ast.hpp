@@ -275,11 +275,13 @@ struct ImportStmt final : Stmt {
 };
 
 struct ExportStmt final : Stmt {
-    ExportStmt(Token keyword, std::vector<Token> names);
+    ExportStmt(Token keyword, std::vector<Token> names, std::optional<Token> sourcePath = std::nullopt);
     void print(std::ostream& out, int indent) const override;
 
     Token keyword;
     std::vector<Token> names;
+    std::optional<Token> sourcePath;
+    std::size_t resolvedModuleId = static_cast<std::size_t>(-1);
 };
 
 struct ModuleStmt final : Stmt {

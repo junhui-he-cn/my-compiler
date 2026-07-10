@@ -111,8 +111,16 @@ StmtPtr Parser::exportDeclaration()
     while (match(TokenType::Comma)) {
         names.push_back(consume(TokenType::Identifier, "expected identifier after `,` in export list"));
     }
-    consume(TokenType::Semicolon, "expected `;` after export list");
-    return std::make_unique<ExportStmt>(std::move(keyword), std::move(names));
+
+    std::optional<Token> sourcePath;
+    if (matchContextualIdentifier("from")) {
+        sourcePath = consume(TokenType::String, "expected re-export path string");
+        consume(TokenType::Semicolon, "expected `;` after re-export path");
+    } else {
+        consume(TokenType::Semicolon, "expected `;` after export list");
+    }
+
+    return std::make_unique<ExportStmt>(std::move(keyword), std::move(names), std::move(sourcePath));
 }
 
 StmtPtr Parser::structDeclaration()
@@ -811,12 +819,26 @@ bool Parser::match(TokenType type)
     return true;
 }
 
+bool Parser::matchContextualIdentifier(const std::string& lexeme)
+{
+    if (!checkContextualIdentifier(lexeme)) {
+        return false;
+    }
+    advance();
+    return true;
+}
+
 bool Parser::check(TokenType type) const
 {
     if (isAtEnd()) {
         return type == TokenType::EndOfFile;
     }
     return peek().type == type;
+}
+
+bool Parser::checkContextualIdentifier(const std::string& lexeme) const
+{
+    return check(TokenType::Identifier) && peek().lexeme == lexeme;
 }
 
 bool Parser::checkNext(TokenType type) const

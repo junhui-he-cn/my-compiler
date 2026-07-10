@@ -672,9 +672,10 @@ void ImportStmt::print(std::ostream& out, int indent) const
     out << "\n";
 }
 
-ExportStmt::ExportStmt(Token keyword, std::vector<Token> names)
+ExportStmt::ExportStmt(Token keyword, std::vector<Token> names, std::optional<Token> sourcePath)
     : keyword(std::move(keyword))
     , names(std::move(names))
+    , sourcePath(std::move(sourcePath))
 {
 }
 
@@ -684,6 +685,9 @@ void ExportStmt::print(std::ostream& out, int indent) const
     out << "Export";
     for (const auto& name : names) {
         out << ' ' << name.lexeme;
+    }
+    if (sourcePath) {
+        out << " from " << sourcePath->lexeme;
     }
     out << "\n";
 }
