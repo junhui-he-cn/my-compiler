@@ -41,22 +41,60 @@ For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf
 15. Language polish and diagnostics
 ```
 
-## Near-Term Development Queue
+## Development Priority Bands
 
-The next recommended language slices are ordered by usefulness, implementation
-risk, and how well they build on recently completed work:
+The front end is now the main scaling constraint. Stabilize its module-loading,
+type-checking, and build/test boundaries before adding more module resolution
+behavior. The recommended bands are:
 
-1. **Phase 14E: module re-export and search paths** — revisit modules after
-   the core language ergonomics above are stronger.
-2. **Phase 15G: broader nullable/dataflow narrowing** — continue after the
-   implemented direct/logical `if` nil-check slices into loops, fields, indexes,
-   or post-branch flow.
-3. **Code health slice: front-end refactoring** — keep the compiler maintainable
-   after the recent module, struct method, builtin, and compound-assignment
-   feature growth.
+### M0: Front-End Stabilization
 
-Each slice should still start with a focused design spec and implementation
-plan before changing compiler behavior.
+1. Remove the unused legacy `SourceManager` source-expansion import path.
+2. Design a single-parse `ModuleLoader` / `FrontendSession` boundary that owns
+   parsed ASTs, the import graph, and file-aware diagnostics.
+3. Extract focused flow-fact/narrowing and module-symbol-table subsystems from
+   `TypeChecker` without rewriting AST dispatch as a visitor.
+4. Add repository CI plus optional compiler warnings and ASan/UBSan builds.
+
+### M1: Complete Existing Language Semantics
+
+1. Support methods on exported/imported structs, including namespaced structs.
+2. Narrow nullable simple variables inside `while` and conditional `for` loop
+   bodies when the loop condition proves them non-nil.
+3. Preserve simple-variable narrowing after terminating branches, such as an
+   `if (value == nil) { return; }` guard.
+4. Add contextual lambda typing from an expected function type; do not attempt
+   global parameter-type inference as part of this slice.
+
+### M2: Module Ergonomics
+
+1. Implement re-export as its own Phase 14E slice.
+2. Design and implement search paths separately as Phase 14F, including CLI
+   configuration, precedence, canonical paths, and diagnostics.
+3. Define the module-interface metadata needed by future separate compilation,
+   but do not implement a linker or separate compilation yet.
+
+### M3: Language and Runtime Depth
+
+1. Add parser recovery and multiple diagnostics.
+2. Improve collection type inference.
+3. Define a `.cdbc` version-compatibility policy.
+4. Treat GC as a dedicated backend project; continue to defer task scheduling
+   and JIT exploration.
+
+The immediate dependency order is therefore:
+
+```text
+module-loading cleanup
+-> imported struct methods
+-> loop-body nullable narrowing
+-> post-branch nullable narrowing
+-> re-export
+-> search paths
+```
+
+Each behavior-changing slice should still start with a focused design spec and
+implementation plan.
 
 ## Phase 9: Richer Type System
 
@@ -67,8 +105,15 @@ Goal: evolve the current annotation checker into a more useful static type layer
 Suggested future features:
 
 - Deeper collection inference while preserving mixed-array dynamic escape hatches.
-- Deeper inference for currently unknown function parameters and call results.
-- Broader flow-sensitive nullable narrowing beyond the implemented direct/logical `if` nil-check slices, such as loops, fields, array elements, and post-branch flow.
+- Contextual typing for lambdas when an expected function type is available;
+  avoid global parameter-type inference until there is a stronger inference
+  design.
+- Broader flow-sensitive nullable narrowing beyond the implemented
+  direct/logical `if` slices should proceed in this order: loop conditions that
+  narrow simple variables inside `while` and conditional `for` bodies;
+  post-branch facts when one branch definitely terminates; then fields and
+  array elements only after defining sound invalidation rules for mutable
+  aliases and function calls.
 
 Likely touch points:
 
@@ -157,7 +202,7 @@ Recommended split:
 
 ## Phase 12: Records / Structs
 
-Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Phase 12E is implemented: builtin member-call sugar supports selected array/string helpers (`push`, `pop`, `len`, `substr`, `charAt`). Phase 12F is implemented: local named structs can define statically resolved methods in `impl` blocks, with `this` bound to the receiver and method calls lowered to ordinary function calls. Methods on imported structs, method export/import behavior, dynamic dispatch, inheritance, overloading, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
+Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Phase 12E is implemented: builtin member-call sugar supports selected array/string helpers (`push`, `pop`, `len`, `substr`, `charAt`). Phase 12F is implemented: local named structs can define statically resolved methods in `impl` blocks, with `this` bound to the receiver and method calls lowered to ordinary function calls. The next struct slice is exported/imported method metadata and statically resolved calls on imported and namespaced structs. Dynamic dispatch, inheritance, overloading, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
 
 Goal: add named fields and simple aggregate data.
 
@@ -170,7 +215,10 @@ Possible approaches:
   `xs.pop()`, `xs.len()`, and `text.substr(start, length)`. Implemented.
 - Named structs: `struct Person { name: string, age: number }`. Implemented as static-only type shapes with `Person { ... }` constructor expressions.
 - Local named struct methods in `impl` blocks with implicit `this`. Implemented for local named structs.
-- Exported/imported methods, dynamic dispatch, inheritance, overloading, and optional chaining remain future work.
+- Exported/imported method metadata and calls, including namespaced struct
+  receivers, are the next recommended struct slice.
+- Dynamic dispatch, inheritance, overloading, and optional chaining remain
+  future work.
 
 Keep inheritance, protocols, dynamic dispatch, and method export/import behavior out of the first records slice.
 
@@ -196,11 +244,11 @@ Suggested builtins:
 - Collection helpers: `len` plus additional helpers beyond the Phase 10 `push`/`pop` slice.
 - Debug helper: `typeOf`. Implemented for runtime type names (`nil`, `number`, `bool`, `string`, `function`, `array`, and `struct`).
 
-Each builtin should define behavior for both the IR interpreter and bytecode artifact/Rust VM paths, preferably through shared runtime machinery so semantics stay aligned.
+Each builtin should define behavior for both the IR interpreter and bytecode artifact/Rust VM paths, preferably through shared runtime machinery so semantics stay aligned. Until behavior can be shared, every new builtin must add focused parity coverage for the separate C++ IR-interpreter and Rust VM implementations.
 
 ## Phase 14: Modules / Imports
 
-Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and standalone export lists expose selected already-defined top-level declarations to importers while keeping private helpers hidden. Phase 14D is implemented: namespace imports with `import "path" as name;` provide qualified access to exported values, functions, and structs without top-level name pollution. Package search paths, separate compilation, and re-export syntax remain future work.
+Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and standalone export lists expose selected already-defined top-level declarations to importers while keeping private helpers hidden. Phase 14D is implemented: namespace imports with `import "path" as name;` provide qualified access to exported values, functions, and structs without top-level name pollution. Before Phase 14E, consolidate module loading around one parsed representation and complete imported struct method metadata. Re-export syntax, package search paths, and separate compilation remain future work.
 
 Goal: allow programs to be split across files.
 
@@ -216,8 +264,8 @@ Suggested features:
 
 Remaining future work:
 
-- Package or module search paths beyond explicit relative/absolute source paths.
 - Re-export syntax for forwarding declarations from one module through another.
+- Package or module search paths beyond explicit relative/absolute source paths.
 - Separate compilation or module artifacts instead of always recursively loading source and compiling one combined program.
 
 Recommended split:
@@ -225,11 +273,12 @@ Recommended split:
 - Phase 14E: re-export syntax for forwarding declarations from one module
   through another, for example after deciding between `export name from
   "path";` and `export { name } from "path";`.
-- Phase 14F: package/module search paths for less verbose imports. This should
-  come after re-export rules because it affects source resolution and
-  diagnostics more broadly.
-- Phase 14G: separate compilation or module artifacts. Treat this as a larger
-  compiler/backend design effort, not a small language polish task.
+- Phase 14F: package/module search paths for less verbose imports, designed only
+  after re-export semantics are stable. Specify CLI flags, resolution
+  precedence, canonicalization, and failure diagnostics together.
+- Phase 14G: define stable module-interface metadata needed by possible future
+  separate compilation. Do not implement a linker or separate compilation in
+  the near-term roadmap; treat either as a dedicated compiler/backend effort.
 
 Why late: modules affect diagnostics, CLI source management, test layout, and name resolution across compilation units.
 
@@ -250,10 +299,25 @@ Suggested features:
   and `object.field` targets.
 - Comments or doc comments if they are still missing.
 
+Recommended nullable/dataflow split:
+
+- Phase 15H: apply proven non-nil facts from `while` and conditional `for`
+  conditions inside their loop bodies.
+- Phase 15I: propagate simple-variable facts past `if` statements when the
+  opposite branch definitely terminates with `return`.
+- Defer field and index narrowing until a design accounts for mutation through
+  aliases and calls; retaining those facts without invalidation would be
+  unsound.
+
 ## Code Health / Refactoring Backlog
 
 Goal: keep feature work cheap by reducing duplication and oversized front-end
 hotspots without changing language behavior or golden outputs.
+
+`TypeChecker` is the largest front-end hotspot because it currently combines
+scope management, inference, module/export symbols, struct methods, control
+flow, and nullable facts. Prefer incremental subsystem extraction over a
+whole-checker visitor rewrite.
 
 Recently completed cleanup:
 
@@ -271,6 +335,18 @@ Recently completed cleanup:
 
 Recommended future cleanup slices:
 
+- **Remove the unused legacy import-expansion path in `SourceManager`.** Keep a
+  single production module-loading flow instead of maintaining source expansion
+  alongside parsed-module loading.
+- **Introduce a single-parse module front-end boundary.** A `ModuleLoader` or
+  `FrontendSession` should own parsed ASTs, the import graph, canonical file
+  identities, and file-aware diagnostics so import discovery does not require
+  a separate handwritten scan followed by another lexer/parser pass.
+- **Extract focused `TypeChecker` subsystems without changing AST dispatch.**
+  Move flow facts/narrowing and module symbol/export metadata behind small
+  interfaces while leaving the existing statement/expression dispatch intact.
+- **Add engineering guardrails.** Add repository CI and opt-in warning,
+  ASan, and UBSan configurations before larger front-end changes.
 - **Consider a unified assignment AST only after more target forms appear.**
   Current separate nodes (`AssignExpr`, `IndexAssignExpr`, `FieldAssignExpr`,
   and their compound variants) are acceptable, but a future `AssignmentTarget`
@@ -290,10 +366,27 @@ The old C++ bytecode VM has been removed. Future backend work targets the Rust `
 - Phase 1: add a C++ `.cdbc` bytecode artifact emitter. Implemented.
 - Phase 2: add Rust VM `.cdbc` parser and dump support. Implemented.
 - Phase 3: add Rust VM executor parity for current bytecode semantics. Implemented.
-- Phase 4: explore GC heap ownership/root scanning, task scheduling, and JIT metadata/hot paths.
+- Phase 4A: define a `.cdbc` version-compatibility policy.
+- Phase 4B: design GC heap ownership and root scanning as a dedicated backend
+  project.
+- Continue to defer task scheduling and JIT metadata/hot-path exploration.
 
 Before starting a backend implementation phase, create a dedicated backend design spec and implementation plan rather than mixing it into language feature work.
 
 ## Near-Term Recommendation
 
-Start with **Phase 14E: module re-export/search paths** if the priority is module ergonomics, continue **Phase 15G: broader nullable/dataflow narrowing** if the priority is type-system ergonomics, or a small **Code Health** slice if the next feature would otherwise deepen `TypeChecker` / parser duplication.
+Follow one dependency-driven sequence rather than choosing among parallel module,
+type-system, and refactoring tracks:
+
+```text
+module-loading cleanup
+-> imported struct methods
+-> loop-body nullable narrowing
+-> post-branch nullable narrowing
+-> Phase 14E re-export
+-> Phase 14F search paths
+```
+
+Do not start a visitor rewrite, unified assignment AST, separate compilation,
+field/index nullable narrowing, GC, task scheduling, or JIT as part of these
+near-term slices.
