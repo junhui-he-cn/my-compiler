@@ -1,0 +1,3 @@
+Type error at 3:38: parameter `p` expects Point, got string
+  let score: fun(Point): number = fun (p: string): number {
+                                       ^

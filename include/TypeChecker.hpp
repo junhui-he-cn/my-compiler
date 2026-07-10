@@ -175,7 +175,8 @@ private:
     std::optional<FlowNarrowing> nonNilNarrowingForVariable(const VariableExpr& variable) const;
     CheckedExpression checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType);
     TypeInfo inferArrayElementType(const ArrayExpr& expression);
-    CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
+    const TypeInfo* contextualFunctionType(const TypeInfo* expectedType) const;
+    CheckedExpression checkFunctionExpression(const FunctionExpr& expression, const TypeInfo* expectedType);
     CheckedExpression checkCall(const CallExpr& expression);
     CheckedExpression checkMemberCall(const MemberCallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;

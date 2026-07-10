@@ -1,0 +1,5 @@
+struct Point { x: number }
+
+let score: fun(Point): number = fun () {
+  return 0;
+};

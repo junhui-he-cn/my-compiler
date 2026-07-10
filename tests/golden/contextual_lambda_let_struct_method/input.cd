@@ -1,0 +1,12 @@
+struct Point { x: number, y: number }
+
+impl Point {
+  fun sum(): number {
+    return this.x + this.y;
+  }
+}
+
+let score: fun(Point): number = fun (p) {
+  return p.sum();
+};
+print score(Point { x: 2, y: 5 });

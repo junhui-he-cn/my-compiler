@@ -1,0 +1,3 @@
+let f: fun(number): number = fun (x) {
+  print x;
+};

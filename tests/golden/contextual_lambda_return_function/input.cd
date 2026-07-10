@@ -1,0 +1,16 @@
+struct Point { x: number, y: number }
+
+impl Point {
+  fun sum(): number {
+    return this.x + this.y;
+  }
+}
+
+fun makeScorer(): fun(Point): number {
+  return fun (p) {
+    return p.sum();
+  };
+}
+
+let score = makeScorer();
+print score(Point { x: 6, y: 1 });

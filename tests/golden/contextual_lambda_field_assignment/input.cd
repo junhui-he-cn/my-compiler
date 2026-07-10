@@ -1,0 +1,17 @@
+struct Point { x: number, y: number }
+struct Holder { score: fun(Point): number }
+
+impl Point {
+  fun sum(): number {
+    return this.x + this.y;
+  }
+}
+
+let holder: Holder = Holder { score: fun (p: Point): number {
+  return p.x;
+} };
+holder.score = fun (p) {
+  return p.sum();
+};
+let score = holder.score;
+print score(Point { x: 3, y: 4 });

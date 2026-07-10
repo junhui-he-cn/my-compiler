@@ -1156,21 +1156,55 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     storedFunction->type = functionType(std::move(declaredParameterTypes), returnType);
 }
 
-TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const FunctionExpr& expression)
+const TypeInfo* TypeChecker::contextualFunctionType(const TypeInfo* expectedType) const
 {
+    if (!expectedType || expectedType->kind != StaticType::Function || !hasFunctionSignature(*expectedType)) {
+        return nullptr;
+    }
+    return expectedType;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const FunctionExpr& expression, const TypeInfo* expectedType)
+{
+    const TypeInfo* context = contextualFunctionType(expectedType);
+    if (context && context->parameterTypes.size() != expression.parameters.size()) {
+        throw TypeError(expression.keyword,
+            "expected " + std::to_string(context->parameterTypes.size())
+                + " parameters but got " + std::to_string(expression.parameters.size()));
+    }
+
     resolvedNames_.recordFunction(expression, "<lambda>");
 
     std::vector<TypeInfo> declaredParameterTypes;
     declaredParameterTypes.reserve(expression.parameters.size());
-    for (const Parameter& parameter : expression.parameters) {
-        declaredParameterTypes.push_back(parameter.typeName
+    for (std::size_t i = 0; i < expression.parameters.size(); ++i) {
+        const Parameter& parameter = expression.parameters[i];
+        TypeInfo parameterType = parameter.typeName
             ? resolveAnnotation(*parameter.typeName)
-            : unknownType());
+            : (context ? context->parameterTypes[i] : unknownType());
+
+        if (context && parameter.typeName && !compatible(context->parameterTypes[i], parameterType)) {
+            throw TypeError(parameter.name,
+                "parameter `" + parameter.name.lexeme + "` expects " + typeInfoName(context->parameterTypes[i])
+                    + ", got " + typeInfoName(parameterType));
+        }
+
+        declaredParameterTypes.push_back(std::move(parameterType));
     }
 
     std::optional<TypeInfo> expectedReturnType;
     if (expression.returnTypeName) {
         expectedReturnType = resolveAnnotation(*expression.returnTypeName);
+    }
+    if (context && context->returnType) {
+        if (expectedReturnType && !compatible(*context->returnType, *expectedReturnType)) {
+            throw TypeError(expression.returnTypeName->token,
+                "function `<lambda>` expects return " + typeInfoName(*context->returnType)
+                    + ", got " + typeInfoName(*expectedReturnType));
+        }
+        if (!expectedReturnType) {
+            expectedReturnType = *context->returnType;
+        }
     }
 
     beginScope();
@@ -1181,7 +1215,10 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
     std::vector<std::string> parameterNames;
     for (std::size_t i = 0; i < expression.parameters.size(); ++i) {
         const Parameter& parameter = expression.parameters[i];
-        Binding parameterBinding = declareVariable(parameter.name, declaredParameterTypes[i], parameter.typeName.has_value());
+        Binding parameterBinding = declareVariable(
+            parameter.name,
+            declaredParameterTypes[i],
+            parameter.typeName.has_value() || context != nullptr);
         parameterNames.push_back(parameterBinding.resolvedName);
     }
     resolvedNames_.recordParameters(expression, std::move(parameterNames));
@@ -1388,7 +1425,7 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* function = dynamic_cast<const FunctionExpr*>(&expression)) {
-        return checkFunctionExpression(*function);
+        return checkFunctionExpression(*function, expectedType);
     }
 
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
@@ -1990,7 +2027,8 @@ TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssi
 {
     const StructFieldType* structField = checkStructFieldTarget(
         *expression.object, expression.name, "can only assign fields on structs");
-    const CheckedExpression value = checkExpressionInfo(*expression.value);
+    const TypeInfo* expectedFieldType = structField ? &structField->type : nullptr;
+    const CheckedExpression value = checkExpressionInfo(*expression.value, expectedFieldType);
 
     if (structField) {
         if (!compatible(structField->type, value.type)) {
