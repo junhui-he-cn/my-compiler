@@ -34,12 +34,11 @@ language semantics before adding broader module ergonomics or backend depth.
 
 ### M1: Complete Existing Language Semantics
 
-1. Support methods on exported/imported structs, including namespaced structs.
-2. Narrow nullable simple variables inside `while` and conditional `for` loop
+1. Narrow nullable simple variables inside `while` and conditional `for` loop
    bodies when the loop condition proves them non-nil.
-3. Preserve simple-variable narrowing after terminating branches, such as an
+2. Preserve simple-variable narrowing after terminating branches, such as an
    `if (value == nil) { return; }` guard.
-4. Add contextual lambda typing from an expected function type; do not attempt
+3. Add contextual lambda typing from an expected function type; do not attempt
    global parameter-type inference as part of this slice.
 
 ### M2: Module Ergonomics
@@ -61,8 +60,7 @@ language semantics before adding broader module ergonomics or backend depth.
 The immediate dependency order is:
 
 ```text
-imported struct methods
--> loop-body nullable narrowing
+loop-body nullable narrowing
 -> post-branch nullable narrowing
 -> re-export
 -> search paths
@@ -107,8 +105,6 @@ metadata and richer struct behavior.
 
 Future work:
 
-- Export and import method metadata for named structs.
-- Resolve method calls on imported and namespaced struct receiver types.
 - Decide whether named runtime values should expose runtime type names beyond
   the current generic `struct` result.
 - Define recursive struct type rules before allowing recursive fields.

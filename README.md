@@ -84,8 +84,8 @@ print visible();
 
 Using `import "path" as alias;` keeps exported names out of the importing
 file's top-level scope. Values and functions are accessed as `alias.name`, and
-exported struct types may be used as `alias.Type` in annotations and
-constructors such as `alias.Type { field: value }`:
+exported struct types may be used as `alias.Type` in annotations, constructors
+such as `alias.Type { field: value }`, and method calls on `alias.Type` values:
 
 ```cd
 // main.cd
@@ -127,7 +127,7 @@ let p: Person = Person { name: "Ada" };
 print p.greet();
 ```
 
-Inside a method, `this` has the impl struct type; field assignment through `this.field = value` mutates the receiver. Methods on anonymous or imported/namespaced structs, method export/import behavior, inheritance, overloading, dynamic dispatch, static methods, and function-valued field calls are not implemented yet.
+Inside a method, `this` has the impl struct type; field assignment through `this.field = value` mutates the receiver. Methods on exported/imported named structs are available through direct imports and namespace imports, so `import "path";` supports `value.method()` and `import "path" as alias;` supports methods on `alias.Type` values. Methods on anonymous structs, inheritance, overloading, dynamic dispatch, static methods, and function-valued field calls are not implemented yet.
 
 ```cd
 let person = { name: "Ada", age: 36 };
