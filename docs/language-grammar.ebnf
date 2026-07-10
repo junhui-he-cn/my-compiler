@@ -55,7 +55,8 @@ importDecl  = "import", string,
               [ "as", identifier ], ";" ;
 
 exportDecl  = "export", identifier,
-              { ",", identifier }, ";" ;
+              { ",", identifier },
+              [ "from", string ], ";" ;
 
 ifStmt      = "if", expression, block,
               [ "else", block ] ;

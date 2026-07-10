@@ -39,10 +39,9 @@ module ergonomics.
 
 ### M2: Module Ergonomics
 
-1. Implement re-export as its own Phase 14E slice.
-2. Design and implement search paths separately as Phase 14F, including CLI
+1. Design and implement search paths separately as Phase 14F, including CLI
    configuration, precedence, canonical paths, and diagnostics.
-3. Define the module-interface metadata needed by future separate compilation,
+2. Define the module-interface metadata needed by future separate compilation,
    but do not implement a linker or separate compilation yet.
 
 ### M3: Language and Runtime Depth
@@ -56,8 +55,7 @@ module ergonomics.
 The immediate dependency order is:
 
 ```text
-re-export
--> search paths
+search paths
 ```
 
 Each behavior-changing slice should start with a focused design spec and
@@ -133,7 +131,6 @@ early.
 
 Future work:
 
-- Re-export syntax for forwarding declarations from one module through another.
 - Package or module search paths beyond explicit relative/absolute source paths.
 - Stable module-interface metadata needed by possible future separate
   compilation. Do not implement a linker or separate compilation in the
@@ -141,9 +138,6 @@ Future work:
 
 Recommended split:
 
-- Phase 14E: re-export syntax for forwarding declarations from one module
-  through another, for example after deciding between `export name from
-  "path";` and `export { name } from "path";`.
 - Phase 14F: package/module search paths for less verbose imports, designed only
   after re-export semantics are stable. Specify CLI flags, resolution
   precedence, canonicalization, and failure diagnostics together.
@@ -208,8 +202,7 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-Phase 14E re-export
--> Phase 14F search paths
+Phase 14F search paths
 ```
 
 Do not start a visitor rewrite, unified assignment AST, separate compilation,

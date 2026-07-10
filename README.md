@@ -95,11 +95,16 @@ print lib.visible();
 
 Importing the same canonical file more than once is a no-op, which allows
 shared helper files to be imported through multiple paths in the source graph.
-This phase supports standalone export lists such as `export value;` and
-`export value, helper, Point;` for already-defined top-level variables,
-functions, and structs. It does not add re-export syntax, package search paths,
-separate compilation, or imports from stdin. `import` inside strings or `//`
-comments is ignored by the loader.
+Standalone export lists such as `export value;` and `export value, helper,
+Point;` expose already-defined top-level variables, functions, and structs.
+Re-export declarations such as `export value, Point from "./lib.cd";` forward
+selected exports from another source file without making those names local to
+the forwarding module; import the dependency explicitly when the forwarding
+module also needs to use the name. Re-exported structs forward their method
+metadata for direct and namespace importers. The module system does not add
+renaming re-exports, wildcard exports, package search paths, separate
+compilation, or imports from stdin. `import` inside strings or `//` comments is
+ignored by the loader.
 
 Functions are values. Named functions use `fun name(parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated or contextually typed, and inferred, annotated, or contextually checked return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
