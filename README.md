@@ -188,6 +188,13 @@ cmake -S . -B build
 cmake --build build
 ```
 
+To enable compiler warnings for local C++ builds:
+
+```sh
+cmake -S . -B build -DCOMPILER_DESIGN_ENABLE_WARNINGS=ON
+cmake --build build
+```
+
 ## Test
 
 ```sh
