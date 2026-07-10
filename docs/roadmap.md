@@ -17,14 +17,14 @@ The language currently supports:
 - Named functions, anonymous function expressions, recursion, returns, and by-reference closures.
 - Array literals, indexing, and array index assignment.
 - Anonymous struct literals, field access, and existing-field assignment.
-- C++ IR interpreter execution via `--run`, plus bytecode artifact emission and Rust VM execution via `.cdbc`.
+- Bytecode artifact emission and Rust VM execution via `.cdbc`.
 
 For exact implemented grammar and user behavior, see `docs/language-grammar.ebnf` and `README.md`.
 
 ## Guiding Principles
 
-- Prefer vertical language slices that update parser, AST, type checker, IR, bytecode lowering, interpreters/VM, docs, and goldens together when behavior crosses layers.
-- Keep `--run`, bytecode lowering, and Rust VM execution aligned for every supported user-visible feature covered by parity tests.
+- Prefer vertical language slices that update parser, AST, type checker, IR, bytecode lowering, Rust VM behavior, docs, and goldens together when behavior crosses layers.
+- Keep bytecode lowering and Rust VM execution aligned for every supported user-visible feature covered by execution tests.
 - Keep planned syntax out of `README.md` and `docs/language-grammar.ebnf` until implemented.
 - Write a focused design spec and implementation plan for each substantial phase before changing compiler behavior.
 - Preserve parse errors, type errors, compile errors, and runtime errors as distinct test categories.
@@ -158,7 +158,7 @@ Likely touch points:
 - assignment target parsing and AST representation
 - `Value` array representation if arrays become mutable
 - IR operations for index assignment or builtin calls
-- IR interpreter, bytecode lowering, and Rust VM behavior
+- bytecode lowering and Rust VM behavior
 - runtime-error and type-error fixtures
 - success fixtures with `run.out` plus Rust VM parity coverage
 
@@ -202,7 +202,7 @@ Recommended split:
 
 ## Phase 12: Records / Structs
 
-Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work across C++ `--run`, bytecode artifacts, and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value across both runtime paths. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Phase 12E is implemented: builtin member-call sugar supports selected array/string helpers (`push`, `pop`, `len`, `substr`, `charAt`). Phase 12F is implemented: local named structs can define statically resolved methods in `impl` blocks, with `this` bound to the receiver and method calls lowered to ordinary function calls. The next struct slice is exported/imported method metadata and statically resolved calls on imported and namespaced structs. Dynamic dispatch, inheritance, overloading, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
+Status: in progress. Phase 12A is implemented: anonymous struct literals and dot field access work through bytecode artifacts and the Rust VM. Phase 12B is implemented: existing-field assignment `object.field = value` mutates shared struct fields and returns the assigned value through bytecode artifacts and the Rust VM. Phase 12C is implemented: named struct declarations define static field shapes, named struct annotations check exact literal initialization, and known named struct field access/assignment is statically checked. Phase 12D is implemented: named struct constructor expressions `Name { ... }` infer named struct types while reusing anonymous runtime struct values. Phase 12E is implemented: builtin member-call sugar supports selected array/string helpers (`push`, `pop`, `len`, `substr`, `charAt`). Phase 12F is implemented: local named structs can define statically resolved methods in `impl` blocks, with `this` bound to the receiver and method calls lowered to ordinary function calls. The next struct slice is exported/imported method metadata and statically resolved calls on imported and namespaced structs. Dynamic dispatch, inheritance, overloading, recursive structs, runtime type names, field creation by assignment, and richer struct type features remain future work.
 
 Goal: add named fields and simple aggregate data.
 
@@ -244,7 +244,7 @@ Suggested builtins:
 - Collection helpers: `len` plus additional helpers beyond the Phase 10 `push`/`pop` slice.
 - Debug helper: `typeOf`. Implemented for runtime type names (`nil`, `number`, `bool`, `string`, `function`, `array`, and `struct`).
 
-Each builtin should define behavior for both the IR interpreter and bytecode artifact/Rust VM paths, preferably through shared runtime machinery so semantics stay aligned. Until behavior can be shared, every new builtin must add focused parity coverage for the separate C++ IR-interpreter and Rust VM implementations.
+Each builtin should define behavior for bytecode lowering and Rust VM execution, with focused VM coverage for runtime behavior.
 
 ## Phase 14: Modules / Imports
 

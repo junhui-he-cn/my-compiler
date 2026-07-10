@@ -10,7 +10,6 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
 - A recursive-descent parser that builds an AST.
 - AST printing in a compact prefix/tree format.
 - An IR compiler that lowers AST nodes to a small virtual-register, three-address IR.
-- An IR interpreter that executes the register IR.
 - A CLI binary named `compiler_design`.
 - Python golden tests that verify AST, IR, bytecode, run, parse-error, and runtime-error outputs.
 
@@ -21,7 +20,6 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
 - `include/Ast.hpp`, `src/Ast.cpp`: AST node types and AST printer output.
 - `include/IR.hpp`, `src/IR.cpp`: IR opcodes, instructions, constants, names, registers, and IR printer output.
 - `include/IRCompiler.hpp`, `src/IRCompiler.cpp`: AST-to-IR lowering.
-- `include/IRInterpreter.hpp`, `src/IRInterpreter.cpp`: runtime execution of IR and runtime error behavior.
 - `include/Bytecode.hpp`, `src/Bytecode.cpp`: bytecode opcodes, program/function containers, and bytecode printer output.
 - `include/BytecodeTextEmitter.hpp`, `src/BytecodeTextEmitter.cpp`: stable `.cdbc` text artifact emission for the Rust VM boundary.
 - `include/BytecodeCompiler.hpp`, `src/BytecodeCompiler.cpp`: IR-to-bytecode lowering.
@@ -57,7 +55,7 @@ To refresh golden files after an intentional output change:
 python3 tests/run_golden_tests.py ./build/compiler_design --update
 ```
 
-`--update` rewrites only expected files that already exist. Use `--case <substring>` to limit refreshes to specific fixtures, and add `--update-missing` only when you intentionally want to create missing success outputs such as `ast.out`, `ir.out`, `bytecode.out`, or `run.out`. Review refreshed goldens before committing them.
+`--update` rewrites only expected files that already exist. Use `--case <substring>` to limit refreshes to specific fixtures, and add `--update-missing` only when you intentionally want to create missing success outputs such as `ast.out`, `ir.out`, or `bytecode.out`. Review refreshed goldens before committing them.
 
 ## Language Extension Workflow
 
@@ -80,14 +78,14 @@ When syntax affects runtime behavior or code generation:
 1. Add new `IROp` values in `include/IR.hpp` only when existing IR operations cannot express the behavior cleanly.
 2. Update IR construction and printing in `src/IR.cpp`.
 3. Lower AST nodes in `src/IRCompiler.cpp`.
-4. Execute new IR behavior in `src/IRInterpreter.cpp`.
-5. Add success golden cases with `ir.out` and/or `run.out` as appropriate.
+4. Lower IR to bytecode in `src/BytecodeCompiler.cpp` and execute runtime behavior in the Rust VM under `vm-rs/src/`.
+5. Add success golden cases with `ir.out`, `bytecode.out`, and/or `run.out` as appropriate.
 6. Add runtime-error fixtures for invalid runtime behavior.
 7. Keep parse errors, compile errors, and runtime errors distinct.
 
 Use `StoreVar`-style operations for declarations/initialization and assignment-specific operations for updating existing bindings when the distinction matters.
 
-When IR behavior changes, update both the IR interpreter and bytecode artifact/Rust VM path unless the change is intentionally IR-only. Bytecode lowering should preserve current IR semantics, and Rust VM execution should match `--run` for supported programs covered by `tests/run_rust_vm_tests.py`.
+When IR behavior changes, update bytecode lowering and the Rust VM path unless the change is intentionally IR-only. Bytecode lowering should preserve current IR semantics, and Rust VM execution should match `run.out` fixtures covered by `tests/run_rust_vm_tests.py`.
 
 When changing bytecode opcodes or artifact formatting, update `docs/bytecode-text-format.md`, the C++ `BytecodeTextEmitter`, Rust parser/formatter in `vm-rs/src/format.rs`, and `tests/bytecode_artifacts/` together.
 

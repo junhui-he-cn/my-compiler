@@ -2,8 +2,7 @@
 
 Compiler Design is a small experimental programming language and compiler
 project. The repository contains the language implementation, a C++17 compiler
-pipeline, a C++ IR interpreter, bytecode artifact emission, and a standalone
-Rust bytecode VM.
+pipeline, bytecode artifact emission, and a standalone Rust bytecode VM.
 
 The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, indexing, array
@@ -19,7 +18,7 @@ The compiler pipeline includes:
 - Type checker: resolves lexical scopes and checks implemented static type
   annotations.
 - IR compiler: lowers the AST to a small three-address intermediate representation with virtual registers.
-- IR interpreter: executes that virtual-register IR directly.
+- Rust VM: executes emitted `.cdbc` bytecode artifacts via `compiler-design-vm`.
 - Bytecode compiler: lowers register IR into a bytecode program and `.cdbc` artifacts for the Rust VM.
 - AST printer: prints the parsed program in prefix form.
 
@@ -218,7 +217,6 @@ python3 tests/run_golden_tests.py ./build/compiler_design --update --update-miss
 ./build/compiler_design examples/hello.cd
 ./build/compiler_design --tokens examples/hello.cd
 ./build/compiler_design --ir examples/hello.cd
-./build/compiler_design --run examples/hello.cd
 ./build/compiler_design --bytecode examples/hello.cd
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
 ```
@@ -226,11 +224,10 @@ python3 tests/run_golden_tests.py ./build/compiler_design --update --update-miss
 Multiple input files may be provided. They are read in command-line order and compiled as one combined program:
 
 ```sh
-./build/compiler_design --run lib.cd main.cd
 ./build/compiler_design --emit-bytecode program.cdbc lib.cd main.cd
 ```
 
-`--run` executes the C++ IR interpreter. `--bytecode` remains a debug-print mode for inspecting compiler output. Bytecode execution is handled by the Rust VM via `.cdbc` artifacts:
+`--bytecode` remains a debug-print mode for inspecting compiler output. Program execution is handled by the Rust VM via `.cdbc` artifacts:
 
 ```sh
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
