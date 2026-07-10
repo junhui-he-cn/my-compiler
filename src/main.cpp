@@ -2,7 +2,6 @@
 #include "BytecodeTextEmitter.hpp"
 #include "FrontendSession.hpp"
 #include "IRCompiler.hpp"
-#include "IRInterpreter.hpp"
 #include "TypeChecker.hpp"
 
 #include <fstream>
@@ -17,7 +16,7 @@ namespace {
 
 void printUsage(const char* executable)
 {
-    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [--run] [file ...]\n"
+    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [file ...]\n"
               << "       " << executable << " --emit-bytecode output.cdbc file [...]\n"
               << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n";
 }
@@ -29,7 +28,6 @@ int main(int argc, char** argv)
     bool showTokens = false;
     bool showIr = false;
     bool showBytecode = false;
-    bool runIr = false;
     std::optional<std::string> emitBytecodePath;
     std::vector<std::string> inputPaths;
 
@@ -42,7 +40,8 @@ int main(int argc, char** argv)
         } else if (arg == "--bytecode") {
             showBytecode = true;
         } else if (arg == "--run") {
-            runIr = true;
+            printUsage(argv[0]);
+            return 64;
         } else if (arg == "--emit-bytecode") {
             if (i + 1 >= argc) {
                 printUsage(argv[0]);
@@ -58,7 +57,7 @@ int main(int argc, char** argv)
     }
 
     if (emitBytecodePath) {
-        if (inputPaths.empty() || showTokens || showIr || showBytecode || runIr) {
+        if (inputPaths.empty() || showTokens || showIr || showBytecode) {
             printUsage(argv[0]);
             return 64;
         }
@@ -80,11 +79,11 @@ int main(int argc, char** argv)
         TypeChecker typeChecker;
         const ResolvedNames& resolvedNames = typeChecker.check(program);
 
-        if (!emitBytecodePath && !showIr && !showBytecode && !runIr) {
+        if (!emitBytecodePath && !showIr && !showBytecode) {
             program.print(std::cout);
         }
 
-        if (emitBytecodePath || showIr || showBytecode || runIr) {
+        if (emitBytecodePath || showIr || showBytecode) {
             IRCompiler compiler;
             IRProgram ir = compiler.compile(program, resolvedNames);
 
@@ -124,12 +123,6 @@ int main(int argc, char** argv)
             if (showBytecode) {
                 separateSection();
                 bytecode->print(std::cout);
-            }
-
-            if (runIr) {
-                separateSection();
-                IRInterpreter interpreter(std::cout);
-                interpreter.execute(ir);
             }
 
         }

@@ -22,7 +22,6 @@ add_executable(compiler_design
     src/FlowFacts.cpp
     src/IR.cpp
     src/IRCompiler.cpp
-    src/IRInterpreter.cpp
     src/Lexer.cpp
     src/NativeStdlib.cpp
     src/Parser.cpp
@@ -44,7 +43,7 @@ add_test(
 add_test(
     NAME cli_multi_source
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
-            ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/cli_multi_source_tests.py $<TARGET_FILE:compiler_design>
+            ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/cli_multi_source_tests.py $<TARGET_FILE:compiler_design> ${CMAKE_SOURCE_DIR}/vm-rs
 )
 
 add_test(

@@ -213,19 +213,6 @@ def unexpected_import_stdout_result(case_name: str, stdout: str) -> CheckResult:
     )
 
 
-def check_runtime_error_case(compiler: Path, source: Path, update: bool) -> list[CheckResult]:
-    return check_runtime_error_execution(
-        compiler,
-        source,
-        update,
-        ("--run",),
-        ".run.err",
-        ".exit",
-        "--run",
-        optional_when_missing=False,
-    )
-
-
 def check_parse_error_case(compiler: Path, source: Path, update: bool) -> list[CheckResult]:
     stem = source.with_suffix("")
     err_path = stem.with_suffix(".err")

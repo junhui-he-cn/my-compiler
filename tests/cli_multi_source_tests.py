@@ -8,11 +8,15 @@ from pathlib import Path
 
 class CliMultiSourceTests(unittest.TestCase):
     def setUp(self) -> None:
-        if len(sys.argv) != 2:
-            self.fail("usage: cli_multi_source_tests.py <compiler>")
+        if len(sys.argv) != 3:
+            self.fail("usage: cli_multi_source_tests.py <compiler> <vm-rs>")
         self.compiler = Path(sys.argv[1]).resolve()
         if not self.compiler.is_file():
             self.fail(f"compiler not found: {self.compiler}")
+        self.vm = Path(sys.argv[2]).resolve()
+        self.vm_manifest = self.vm / "Cargo.toml" if self.vm.is_dir() else self.vm
+        if not self.vm_manifest.is_file():
+            self.fail(f"vm manifest not found: {self.vm_manifest}")
 
     def run_compiler(self, *args: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
@@ -23,7 +27,21 @@ class CliMultiSourceTests(unittest.TestCase):
             check=False,
         )
 
-    def test_run_accepts_multiple_input_files_in_order(self) -> None:
+    def emit_and_run_vm(self, root: Path, *sources: Path) -> subprocess.CompletedProcess[str]:
+        artifact = root / "program.cdbc"
+        emitted = self.run_compiler("--emit-bytecode", str(artifact), *(str(source) for source in sources))
+        self.assertEqual(emitted.returncode, 0, emitted.stderr)
+        self.assertEqual(emitted.stdout, "")
+        self.assertEqual(emitted.stderr, "")
+        self.assertTrue(artifact.is_file())
+        return subprocess.run(
+            ["cargo", "run", "--quiet", "--manifest-path", str(self.vm_manifest), "--", "run", str(artifact)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    def test_vm_execution_accepts_multiple_input_files_in_order(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             lib = root / "lib.cd"
@@ -31,7 +49,7 @@ class CliMultiSourceTests(unittest.TestCase):
             lib.write_text("fun add(a, b) { return a + b; }\n", encoding="utf-8")
             main.write_text("print add(1, 2);\n", encoding="utf-8")
 
-            completed = self.run_compiler("--run", str(lib), str(main))
+            completed = self.emit_and_run_vm(root, lib, main)
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stderr, "")
@@ -45,7 +63,7 @@ class CliMultiSourceTests(unittest.TestCase):
             first.write_text("let value =\n", encoding="utf-8")
             second.write_text("41;\nprint value;\n", encoding="utf-8")
 
-            completed = self.run_compiler("--run", str(first), str(second))
+            completed = self.emit_and_run_vm(root, first, second)
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stdout, "41\n")
@@ -59,7 +77,7 @@ class CliMultiSourceTests(unittest.TestCase):
             first.write_text('print "first\n', encoding="utf-8")
             second.write_text('second";\n', encoding="utf-8")
 
-            completed = self.run_compiler("--run", str(first), str(second))
+            completed = self.emit_and_run_vm(root, first, second)
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stdout, "first\nsecond\n")
@@ -89,11 +107,13 @@ class CliMultiSourceTests(unittest.TestCase):
             missing = root / "missing.cd"
             existing.write_text("print 1;\n", encoding="utf-8")
 
-            completed = self.run_compiler("--run", str(existing), str(missing))
+            artifact = root / "program.cdbc"
+            completed = self.run_compiler("--emit-bytecode", str(artifact), str(existing), str(missing))
 
             self.assertEqual(completed.returncode, 1)
             self.assertEqual(completed.stdout, "")
             self.assertEqual(completed.stderr, f"failed to open input file: {missing}\n")
+            self.assertFalse(artifact.exists())
 
     def test_import_loading_precedes_later_entry_lex_errors(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -127,12 +147,13 @@ class CliMultiSourceTests(unittest.TestCase):
                 "        ^\n",
             )
 
-    def test_stdin_still_works_when_no_input_files_are_given(self) -> None:
-        completed = self.run_compiler("--run", input_text="print 7;\n")
+    def test_stdin_still_prints_ast_when_no_input_files_are_given(self) -> None:
+        completed = self.run_compiler(input_text="print 7;\n")
 
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual(completed.stderr, "")
-        self.assertEqual(completed.stdout, "7\n")
+        self.assertIn("Print", completed.stdout)
+        self.assertIn("7", completed.stdout)
 
     def test_emit_bytecode_still_requires_at_least_one_input_file(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -143,6 +164,15 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 64)
             self.assertEqual(completed.stdout, "")
             self.assertFalse(artifact.exists())
+
+
+    def test_run_mode_is_removed(self) -> None:
+        completed = self.run_compiler("--run", input_text="print 1;\n")
+
+        self.assertEqual(completed.returncode, 64)
+        self.assertEqual(completed.stdout, "")
+        self.assertIn("Usage:", completed.stderr)
+        self.assertNotIn("[--run]", completed.stderr)
 
 
     def test_import_from_stdin_is_rejected(self) -> None:
@@ -158,7 +188,7 @@ class CliMultiSourceTests(unittest.TestCase):
             (root / "lib.cd").write_text('let value = "direct";\nexport value;\n', encoding="utf-8")
             (root / "main.cd").write_text('print value;\n', encoding="utf-8")
 
-            completed = self.run_compiler("--run", str(root / "lib.cd"), str(root / "main.cd"))
+            completed = self.emit_and_run_vm(root, root / "lib.cd", root / "main.cd")
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stdout, "direct\n")
@@ -178,7 +208,7 @@ class CliMultiSourceTests(unittest.TestCase):
             )
             (nested / "inner.cd").write_text('let value = "relative";\nexport value;\n', encoding="utf-8")
 
-            completed = self.run_compiler("--run", str(root / "input.cd"))
+            completed = self.emit_and_run_vm(root, root / "input.cd")
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stdout, "relative\n")
@@ -196,7 +226,7 @@ class CliMultiSourceTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            completed = self.run_compiler("--run", str(root / "input.cd"))
+            completed = self.emit_and_run_vm(root, root / "input.cd")
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stdout, "9\n")
@@ -303,7 +333,7 @@ class CliMultiSourceTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            completed = self.run_compiler("--run", str(root / "input.cd"))
+            completed = self.emit_and_run_vm(root, root / "input.cd")
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stdout, 'import ./missing_from_string.cd;\n')
