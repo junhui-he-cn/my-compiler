@@ -33,7 +33,7 @@ fn run(path: &str) -> Result<(), String> {
     let program = format::parse_program(&source).map_err(|error| format!("error: {}", error))?;
     let output = vm::VM::new(&program)
         .run()
-        .map_err(|error| format!("error: {}", error))?;
+        .map_err(|error| error.to_string())?;
     print!("{}", output);
     Ok(())
 }

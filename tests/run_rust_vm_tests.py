@@ -64,8 +64,43 @@ def discover_golden_cases(root: Path) -> list[Path]:
     )
 
 
+def discover_runtime_error_cases(root: Path) -> list[Path]:
+    if not root.is_dir():
+        return []
+    return sorted(root.glob("*.cd"))
+
+
 def expected_output(case_dir: Path) -> str:
     return read_text(case_dir / "run.out")
+
+
+def expected_runtime_error(source: Path) -> tuple[str, str]:
+    stem = source.with_suffix("")
+    return read_text(stem.with_suffix(".run.err")), read_text(stem.with_suffix(".exit")).strip()
+
+
+def emit_bytecode(compiler: Path, sources: list[Path], artifact: Path, name: str) -> tuple[list[CheckResult], bool]:
+    compile_command = [str(compiler), "--emit-bytecode", str(artifact), *(str(source) for source in sources)]
+    compiled = run_command(compile_command)
+    results: list[CheckResult] = []
+    compile_name = f"{name} emit"
+    if compiled.returncode != 0:
+        results.append(CheckResult(
+            compile_name,
+            False,
+            f"FAIL {compile_name} exited with {compiled.returncode}\n\nSTDOUT:\n{compiled.stdout}\nSTDERR:\n{compiled.stderr}",
+        ))
+        return results, False
+    if compiled.stdout:
+        results.append(CheckResult(compile_name, False, f"FAIL {compile_name} produced unexpected stdout\n\n{compiled.stdout}"))
+    if compiled.stderr:
+        results.append(CheckResult(compile_name, False, f"FAIL {compile_name} produced unexpected stderr\n\n{compiled.stderr}"))
+    if not artifact.is_file():
+        results.append(CheckResult(compile_name, False, f"FAIL {compile_name} did not create {artifact}"))
+        return results, False
+    if not any(result.name == compile_name and not result.passed for result in results):
+        results.append(CheckResult(compile_name, True))
+    return results, True
 
 
 def check_case(compiler: Path, vm_manifest: Path, case_dir: Path) -> list[CheckResult]:
@@ -75,25 +110,10 @@ def check_case(compiler: Path, vm_manifest: Path, case_dir: Path) -> list[CheckR
 
     with tempfile.TemporaryDirectory() as temp_dir:
         artifact = Path(temp_dir) / "program.cdbc"
-        compile_command = [str(compiler), "--emit-bytecode", str(artifact), *(str(source) for source in sources)]
-        compiled = run_command(compile_command)
-        compile_name = f"{case_dir.name} emit"
-        if compiled.returncode != 0:
-            results.append(CheckResult(
-                compile_name,
-                False,
-                f"FAIL {compile_name} exited with {compiled.returncode}\n\nSTDOUT:\n{compiled.stdout}\nSTDERR:\n{compiled.stderr}",
-            ))
+        emit_results, can_run = emit_bytecode(compiler, sources, artifact, case_dir.name)
+        results.extend(emit_results)
+        if not can_run:
             return results
-        if compiled.stdout:
-            results.append(CheckResult(compile_name, False, f"FAIL {compile_name} produced unexpected stdout\n\n{compiled.stdout}"))
-        if compiled.stderr:
-            results.append(CheckResult(compile_name, False, f"FAIL {compile_name} produced unexpected stderr\n\n{compiled.stderr}"))
-        if not artifact.is_file():
-            results.append(CheckResult(compile_name, False, f"FAIL {compile_name} did not create {artifact}"))
-            return results
-        if not any(result.name == compile_name and not result.passed for result in results):
-            results.append(CheckResult(compile_name, True))
 
         run_command_line = ["cargo", "run", "--quiet", "--manifest-path", str(vm_manifest), "--", "run", str(artifact)]
         executed = run_command(run_command_line)
@@ -114,6 +134,41 @@ def check_case(compiler: Path, vm_manifest: Path, case_dir: Path) -> list[CheckR
                 f"FAIL {run_name} stdout mismatch\n\n" + unified_diff(expected, executed.stdout, "expected", "actual"),
             ))
         else:
+            results.append(CheckResult(run_name, True))
+
+    return results
+
+
+def check_runtime_error_case(compiler: Path, vm_manifest: Path, source: Path) -> list[CheckResult]:
+    expected_err, expected_exit = expected_runtime_error(source)
+    results: list[CheckResult] = []
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        artifact = Path(temp_dir) / "program.cdbc"
+        case_name = f"runtime_errors/{source.stem}"
+        emit_results, can_run = emit_bytecode(compiler, [source], artifact, case_name)
+        results.extend(emit_results)
+        if not can_run:
+            return results
+
+        run_command_line = ["cargo", "run", "--quiet", "--manifest-path", str(vm_manifest), "--", "run", str(artifact)]
+        executed = run_command(run_command_line)
+        run_name = f"runtime_errors/{source.stem} rust-run"
+        if executed.stdout:
+            results.append(CheckResult(run_name, False, f"FAIL {run_name} produced unexpected stdout\n\n{executed.stdout}"))
+        if executed.stderr != expected_err:
+            results.append(CheckResult(
+                run_name,
+                False,
+                f"FAIL {run_name} stderr mismatch\n\n" + unified_diff(expected_err, executed.stderr, "expected stderr", "actual stderr"),
+            ))
+        if str(executed.returncode) != expected_exit:
+            results.append(CheckResult(
+                run_name,
+                False,
+                f"FAIL {run_name} exit code mismatch\nexpected: {expected_exit}\nactual: {executed.returncode}",
+            ))
+        if not any(result.name == run_name and not result.passed for result in results):
             results.append(CheckResult(run_name, True))
 
     return results
@@ -144,62 +199,27 @@ def main() -> int:
     tests_root = Path(__file__).resolve().parent
     case_dirs = discover_artifact_cases(tests_root / "bytecode_artifacts")
     if args.goldens:
-        golden_allowlist = {
-            "array_index_assignment",
-            "array_nested_assignment",
-            "bytecode_arrays",
-            "bytecode_control_flow",
-            "bytecode_functions_closures",
-            "bytecode_smoke",
-            "bytecode_variables",
-            "compound_assignment_basic",
-            "compound_assignment_expression_result",
-            "for_in_basic",
-            "for_in_control",
-            "for_in_empty",
-            "for_in_length_snapshot",
-            "for_in_shadow_outer",
-            "for_in_typed_array",
-            "function_return_type_success",
-            "function_return_type_unknown_preserved",
-            "function_value_arity_success",
-            "function_value_unknown_arity_assignment",
-            "inferred_let_assignment",
-            "inferred_let_unknown_call_result",
-            "lambda_basic",
-            "lambda_expression_statement",
-            "lambda_closure",
-            "lambda_immediate_call",
-            "lambda_mutable_closure",
-            "len_builtin",
-            "len_builtin_shadowing",
-            "loop_break",
-            "named_struct_types",
-            "multi_file_functions",
-            "module_exports",
-            "namespace_imports",
-            "native_stdlib_math",
-            "native_stdlib_push_pop",
-            "native_stdlib_strings",
-            "native_stdlib_typeof",
-            "struct_literals_field_access",
-            "struct_identity_equality",
-            "struct_constructor_functions",
-            "typed_array_runtime",
-        }
-        case_dirs.extend(path for path in discover_golden_cases(tests_root / "golden") if path.name in golden_allowlist)
+        case_dirs.extend(discover_golden_cases(tests_root / "golden"))
 
     if args.cases:
         wanted = set(args.cases)
         case_dirs = [path for path in case_dirs if path.name in wanted]
 
-    if not case_dirs:
-        print("no Rust VM fixtures selected", file=sys.stderr)
-        return 1
-
     results: list[CheckResult] = []
     for case_dir in case_dirs:
         results.extend(check_case(compiler, vm_manifest, case_dir))
+
+    if args.goldens:
+        runtime_sources = discover_runtime_error_cases(tests_root / "golden" / "runtime_errors")
+        if args.cases:
+            wanted = set(args.cases)
+            runtime_sources = [source for source in runtime_sources if source.stem in wanted or f"runtime_errors/{source.stem}" in wanted]
+        for source in runtime_sources:
+            results.extend(check_runtime_error_case(compiler, vm_manifest, source))
+
+    if not results:
+        print("no Rust VM fixtures selected", file=sys.stderr)
+        return 1
 
     failed = [result for result in results if not result.passed]
     for failure in failed:

@@ -24,7 +24,7 @@ impl RuntimeError {
 
 impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "runtime error: {}", self.message)
+        write!(f, "Runtime error: {}", self.message)
     }
 }
 
