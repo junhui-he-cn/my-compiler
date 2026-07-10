@@ -12,6 +12,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Export compile_commands.json so editors and language servers can index the project.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(COMPILER_DESIGN_ENABLE_WARNINGS "Enable compiler warning flags for project C++ targets" OFF)
+
+function(compiler_design_apply_warnings target_name)
+    if(NOT COMPILER_DESIGN_ENABLE_WARNINGS)
+        return()
+    endif()
+
+    if(MSVC)
+        target_compile_options(${target_name} PRIVATE /W4)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endfunction()
+
 add_executable(compiler_design
     src/Ast.cpp
     src/Bytecode.cpp
@@ -33,12 +47,25 @@ add_executable(compiler_design
 )
 
 target_include_directories(compiler_design PRIVATE include)
+compiler_design_apply_warnings(compiler_design)
 
 enable_testing()
 add_test(
     NAME golden_runner_selftest
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
             ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_golden_tests_selftest.py
+)
+
+add_test(
+    NAME cmake_config
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
+            ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/cmake_config_tests.py ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME ci_workflow
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
+            ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/ci_workflow_tests.py ${CMAKE_SOURCE_DIR}
 )
 
 add_test(
@@ -74,6 +101,7 @@ add_executable(frontend_session_tests
     src/Parser.cpp
 )
 target_include_directories(frontend_session_tests PRIVATE include)
+compiler_design_apply_warnings(frontend_session_tests)
 add_test(NAME frontend_session COMMAND frontend_session_tests)
 
 add_executable(flow_facts_tests
@@ -83,6 +111,7 @@ add_executable(flow_facts_tests
     src/TypeUtils.cpp
 )
 target_include_directories(flow_facts_tests PRIVATE include)
+compiler_design_apply_warnings(flow_facts_tests)
 add_test(NAME flow_facts COMMAND flow_facts_tests)
 
 add_executable(module_symbols_tests
@@ -91,4 +120,5 @@ add_executable(module_symbols_tests
     src/TypeUtils.cpp
 )
 target_include_directories(module_symbols_tests PRIVATE include)
+compiler_design_apply_warnings(module_symbols_tests)
 add_test(NAME module_symbols COMMAND module_symbols_tests)
