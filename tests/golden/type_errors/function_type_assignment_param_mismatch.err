@@ -1,1 +1,3 @@
-Type error at 4:1: cannot assign fun(string): number to `f` of type fun(number): number
+Type error at 4:10: parameter `s` expects number, got string
+  f = fun (s: string): number {
+           ^

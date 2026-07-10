@@ -1,1 +1,3 @@
-Type error at 8:1: cannot assign number to `s` of type string
+Type error at 5:3: cannot return string from function returning number
+    return "x";
+    ^

@@ -1,1 +1,3 @@
-Type error at 1:5: cannot initialize `f` of type fun(number): number with fun(string): number
+Type error at 1:35: parameter `s` expects number, got string
+  let f: fun(number): number = fun (s: string): number {
+                                    ^
