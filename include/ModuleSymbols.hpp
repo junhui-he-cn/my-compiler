@@ -9,10 +9,13 @@
 
 using ModuleValueExports = std::unordered_map<std::string, TypeBinding>;
 using ModuleStructExports = std::unordered_map<std::string, StructTypeDecl>;
+using StructMethodTable = std::unordered_map<std::string, MethodSignature>;
+using ModuleMethodExports = std::unordered_map<std::string, StructMethodTable>;
 
 struct NamespaceImport {
     ModuleValueExports values;
     ModuleStructExports structs;
+    ModuleMethodExports methods;
 };
 
 class ModuleSymbols {
@@ -28,6 +31,8 @@ public:
     bool isLocalStruct(std::size_t moduleId, const std::string& name) const;
     void recordStructExport(std::size_t moduleId, std::string name, StructTypeDecl declaration);
     const ModuleStructExports* structExports(std::size_t moduleId) const;
+    void recordMethodExport(std::size_t moduleId, std::string structName, std::string methodName, MethodSignature signature);
+    const ModuleMethodExports* methodExports(std::size_t moduleId) const;
 
     bool hasNamespace(std::size_t moduleId, const std::string& alias) const;
     void recordNamespace(std::size_t moduleId, std::string alias, NamespaceImport imported);
@@ -36,6 +41,7 @@ public:
 private:
     std::unordered_map<std::size_t, ModuleValueExports> valueExports_;
     std::unordered_map<std::size_t, ModuleStructExports> structExports_;
+    std::unordered_map<std::size_t, ModuleMethodExports> methodExports_;
     std::unordered_map<std::size_t, std::unordered_set<std::string>> localStructNames_;
     std::unordered_map<std::size_t, std::unordered_map<std::string, NamespaceImport>> namespaces_;
     std::unordered_map<std::size_t, std::unordered_set<std::size_t>> directImports_;

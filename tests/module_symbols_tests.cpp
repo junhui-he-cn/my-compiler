@@ -26,6 +26,16 @@ StructTypeDecl structDecl(std::string name)
     return StructTypeDecl{token(std::move(name)), {StructFieldType{token("field"), simpleType(StaticType::Number)}}};
 }
 
+MethodSignature methodSignature(std::string resolvedName, TypeInfo returnType)
+{
+    MethodSignature result;
+    result.receiverType = namedStructType("Person");
+    result.parameterTypes = {simpleType(StaticType::Number)};
+    result.returnType = std::move(returnType);
+    result.resolvedName = std::move(resolvedName);
+    return result;
+}
+
 void test_direct_import_deduplicates_per_importing_module()
 {
     ModuleSymbols symbols;
@@ -72,6 +82,7 @@ void test_namespace_aliases_are_recorded_and_queried()
     NamespaceImport imported;
     imported.values.emplace("value", binding("value#0", StaticType::String));
     imported.structs.emplace("Person", structDecl("Person"));
+    imported.methods["Person"].emplace("ageNext", methodSignature("__method_Person_ageNext#0", simpleType(StaticType::Number)));
 
     assert(!symbols.hasNamespace(9, "lib"));
     assert(symbols.namespaceImport(9, "lib") == nullptr);
@@ -83,6 +94,23 @@ void test_namespace_aliases_are_recorded_and_queried()
     assert(found != nullptr);
     assert(found->values.at("value").type.kind == StaticType::String);
     assert(found->structs.at("Person").name.lexeme == "Person");
+    assert(found->methods.at("Person").at("ageNext").resolvedName == "__method_Person_ageNext#0");
+    assert(found->methods.at("Person").at("ageNext").returnType.kind == StaticType::Number);
+}
+
+void test_method_exports_are_recorded_with_struct_names()
+{
+    ModuleSymbols symbols;
+
+    assert(symbols.methodExports(3) == nullptr);
+    symbols.recordMethodExport(3, "Person", "ageNext", methodSignature("__method_Person_ageNext#0", simpleType(StaticType::Number)));
+
+    const ModuleMethodExports* exports = symbols.methodExports(3);
+    assert(exports != nullptr);
+    assert(exports->size() == 1);
+    assert(exports->at("Person").size() == 1);
+    assert(exports->at("Person").at("ageNext").resolvedName == "__method_Person_ageNext#0");
+    assert(exports->at("Person").at("ageNext").returnType.kind == StaticType::Number);
 }
 
 void test_clear_removes_all_tables()
@@ -92,6 +120,7 @@ void test_clear_removes_all_tables()
     symbols.recordValueExport(1, "value", binding("value#0", StaticType::Number));
     symbols.markLocalStruct(1, "Person");
     symbols.recordStructExport(1, "Person", structDecl("Person"));
+    symbols.recordMethodExport(1, "Person", "ageNext", methodSignature("__method_Person_ageNext#0", simpleType(StaticType::Number)));
     NamespaceImport imported;
     imported.values.emplace("value", binding("value#1", StaticType::String));
     symbols.recordNamespace(1, "lib", std::move(imported));
@@ -102,6 +131,7 @@ void test_clear_removes_all_tables()
     assert(symbols.valueExports(1) == nullptr);
     assert(!symbols.isLocalStruct(1, "Person"));
     assert(symbols.structExports(1) == nullptr);
+    assert(symbols.methodExports(1) == nullptr);
     assert(!symbols.hasNamespace(1, "lib"));
     assert(symbols.namespaceImport(1, "lib") == nullptr);
 }
@@ -114,5 +144,6 @@ int main()
     test_value_exports_are_recorded_and_missing_modules_return_null();
     test_struct_exports_and_local_struct_markers_are_independent();
     test_namespace_aliases_are_recorded_and_queried();
+    test_method_exports_are_recorded_with_struct_names();
     test_clear_removes_all_tables();
 }

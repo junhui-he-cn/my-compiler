@@ -6,6 +6,7 @@ void ModuleSymbols::clear()
 {
     valueExports_.clear();
     structExports_.clear();
+    methodExports_.clear();
     localStructNames_.clear();
     namespaces_.clear();
     directImports_.clear();
@@ -47,6 +48,21 @@ const ModuleStructExports* ModuleSymbols::structExports(std::size_t moduleId) co
 {
     const auto found = structExports_.find(moduleId);
     return found == structExports_.end() ? nullptr : &found->second;
+}
+
+void ModuleSymbols::recordMethodExport(
+    std::size_t moduleId,
+    std::string structName,
+    std::string methodName,
+    MethodSignature signature)
+{
+    methodExports_[moduleId][std::move(structName)].emplace(std::move(methodName), std::move(signature));
+}
+
+const ModuleMethodExports* ModuleSymbols::methodExports(std::size_t moduleId) const
+{
+    const auto found = methodExports_.find(moduleId);
+    return found == methodExports_.end() ? nullptr : &found->second;
 }
 
 bool ModuleSymbols::hasNamespace(std::size_t moduleId, const std::string& alias) const

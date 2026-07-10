@@ -25,3 +25,10 @@ struct StructTypeDecl {
     Token name;
     std::vector<StructFieldType> fields;
 };
+
+struct MethodSignature {
+    TypeInfo receiverType;
+    std::vector<TypeInfo> parameterTypes;
+    TypeInfo returnType;
+    std::string resolvedName;
+};
