@@ -195,6 +195,14 @@ cmake -S . -B build -DCOMPILER_DESIGN_ENABLE_WARNINGS=ON
 cmake --build build
 ```
 
+To enable AddressSanitizer and UndefinedBehaviorSanitizer for local C++ builds:
+
+```sh
+cmake -S . -B build-sanitize -DCOMPILER_DESIGN_ENABLE_WARNINGS=ON -DCOMPILER_DESIGN_ENABLE_SANITIZERS=ON
+cmake --build build-sanitize
+ctest --test-dir build-sanitize --output-on-failure
+```
+
 ## Test
 
 ```sh
