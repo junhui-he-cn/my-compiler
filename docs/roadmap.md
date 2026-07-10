@@ -34,8 +34,8 @@ language semantics before adding broader module ergonomics or backend depth.
 
 ### M1: Complete Existing Language Semantics
 
-1. Add contextual lambda typing from an expected function type; do not attempt
-   global parameter-type inference as part of this slice.
+No active M1 language semantics items remain. Near-term planning now moves to
+module ergonomics.
 
 ### M2: Module Ergonomics
 
@@ -56,8 +56,7 @@ language semantics before adding broader module ergonomics or backend depth.
 The immediate dependency order is:
 
 ```text
-contextual lambda typing
--> re-export
+re-export
 -> search paths
 ```
 
@@ -73,9 +72,6 @@ Future work:
 
 - Improve collection inference while preserving mixed-array dynamic escape
   hatches.
-- Add contextual typing for lambdas when an expected function type is available.
-  Avoid global parameter-type inference until there is a stronger inference
-  design.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -212,8 +208,7 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-contextual lambda typing
--> Phase 14E re-export
+Phase 14E re-export
 -> Phase 14F search paths
 ```
 
