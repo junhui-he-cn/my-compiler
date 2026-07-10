@@ -23,6 +23,7 @@ add_executable(compiler_design
     src/IR.cpp
     src/IRCompiler.cpp
     src/Lexer.cpp
+    src/ModuleSymbols.cpp
     src/NativeStdlib.cpp
     src/Parser.cpp
     src/TypeChecker.cpp
@@ -83,3 +84,11 @@ add_executable(flow_facts_tests
 )
 target_include_directories(flow_facts_tests PRIVATE include)
 add_test(NAME flow_facts COMMAND flow_facts_tests)
+
+add_executable(module_symbols_tests
+    tests/module_symbols_tests.cpp
+    src/ModuleSymbols.cpp
+    src/TypeUtils.cpp
+)
+target_include_directories(module_symbols_tests PRIVATE include)
+add_test(NAME module_symbols COMMAND module_symbols_tests)

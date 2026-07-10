@@ -1,0 +1,70 @@
+#include "ModuleSymbols.hpp"
+
+#include <utility>
+
+void ModuleSymbols::clear()
+{
+    valueExports_.clear();
+    structExports_.clear();
+    localStructNames_.clear();
+    namespaces_.clear();
+    directImports_.clear();
+}
+
+bool ModuleSymbols::markDirectImport(std::size_t importingModuleId, std::size_t importedModuleId)
+{
+    return directImports_[importingModuleId].insert(importedModuleId).second;
+}
+
+void ModuleSymbols::recordValueExport(std::size_t moduleId, std::string name, TypeBinding binding)
+{
+    valueExports_[moduleId].emplace(std::move(name), std::move(binding));
+}
+
+const ModuleValueExports* ModuleSymbols::valueExports(std::size_t moduleId) const
+{
+    const auto found = valueExports_.find(moduleId);
+    return found == valueExports_.end() ? nullptr : &found->second;
+}
+
+void ModuleSymbols::markLocalStruct(std::size_t moduleId, const std::string& name)
+{
+    localStructNames_[moduleId].insert(name);
+}
+
+bool ModuleSymbols::isLocalStruct(std::size_t moduleId, const std::string& name) const
+{
+    const auto found = localStructNames_.find(moduleId);
+    return found != localStructNames_.end() && found->second.find(name) != found->second.end();
+}
+
+void ModuleSymbols::recordStructExport(std::size_t moduleId, std::string name, StructTypeDecl declaration)
+{
+    structExports_[moduleId].emplace(std::move(name), std::move(declaration));
+}
+
+const ModuleStructExports* ModuleSymbols::structExports(std::size_t moduleId) const
+{
+    const auto found = structExports_.find(moduleId);
+    return found == structExports_.end() ? nullptr : &found->second;
+}
+
+bool ModuleSymbols::hasNamespace(std::size_t moduleId, const std::string& alias) const
+{
+    return namespaceImport(moduleId, alias) != nullptr;
+}
+
+void ModuleSymbols::recordNamespace(std::size_t moduleId, std::string alias, NamespaceImport imported)
+{
+    namespaces_[moduleId].emplace(std::move(alias), std::move(imported));
+}
+
+const NamespaceImport* ModuleSymbols::namespaceImport(std::size_t moduleId, const std::string& alias) const
+{
+    const auto table = namespaces_.find(moduleId);
+    if (table == namespaces_.end()) {
+        return nullptr;
+    }
+    const auto found = table->second.find(alias);
+    return found == table->second.end() ? nullptr : &found->second;
+}
