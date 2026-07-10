@@ -34,9 +34,7 @@ language semantics before adding broader module ergonomics or backend depth.
 
 ### M1: Complete Existing Language Semantics
 
-1. Preserve simple-variable narrowing after terminating branches, such as an
-   `if (value == nil) { return; }` guard.
-2. Add contextual lambda typing from an expected function type; do not attempt
+1. Add contextual lambda typing from an expected function type; do not attempt
    global parameter-type inference as part of this slice.
 
 ### M2: Module Ergonomics
@@ -58,7 +56,7 @@ language semantics before adding broader module ergonomics or backend depth.
 The immediate dependency order is:
 
 ```text
-post-branch nullable narrowing
+contextual lambda typing
 -> re-export
 -> search paths
 ```
@@ -78,11 +76,8 @@ Future work:
 - Add contextual typing for lambdas when an expected function type is available.
   Avoid global parameter-type inference until there is a stronger inference
   design.
-- Broaden flow-sensitive nullable narrowing in this order:
-  1. post-branch facts when one branch definitely terminates;
-  2. fields and array elements only after defining sound invalidation rules for
-     mutable aliases and function calls.
-  Do not plan loop-condition narrowing for `while` or conditional `for` bodies.
+- Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
+  post-branch simple-variable narrowing, or field/index nullable narrowing.
 
 Likely touch points:
 
@@ -172,11 +167,8 @@ Future work:
 - Add parser recovery and multi-error reporting.
 - Decide whether comments or doc comments need language-level documentation or
   additional syntax support.
-- Propagate simple-variable facts past `if` statements when the opposite branch
-  definitely terminates with `return`.
-- Defer field and index narrowing until a design accounts for mutation through
-  aliases and calls; retaining those facts without invalidation would be
-  unsound.
+- Do not plan additional nullable narrowing beyond the currently implemented
+  direct `if` nil-check branch behavior.
 
 ## Code Health / Refactoring Backlog
 
@@ -220,11 +212,11 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-post-branch nullable narrowing
+contextual lambda typing
 -> Phase 14E re-export
 -> Phase 14F search paths
 ```
 
 Do not start a visitor rewrite, unified assignment AST, separate compilation,
-field/index nullable narrowing, GC, task scheduling, or JIT as part of these
+additional nullable narrowing, GC, task scheduling, or JIT as part of these
 near-term slices.
