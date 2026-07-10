@@ -113,6 +113,27 @@ void test_method_exports_are_recorded_with_struct_names()
     assert(exports->at("Person").at("ageNext").returnType.kind == StaticType::Number);
 }
 
+
+void test_export_lookup_and_method_table_forwarding()
+{
+    ModuleSymbols symbols;
+
+    assert(!symbols.hasAnyExport(1, "Person"));
+    symbols.recordStructExport(1, "Person", structDecl("Person"));
+    assert(symbols.hasAnyExport(1, "Person"));
+    assert(!symbols.hasAnyExport(1, "answer"));
+    symbols.recordValueExport(1, "answer", binding("answer#0", StaticType::Number));
+    assert(symbols.hasAnyExport(1, "answer"));
+
+    StructMethodTable methods;
+    methods.emplace("ageNext", methodSignature("__method_Person_ageNext#0", simpleType(StaticType::Number)));
+    symbols.recordMethodExports(2, "Person", methods);
+
+    const ModuleMethodExports* exports = symbols.methodExports(2);
+    assert(exports != nullptr);
+    assert(exports->at("Person").at("ageNext").resolvedName == "__method_Person_ageNext#0");
+}
+
 void test_clear_removes_all_tables()
 {
     ModuleSymbols symbols;
@@ -145,5 +166,6 @@ int main()
     test_struct_exports_and_local_struct_markers_are_independent();
     test_namespace_aliases_are_recorded_and_queried();
     test_method_exports_are_recorded_with_struct_names();
+    test_export_lookup_and_method_table_forwarding();
     test_clear_removes_all_tables();
 }

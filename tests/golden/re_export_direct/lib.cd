@@ -1,0 +1,5 @@
+let value = 2;
+fun add(a: number, b: number): number {
+  return a + b;
+}
+export value, add;

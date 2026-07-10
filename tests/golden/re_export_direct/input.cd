@@ -1,0 +1,3 @@
+import "./api.cd";
+print value;
+print add(3, 4);

@@ -687,6 +687,10 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
         structTypes_.emplace(qualified.name.lexeme, std::move(qualified));
     }
 
+    for (auto& entry : imported.values) {
+        entry.second.type = qualifyNamespaceType(entry.second.type, alias.lexeme, imported.structs);
+    }
+
     importMethodExports(alias, imported.methods, &alias.lexeme, &imported.structs);
     moduleSymbols_.recordNamespace(moduleId, alias.lexeme, std::move(imported));
 }
@@ -748,13 +752,103 @@ void TypeChecker::checkImport(const ImportStmt& statement)
     }
 }
 
+std::string TypeChecker::sourcePathLabel(const Token& path) const
+{
+    if (path.lexeme.size() >= 2 && path.lexeme.front() == '"' && path.lexeme.back() == '"') {
+        return path.lexeme.substr(1, path.lexeme.size() - 2);
+    }
+    return path.lexeme;
+}
+
+void TypeChecker::ensureExportNameAvailable(std::size_t moduleId, const Token& name) const
+{
+    if (moduleSymbols_.hasAnyExport(moduleId, name.lexeme)) {
+        throw TypeError(name, "duplicate export `" + name.lexeme + "`");
+    }
+}
+
+void TypeChecker::forwardStructMethodExports(
+    std::size_t targetModuleId,
+    std::size_t currentModuleId,
+    const std::string& structName)
+{
+    const ModuleMethodExports* methodExports = moduleSymbols_.methodExports(targetModuleId);
+    if (!methodExports) {
+        return;
+    }
+    const auto found = methodExports->find(structName);
+    if (found == methodExports->end()) {
+        return;
+    }
+    moduleSymbols_.recordMethodExports(currentModuleId, structName, found->second);
+}
+
+void TypeChecker::checkReExport(const ExportStmt& statement)
+{
+    if (moduleStack_.empty()) {
+        throw TypeError(statement.keyword, "re-export declarations require a module context");
+    }
+    if (!currentProgram_) {
+        throw TypeError(statement.keyword, "internal error: re-export without program");
+    }
+    if (!statement.sourcePath) {
+        throw TypeError(statement.keyword, "internal error: re-export without source path");
+    }
+
+    const std::size_t currentModuleId = moduleStack_.back();
+    const ModuleStmt* target = findModule(*currentProgram_, statement.resolvedModuleId);
+    if (!target) {
+        throw TypeError(statement.keyword, "internal error: unresolved re-export module");
+    }
+    checkModule(*target);
+
+    const ModuleValueExports* valueExports = moduleSymbols_.valueExports(target->moduleId);
+    const ModuleStructExports* structExports = moduleSymbols_.structExports(target->moduleId);
+
+    for (const Token& name : statement.names) {
+        ensureExportNameAvailable(currentModuleId, name);
+
+        bool exported = false;
+        if (valueExports) {
+            const auto found = valueExports->find(name.lexeme);
+            if (found != valueExports->end()) {
+                moduleSymbols_.recordValueExport(currentModuleId, name.lexeme, found->second);
+                exported = true;
+            }
+        }
+
+        if (structExports) {
+            const auto found = structExports->find(name.lexeme);
+            if (found != structExports->end()) {
+                moduleSymbols_.recordStructExport(currentModuleId, name.lexeme, found->second);
+                forwardStructMethodExports(target->moduleId, currentModuleId, name.lexeme);
+                exported = true;
+            }
+        }
+
+        if (!exported) {
+            throw TypeError(name,
+                "module `" + sourcePathLabel(*statement.sourcePath) + "` has no exported name `" + name.lexeme + "`");
+        }
+    }
+}
+
 void TypeChecker::checkExport(const ExportStmt& statement)
 {
+    if (statement.sourcePath) {
+        checkReExport(statement);
+        return;
+    }
+
     const bool inModule = !moduleStack_.empty();
     const std::size_t moduleId = inModule ? moduleStack_.back() : 0;
 
     for (const auto& name : statement.names) {
         bool exported = false;
+
+        if (inModule) {
+            ensureExportNameAvailable(moduleId, name);
+        }
 
         if (Binding* binding = findVariable(name.lexeme)) {
             if (binding->scopeDepth == 0 && !binding->imported) {

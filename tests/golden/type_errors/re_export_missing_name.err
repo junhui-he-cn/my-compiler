@@ -1,0 +1,1 @@
+Type error at <repo>/tests/golden/type_errors/re_export_missing_name.cd:1:8: module `../re_export_direct/lib.cd` has no exported name `missing`

@@ -33,6 +33,10 @@ public:
     const ModuleStructExports* structExports(std::size_t moduleId) const;
     void recordMethodExport(std::size_t moduleId, std::string structName, std::string methodName, MethodSignature signature);
     const ModuleMethodExports* methodExports(std::size_t moduleId) const;
+    bool hasValueExport(std::size_t moduleId, const std::string& name) const;
+    bool hasStructExport(std::size_t moduleId, const std::string& name) const;
+    bool hasAnyExport(std::size_t moduleId, const std::string& name) const;
+    void recordMethodExports(std::size_t moduleId, std::string structName, const StructMethodTable& methods);
 
     bool hasNamespace(std::size_t moduleId, const std::string& alias) const;
     void recordNamespace(std::size_t moduleId, std::string alias, NamespaceImport imported);

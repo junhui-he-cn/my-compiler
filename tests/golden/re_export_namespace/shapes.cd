@@ -1,0 +1,13 @@
+struct Point { x: number, y: number }
+
+impl Point {
+  fun sum(): number {
+    return this.x + this.y;
+  }
+}
+
+fun makePoint(x: number, y: number): Point {
+  return Point { x: x, y: y };
+}
+
+export Point, makePoint;

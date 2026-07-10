@@ -1,0 +1,2 @@
+export value from "../re_export_direct/lib.cd";
+export value from "../re_export_duplicate_source/lib.cd";

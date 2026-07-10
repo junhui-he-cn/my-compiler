@@ -65,6 +65,34 @@ const ModuleMethodExports* ModuleSymbols::methodExports(std::size_t moduleId) co
     return found == methodExports_.end() ? nullptr : &found->second;
 }
 
+bool ModuleSymbols::hasValueExport(std::size_t moduleId, const std::string& name) const
+{
+    const ModuleValueExports* exports = valueExports(moduleId);
+    return exports && exports->find(name) != exports->end();
+}
+
+bool ModuleSymbols::hasStructExport(std::size_t moduleId, const std::string& name) const
+{
+    const ModuleStructExports* exports = structExports(moduleId);
+    return exports && exports->find(name) != exports->end();
+}
+
+bool ModuleSymbols::hasAnyExport(std::size_t moduleId, const std::string& name) const
+{
+    return hasValueExport(moduleId, name) || hasStructExport(moduleId, name);
+}
+
+void ModuleSymbols::recordMethodExports(std::size_t moduleId, std::string structName, const StructMethodTable& methods)
+{
+    if (methods.empty()) {
+        return;
+    }
+    auto& destination = methodExports_[moduleId][std::move(structName)];
+    for (const auto& entry : methods) {
+        destination.emplace(entry.first, entry.second);
+    }
+}
+
 bool ModuleSymbols::hasNamespace(std::size_t moduleId, const std::string& alias) const
 {
     return namespaceImport(moduleId, alias) != nullptr;

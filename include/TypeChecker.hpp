@@ -136,6 +136,10 @@ private:
     void checkModule(const ModuleStmt& module);
     void checkImport(const ImportStmt& statement);
     void checkExport(const ExportStmt& statement);
+    std::string sourcePathLabel(const Token& path) const;
+    void ensureExportNameAvailable(std::size_t moduleId, const Token& name) const;
+    void forwardStructMethodExports(std::size_t targetModuleId, std::size_t currentModuleId, const std::string& structName);
+    void checkReExport(const ExportStmt& statement);
     const ModuleStmt* findModule(const Program& program, std::size_t moduleId) const;
     void checkStructDeclaration(const StructDeclStmt& statement);
     void checkImpl(const ImplStmt& statement);

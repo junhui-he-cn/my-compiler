@@ -1,0 +1,1 @@
+export Point, makePoint from "./shapes.cd";
