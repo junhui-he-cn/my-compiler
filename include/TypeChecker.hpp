@@ -3,6 +3,7 @@
 #include "Ast.hpp"
 #include "Diagnostic.hpp"
 #include "FlowFacts.hpp"
+#include "ModuleSymbols.hpp"
 #include "Token.hpp"
 #include "TypeUtils.hpp"
 
@@ -84,29 +85,14 @@ private:
         TypeInfo type;
     };
 
-    struct Binding {
-        TypeInfo type;
-        std::string resolvedName;
-        std::size_t scopeDepth = 0;
-        std::size_t functionDepth = 0;
-        bool explicitType = false;
-        bool imported = false;
-    };
+    using Binding = TypeBinding;
+    using StructFieldType = ::StructFieldType;
+    using StructTypeDecl = ::StructTypeDecl;
 
     struct FunctionReturnContext {
         bool sawReturn = false;
         TypeInfo returnType;
         std::optional<TypeInfo> expectedReturnType;
-    };
-
-    struct StructFieldType {
-        Token name;
-        TypeInfo type;
-    };
-
-    struct StructTypeDecl {
-        Token name;
-        std::vector<StructFieldType> fields;
     };
 
     struct MethodInfo {
@@ -123,15 +109,7 @@ private:
     };
 
     using Scope = std::unordered_map<std::string, Binding>;
-    using ExportTable = std::unordered_map<std::string, Binding>;
     using MethodTable = std::unordered_map<std::string, std::unordered_map<std::string, MethodInfo>>;
-
-    struct NamespaceImport {
-        ExportTable values;
-        std::unordered_map<std::string, StructTypeDecl> structs;
-    };
-
-    using NamespaceTable = std::unordered_map<std::string, NamespaceImport>;
 
     void beginScope();
     void endScope();
@@ -149,7 +127,6 @@ private:
         bool explicitType = false);
     Binding declareImportedVariable(const Token& name, const Binding& importedBinding);
     std::string makeResolvedName(const std::string& sourceName);
-    NamespaceTable& currentNamespaceTable();
     const NamespaceImport* findNamespace(const std::string& alias) const;
     void declareNamespaceAlias(const ImportStmt& statement, NamespaceImport imported);
     std::string qualifiedStructName(const Token& qualifier, const Token& name) const;
@@ -231,11 +208,7 @@ private:
     std::vector<Scope> scopes_;
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
     MethodTable methods_;
-    std::unordered_map<std::size_t, ExportTable> moduleExports_;
-    std::unordered_map<std::size_t, std::unordered_map<std::string, StructTypeDecl>> moduleStructExports_;
-    std::unordered_map<std::size_t, std::unordered_set<std::string>> moduleLocalStructNames_;
-    std::unordered_map<std::size_t, NamespaceTable> moduleNamespaces_;
-    std::unordered_map<std::size_t, std::unordered_set<std::size_t>> moduleImportedModules_;
+    ModuleSymbols moduleSymbols_;
     std::unordered_set<std::size_t> checkedModules_;
     std::vector<std::size_t> moduleStack_;
     ResolvedNames resolvedNames_;

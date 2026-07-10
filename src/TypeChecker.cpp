@@ -288,11 +288,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     scopes_.clear();
     structTypes_.clear();
     methods_.clear();
-    moduleExports_.clear();
-    moduleStructExports_.clear();
-    moduleLocalStructNames_.clear();
-    moduleNamespaces_.clear();
-    moduleImportedModules_.clear();
+    moduleSymbols_.clear();
     checkedModules_.clear();
     moduleStack_.clear();
     resolvedNames_.clear();
@@ -643,25 +639,12 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     returnContexts_ = std::move(savedReturnContexts);
 }
 
-TypeChecker::NamespaceTable& TypeChecker::currentNamespaceTable()
-{
-    if (moduleStack_.empty()) {
-        throw TypeError("namespace imports require a module context");
-    }
-    return moduleNamespaces_[moduleStack_.back()];
-}
-
-const TypeChecker::NamespaceImport* TypeChecker::findNamespace(const std::string& alias) const
+const NamespaceImport* TypeChecker::findNamespace(const std::string& alias) const
 {
     if (moduleStack_.empty()) {
         return nullptr;
     }
-    const auto table = moduleNamespaces_.find(moduleStack_.back());
-    if (table == moduleNamespaces_.end()) {
-        return nullptr;
-    }
-    const auto found = table->second.find(alias);
-    return found == table->second.end() ? nullptr : &found->second;
+    return moduleSymbols_.namespaceImport(moduleStack_.back(), alias);
 }
 
 std::string TypeChecker::qualifiedStructName(const Token& qualifier, const Token& name) const
@@ -684,8 +667,12 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
     }
 
     const Token& alias = *statement.alias;
-    NamespaceTable& namespaces = currentNamespaceTable();
-    if (namespaces.find(alias.lexeme) != namespaces.end()
+    if (moduleStack_.empty()) {
+        throw TypeError(statement.keyword, "namespace imports require a module context");
+    }
+
+    const std::size_t moduleId = moduleStack_.back();
+    if (moduleSymbols_.hasNamespace(moduleId, alias.lexeme)
         || currentScope().find(alias.lexeme) != currentScope().end()
         || structTypes_.find(alias.lexeme) != structTypes_.end()) {
         throw TypeError(alias, "namespace alias `" + alias.lexeme + "` conflicts with an existing declaration");
@@ -697,7 +684,7 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
         structTypes_.emplace(qualified.name.lexeme, std::move(qualified));
     }
 
-    namespaces.emplace(alias.lexeme, std::move(imported));
+    moduleSymbols_.recordNamespace(moduleId, alias.lexeme, std::move(imported));
 }
 
 void TypeChecker::checkImport(const ImportStmt& statement)
@@ -710,12 +697,8 @@ void TypeChecker::checkImport(const ImportStmt& statement)
     }
 
     const std::size_t currentModuleId = moduleStack_.back();
-    if (!statement.alias && moduleImportedModules_[currentModuleId].find(statement.resolvedModuleId)
-        != moduleImportedModules_[currentModuleId].end()) {
+    if (!statement.alias && !moduleSymbols_.markDirectImport(currentModuleId, statement.resolvedModuleId)) {
         return;
-    }
-    if (!statement.alias) {
-        moduleImportedModules_[currentModuleId].insert(statement.resolvedModuleId);
     }
 
     const ModuleStmt* imported = findModule(*currentProgram_, statement.resolvedModuleId);
@@ -726,29 +709,25 @@ void TypeChecker::checkImport(const ImportStmt& statement)
 
     if (statement.alias) {
         NamespaceImport namespaceImport;
-        const auto exports = moduleExports_.find(imported->moduleId);
-        if (exports != moduleExports_.end()) {
-            namespaceImport.values = exports->second;
+        if (const ModuleValueExports* exports = moduleSymbols_.valueExports(imported->moduleId)) {
+            namespaceImport.values = *exports;
         }
-        const auto structExports = moduleStructExports_.find(imported->moduleId);
-        if (structExports != moduleStructExports_.end()) {
-            namespaceImport.structs = structExports->second;
+        if (const ModuleStructExports* structExports = moduleSymbols_.structExports(imported->moduleId)) {
+            namespaceImport.structs = *structExports;
         }
         declareNamespaceAlias(statement, std::move(namespaceImport));
         return;
     }
 
-    const auto exports = moduleExports_.find(imported->moduleId);
-    if (exports != moduleExports_.end()) {
-        for (const auto& entry : exports->second) {
+    if (const ModuleValueExports* exports = moduleSymbols_.valueExports(imported->moduleId)) {
+        for (const auto& entry : *exports) {
             Token name{TokenType::Identifier, entry.first, statement.keyword.line, statement.keyword.column};
             declareImportedVariable(name, entry.second);
         }
     }
 
-    const auto structExports = moduleStructExports_.find(imported->moduleId);
-    if (structExports != moduleStructExports_.end()) {
-        for (const auto& entry : structExports->second) {
+    if (const ModuleStructExports* structExports = moduleSymbols_.structExports(imported->moduleId)) {
+        for (const auto& entry : *structExports) {
             if (structTypes_.find(entry.first) != structTypes_.end()) {
                 Token name{TokenType::Identifier, entry.first, statement.keyword.line, statement.keyword.column};
                 throw TypeError(name, "duplicate struct `" + entry.first + "`");
@@ -769,18 +748,16 @@ void TypeChecker::checkExport(const ExportStmt& statement)
         if (Binding* binding = findVariable(name.lexeme)) {
             if (binding->scopeDepth == 0 && !binding->imported) {
                 if (inModule) {
-                    moduleExports_[moduleId].emplace(name.lexeme, *binding);
+                    moduleSymbols_.recordValueExport(moduleId, name.lexeme, *binding);
                 }
                 exported = true;
             }
         }
 
         if (inModule) {
-            const auto localStructs = moduleLocalStructNames_.find(moduleId);
-            if (localStructs != moduleLocalStructNames_.end()
-                && localStructs->second.find(name.lexeme) != localStructs->second.end()) {
+            if (moduleSymbols_.isLocalStruct(moduleId, name.lexeme)) {
                 if (const StructTypeDecl* structType = findStructType(name.lexeme)) {
-                    moduleStructExports_[moduleId].emplace(name.lexeme, *structType);
+                    moduleSymbols_.recordStructExport(moduleId, name.lexeme, *structType);
                     exported = true;
                 }
             }
@@ -887,7 +864,7 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
 
     structTypes_.emplace(statement.name.lexeme, std::move(declaration));
     if (!moduleStack_.empty()) {
-        moduleLocalStructNames_[moduleStack_.back()].insert(statement.name.lexeme);
+        moduleSymbols_.markLocalStruct(moduleStack_.back(), statement.name.lexeme);
     }
 }
 
