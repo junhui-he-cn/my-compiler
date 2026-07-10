@@ -4,8 +4,9 @@
 
 Replace the current two-stage module-loading path with one front-end boundary
 that owns source loading, parsing, import discovery, module identity, and
-file-aware diagnostics. This is a behavior-preserving refactor. It does not
-add imported struct methods or change module semantics.
+file-aware diagnostics. It does not add imported struct methods or change
+module semantics. The intentional diagnostic-order change is that a module's
+own lexer/parser failure is reported before recursively loading its imports.
 
 ## Current Problem
 
@@ -23,6 +24,14 @@ file-backed and stdin input. It owns a collection of parsed module records.
 Each record contains a stable module ID, display path, canonical path, source
 text, parsed statements, scanned tokens, entry-file flag, and resolved import
 edges.
+
+For direct CLI inputs, the session performs a bounded lexer scan of their
+newline-joined source and stops at the first `Import` token. If none appears,
+that same complete token stream is parsed as the legacy combined source. If an
+import appears, the session parses file-backed modules separately. This mode
+selection preserves cross-file lexical syntax without reintroducing a
+handwritten import directive scanner; resolved dependency edges still come
+only from parsed `ImportStmt` nodes.
 
 For a file-backed module, the session will:
 
@@ -49,8 +58,10 @@ source semantics:
   wrappers from the stored parsed statements. Their module IDs, source text,
   paths, entry flags, and import IDs retain the current module/type-checker
   contract.
-- If file inputs contain no imports, append the parsed statements of direct
-  inputs in command-line order. This preserves their shared top-level scope.
+- If file inputs contain no imports, combine the already-scanned direct-input
+  token streams and parse them once as one source. This preserves both their
+  shared top-level scope and existing syntax that deliberately crosses a file
+  boundary. Direct multi-file diagnostics are remapped to the owning file.
 - A stdin program uses its parsed statements directly.
 
 The session also exposes its stored tokens/source data for CLI output. `main`
@@ -81,6 +92,12 @@ The following behavior remains stable:
 - Module-private top-level scopes, exports, direct imports, and namespace
   imports.
 - AST, IR, bytecode, and C++/Rust runtime outputs for existing fixtures.
+
+Imports are discovered from successfully parsed `ImportStmt` nodes, not from a
+handwritten source scanner. Consequently, a lexer or parser failure in a
+module is reported before a missing dependency referenced later in that same
+module can be loaded. This replaces the legacy pre-scan diagnostic order and
+is covered by a focused CLI regression test.
 
 Direct input files that fail during parse are now diagnosed at their native
 file location by the session rather than after parsing a combined source. The

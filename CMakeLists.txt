@@ -18,14 +18,13 @@ add_executable(compiler_design
     src/BytecodeTextEmitter.cpp
     src/BytecodeCompiler.cpp
     src/Diagnostic.cpp
+    src/FrontendSession.cpp
     src/IR.cpp
     src/IRCompiler.cpp
     src/IRInterpreter.cpp
     src/Lexer.cpp
-    src/ModuleProgram.cpp
     src/NativeStdlib.cpp
     src/Parser.cpp
-    src/SourceManager.cpp
     src/TypeChecker.cpp
     src/TypeUtils.cpp
     src/Value.cpp
@@ -64,3 +63,14 @@ add_test(
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
             ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_rust_vm_tests.py $<TARGET_FILE:compiler_design> ${CMAKE_SOURCE_DIR}/vm-rs --goldens
 )
+
+add_executable(frontend_session_tests
+    tests/frontend_session_tests.cpp
+    src/Ast.cpp
+    src/Diagnostic.cpp
+    src/FrontendSession.cpp
+    src/Lexer.cpp
+    src/Parser.cpp
+)
+target_include_directories(frontend_session_tests PRIVATE include)
+add_test(NAME frontend_session COMMAND frontend_session_tests)

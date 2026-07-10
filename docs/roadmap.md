@@ -51,8 +51,8 @@ behavior. The recommended bands are:
 
 1. Remove the unused legacy `SourceManager` source-expansion import path.
    Implemented.
-2. Design a single-parse `ModuleLoader` / `FrontendSession` boundary that owns
-   parsed ASTs, the import graph, and file-aware diagnostics.
+2. Implemented: a single-parse `FrontendSession` owns parsed ASTs, the import
+   graph, canonical file identities, and file-aware front-end diagnostics.
 3. Extract focused flow-fact/narrowing and module-symbol-table subsystems from
    `TypeChecker` without rewriting AST dispatch as a visitor.
 4. Add repository CI plus optional compiler warnings and ASan/UBSan builds.
@@ -86,8 +86,7 @@ behavior. The recommended bands are:
 The immediate dependency order is therefore:
 
 ```text
-module-loading cleanup
--> imported struct methods
+imported struct methods
 -> loop-body nullable narrowing
 -> post-branch nullable narrowing
 -> re-export
@@ -249,7 +248,7 @@ Each builtin should define behavior for both the IR interpreter and bytecode art
 
 ## Phase 14: Modules / Imports
 
-Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and standalone export lists expose selected already-defined top-level declarations to importers while keeping private helpers hidden. Phase 14D is implemented: namespace imports with `import "path" as name;` provide qualified access to exported values, functions, and structs without top-level name pollution. Before Phase 14E, consolidate module loading around one parsed representation and complete imported struct method metadata. Re-export syntax, package search paths, and separate compilation remain future work.
+Status: in progress. Phase 14A is implemented: the CLI accepts multiple input files and compiles them as one combined source in command-line order. Phase 14B is implemented: `import "path";` recursively loads source files relative to the importing file, suppresses duplicate canonical imports, reports missing-file/cycle/stdin import errors, and has bytecode/Rust VM parity coverage. Phase 14C is implemented: imported files have module-private top-level scope, and standalone export lists expose selected already-defined top-level declarations to importers while keeping private helpers hidden. Phase 14D is implemented: namespace imports with `import "path" as name;` provide qualified access to exported values, functions, and structs without top-level name pollution. The single-parse module-loading boundary is complete; imported struct method metadata remains the prerequisite before Phase 14E. Re-export syntax, package search paths, and separate compilation remain future work.
 
 Goal: allow programs to be split across files.
 
@@ -324,6 +323,9 @@ Recently completed cleanup:
 
 - Removed the unused legacy `SourceManager` source-expansion import path and
   its obsolete combined-source file metadata.
+- Replaced handwritten import scanning and second-pass module parsing with a
+  single-parse `FrontendSession` that owns source loading, parsed modules,
+  import identities, and front-end diagnostic contexts.
 - Shared assignment-target checking in `TypeChecker` for array indexes, struct
   fields, and numeric compound-assignment operands.
 - Shared compound-assignment result lowering in `IRCompiler` for variable,
@@ -338,10 +340,6 @@ Recently completed cleanup:
 
 Recommended future cleanup slices:
 
-- **Introduce a single-parse module front-end boundary.** A `ModuleLoader` or
-  `FrontendSession` should own parsed ASTs, the import graph, canonical file
-  identities, and file-aware diagnostics so import discovery does not require
-  a separate handwritten scan followed by another lexer/parser pass.
 - **Extract focused `TypeChecker` subsystems without changing AST dispatch.**
   Move flow facts/narrowing and module symbol/export metadata behind small
   interfaces while leaving the existing statement/expression dispatch intact.
@@ -379,8 +377,7 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-module-loading cleanup
--> imported struct methods
+imported struct methods
 -> loop-body nullable narrowing
 -> post-branch nullable narrowing
 -> Phase 14E re-export

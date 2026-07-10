@@ -37,6 +37,34 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.stderr, "")
             self.assertEqual(completed.stdout, "3\n")
 
+    def test_direct_input_files_parse_as_one_combined_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first = root / "first.cd"
+            second = root / "second.cd"
+            first.write_text("let value =\n", encoding="utf-8")
+            second.write_text("41;\nprint value;\n", encoding="utf-8")
+
+            completed = self.run_compiler("--run", str(first), str(second))
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "41\n")
+            self.assertEqual(completed.stderr, "")
+
+    def test_direct_input_files_lex_as_one_combined_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first = root / "first.cd"
+            second = root / "second.cd"
+            first.write_text('print "first\n', encoding="utf-8")
+            second.write_text('second";\n', encoding="utf-8")
+
+            completed = self.run_compiler("--run", str(first), str(second))
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "first\nsecond\n")
+            self.assertEqual(completed.stderr, "")
+
     def test_emit_bytecode_accepts_multiple_input_files(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -66,6 +94,38 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 1)
             self.assertEqual(completed.stdout, "")
             self.assertEqual(completed.stderr, f"failed to open input file: {missing}\n")
+
+    def test_import_loading_precedes_later_entry_lex_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first = root / "first.cd"
+            second = root / "second.cd"
+            missing = root / "missing.cd"
+            first.write_text('import "./missing.cd";\n', encoding="utf-8")
+            second.write_text("print @;\n", encoding="utf-8")
+
+            completed = self.run_compiler(str(first), str(second))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(completed.stderr, f"Import error: failed to open import: {missing}\n")
+
+    def test_importer_frontend_errors_precede_dependency_loading(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "input.cd"
+            source.write_text('import "./missing.cd";\nprint @;\n', encoding="utf-8")
+
+            completed = self.run_compiler(str(source))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Lex error at {source}:2:7: unexpected character `@`\n"
+                "  print @;\n"
+                "        ^\n",
+            )
 
     def test_stdin_still_works_when_no_input_files_are_given(self) -> None:
         completed = self.run_compiler("--run", input_text="print 7;\n")
@@ -124,6 +184,24 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertEqual(completed.stdout, "relative\n")
             self.assertEqual(completed.stderr, "")
 
+    def test_canonical_duplicate_import_spellings_are_deduplicated(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "nested").mkdir()
+            (root / "shared.cd").write_text("let value = 9;\nexport value;\n", encoding="utf-8")
+            (root / "input.cd").write_text(
+                'import "./shared.cd";\n'
+                'import "./nested/../shared.cd";\n'
+                'print value;\n',
+                encoding="utf-8",
+            )
+
+            completed = self.run_compiler("--run", str(root / "input.cd"))
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "9\n")
+            self.assertEqual(completed.stderr, "")
+
     def test_imported_file_parse_error_reports_imported_file_path(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -140,6 +218,24 @@ class CliMultiSourceTests(unittest.TestCase):
                 f"Parse error at {lib}:1:13: expected expression\n"
                 "  let value = ;\n"
                 "              ^\n",
+            )
+
+    def test_imported_file_lex_error_reports_imported_file_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            lib = root / "lib.cd"
+            (root / "input.cd").write_text('import "./lib.cd";\nprint 1;\n', encoding="utf-8")
+            lib.write_text("print @;\n", encoding="utf-8")
+
+            completed = self.run_compiler(str(root / "input.cd"))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Lex error at {lib}:1:7: unexpected character `@`\n"
+                "  print @;\n"
+                "        ^\n",
             )
 
     def test_imported_file_type_error_reports_imported_file_path(self) -> None:

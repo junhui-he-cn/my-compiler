@@ -1,11 +1,8 @@
 #include "BytecodeCompiler.hpp"
 #include "BytecodeTextEmitter.hpp"
+#include "FrontendSession.hpp"
 #include "IRCompiler.hpp"
 #include "IRInterpreter.hpp"
-#include "Lexer.hpp"
-#include "ModuleProgram.hpp"
-#include "Parser.hpp"
-#include "SourceManager.hpp"
 #include "TypeChecker.hpp"
 
 #include <fstream>
@@ -23,67 +20,6 @@ void printUsage(const char* executable)
     std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [--run] [file ...]\n"
               << "       " << executable << " --emit-bytecode output.cdbc file [...]\n"
               << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n";
-}
-
-bool containsImportToken(const SourceLoadResult& loadResult)
-{
-    for (const SourceUnit& unit : loadResult.units) {
-        Lexer lexer(unit.source);
-        for (const Token& token : lexer.scanTokens()) {
-            if (token.type == TokenType::Import) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-std::size_t sourceLineSpan(const std::string& source)
-{
-    if (source.empty()) {
-        return 0;
-    }
-    std::size_t lines = 1;
-    for (const char ch : source) {
-        if (ch == '\n') {
-            ++lines;
-        }
-    }
-    if (source.back() == '\n') {
-        --lines;
-    }
-    return lines;
-}
-
-std::optional<FileDiagnosticError> fileDiagnosticForCombinedLocation(
-    const DiagnosticError& error,
-    const SourceLoadResult& loadResult)
-{
-    if (!error.location()) {
-        return std::nullopt;
-    }
-
-    std::size_t startLine = 1;
-    for (const SourceUnit& unit : loadResult.units) {
-        const std::size_t span = sourceLineSpan(unit.source);
-        if (span == 0) {
-            continue;
-        }
-        const std::size_t diagnosticLine = static_cast<std::size_t>(error.location()->line);
-        if (diagnosticLine >= startLine && diagnosticLine < startLine + span) {
-            DiagnosticError remapped(
-                error.kind(),
-                SourceLocation{
-                    static_cast<int>(diagnosticLine - startLine + 1),
-                    error.location()->column,
-                },
-                error.message());
-            return FileDiagnosticError(remapped, DiagnosticSourceContext{unit.path, unit.source, false});
-        }
-        startLine += span;
-    }
-
-    return std::nullopt;
 }
 
 } // namespace
@@ -128,47 +64,17 @@ int main(int argc, char** argv)
         }
     }
 
-    std::string source;
-    std::optional<SourceLoadResult> fileLoadResult;
-    bool usedModuleProgram = false;
+    FrontendSession frontend;
     try {
-        SourceManager sourceManager;
-        Program program;
-        std::vector<Token> tokens;
+        Program program = inputPaths.empty()
+            ? frontend.loadStdin(std::cin)
+            : frontend.loadFiles(inputPaths);
 
-        if (inputPaths.empty()) {
-            source = sourceManager.loadStdin(std::cin);
-            Lexer lexer(source);
-            tokens = lexer.scanTokens();
-            if (showTokens) {
-                for (const Token& token : tokens) {
-                    std::cout << token << '\n';
-                }
-                std::cout << '\n';
+        if (showTokens) {
+            for (const Token& token : frontend.displayTokens()) {
+                std::cout << token << '\n';
             }
-            Parser parser(tokens);
-            program = parser.parse();
-        } else {
-            fileLoadResult = sourceManager.loadFileUnits(inputPaths);
-            source = fileLoadResult->combinedSource;
-            if (showTokens) {
-                Lexer lexer(source);
-                tokens = lexer.scanTokens();
-                for (const Token& token : tokens) {
-                    std::cout << token << '\n';
-                }
-                std::cout << '\n';
-            }
-
-            if (containsImportToken(*fileLoadResult)) {
-                usedModuleProgram = true;
-                program = buildModuleProgram(*fileLoadResult);
-            } else {
-                Lexer lexer(source);
-                tokens = lexer.scanTokens();
-                Parser parser(tokens);
-                program = parser.parse();
-            }
+            std::cout << '\n';
         }
 
         TypeChecker typeChecker;
@@ -231,14 +137,11 @@ int main(int argc, char** argv)
         std::cerr << formatDiagnosticWithSourceContext(error) << '\n';
         return 1;
     } catch (const DiagnosticError& error) {
-        if (fileLoadResult && !usedModuleProgram && fileLoadResult->units.size() > 1) {
-            std::optional<FileDiagnosticError> remapped = fileDiagnosticForCombinedLocation(error, *fileLoadResult);
-            if (remapped) {
-                std::cerr << formatDiagnosticWithSourceContext(*remapped) << '\n';
-                return 1;
-            }
+        if (const std::optional<FileDiagnosticError> remapped = frontend.remapDirectDiagnostic(error)) {
+            std::cerr << formatDiagnosticWithSourceContext(*remapped) << '\n';
+            return 1;
         }
-        std::cerr << formatDiagnosticWithSource(error, source) << '\n';
+        std::cerr << formatDiagnosticWithSource(error, frontend.sourceForDiagnostics()) << '\n';
         return 1;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

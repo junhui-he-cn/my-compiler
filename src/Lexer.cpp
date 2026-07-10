@@ -36,6 +36,22 @@ std::vector<Token> Lexer::scanTokens()
     return tokens_;
 }
 
+std::vector<Token> Lexer::scanTokensUntil(TokenType stopType)
+{
+    while (!isAtEnd()) {
+        start_ = current_;
+        tokenColumn_ = column_;
+        const std::size_t tokenCount = tokens_.size();
+        scanToken();
+        if (tokens_.size() > tokenCount && tokens_.back().type == stopType) {
+            return tokens_;
+        }
+    }
+
+    tokens_.push_back(Token{TokenType::EndOfFile, "", line_, column_});
+    return tokens_;
+}
+
 bool Lexer::isAtEnd() const
 {
     return current_ >= source_.size();
