@@ -442,6 +442,58 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertFalse(results[0].passed)
         self.assertIn("stderr mismatch", results[0].message)
 
+    def test_parse_error_absolute_repo_paths_are_checkout_independent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            parse_dir = golden_dir / "parse_errors"
+            parse_dir.mkdir(parents=True)
+            (parse_dir / "bad_import.cd").write_text("import path;\n", encoding="utf-8")
+            (parse_dir / "bad_import.err").write_text(
+                "Parse error at /old/checkout/tests/golden/parse_errors/bad_import.cd:1:8: expected import path string\n"
+                "  import path;\n"
+                "         ^\n",
+                encoding="utf-8",
+            )
+            (parse_dir / "bad_import.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr=(
+                    "Parse error at /new/checkout/tests/golden/parse_errors/bad_import.cd:1:8: expected import path string\n"
+                    "  import path;\n"
+                    "         ^\n"
+                ),
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed, results[0].message)
+
+    def test_import_error_absolute_repo_paths_are_checkout_independent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            import_dir = golden_dir / "import_errors"
+            import_dir.mkdir(parents=True)
+            (import_dir / "missing.cd").write_text('import "./missing.cd";\n', encoding="utf-8")
+            (import_dir / "missing.err").write_text(
+                "Import error: failed to open import: /old/checkout/tests/golden/import_errors/missing.cd\n",
+                encoding="utf-8",
+            )
+            (import_dir / "missing.exit").write_text("1\n", encoding="utf-8")
+            compiler = self.make_fake_compiler(
+                root,
+                stderr="Import error: failed to open import: /new/checkout/tests/golden/import_errors/missing.cd\n",
+                returncode=1,
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed, results[0].message)
+
     def test_import_error_one_line_expected_does_not_accept_extra_snippet(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

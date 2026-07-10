@@ -2,6 +2,7 @@
 
 import argparse
 import difflib
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -28,6 +29,10 @@ def read_text(path: Path) -> str:
 
 def write_text(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
+
+
+def normalize_checkout_paths(text: str) -> str:
+    return re.sub(r"(?:[A-Za-z]:)?[/\\][^\s\n]*?(?=[/\\]tests[/\\]golden[/\\])", "<repo>", text)
 
 
 def compiler_inputs(case_dir: Path) -> list[Path]:
@@ -222,7 +227,7 @@ def check_parse_error_case(compiler: Path, source: Path, update: bool) -> list[C
     completed = run_compiler(compiler, (), source)
 
     if update:
-        write_text(err_path, completed.stderr)
+        write_text(err_path, normalize_checkout_paths(completed.stderr))
         write_text(exit_path, f"{completed.returncode}\n")
         if completed.stdout:
             return [unexpected_parse_stdout_result(case_name, completed.stdout)]
@@ -236,8 +241,8 @@ def check_parse_error_case(compiler: Path, source: Path, update: bool) -> list[C
     if not err_path.exists():
         results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
     else:
-        expected_err = read_text(err_path)
-        actual_err = completed.stderr
+        expected_err = normalize_checkout_paths(read_text(err_path))
+        actual_err = normalize_checkout_paths(completed.stderr)
         if not located_diagnostic_stderr_matches(expected_err, actual_err):
             diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
             results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
@@ -272,7 +277,7 @@ def check_type_error_case(compiler: Path, source: Path, update: bool) -> list[Ch
     completed = run_compiler(compiler, (), source)
 
     if update:
-        write_text(err_path, completed.stderr)
+        write_text(err_path, normalize_checkout_paths(completed.stderr))
         write_text(exit_path, f"{completed.returncode}\n")
         if completed.stdout:
             return [unexpected_type_stdout_result(case_name, completed.stdout)]
@@ -286,8 +291,8 @@ def check_type_error_case(compiler: Path, source: Path, update: bool) -> list[Ch
     if not err_path.exists():
         results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
     else:
-        expected_err = read_text(err_path)
-        actual_err = completed.stderr
+        expected_err = normalize_checkout_paths(read_text(err_path))
+        actual_err = normalize_checkout_paths(completed.stderr)
         if not located_diagnostic_stderr_matches(expected_err, actual_err):
             diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
             results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))
@@ -323,7 +328,7 @@ def check_import_error_case(compiler: Path, source: Path, update: bool) -> list[
     completed = run_compiler(compiler, (), source)
 
     if update:
-        write_text(err_path, completed.stderr)
+        write_text(err_path, normalize_checkout_paths(completed.stderr))
         write_text(exit_path, f"{completed.returncode}\n")
         if completed.stdout:
             return [unexpected_import_stdout_result(case_name, completed.stdout)]
@@ -337,8 +342,8 @@ def check_import_error_case(compiler: Path, source: Path, update: bool) -> list[
     if not err_path.exists():
         results.append(CheckResult(case_name, False, f"FAIL {case_name} missing expected stderr file: {err_path}"))
     else:
-        expected_err = read_text(err_path)
-        actual_err = completed.stderr
+        expected_err = normalize_checkout_paths(read_text(err_path))
+        actual_err = normalize_checkout_paths(completed.stderr)
         if actual_err != expected_err:
             diff = unified_diff(expected_err, actual_err, "expected stderr", "actual stderr")
             results.append(CheckResult(case_name, False, f"FAIL {case_name} stderr mismatch\n\n{diff}"))

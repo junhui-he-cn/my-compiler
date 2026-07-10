@@ -1,1 +1,1 @@
-Import error: failed to open import: /home/junhe/compiler/tests/golden/import_errors/does_not_exist.cd
+Import error: failed to open import: <repo>/tests/golden/import_errors/does_not_exist.cd
