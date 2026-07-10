@@ -31,6 +31,7 @@ def main() -> None:
                 "-B",
                 str(build_dir),
                 "-DCOMPILER_DESIGN_ENABLE_WARNINGS=ON",
+                "-DCOMPILER_DESIGN_ENABLE_SANITIZERS=ON",
             ],
             text=True,
             capture_output=True,
@@ -41,9 +42,13 @@ def main() -> None:
 
         cache_path = build_dir / "CMakeCache.txt"
         cache = cache_path.read_text(encoding="utf-8")
-        expected = "COMPILER_DESIGN_ENABLE_WARNINGS:BOOL=ON"
-        if expected not in cache:
-            fail(f"expected CMake cache to contain {expected!r}")
+        expected_options = (
+            "COMPILER_DESIGN_ENABLE_WARNINGS:BOOL=ON",
+            "COMPILER_DESIGN_ENABLE_SANITIZERS:BOOL=ON",
+        )
+        for expected in expected_options:
+            if expected not in cache:
+                fail(f"expected CMake cache to contain {expected!r}")
 
 
 if __name__ == "__main__":

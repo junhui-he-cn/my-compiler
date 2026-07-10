@@ -19,6 +19,11 @@ REQUIRED_SNIPPETS = (
     "python3 tests/bytecode_artifact_tests.py ./build/compiler_design vm-rs",
     "python3 tests/run_rust_vm_tests.py ./build/compiler_design vm-rs --goldens",
     "cargo test --manifest-path vm-rs/Cargo.toml",
+    "sanitizers:",
+    "name: Sanitizers",
+    "cmake -S . -B build-sanitize -DCOMPILER_DESIGN_ENABLE_WARNINGS=ON -DCOMPILER_DESIGN_ENABLE_SANITIZERS=ON",
+    "cmake --build build-sanitize",
+    "ctest --test-dir build-sanitize --output-on-failure",
 )
 
 

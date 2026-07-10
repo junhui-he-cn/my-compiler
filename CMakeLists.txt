@@ -26,6 +26,19 @@ function(compiler_design_apply_warnings target_name)
     endif()
 endfunction()
 
+option(COMPILER_DESIGN_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer for project C++ targets" OFF)
+
+function(compiler_design_apply_sanitizers target_name)
+    if(NOT COMPILER_DESIGN_ENABLE_SANITIZERS)
+        return()
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target_name} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(${target_name} PRIVATE -fsanitize=address,undefined)
+    endif()
+endfunction()
+
 add_executable(compiler_design
     src/Ast.cpp
     src/Bytecode.cpp
@@ -48,6 +61,7 @@ add_executable(compiler_design
 
 target_include_directories(compiler_design PRIVATE include)
 compiler_design_apply_warnings(compiler_design)
+compiler_design_apply_sanitizers(compiler_design)
 
 enable_testing()
 add_test(
@@ -102,6 +116,7 @@ add_executable(frontend_session_tests
 )
 target_include_directories(frontend_session_tests PRIVATE include)
 compiler_design_apply_warnings(frontend_session_tests)
+compiler_design_apply_sanitizers(frontend_session_tests)
 add_test(NAME frontend_session COMMAND frontend_session_tests)
 
 add_executable(flow_facts_tests
@@ -112,6 +127,7 @@ add_executable(flow_facts_tests
 )
 target_include_directories(flow_facts_tests PRIVATE include)
 compiler_design_apply_warnings(flow_facts_tests)
+compiler_design_apply_sanitizers(flow_facts_tests)
 add_test(NAME flow_facts COMMAND flow_facts_tests)
 
 add_executable(module_symbols_tests
@@ -121,4 +137,5 @@ add_executable(module_symbols_tests
 )
 target_include_directories(module_symbols_tests PRIVATE include)
 compiler_design_apply_warnings(module_symbols_tests)
+compiler_design_apply_sanitizers(module_symbols_tests)
 add_test(NAME module_symbols COMMAND module_symbols_tests)
