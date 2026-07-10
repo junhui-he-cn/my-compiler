@@ -2,6 +2,7 @@
 
 #include "Ast.hpp"
 #include "Diagnostic.hpp"
+#include "FlowFacts.hpp"
 #include "Token.hpp"
 #include "TypeUtils.hpp"
 
@@ -121,16 +122,6 @@ private:
         TypeInfo index;
     };
 
-    struct Narrowing {
-        std::string resolvedName;
-        TypeInfo type;
-    };
-
-    struct IfNarrowing {
-        std::vector<Narrowing> thenNarrowings;
-        std::vector<Narrowing> elseNarrowings;
-    };
-
     using Scope = std::unordered_map<std::string, Binding>;
     using ExportTable = std::unordered_map<std::string, Binding>;
     using MethodTable = std::unordered_map<std::string, std::unordered_map<std::string, MethodInfo>>;
@@ -194,9 +185,7 @@ private:
     CheckedExpression checkExpressionInfo(const Expr& expression);
     CheckedExpression checkExpressionInfo(const Expr& expression, const TypeInfo* expectedType);
     TypeInfo variableType(const Binding& binding) const;
-    std::optional<Narrowing> nonNilNarrowingForVariable(const VariableExpr& variable);
-    IfNarrowing ifNarrowing(const Expr& condition);
-    void withNarrowings(const std::vector<Narrowing>& narrowings, const std::function<void()>& body);
+    std::optional<FlowNarrowing> nonNilNarrowingForVariable(const VariableExpr& variable) const;
     CheckedExpression checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType);
     TypeInfo inferArrayElementType(const ArrayExpr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
@@ -255,5 +244,5 @@ private:
     std::size_t functionDepth_ = 0;
     std::size_t loopDepth_ = 0;
     std::vector<FunctionReturnContext> returnContexts_;
-    std::vector<Narrowing> narrowings_;
+    FlowFacts flowFacts_;
 };

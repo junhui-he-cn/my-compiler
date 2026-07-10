@@ -301,6 +301,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     functionDepth_ = 0;
     loopDepth_ = 0;
     returnContexts_.clear();
+    flowFacts_.clear();
 
     bool hasModules = false;
     for (const auto& statement : program.statements) {
@@ -497,12 +498,16 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* ifStmt = dynamic_cast<const IfStmt*>(&statement)) {
         checkExpression(*ifStmt->condition);
-        const IfNarrowing narrowing = ifNarrowing(*ifStmt->condition);
-        withNarrowings(narrowing.thenNarrowings, [&]() {
+        const BranchFlowFacts branchFacts = flowFacts_.factsForIfCondition(
+            *ifStmt->condition,
+            [this](const VariableExpr& variable) {
+                return nonNilNarrowingForVariable(variable);
+            });
+        flowFacts_.withNarrowings(branchFacts.thenNarrowings, [&]() {
             checkStatement(*ifStmt->thenBranch);
         });
         if (ifStmt->elseBranch) {
-            withNarrowings(narrowing.elseNarrowings, [&]() {
+            flowFacts_.withNarrowings(branchFacts.elseNarrowings, [&]() {
                 checkStatement(*ifStmt->elseBranch);
             });
         }
@@ -1224,98 +1229,19 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
 
 TypeInfo TypeChecker::variableType(const Binding& binding) const
 {
-    for (auto it = narrowings_.rbegin(); it != narrowings_.rend(); ++it) {
-        if (it->resolvedName == binding.resolvedName) {
-            return it->type;
-        }
+    if (std::optional<TypeInfo> narrowed = flowFacts_.narrowedTypeFor(binding.resolvedName)) {
+        return *narrowed;
     }
     return binding.type;
 }
 
-std::optional<TypeChecker::Narrowing> TypeChecker::nonNilNarrowingForVariable(const VariableExpr& variable)
+std::optional<FlowNarrowing> TypeChecker::nonNilNarrowingForVariable(const VariableExpr& variable) const
 {
     const Binding* binding = findVariable(variable.name.lexeme);
     if (!binding || !isNullable(binding->type)) {
         return std::nullopt;
     }
-    return Narrowing{binding->resolvedName, *binding->type.nullableOf};
-}
-
-TypeChecker::IfNarrowing TypeChecker::ifNarrowing(const Expr& condition)
-{
-    const Expr* narrowedCondition = &condition;
-    while (const auto* grouping = dynamic_cast<const GroupingExpr*>(narrowedCondition)) {
-        narrowedCondition = grouping->expression.get();
-    }
-
-    if (const auto* logical = dynamic_cast<const LogicalExpr*>(narrowedCondition)) {
-        const IfNarrowing left = ifNarrowing(*logical->left);
-        const IfNarrowing right = ifNarrowing(*logical->right);
-
-        IfNarrowing result;
-        if (logical->op.type == TokenType::AmpersandAmpersand) {
-            result.thenNarrowings = left.thenNarrowings;
-            result.thenNarrowings.insert(
-                result.thenNarrowings.end(),
-                right.thenNarrowings.begin(),
-                right.thenNarrowings.end());
-        } else if (logical->op.type == TokenType::PipePipe) {
-            result.elseNarrowings = left.elseNarrowings;
-            result.elseNarrowings.insert(
-                result.elseNarrowings.end(),
-                right.elseNarrowings.begin(),
-                right.elseNarrowings.end());
-        }
-        return result;
-    }
-
-    const auto* binary = dynamic_cast<const BinaryExpr*>(narrowedCondition);
-    if (!binary || (binary->op.type != TokenType::BangEqual && binary->op.type != TokenType::EqualEqual)) {
-        return IfNarrowing{};
-    }
-
-    auto nilCheckedVariable = [](const Expr& left, const Expr& right) -> const VariableExpr* {
-        const auto* leftVariable = dynamic_cast<const VariableExpr*>(&left);
-        const auto* rightLiteral = dynamic_cast<const LiteralExpr*>(&right);
-        if (leftVariable && rightLiteral && rightLiteral->value == "nil") {
-            return leftVariable;
-        }
-        const auto* rightVariable = dynamic_cast<const VariableExpr*>(&right);
-        const auto* leftLiteral = dynamic_cast<const LiteralExpr*>(&left);
-        if (rightVariable && leftLiteral && leftLiteral->value == "nil") {
-            return rightVariable;
-        }
-        return nullptr;
-    };
-
-    const VariableExpr* variable = nilCheckedVariable(*binary->left, *binary->right);
-    if (!variable) {
-        return IfNarrowing{};
-    }
-
-    std::optional<Narrowing> narrowing = nonNilNarrowingForVariable(*variable);
-    if (!narrowing) {
-        return IfNarrowing{};
-    }
-
-    IfNarrowing result;
-    if (binary->op.type == TokenType::BangEqual) {
-        result.thenNarrowings.push_back(std::move(*narrowing));
-    } else {
-        result.elseNarrowings.push_back(std::move(*narrowing));
-    }
-    return result;
-}
-
-void TypeChecker::withNarrowings(const std::vector<Narrowing>& narrowings, const std::function<void()>& body)
-{
-    if (narrowings.empty()) {
-        body();
-        return;
-    }
-    narrowings_.insert(narrowings_.end(), narrowings.begin(), narrowings.end());
-    body();
-    narrowings_.resize(narrowings_.size() - narrowings.size());
+    return FlowNarrowing{binding->resolvedName, *binding->type.nullableOf};
 }
 
 TypeInfo TypeChecker::inferArrayElementType(const ArrayExpr& expression)
