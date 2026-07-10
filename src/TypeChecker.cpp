@@ -498,11 +498,11 @@ void TypeChecker::checkStatement(const Stmt& statement)
     if (const auto* ifStmt = dynamic_cast<const IfStmt*>(&statement)) {
         checkExpression(*ifStmt->condition);
         const IfNarrowing narrowing = ifNarrowing(*ifStmt->condition);
-        withOptionalNarrowing(narrowing.thenNarrowing, [&]() {
+        withNarrowings(narrowing.thenNarrowings, [&]() {
             checkStatement(*ifStmt->thenBranch);
         });
         if (ifStmt->elseBranch) {
-            withOptionalNarrowing(narrowing.elseNarrowing, [&]() {
+            withNarrowings(narrowing.elseNarrowings, [&]() {
                 checkStatement(*ifStmt->elseBranch);
             });
         }
@@ -1254,9 +1254,17 @@ TypeChecker::IfNarrowing TypeChecker::ifNarrowing(const Expr& condition)
 
         IfNarrowing result;
         if (logical->op.type == TokenType::AmpersandAmpersand) {
-            result.thenNarrowing = left.thenNarrowing ? left.thenNarrowing : right.thenNarrowing;
+            result.thenNarrowings = left.thenNarrowings;
+            result.thenNarrowings.insert(
+                result.thenNarrowings.end(),
+                right.thenNarrowings.begin(),
+                right.thenNarrowings.end());
         } else if (logical->op.type == TokenType::PipePipe) {
-            result.elseNarrowing = left.elseNarrowing ? left.elseNarrowing : right.elseNarrowing;
+            result.elseNarrowings = left.elseNarrowings;
+            result.elseNarrowings.insert(
+                result.elseNarrowings.end(),
+                right.elseNarrowings.begin(),
+                right.elseNarrowings.end());
         }
         return result;
     }
@@ -1292,22 +1300,22 @@ TypeChecker::IfNarrowing TypeChecker::ifNarrowing(const Expr& condition)
 
     IfNarrowing result;
     if (binary->op.type == TokenType::BangEqual) {
-        result.thenNarrowing = std::move(narrowing);
+        result.thenNarrowings.push_back(std::move(*narrowing));
     } else {
-        result.elseNarrowing = std::move(narrowing);
+        result.elseNarrowings.push_back(std::move(*narrowing));
     }
     return result;
 }
 
-void TypeChecker::withOptionalNarrowing(const std::optional<Narrowing>& narrowing, const std::function<void()>& body)
+void TypeChecker::withNarrowings(const std::vector<Narrowing>& narrowings, const std::function<void()>& body)
 {
-    if (!narrowing) {
+    if (narrowings.empty()) {
         body();
         return;
     }
-    narrowings_.push_back(*narrowing);
+    narrowings_.insert(narrowings_.end(), narrowings.begin(), narrowings.end());
     body();
-    narrowings_.pop_back();
+    narrowings_.resize(narrowings_.size() - narrowings.size());
 }
 
 TypeInfo TypeChecker::inferArrayElementType(const ArrayExpr& expression)

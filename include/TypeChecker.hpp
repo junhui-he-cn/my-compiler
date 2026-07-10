@@ -127,8 +127,8 @@ private:
     };
 
     struct IfNarrowing {
-        std::optional<Narrowing> thenNarrowing;
-        std::optional<Narrowing> elseNarrowing;
+        std::vector<Narrowing> thenNarrowings;
+        std::vector<Narrowing> elseNarrowings;
     };
 
     using Scope = std::unordered_map<std::string, Binding>;
@@ -196,7 +196,7 @@ private:
     TypeInfo variableType(const Binding& binding) const;
     std::optional<Narrowing> nonNilNarrowingForVariable(const VariableExpr& variable);
     IfNarrowing ifNarrowing(const Expr& condition);
-    void withOptionalNarrowing(const std::optional<Narrowing>& narrowing, const std::function<void()>& body);
+    void withNarrowings(const std::vector<Narrowing>& narrowings, const std::function<void()>& body);
     CheckedExpression checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType);
     TypeInfo inferArrayElementType(const ArrayExpr& expression);
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression);
