@@ -50,6 +50,7 @@ behavior. The recommended bands are:
 ### M0: Front-End Stabilization
 
 1. Remove the unused legacy `SourceManager` source-expansion import path.
+   Implemented.
 2. Design a single-parse `ModuleLoader` / `FrontendSession` boundary that owns
    parsed ASTs, the import graph, and file-aware diagnostics.
 3. Extract focused flow-fact/narrowing and module-symbol-table subsystems from
@@ -321,6 +322,8 @@ whole-checker visitor rewrite.
 
 Recently completed cleanup:
 
+- Removed the unused legacy `SourceManager` source-expansion import path and
+  its obsolete combined-source file metadata.
 - Shared assignment-target checking in `TypeChecker` for array indexes, struct
   fields, and numeric compound-assignment operands.
 - Shared compound-assignment result lowering in `IRCompiler` for variable,
@@ -335,9 +338,6 @@ Recently completed cleanup:
 
 Recommended future cleanup slices:
 
-- **Remove the unused legacy import-expansion path in `SourceManager`.** Keep a
-  single production module-loading flow instead of maintaining source expansion
-  alongside parsed-module loading.
 - **Introduce a single-parse module front-end boundary.** A `ModuleLoader` or
   `FrontendSession` should own parsed ASTs, the import graph, canonical file
   identities, and file-aware diagnostics so import discovery does not require

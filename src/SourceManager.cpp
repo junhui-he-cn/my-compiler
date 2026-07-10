@@ -18,17 +18,6 @@ std::string readAll(std::istream& in)
     return buffer.str();
 }
 
-std::size_t lineCount(const std::string& source)
-{
-    std::size_t lines = 1;
-    for (char ch : source) {
-        if (ch == '\n') {
-            ++lines;
-        }
-    }
-    return lines;
-}
-
 bool isIdentifierStart(char ch)
 {
     return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_';
@@ -164,9 +153,7 @@ void appendWithNewlineSeparation(std::string& output, const std::string& source)
 
 std::string SourceManager::loadStdin(std::istream& input)
 {
-    files_.clear();
     units_.clear();
-    loadedFiles_.clear();
     canonicalToUnitId_.clear();
     loadingStack_.clear();
 
@@ -177,21 +164,9 @@ std::string SourceManager::loadStdin(std::istream& input)
     return source;
 }
 
-std::string SourceManager::loadFiles(const std::vector<std::string>& paths)
-{
-    return loadFileUnits(paths).combinedSource;
-}
-
-const std::vector<SourceFile>& SourceManager::files() const
-{
-    return files_;
-}
-
 SourceLoadResult SourceManager::loadStdinUnit(std::istream& input)
 {
-    files_.clear();
     units_.clear();
-    loadedFiles_.clear();
     canonicalToUnitId_.clear();
     loadingStack_.clear();
 
@@ -206,9 +181,7 @@ SourceLoadResult SourceManager::loadStdinUnit(std::istream& input)
 
 SourceLoadResult SourceManager::loadFileUnits(const std::vector<std::string>& paths)
 {
-    files_.clear();
     units_.clear();
-    loadedFiles_.clear();
     canonicalToUnitId_.clear();
     loadingStack_.clear();
 
@@ -261,7 +234,6 @@ std::size_t SourceManager::loadFileUnit(const std::filesystem::path& path, bool 
     const std::size_t id = units_.size();
     units_.push_back(SourceUnit{id, display, canonical, std::move(source), isEntry, std::move(imports)});
     canonicalToUnitId_.emplace(canonical, id);
-    loadedFiles_.insert(canonical);
     return id;
 }
 
@@ -321,109 +293,6 @@ std::vector<SourceImport> SourceManager::scanImportDirectives(
     }
 
     return imports;
-}
-
-std::string SourceManager::loadFile(const std::filesystem::path& path, bool isImport)
-{
-    const std::filesystem::path normalizedPath = normalizedExistingPath(path);
-    const std::string canonical = pathString(normalizedPath);
-    const std::string display = pathString(path);
-
-    if (std::find(loadingStack_.begin(), loadingStack_.end(), canonical) != loadingStack_.end()) {
-        throw DiagnosticError(DiagnosticKind::Import, "import cycle detected: " + displayCycle(loadingStack_, canonical));
-    }
-    if (loadedFiles_.find(canonical) != loadedFiles_.end()) {
-        return "";
-    }
-
-    std::ifstream file(path);
-    if (!file) {
-        if (isImport) {
-            throw DiagnosticError(DiagnosticKind::Import, "failed to open import: " + display);
-        }
-        throw std::runtime_error("failed to open input file: " + display);
-    }
-
-    loadingStack_.push_back(canonical);
-    std::string source = readAll(file);
-    std::string expanded = expandImports(source, normalizedPath);
-    loadingStack_.pop_back();
-
-    loadedFiles_.insert(canonical);
-
-    std::size_t startLine = 1;
-    if (!files_.empty()) {
-        const SourceFile& previous = files_.back();
-        startLine = previous.startLine + lineCount(previous.source) - 1;
-        if (!previous.source.empty() && previous.source.back() != '\n') {
-            ++startLine;
-        }
-    }
-    files_.push_back(SourceFile{display, expanded, startLine});
-
-    return expanded;
-}
-
-std::string SourceManager::expandImports(const std::string& source, const std::filesystem::path& importingFile)
-{
-    std::string output;
-    output.reserve(source.size());
-    int braceDepth = 0;
-
-    for (std::size_t index = 0; index < source.size();) {
-        const char ch = source[index];
-
-        if (ch == '/' && index + 1 < source.size() && source[index + 1] == '/') {
-            while (index < source.size() && source[index] != '\n') {
-                output.push_back(source[index++]);
-            }
-            continue;
-        }
-
-        if (ch == '"') {
-            output.push_back(source[index++]);
-            while (index < source.size()) {
-                const char stringChar = source[index];
-                output.push_back(stringChar);
-                ++index;
-                if (stringChar == '"') {
-                    break;
-                }
-            }
-            continue;
-        }
-
-        if (ch == '{') {
-            ++braceDepth;
-            output.push_back(ch);
-            ++index;
-            continue;
-        }
-        if (ch == '}') {
-            if (braceDepth > 0) {
-                --braceDepth;
-            }
-            output.push_back(ch);
-            ++index;
-            continue;
-        }
-
-        if (braceDepth == 0 && startsWithImportKeyword(source, index)) {
-            std::string importPath;
-            std::size_t afterDirective = index;
-            if (parseImportDirective(source, index, importPath, afterDirective)) {
-                const std::filesystem::path resolved = importingFile.parent_path() / importPath;
-                appendWithNewlineSeparation(output, loadFile(resolved, true));
-                index = afterDirective;
-                continue;
-            }
-        }
-
-        output.push_back(ch);
-        ++index;
-    }
-
-    return output;
 }
 
 bool SourceManager::containsTopLevelImportKeyword(const std::string& source) const
