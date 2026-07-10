@@ -19,6 +19,7 @@ add_executable(compiler_design
     src/BytecodeCompiler.cpp
     src/Diagnostic.cpp
     src/FrontendSession.cpp
+    src/FlowFacts.cpp
     src/IR.cpp
     src/IRCompiler.cpp
     src/IRInterpreter.cpp
@@ -74,3 +75,12 @@ add_executable(frontend_session_tests
 )
 target_include_directories(frontend_session_tests PRIVATE include)
 add_test(NAME frontend_session COMMAND frontend_session_tests)
+
+add_executable(flow_facts_tests
+    tests/flow_facts_tests.cpp
+    src/Ast.cpp
+    src/FlowFacts.cpp
+    src/TypeUtils.cpp
+)
+target_include_directories(flow_facts_tests PRIVATE include)
+add_test(NAME flow_facts COMMAND flow_facts_tests)
