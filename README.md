@@ -251,6 +251,7 @@ python3 tests/run_golden_tests.py ./build/compiler_design --update --update-miss
 ./build/compiler_design --tokens examples/hello.cd
 ./build/compiler_design --ir examples/hello.cd
 ./build/compiler_design --bytecode examples/hello.cd
+./build/compiler_design --module-interface examples/hello.cd
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
 ```
 
@@ -260,7 +261,7 @@ Multiple input files may be provided. They are read in command-line order and co
 ./build/compiler_design --emit-bytecode program.cdbc lib.cd main.cd
 ```
 
-`--bytecode` remains a debug-print mode for inspecting compiler output. Program execution is handled by the Rust VM via `.cdbc` artifacts:
+`--bytecode` remains a debug-print mode for inspecting compiler output. `--module-interface` prints the type-checked public API metadata for every loaded module, including exported values, named structs, struct fields, and exported struct method signatures. It is a debug/introspection mode only; it does not emit a separate-compilation artifact or run a linker. Program execution is handled by the Rust VM via `.cdbc` artifacts:
 
 ```sh
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd
