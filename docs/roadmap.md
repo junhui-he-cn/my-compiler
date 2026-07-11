@@ -34,13 +34,13 @@ language semantics before adding broader module ergonomics or backend depth.
 
 ### M1: Complete Existing Language Semantics
 
-No active M1 language semantics items remain. Near-term planning now moves to
-module ergonomics.
+No active M1 language semantics items remain.
 
 ### M2: Module Ergonomics
 
-1. Define the module-interface metadata needed by future separate compilation,
-   but do not implement a linker or separate compilation yet.
+No active M2 module ergonomics items remain. Phase 14G module-interface metadata
+is implemented as a stable `--module-interface` debug output. Linker and
+separate-compilation work remain deferred.
 
 ### M3: Language and Runtime Depth
 
@@ -53,7 +53,7 @@ module ergonomics.
 The immediate dependency order is:
 
 ```text
-module-interface metadata
+parser recovery and multiple diagnostics
 ```
 
 Each behavior-changing slice should start with a focused design spec and
@@ -129,15 +129,15 @@ early.
 
 Future work:
 
-- Stable module-interface metadata needed by possible future separate
-  compilation. Do not implement a linker or separate compilation in the
-  near-term roadmap.
+- No active near-term module ergonomics work remains.
+- Linker and separate-compilation implementation remain deferred to a dedicated
+  future compiler/backend effort.
 
 Recommended split:
 
-- Phase 14G: define stable module-interface metadata needed by possible future
-  separate compilation. Treat linker or separate-compilation implementation as a
-  dedicated compiler/backend effort.
+- Phase 14G: stable module-interface metadata is complete. The compiler now
+  supports `--module-interface` for inspecting each loaded module's exported
+  static API.
 
 Why late: modules affect diagnostics, CLI source management, test layout, and
 name resolution across compilation units.
@@ -196,7 +196,7 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-Phase 14G module-interface metadata
+parser recovery and multiple diagnostics
 ```
 
 Do not start a visitor rewrite, unified assignment AST, separate compilation,
