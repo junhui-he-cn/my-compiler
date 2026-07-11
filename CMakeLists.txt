@@ -51,6 +51,7 @@ add_executable(compiler_design
     src/IRCompiler.cpp
     src/Lexer.cpp
     src/ModuleSymbols.cpp
+    src/ModuleInterfaceEmitter.cpp
     src/NativeStdlib.cpp
     src/Parser.cpp
     src/TypeChecker.cpp
@@ -139,3 +140,13 @@ target_include_directories(module_symbols_tests PRIVATE include)
 compiler_design_apply_warnings(module_symbols_tests)
 compiler_design_apply_sanitizers(module_symbols_tests)
 add_test(NAME module_symbols COMMAND module_symbols_tests)
+
+add_executable(module_interface_emitter_tests
+    tests/module_interface_emitter_tests.cpp
+    src/ModuleInterfaceEmitter.cpp
+    src/TypeUtils.cpp
+)
+target_include_directories(module_interface_emitter_tests PRIVATE include)
+compiler_design_apply_warnings(module_interface_emitter_tests)
+compiler_design_apply_sanitizers(module_interface_emitter_tests)
+add_test(NAME module_interface_emitter COMMAND module_interface_emitter_tests)
