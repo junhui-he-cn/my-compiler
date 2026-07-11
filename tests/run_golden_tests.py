@@ -20,6 +20,7 @@ SUCCESS_CHECKS = (
     ("default(ast)", (), "ast.out"),
     ("--ir", ("--ir",), "ir.out"),
     ("--bytecode", ("--bytecode",), "bytecode.out"),
+    ("--module-interface", ("--module-interface",), "module-interface.out"),
 )
 
 

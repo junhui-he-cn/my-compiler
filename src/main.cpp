@@ -2,6 +2,7 @@
 #include "BytecodeTextEmitter.hpp"
 #include "FrontendSession.hpp"
 #include "IRCompiler.hpp"
+#include "ModuleInterfaceEmitter.hpp"
 #include "TypeChecker.hpp"
 
 #include <fstream>
@@ -16,7 +17,7 @@ namespace {
 
 void printUsage(const char* executable)
 {
-    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [-I dir] [--import-path dir] [file ...]\n"
+    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [--module-interface] [-I dir] [--import-path dir] [file ...]\n"
               << "       " << executable << " [--emit-bytecode output.cdbc] [-I dir] [--import-path dir] file [...]\n"
               << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n"
               << "Import search paths are used for non-explicit string imports after the importing file's directory.\n";
@@ -29,6 +30,7 @@ int main(int argc, char** argv)
     bool showTokens = false;
     bool showIr = false;
     bool showBytecode = false;
+    bool showModuleInterface = false;
     std::optional<std::string> emitBytecodePath;
     std::vector<std::string> inputPaths;
     std::vector<std::string> importSearchPaths;
@@ -41,6 +43,8 @@ int main(int argc, char** argv)
             showIr = true;
         } else if (arg == "--bytecode") {
             showBytecode = true;
+        } else if (arg == "--module-interface") {
+            showModuleInterface = true;
         } else if (arg == "-I" || arg == "--import-path") {
             if (i + 1 >= argc) {
                 printUsage(argv[0]);
@@ -65,7 +69,7 @@ int main(int argc, char** argv)
     }
 
     if (emitBytecodePath) {
-        if (inputPaths.empty() || showTokens || showIr || showBytecode) {
+        if (inputPaths.empty() || showTokens || showIr || showBytecode || showModuleInterface) {
             printUsage(argv[0]);
             return 64;
         }
@@ -88,8 +92,12 @@ int main(int argc, char** argv)
         TypeChecker typeChecker;
         const ResolvedNames& resolvedNames = typeChecker.check(program);
 
-        if (!emitBytecodePath && !showIr && !showBytecode) {
+        if (!emitBytecodePath && !showIr && !showBytecode && !showModuleInterface) {
             program.print(std::cout);
+        }
+
+        if (showModuleInterface) {
+            writeModuleInterfaceText(std::cout, typeChecker.moduleInterfaces());
         }
 
         if (emitBytecodePath || showIr || showBytecode) {

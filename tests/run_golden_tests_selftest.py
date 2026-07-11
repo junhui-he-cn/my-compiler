@@ -85,6 +85,7 @@ class GoldenRunnerQualityTests(unittest.TestCase):
             self.assertEqual((case_dir / "ast.out").read_text(encoding="utf-8"), "new ast\n")
             self.assertFalse((case_dir / "ir.out").exists())
             self.assertFalse((case_dir / "bytecode.out").exists())
+            self.assertFalse((case_dir / "module-interface.out").exists())
 
     def test_update_missing_creates_missing_success_outputs_explicitly(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -103,9 +104,9 @@ class GoldenRunnerQualityTests(unittest.TestCase):
                 update_missing=True,
             )
 
-            self.assertEqual(len(results), 3)
+            self.assertEqual(len(results), 4)
             self.assertTrue(all(result.passed for result in results), results)
-            for golden_name in ("ast.out", "ir.out", "bytecode.out"):
+            for golden_name in ("ast.out", "ir.out", "bytecode.out", "module-interface.out"):
                 self.assertEqual(
                     (case_dir / golden_name).read_text(encoding="utf-8"),
                     "new output\n",
@@ -326,6 +327,38 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0].passed)
         self.assertEqual(results[0].name, "bytecode_case --bytecode")
+
+    def test_success_case_with_module_interface_expected_file_runs_module_interface_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "module_interface_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "module-interface.out").write_text("module interface output\n", encoding="utf-8")
+            compiler = root / "fake_compiler.py"
+            compiler.write_text(
+                textwrap.dedent(
+                    """\
+                    #!/usr/bin/env python3
+                    import sys
+
+                    if "--module-interface" not in sys.argv:
+                        sys.stderr.write("missing --module-interface\\n")
+                        raise SystemExit(1)
+                    sys.stdout.write("module interface output\\n")
+                    """
+                ),
+                encoding="utf-8",
+            )
+            compiler.chmod(compiler.stat().st_mode | 0o111)
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertEqual(results[0].name, "module_interface_case --module-interface")
+
 
     def test_success_case_args_txt_replaces_default_input_path_for_ir(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,0 +1,7 @@
+import "./api.cd";
+import "./geometry.cd" as geo;
+
+let answer: number = 42;
+let privateValue = "hidden";
+export answer;
+export Point, makePoint from "./geometry.cd";

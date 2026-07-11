@@ -1,0 +1,5 @@
+fun twice(value: number): number {
+  return value * 2;
+}
+
+export twice;

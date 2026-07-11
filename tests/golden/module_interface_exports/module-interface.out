@@ -1,0 +1,23 @@
+module 0 "/home/junhe/compiler/tests/golden/module_interface_exports/math.cd"
+  export value twice: fun(number): number
+
+module 1 "/home/junhe/compiler/tests/golden/module_interface_exports/api.cd"
+  export value twice: fun(number): number
+
+module 2 "/home/junhe/compiler/tests/golden/module_interface_exports/geometry.cd"
+  export value makePoint: fun(number, number): Point
+  export value origin: Point
+  export struct Point
+    field x: number
+    field y: number
+    method length(): number
+    method translate(number, number): Point
+
+module 3 entry "/home/junhe/compiler/tests/golden/module_interface_exports/input.cd"
+  export value answer: number
+  export value makePoint: fun(number, number): Point
+  export struct Point
+    field x: number
+    field y: number
+    method length(): number
+    method translate(number, number): Point

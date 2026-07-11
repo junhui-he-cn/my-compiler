@@ -1,0 +1,22 @@
+struct Point {
+  x: number,
+  y: number
+}
+
+impl Point {
+  fun length(): number {
+    return sqrt((this.x * this.x) + (this.y * this.y));
+  }
+
+  fun translate(dx: number, dy: number): Point {
+    return Point { x: this.x + dx, y: this.y + dy };
+  }
+}
+
+fun makePoint(x: number, y: number): Point {
+  return Point { x: x, y: y };
+}
+
+let origin: Point = Point { x: 0, y: 0 };
+let privateGeometry = 99;
+export Point, makePoint, origin;
