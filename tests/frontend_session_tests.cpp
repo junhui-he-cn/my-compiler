@@ -1,34 +1,160 @@
 #include "Ast.hpp"
+#include "Diagnostic.hpp"
 #include "FrontendSession.hpp"
 
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <functional>
+#include <string>
 
-int main()
+namespace fs = std::filesystem;
+
+namespace {
+
+std::string pathString(const fs::path& path)
 {
-    const std::filesystem::path root =
-        std::filesystem::temp_directory_path() / "compiler_frontend_session_test";
-    std::filesystem::remove_all(root);
-    std::filesystem::create_directories(root / "nested");
+    return path.lexically_normal().generic_string();
+}
 
-    std::ofstream(root / "shared.cd") << "let value = 1;\nexport value;\n";
-    std::ofstream(root / "input.cd")
-        << "import \"./shared.cd\";\n"
-           "import \"./nested/../shared.cd\";\n"
-           "print value;\n";
+void writeFile(const fs::path& path, const std::string& source)
+{
+    fs::create_directories(path.parent_path());
+    std::ofstream output(path);
+    output << source;
+}
+
+const ModuleStmt* moduleByPath(const Program& program, const fs::path& path)
+{
+    const std::string expected = pathString(path);
+    for (const StmtPtr& statement : program.statements) {
+        const auto* module = dynamic_cast<const ModuleStmt*>(statement.get());
+        if (module && module->path == expected) {
+            return module;
+        }
+    }
+    assert(false && "expected module path not found");
+    return nullptr;
+}
+
+void expectImportError(const std::function<void()>& action, const std::string& expectedMessage)
+{
+    try {
+        action();
+    } catch (const DiagnosticError& error) {
+        assert(error.kind() == DiagnosticKind::Import);
+        assert(error.message() == expectedMessage);
+        return;
+    }
+    assert(false && "expected import error");
+}
+
+void test_canonical_duplicate_import_spellings_are_deduplicated(const fs::path& root)
+{
+    fs::remove_all(root);
+    fs::create_directories(root / "nested");
+
+    writeFile(root / "shared.cd", "let value = 1;\nexport value;\n");
+    writeFile(
+        root / "input.cd",
+        "import \"./shared.cd\";\n"
+        "import \"./nested/../shared.cd\";\n"
+        "print value;\n");
 
     FrontendSession session;
     Program program = session.loadFiles({(root / "input.cd").string()});
 
     assert(session.moduleCount() == 2);
     assert(program.statements.size() == 2);
-    const auto* entry = dynamic_cast<const ModuleStmt*>(program.statements[1].get());
-    assert(entry != nullptr);
+    const auto* entry = moduleByPath(program, root / "input.cd");
     const auto* first = dynamic_cast<const ImportStmt*>(entry->statements[0].get());
     const auto* second = dynamic_cast<const ImportStmt*>(entry->statements[1].get());
     assert(first != nullptr && second != nullptr);
     assert(first->resolvedModuleId == second->resolvedModuleId);
+}
 
-    std::filesystem::remove_all(root);
+void test_search_path_resolves_extensionless_import_and_reexport(const fs::path& root)
+{
+    fs::remove_all(root);
+    const fs::path app = root / "app";
+    const fs::path search = root / "modules";
+
+    writeFile(search / "lib.cd", "let value = 7;\nexport value;\n");
+    writeFile(app / "api.cd", "export value from \"lib\";\n");
+    writeFile(
+        app / "input.cd",
+        "import \"api\";\n"
+        "import \"lib\";\n"
+        "print value;\n");
+
+    FrontendSession session;
+    session.setImportSearchPaths({search.string()});
+    Program program = session.loadFiles({(app / "input.cd").string()});
+
+    assert(session.moduleCount() == 3);
+    const auto* lib = moduleByPath(program, search / "lib.cd");
+    const auto* api = moduleByPath(program, app / "api.cd");
+    const auto* entry = moduleByPath(program, app / "input.cd");
+
+    const auto* reExport = dynamic_cast<const ExportStmt*>(api->statements[0].get());
+    assert(reExport != nullptr);
+    assert(reExport->resolvedModuleId == lib->moduleId);
+
+    const auto* apiImport = dynamic_cast<const ImportStmt*>(entry->statements[0].get());
+    const auto* libImport = dynamic_cast<const ImportStmt*>(entry->statements[1].get());
+    assert(apiImport != nullptr && libImport != nullptr);
+    assert(apiImport->resolvedModuleId == api->moduleId);
+    assert(libImport->resolvedModuleId == lib->moduleId);
+}
+
+void test_importing_file_directory_precedes_search_path(const fs::path& root)
+{
+    fs::remove_all(root);
+    const fs::path app = root / "app";
+    const fs::path search = root / "modules";
+
+    writeFile(app / "math.cd", "let value = \"local\";\nexport value;\n");
+    writeFile(search / "math.cd", "let value = \"search\";\nexport value;\n");
+    writeFile(app / "input.cd", "import \"math\";\nprint value;\n");
+
+    FrontendSession session;
+    session.setImportSearchPaths({search.string()});
+    Program program = session.loadFiles({(app / "input.cd").string()});
+
+    assert(session.moduleCount() == 2);
+    const auto* localMath = moduleByPath(program, app / "math.cd");
+    const auto* entry = moduleByPath(program, app / "input.cd");
+    const auto* import = dynamic_cast<const ImportStmt*>(entry->statements[0].get());
+    assert(import != nullptr);
+    assert(import->resolvedModuleId == localMath->moduleId);
+}
+
+void test_explicit_relative_import_does_not_use_search_path(const fs::path& root)
+{
+    fs::remove_all(root);
+    const fs::path app = root / "app";
+    const fs::path search = root / "modules";
+
+    writeFile(search / "missing.cd", "let value = \"search\";\nexport value;\n");
+    writeFile(app / "input.cd", "import \"./missing\";\nprint value;\n");
+
+    FrontendSession session;
+    session.setImportSearchPaths({search.string()});
+    expectImportError(
+        [&]() { session.loadFiles({(app / "input.cd").string()}); },
+        "failed to open import: " + pathString(app / "missing"));
+}
+
+} // namespace
+
+int main()
+{
+    const fs::path root = fs::temp_directory_path() / "compiler_frontend_session_test";
+
+    test_canonical_duplicate_import_spellings_are_deduplicated(root / "duplicates");
+    test_search_path_resolves_extensionless_import_and_reexport(root / "search_reexport");
+    test_importing_file_directory_precedes_search_path(root / "precedence");
+    test_explicit_relative_import_does_not_use_search_path(root / "explicit_no_fallback");
+
+    fs::remove_all(root);
 }

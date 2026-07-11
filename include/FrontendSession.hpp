@@ -5,6 +5,7 @@
 #include "Token.hpp"
 
 #include <cstddef>
+#include <filesystem>
 #include <iosfwd>
 #include <optional>
 #include <string>
@@ -13,6 +14,8 @@
 
 class FrontendSession {
 public:
+    void setImportSearchPaths(std::vector<std::string> paths);
+
     Program loadStdin(std::istream& input);
     Program loadFiles(const std::vector<std::string>& paths);
 
@@ -38,8 +41,14 @@ private:
         std::string source;
     };
 
+    struct ImportResolution {
+        std::filesystem::path path;
+        std::vector<std::string> triedDisplayPaths;
+    };
+
     void reset();
     std::size_t loadFile(const std::string& path, bool isImport, bool isEntry, bool fileDiagnostics);
+    ImportResolution resolveImportPath(const std::filesystem::path& importingPath, const Token& pathToken) const;
     Program assembleProgram();
     void rebuildCombinedSource();
 
@@ -49,6 +58,7 @@ private:
     std::vector<std::size_t> entryUnitIds_;
     std::vector<DirectInput> directInputs_;
     std::vector<Token> directDisplayTokens_;
+    std::vector<std::filesystem::path> importSearchPaths_;
     std::string combinedSource_;
     bool hasImports_ = false;
 };

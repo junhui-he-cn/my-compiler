@@ -96,6 +96,54 @@ std::string importPath(const Token& token)
     return token.lexeme;
 }
 
+bool startsWith(const std::string& value, const std::string& prefix)
+{
+    return value.rfind(prefix, 0) == 0;
+}
+
+bool isExplicitImportPath(const std::string& value)
+{
+    const std::filesystem::path path(value);
+    return path.is_absolute() || startsWith(value, "./") || startsWith(value, "../");
+}
+
+bool canOpenFile(const std::filesystem::path& path)
+{
+    std::ifstream input(path);
+    return input.good();
+}
+
+std::vector<std::filesystem::path> importCandidatesForBase(
+    const std::filesystem::path& base,
+    const std::filesystem::path& requested)
+{
+    std::filesystem::path raw = requested.is_absolute()
+        ? requested
+        : base / requested;
+    raw = raw.lexically_normal();
+
+    std::vector<std::filesystem::path> candidates;
+    candidates.push_back(raw);
+    if (requested.extension().empty()) {
+        std::filesystem::path withCdExtension = raw;
+        withCdExtension += ".cd";
+        candidates.push_back(withCdExtension.lexically_normal());
+    }
+    return candidates;
+}
+
+std::string joinDisplayPaths(const std::vector<std::string>& paths)
+{
+    std::ostringstream output;
+    for (std::size_t index = 0; index < paths.size(); ++index) {
+        if (index != 0) {
+            output << ", ";
+        }
+        output << paths[index];
+    }
+    return output.str();
+}
+
 struct ParsedSource {
     std::vector<Token> tokens;
     std::vector<StmtPtr> statements;
@@ -180,6 +228,55 @@ void FrontendSession::reset()
     directDisplayTokens_.clear();
     combinedSource_.clear();
     hasImports_ = false;
+}
+
+void FrontendSession::setImportSearchPaths(std::vector<std::string> paths)
+{
+    importSearchPaths_.clear();
+    for (const std::string& path : paths) {
+        importSearchPaths_.push_back(std::filesystem::path(path).lexically_normal());
+    }
+}
+
+FrontendSession::ImportResolution FrontendSession::resolveImportPath(
+    const std::filesystem::path& importingPath,
+    const Token& pathToken) const
+{
+    const std::string requestedText = importPath(pathToken);
+    const std::filesystem::path requestedPath(requestedText);
+    const bool explicitPath = isExplicitImportPath(requestedText);
+
+    std::vector<std::filesystem::path> bases;
+    if (requestedPath.is_absolute()) {
+        bases.emplace_back();
+    } else {
+        bases.push_back(importingPath.parent_path());
+    }
+    if (!explicitPath) {
+        bases.insert(bases.end(), importSearchPaths_.begin(), importSearchPaths_.end());
+    }
+
+    std::vector<std::string> triedDisplayPaths;
+    for (const std::filesystem::path& base : bases) {
+        for (const std::filesystem::path& candidate : importCandidatesForBase(base, requestedPath)) {
+            const std::string displayPath = pathString(candidate);
+            triedDisplayPaths.push_back(displayPath);
+            if (canOpenFile(candidate)) {
+                return ImportResolution{candidate, std::move(triedDisplayPaths)};
+            }
+        }
+    }
+
+    if (explicitPath) {
+        const std::string displayPath = triedDisplayPaths.empty()
+            ? requestedText
+            : triedDisplayPaths.front();
+        throw DiagnosticError(DiagnosticKind::Import, "failed to open import: " + displayPath);
+    }
+
+    throw DiagnosticError(
+        DiagnosticKind::Import,
+        "failed to resolve import `" + requestedText + "`; tried: " + joinDisplayPaths(triedDisplayPaths));
 }
 
 Program FrontendSession::loadStdin(std::istream& input)
@@ -360,8 +457,8 @@ std::size_t FrontendSession::loadFile(
         for (StmtPtr& statement : unit.statements) {
             if (auto* import = dynamic_cast<ImportStmt*>(statement.get())) {
                 hasImports_ = true;
-                const std::filesystem::path resolvedPath = normalizedPath.parent_path() / importPath(import->path);
-                import->resolvedModuleId = loadFile(resolvedPath.string(), true, false, true);
+                const ImportResolution resolution = resolveImportPath(normalizedPath, import->path);
+                import->resolvedModuleId = loadFile(resolution.path.string(), true, false, true);
                 continue;
             }
 
@@ -370,8 +467,8 @@ std::size_t FrontendSession::loadFile(
                 continue;
             }
             hasImports_ = true;
-            const std::filesystem::path resolvedPath = normalizedPath.parent_path() / importPath(*exportStmt->sourcePath);
-            exportStmt->resolvedModuleId = loadFile(resolvedPath.string(), true, false, true);
+            const ImportResolution resolution = resolveImportPath(normalizedPath, *exportStmt->sourcePath);
+            exportStmt->resolvedModuleId = loadFile(resolution.path.string(), true, false, true);
         }
 
         unit.id = units_.size();
