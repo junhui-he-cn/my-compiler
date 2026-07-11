@@ -516,6 +516,24 @@ class CliMultiSourceTests(unittest.TestCase):
         self.assertEqual(completed.stdout, "")
         self.assertEqual(completed.stderr, "Import error: import is not supported from stdin\n")
 
+    def test_module_interface_uses_import_search_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = root / "app"
+            stdlib = root / "stdlib"
+            app.mkdir()
+            stdlib.mkdir()
+            (app / "input.cd").write_text('export value from "math";\n', encoding="utf-8")
+            (stdlib / "math.cd").write_text('let value: number = 7;\nexport value;\n', encoding="utf-8")
+
+            completed = self.run_compiler("-I", str(stdlib), "--module-interface", str(app / "input.cd"))
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stderr, "")
+            self.assertIn(f'module 0 "{stdlib / "math.cd"}"\n', completed.stdout)
+            self.assertIn(f'module 1 entry "{app / "input.cd"}"\n', completed.stdout)
+            self.assertEqual(completed.stdout.count('  export value value: number\n'), 2)
+
 
 if __name__ == "__main__":
     unittest.main(argv=[sys.argv[0]])
