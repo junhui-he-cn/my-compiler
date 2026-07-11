@@ -67,7 +67,20 @@ A top-level source file can load another source file with:
 import "./lib.cd";
 ```
 
-Import paths are resolved relative to the file that contains the import.
+Import paths are resolved relative to the file that contains the import. The
+CLI can also add search directories for non-explicit import strings:
+
+```sh
+compiler_design -I stdlib --import-path vendor main.cd
+```
+
+For `import "math";`, the loader first tries `math` and then `math.cd` next to
+the importing file. If neither exists, it tries the same raw and `.cd` candidates
+under each `-I` or `--import-path` directory in command-line order. Paths that
+start with `./`, `../`, or an absolute root are explicit paths; they use the
+importing file's directory and the `.cd` fallback, but they do not fall back to
+CLI search paths. Re-export source clauses use the same resolution rules.
+
 Imported files have module-private top-level scope. Only declarations marked
 with `export` are introduced into the importing file's top-level scope:
 
@@ -102,7 +115,7 @@ selected exports from another source file without making those names local to
 the forwarding module; import the dependency explicitly when the forwarding
 module also needs to use the name. Re-exported structs forward their method
 metadata for direct and namespace importers. The module system does not add
-renaming re-exports, wildcard exports, package search paths, separate
+renaming re-exports, wildcard exports, package manifests, import maps, separate
 compilation, or imports from stdin. `import` inside strings or `//` comments is
 ignored by the loader.
 
