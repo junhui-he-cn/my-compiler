@@ -16,9 +16,10 @@ namespace {
 
 void printUsage(const char* executable)
 {
-    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [file ...]\n"
-              << "       " << executable << " --emit-bytecode output.cdbc file [...]\n"
-              << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n";
+    std::cerr << "Usage: " << executable << " [--tokens] [--ir] [--bytecode] [-I dir] [--import-path dir] [file ...]\n"
+              << "       " << executable << " [--emit-bytecode output.cdbc] [-I dir] [--import-path dir] file [...]\n"
+              << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n"
+              << "Import search paths are used for non-explicit string imports after the importing file's directory.\n";
 }
 
 } // namespace
@@ -30,6 +31,7 @@ int main(int argc, char** argv)
     bool showBytecode = false;
     std::optional<std::string> emitBytecodePath;
     std::vector<std::string> inputPaths;
+    std::vector<std::string> importSearchPaths;
 
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
@@ -39,6 +41,12 @@ int main(int argc, char** argv)
             showIr = true;
         } else if (arg == "--bytecode") {
             showBytecode = true;
+        } else if (arg == "-I" || arg == "--import-path") {
+            if (i + 1 >= argc) {
+                printUsage(argv[0]);
+                return 64;
+            }
+            importSearchPaths.push_back(argv[++i]);
         } else if (arg == "--run") {
             printUsage(argv[0]);
             return 64;
@@ -64,6 +72,7 @@ int main(int argc, char** argv)
     }
 
     FrontendSession frontend;
+    frontend.setImportSearchPaths(importSearchPaths);
     try {
         Program program = inputPaths.empty()
             ? frontend.loadStdin(std::cin)

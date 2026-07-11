@@ -41,6 +41,30 @@ class CliMultiSourceTests(unittest.TestCase):
             check=False,
         )
 
+    def emit_and_run_vm_with_compiler_args(
+        self,
+        root: Path,
+        compiler_args: tuple[str, ...],
+        *sources: Path,
+    ) -> subprocess.CompletedProcess[str]:
+        artifact = root / "program.cdbc"
+        emitted = self.run_compiler(
+            *compiler_args,
+            "--emit-bytecode",
+            str(artifact),
+            *(str(source) for source in sources),
+        )
+        self.assertEqual(emitted.returncode, 0, emitted.stderr)
+        self.assertEqual(emitted.stdout, "")
+        self.assertEqual(emitted.stderr, "")
+        self.assertTrue(artifact.is_file())
+        return subprocess.run(
+            ["cargo", "run", "--quiet", "--manifest-path", str(self.vm_manifest), "--", "run", str(artifact)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
     def test_vm_execution_accepts_multiple_input_files_in_order(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -351,6 +375,139 @@ class CliMultiSourceTests(unittest.TestCase):
             "  print @;\n"
             "        ^\n",
         )
+
+    def test_short_import_path_option_resolves_extensionless_module(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = root / "app"
+            stdlib = root / "stdlib"
+            app.mkdir()
+            stdlib.mkdir()
+            (app / "input.cd").write_text('import "math";\nprint value;\n', encoding="utf-8")
+            (stdlib / "math.cd").write_text('let value = "short";\nexport value;\n', encoding="utf-8")
+
+            completed = self.emit_and_run_vm_with_compiler_args(root, ("-I", str(stdlib)), app / "input.cd")
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "short\n")
+            self.assertEqual(completed.stderr, "")
+
+    def test_long_import_path_option_resolves_subdirectory_module(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = root / "app"
+            stdlib = root / "stdlib"
+            (stdlib / "pkg").mkdir(parents=True)
+            app.mkdir()
+            (app / "input.cd").write_text('import "pkg/math";\nprint value;\n', encoding="utf-8")
+            (stdlib / "pkg" / "math.cd").write_text('let value = "subdir";\nexport value;\n', encoding="utf-8")
+
+            completed = self.emit_and_run_vm_with_compiler_args(
+                root,
+                ("--import-path", str(stdlib)),
+                app / "input.cd",
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "subdir\n")
+            self.assertEqual(completed.stderr, "")
+
+    def test_import_search_paths_are_tried_in_cli_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = root / "app"
+            first = root / "first"
+            second = root / "second"
+            app.mkdir()
+            first.mkdir()
+            second.mkdir()
+            (app / "input.cd").write_text('import "lib";\nprint value;\n', encoding="utf-8")
+            (first / "lib.cd").write_text('let value = "first";\nexport value;\n', encoding="utf-8")
+            (second / "lib.cd").write_text('let value = "second";\nexport value;\n', encoding="utf-8")
+
+            completed = self.emit_and_run_vm_with_compiler_args(
+                root,
+                ("-I", str(first), "--import-path", str(second)),
+                app / "input.cd",
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "first\n")
+            self.assertEqual(completed.stderr, "")
+
+    def test_importing_file_directory_wins_over_search_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = root / "app"
+            stdlib = root / "stdlib"
+            app.mkdir()
+            stdlib.mkdir()
+            (app / "input.cd").write_text('import "lib";\nprint value;\n', encoding="utf-8")
+            (app / "lib.cd").write_text('let value = "local";\nexport value;\n', encoding="utf-8")
+            (stdlib / "lib.cd").write_text('let value = "search";\nexport value;\n', encoding="utf-8")
+
+            completed = self.emit_and_run_vm_with_compiler_args(root, ("-I", str(stdlib)), app / "input.cd")
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout, "local\n")
+            self.assertEqual(completed.stderr, "")
+
+    def test_explicit_relative_import_does_not_fall_back_to_search_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = root / "app"
+            stdlib = root / "stdlib"
+            app.mkdir()
+            stdlib.mkdir()
+            (app / "input.cd").write_text('import "./missing";\nprint value;\n', encoding="utf-8")
+            (stdlib / "missing.cd").write_text('let value = "search";\nexport value;\n', encoding="utf-8")
+
+            completed = self.run_compiler("-I", str(stdlib), str(app / "input.cd"))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(completed.stderr, f"Import error: failed to open import: {app / 'missing'}\n")
+            self.assertNotIn(str(stdlib), completed.stderr)
+
+    def test_missing_search_path_import_reports_tried_candidates(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = root / "app"
+            stdlib = root / "stdlib"
+            app.mkdir()
+            stdlib.mkdir()
+            (app / "input.cd").write_text('import "missing";\n', encoding="utf-8")
+
+            completed = self.run_compiler("-I", str(stdlib), str(app / "input.cd"))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                "Import error: failed to resolve import `missing`; tried: "
+                f"{app / 'missing'}, {app / 'missing.cd'}, "
+                f"{stdlib / 'missing'}, {stdlib / 'missing.cd'}\n",
+            )
+
+    def test_import_path_options_require_arguments(self) -> None:
+        for option in ("-I", "--import-path"):
+            with self.subTest(option=option):
+                completed = self.run_compiler(option)
+
+                self.assertEqual(completed.returncode, 64)
+                self.assertEqual(completed.stdout, "")
+                self.assertIn("Usage:", completed.stderr)
+
+    def test_import_path_does_not_enable_stdin_imports(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "lib.cd").write_text('let value = 1;\nexport value;\n', encoding="utf-8")
+
+            completed = self.run_compiler("-I", str(root), input_text='import "lib";\n')
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(completed.stderr, "Import error: import is not supported from stdin\n")
 
     def test_import_error_stays_one_line_without_source_snippet(self) -> None:
         completed = self.run_compiler(input_text='import "./lib.cd";\n')
