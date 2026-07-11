@@ -3,6 +3,7 @@
 #include "Ast.hpp"
 #include "Diagnostic.hpp"
 #include "FlowFacts.hpp"
+#include "ModuleInterface.hpp"
 #include "ModuleSymbols.hpp"
 #include "Token.hpp"
 #include "TypeUtils.hpp"
@@ -79,6 +80,7 @@ private:
 class TypeChecker {
 public:
     const ResolvedNames& check(const Program& program);
+    const std::vector<ModuleInterface>& moduleInterfaces() const;
 
 private:
     struct CheckedExpression {
@@ -141,6 +143,7 @@ private:
     void forwardStructMethodExports(std::size_t targetModuleId, std::size_t currentModuleId, const std::string& structName);
     void checkReExport(const ExportStmt& statement);
     const ModuleStmt* findModule(const Program& program, std::size_t moduleId) const;
+    void buildModuleInterfaces(const Program& program);
     void checkStructDeclaration(const StructDeclStmt& statement);
     void checkImpl(const ImplStmt& statement);
     std::vector<TypeInfo> resolveParameterTypes(const std::vector<Parameter>& parameters);
@@ -224,6 +227,7 @@ private:
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
     MethodTable methods_;
     ModuleSymbols moduleSymbols_;
+    std::vector<ModuleInterface> moduleInterfaces_;
     std::unordered_set<std::size_t> checkedModules_;
     std::vector<std::size_t> moduleStack_;
     ResolvedNames resolvedNames_;

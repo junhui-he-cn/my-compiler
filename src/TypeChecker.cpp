@@ -289,6 +289,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     structTypes_.clear();
     methods_.clear();
     moduleSymbols_.clear();
+    moduleInterfaces_.clear();
     checkedModules_.clear();
     moduleStack_.clear();
     resolvedNames_.clear();
@@ -323,8 +324,14 @@ const ResolvedNames& TypeChecker::check(const Program& program)
         endScope();
     }
 
+    buildModuleInterfaces(program);
     currentProgram_ = nullptr;
     return resolvedNames_;
+}
+
+const std::vector<ModuleInterface>& TypeChecker::moduleInterfaces() const
+{
+    return moduleInterfaces_;
 }
 
 void TypeChecker::beginScope()
@@ -593,6 +600,56 @@ const ModuleStmt* TypeChecker::findModule(const Program& program, std::size_t mo
         }
     }
     return nullptr;
+}
+
+
+void TypeChecker::buildModuleInterfaces(const Program& program)
+{
+    moduleInterfaces_.clear();
+
+    for (const auto& statement : program.statements) {
+        const auto* module = dynamic_cast<const ModuleStmt*>(statement.get());
+        if (!module) {
+            continue;
+        }
+
+        ModuleInterface interfaceInfo;
+        interfaceInfo.moduleId = module->moduleId;
+        interfaceInfo.path = module->path;
+        interfaceInfo.isEntry = module->isEntry;
+
+        if (const ModuleValueExports* exports = moduleSymbols_.valueExports(module->moduleId)) {
+            for (const auto& entry : *exports) {
+                interfaceInfo.values.push_back(ModuleInterfaceValue{entry.first, entry.second.type});
+            }
+        }
+
+        if (const ModuleStructExports* structExports = moduleSymbols_.structExports(module->moduleId)) {
+            for (const auto& entry : *structExports) {
+                ModuleInterfaceStruct structInfo;
+                structInfo.name = entry.first;
+                for (const StructFieldType& field : entry.second.fields) {
+                    structInfo.fields.push_back(ModuleInterfaceField{field.name.lexeme, field.type});
+                }
+
+                if (const ModuleMethodExports* methodExports = moduleSymbols_.methodExports(module->moduleId)) {
+                    const auto methodsForStruct = methodExports->find(entry.first);
+                    if (methodsForStruct != methodExports->end()) {
+                        for (const auto& methodEntry : methodsForStruct->second) {
+                            structInfo.methods.push_back(ModuleInterfaceMethod{
+                                methodEntry.first,
+                                methodEntry.second.parameterTypes,
+                                methodEntry.second.returnType});
+                        }
+                    }
+                }
+
+                interfaceInfo.structs.push_back(std::move(structInfo));
+            }
+        }
+
+        moduleInterfaces_.push_back(std::move(interfaceInfo));
+    }
 }
 
 void TypeChecker::checkModule(const ModuleStmt& module)
