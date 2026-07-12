@@ -1,3 +1,7 @@
-let xs = [];
-push(xs, "bad");
-xs[0] += 1;
+fun bump(xs) {
+  xs[0] += 1;
+}
+
+let values = [];
+push(values, "bad");
+bump(values);
