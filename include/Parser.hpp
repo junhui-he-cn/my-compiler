@@ -4,12 +4,25 @@
 #include "Diagnostic.hpp"
 #include "Token.hpp"
 
+#include <exception>
+#include <optional>
 #include <string>
 #include <vector>
 
 class ParseError final : public DiagnosticError {
 public:
     explicit ParseError(const Token& token, const std::string& message);
+};
+
+class ParseErrorList final : public std::exception {
+public:
+    explicit ParseErrorList(std::vector<ParseError> errors);
+
+    const std::vector<ParseError>& errors() const;
+    const char* what() const noexcept override;
+
+private:
+    std::vector<ParseError> errors_;
 };
 
 class Parser {
@@ -20,6 +33,10 @@ public:
     Program parse();
 
 private:
+    void recordParseError(ParseError error);
+    void synchronize(bool stopAtRightBrace);
+    std::optional<StmtPtr> parseDeclarationRecovering(bool stopAtRightBrace);
+
     StmtPtr declaration();
     StmtPtr exportDeclaration();
     StmtPtr structDeclaration();
@@ -89,6 +106,7 @@ private:
 
     std::vector<Token> tokens_;
     std::size_t current_ = 0;
+    std::vector<ParseError> errors_;
     bool allowStructConstructors_ = true;
     int blockDepth_ = 0;
 };

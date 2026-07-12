@@ -51,6 +51,21 @@ ParseError::ParseError(const Token& token, const std::string& message)
 {
 }
 
+ParseErrorList::ParseErrorList(std::vector<ParseError> errors)
+    : errors_(std::move(errors))
+{
+}
+
+const std::vector<ParseError>& ParseErrorList::errors() const
+{
+    return errors_;
+}
+
+const char* ParseErrorList::what() const noexcept
+{
+    return "parse errors";
+}
+
 Parser::Parser(std::vector<Token> tokens)
     : tokens_(std::move(tokens))
 {
@@ -59,10 +74,72 @@ Parser::Parser(std::vector<Token> tokens)
 Program Parser::parse()
 {
     Program program;
+    errors_.clear();
+
     while (!isAtEnd()) {
-        program.statements.push_back(declaration());
+        if (std::optional<StmtPtr> statement = parseDeclarationRecovering(false)) {
+            program.statements.push_back(std::move(*statement));
+        }
     }
+
+    if (!errors_.empty()) {
+        throw ParseErrorList(std::move(errors_));
+    }
+
     return program;
+}
+
+void Parser::recordParseError(ParseError error)
+{
+    errors_.push_back(std::move(error));
+}
+
+std::optional<StmtPtr> Parser::parseDeclarationRecovering(bool stopAtRightBrace)
+{
+    try {
+        return declaration();
+    } catch (const ParseError& error) {
+        recordParseError(error);
+        synchronize(stopAtRightBrace);
+        return std::nullopt;
+    }
+}
+
+void Parser::synchronize(bool stopAtRightBrace)
+{
+    if (check(TokenType::Semicolon)) {
+        advance();
+    }
+
+    while (!isAtEnd()) {
+        if (check(TokenType::RightBrace)) {
+            if (!stopAtRightBrace) {
+                advance();
+            }
+            return;
+        }
+
+        switch (peek().type) {
+        case TokenType::Let:
+        case TokenType::Fun:
+        case TokenType::Struct:
+        case TokenType::Impl:
+        case TokenType::Import:
+        case TokenType::Export:
+        case TokenType::Print:
+        case TokenType::If:
+        case TokenType::While:
+        case TokenType::For:
+        case TokenType::Break:
+        case TokenType::Continue:
+        case TokenType::Return:
+        case TokenType::LeftBrace:
+            return;
+        default:
+            advance();
+            break;
+        }
+    }
 }
 
 StmtPtr Parser::declaration()
@@ -445,7 +522,9 @@ std::vector<StmtPtr> Parser::blockStatements()
 {
     std::vector<StmtPtr> statements;
     while (!check(TokenType::RightBrace) && !isAtEnd()) {
-        statements.push_back(declaration());
+        if (std::optional<StmtPtr> statement = parseDeclarationRecovering(true)) {
+            statements.push_back(std::move(*statement));
+        }
     }
     consume(TokenType::RightBrace, "expected `}` after block");
     return statements;

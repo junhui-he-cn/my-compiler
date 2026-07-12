@@ -3,6 +3,7 @@
 #include "FrontendSession.hpp"
 #include "IRCompiler.hpp"
 #include "ModuleInterfaceEmitter.hpp"
+#include "Parser.hpp"
 #include "TypeChecker.hpp"
 
 #include <fstream>
@@ -21,6 +22,19 @@ void printUsage(const char* executable)
               << "       " << executable << " [--emit-bytecode output.cdbc] [-I dir] [--import-path dir] file [...]\n"
               << "If no file is provided, source is read from stdin except for --emit-bytecode, which requires at least one file.\n"
               << "Import search paths are used for non-explicit string imports after the importing file's directory.\n";
+}
+
+void printParseErrorList(const ParseErrorList& errors, const std::string& source)
+{
+    bool first = true;
+    for (const ParseError& error : errors.errors()) {
+        if (!first) {
+            std::cerr << '\n';
+        }
+        first = false;
+        std::cerr << formatDiagnosticWithSource(error, source);
+    }
+    std::cerr << '\n';
 }
 
 } // namespace
@@ -143,6 +157,9 @@ int main(int argc, char** argv)
             }
 
         }
+    } catch (const ParseErrorList& errors) {
+        printParseErrorList(errors, frontend.sourceForDiagnostics());
+        return 1;
     } catch (const FileDiagnosticError& error) {
         std::cerr << formatDiagnosticWithSourceContext(error) << '\n';
         return 1;
