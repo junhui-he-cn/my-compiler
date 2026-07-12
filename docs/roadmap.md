@@ -44,16 +44,14 @@ separate-compilation work remain deferred.
 
 ### M3: Language and Runtime Depth
 
-1. Add parser recovery and multiple diagnostics.
-2. Improve collection type inference.
-3. Define a `.cdbc` version-compatibility policy.
-4. Treat GC as a dedicated backend project; continue to defer task scheduling
+1. Define a `.cdbc` version-compatibility policy.
+2. Treat GC as a dedicated backend project; continue to defer task scheduling
    and JIT exploration.
 
 The immediate dependency order is:
 
 ```text
-parser recovery and multiple diagnostics
+.cdbc version-compatibility policy
 ```
 
 Each behavior-changing slice should start with a focused design spec and
@@ -66,8 +64,8 @@ layer.
 
 Future work:
 
-- Improve collection inference while preserving mixed-array dynamic escape
-  hatches.
+- No active near-term collection inference work remains after nullable-aware
+  array literal merging and direct unannotated array mutation refinement.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -196,7 +194,7 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-parser recovery and multiple diagnostics
+.cdbc version-compatibility policy
 ```
 
 Do not start a visitor rewrite, unified assignment AST, separate compilation,
