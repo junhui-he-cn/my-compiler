@@ -534,6 +534,50 @@ class CliMultiSourceTests(unittest.TestCase):
             self.assertIn(f'module 1 entry "{app / "input.cd"}"\n', completed.stdout)
             self.assertEqual(completed.stdout.count('  export value value: number\n'), 2)
 
+    def test_direct_multi_file_parse_errors_reports_all_file_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first = root / "first.cd"
+            second = root / "second.cd"
+            first.write_text("print ;\n", encoding="utf-8")
+            second.write_text("let x = ;\n", encoding="utf-8")
+
+            completed = self.run_compiler(str(first), str(second))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Parse error at {first}:1:7: expected expression\n"
+                "  print ;\n"
+                "        ^\n"
+                f"Parse error at {second}:1:9: expected expression\n"
+                "  let x = ;\n"
+                "          ^\n",
+            )
+
+    def test_imported_file_parse_errors_reports_all_diagnostics_with_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_file = root / "input.cd"
+            lib = root / "lib.cd"
+            input_file.write_text('import "./lib.cd";\nprint 1;\n', encoding="utf-8")
+            lib.write_text("print ;\nlet x = ;\n", encoding="utf-8")
+
+            completed = self.run_compiler(str(input_file))
+
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(completed.stdout, "")
+            self.assertEqual(
+                completed.stderr,
+                f"Parse error at {lib}:1:7: expected expression\n"
+                "  print ;\n"
+                "        ^\n"
+                f"Parse error at {lib}:2:9: expected expression\n"
+                "  let x = ;\n"
+                "          ^\n",
+            )
+
 
 if __name__ == "__main__":
     unittest.main(argv=[sys.argv[0]])

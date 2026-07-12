@@ -1,0 +1,5 @@
+fun bad() {
+  print ;
+  let x = ;
+  return 1;
+}

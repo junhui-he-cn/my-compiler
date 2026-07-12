@@ -1,0 +1,6 @@
+Parse error at 2:9: expected expression
+    print ;
+          ^
+Parse error at 3:11: expected expression
+    let x = ;
+            ^
