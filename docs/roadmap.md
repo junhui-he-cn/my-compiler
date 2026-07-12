@@ -89,7 +89,8 @@ Future work:
 
 - Decide whether named runtime values should expose runtime type names beyond
   the current generic `struct` result.
-- Define recursive struct type rules before allowing recursive fields.
+- Recursive struct field types are explicitly rejected for now; revisit only with
+  a dedicated design for recursive initialization and runtime representation.
 - Decide whether field creation by assignment should exist; current assignment
   only mutates existing fields.
 - Keep dynamic dispatch, inheritance, overloading, protocols, and optional
