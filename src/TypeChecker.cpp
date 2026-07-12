@@ -1061,6 +1061,75 @@ const TypeChecker::StructTypeDecl* TypeChecker::findStructType(const std::string
     return &found->second;
 }
 
+TypeInfo TypeChecker::resolveStructFieldAnnotation(const StructFieldDecl& field)
+{
+    return resolveStructFieldAnnotation(field.typeName, field.name);
+}
+
+TypeInfo TypeChecker::resolveStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName)
+{
+    if (typeName.kind == TypeAnnotation::Kind::Nullable) {
+        return nullableType(resolveStructFieldAnnotation(*typeName.innerType, fieldName));
+    }
+
+    if (typeName.kind == TypeAnnotation::Kind::Array) {
+        return arrayType(resolveStructFieldAnnotation(*typeName.elementType, fieldName));
+    }
+
+    if (typeName.kind == TypeAnnotation::Kind::Function) {
+        std::vector<TypeInfo> parameterTypes;
+        parameterTypes.reserve(typeName.parameterTypes.size());
+        for (const TypeAnnotation& parameter : typeName.parameterTypes) {
+            parameterTypes.push_back(resolveStructFieldAnnotation(parameter, fieldName));
+        }
+        return functionType(std::move(parameterTypes), resolveStructFieldAnnotation(*typeName.returnType, fieldName));
+    }
+
+    return resolveSimpleStructFieldAnnotation(typeName, fieldName);
+}
+
+TypeInfo TypeChecker::resolveSimpleStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName)
+{
+    if (typeName.kind == TypeAnnotation::Kind::Qualified) {
+        return resolveAnnotation(typeName);
+    }
+
+    if (typeName.token.lexeme == "number") {
+        return simpleType(StaticType::Number);
+    }
+    if (typeName.token.lexeme == "bool") {
+        return simpleType(StaticType::Bool);
+    }
+    if (typeName.token.lexeme == "string") {
+        return simpleType(StaticType::String);
+    }
+    if (typeName.token.lexeme == "nil") {
+        return simpleType(StaticType::Nil);
+    }
+
+    const auto state = structCheckStates_.find(typeName.token.lexeme);
+    if (state != structCheckStates_.end()) {
+        if (state->second == StructCheckState::Checking) {
+            throw TypeError(typeName.token,
+                "recursive struct field `" + fieldName.lexeme + "` references `" + typeName.token.lexeme + "`");
+        }
+        if (state->second == StructCheckState::Declared) {
+            const auto declaration = structDeclarations_.find(typeName.token.lexeme);
+            if (declaration == structDeclarations_.end()) {
+                throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
+            }
+            checkStructDeclaration(*declaration->second);
+        }
+        return namedStructType(typeName.token.lexeme);
+    }
+
+    if (findStructType(typeName.token.lexeme)) {
+        return namedStructType(typeName.token.lexeme);
+    }
+
+    throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
+}
+
 void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
 {
     const auto state = structCheckStates_.find(statement.name.lexeme);
@@ -1071,6 +1140,7 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
         predeclareStructDeclaration(statement);
     }
 
+    structCheckStates_[statement.name.lexeme] = StructCheckState::Checking;
     StructTypeDecl declaration{statement.name, {}};
     std::unordered_map<std::string, Token> fieldNames;
     for (const StructFieldDecl& field : statement.fields) {
@@ -1079,7 +1149,7 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
                 "duplicate field `" + field.name.lexeme + "` in struct `" + statement.name.lexeme + "`");
         }
         fieldNames.emplace(field.name.lexeme, field.name);
-        declaration.fields.push_back(StructFieldType{field.name, resolveAnnotation(field.typeName)});
+        declaration.fields.push_back(StructFieldType{field.name, resolveStructFieldAnnotation(field)});
     }
 
     structTypes_[statement.name.lexeme] = std::move(declaration);

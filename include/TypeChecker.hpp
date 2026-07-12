@@ -177,6 +177,9 @@ private:
     bool isBuiltinMemberName(const std::string& name) const;
     const StructTypeDecl* findStructType(const std::string& name) const;
     void predeclareStructDeclaration(const StructDeclStmt& statement);
+    TypeInfo resolveStructFieldAnnotation(const StructFieldDecl& field);
+    TypeInfo resolveStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName);
+    TypeInfo resolveSimpleStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName);
     void checkFunction(const FunctionStmt& statement);
     TypeInfo checkFunctionBody(
         const std::vector<StmtPtr>& body,
