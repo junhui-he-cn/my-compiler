@@ -385,6 +385,24 @@ const TypeChecker::Binding* TypeChecker::findVariable(const std::string& name) c
     return nullptr;
 }
 
+TypeChecker::Binding* TypeChecker::findSimpleVariableBinding(const Expr& expression)
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(&expression);
+    if (!variable) {
+        return nullptr;
+    }
+    return findVariable(variable->name.lexeme);
+}
+
+const TypeChecker::Binding* TypeChecker::findSimpleVariableBinding(const Expr& expression) const
+{
+    const auto* variable = dynamic_cast<const VariableExpr*>(&expression);
+    if (!variable) {
+        return nullptr;
+    }
+    return findVariable(variable->name.lexeme);
+}
+
 TypeChecker::Binding TypeChecker::declareVariable(
     const Token& name,
     TypeInfo type,
@@ -1541,6 +1559,40 @@ TypeInfo TypeChecker::inferArrayElementType(const ArrayExpr& expression)
     return current ? *current : unknownType();
 }
 
+void TypeChecker::refineArrayBindingFromMutation(Binding& target, const TypeInfo& valueType)
+{
+    if (target.explicitType) {
+        return;
+    }
+
+    if (!isKnown(valueType)) {
+        target.type = simpleType(StaticType::Array);
+        return;
+    }
+
+    if (!isKnown(target.type) || (target.type.kind == StaticType::Array && !target.type.elementType)) {
+        target.type = arrayType(valueType);
+        return;
+    }
+
+    if (target.type.kind != StaticType::Array) {
+        return;
+    }
+
+    if (!target.type.elementType) {
+        target.type = arrayType(valueType);
+        return;
+    }
+
+    std::optional<TypeInfo> merged = mergeArrayElementTypes(*target.type.elementType, valueType);
+    if (!merged) {
+        target.type = simpleType(StaticType::Array);
+        return;
+    }
+
+    target.type = arrayType(std::move(*merged));
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType)
 {
     if (expectedType && expectedType->kind == StaticType::Array && expectedType->elementType) {
@@ -1796,12 +1848,18 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
             throw TypeError(expression.paren,
                 "push expects array as first argument, got " + typeInfoName(arrayArgument.type));
         }
-        const TypeInfo* expectedElement = arrayArgument.type.elementType.get();
+
+        Binding* target = findSimpleVariableBinding(*expression.arguments[0]);
+        const bool strictElementCheck = target == nullptr || target->explicitType;
+        const TypeInfo* expectedElement = strictElementCheck ? arrayArgument.type.elementType.get() : nullptr;
         const CheckedExpression valueArgument = checkExpressionInfo(*expression.arguments[1], expectedElement);
-        if (expectedElement && !compatible(*expectedElement, valueArgument.type)) {
+        if (strictElementCheck && expectedElement && !compatible(*expectedElement, valueArgument.type)) {
             throw TypeError(expression.paren,
                 "push value expects " + typeInfoName(*expectedElement)
                     + ", got " + typeInfoName(valueArgument.type));
+        }
+        if (target && target->type.kind == StaticType::Array) {
+            refineArrayBindingFromMutation(*target, valueArgument.type);
         }
         return CheckedExpression{simpleType(StaticType::Nil)};
     }
@@ -1967,11 +2025,17 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
         if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
             throw TypeError(expression.paren, "push expects array receiver, got " + typeInfoName(receiver.type));
         }
-        const TypeInfo* expectedElement = receiver.type.elementType.get();
+
+        Binding* target = findSimpleVariableBinding(*expression.receiver);
+        const bool strictElementCheck = target == nullptr || target->explicitType;
+        const TypeInfo* expectedElement = strictElementCheck ? receiver.type.elementType.get() : nullptr;
         const CheckedExpression value = checkExpressionInfo(*expression.arguments[0], expectedElement);
-        if (expectedElement && !compatible(*expectedElement, value.type)) {
+        if (strictElementCheck && expectedElement && !compatible(*expectedElement, value.type)) {
             throw TypeError(expression.paren,
                 "push value expects " + typeInfoName(*expectedElement) + ", got " + typeInfoName(value.type));
+        }
+        if (target && target->type.kind == StaticType::Array) {
+            refineArrayBindingFromMutation(*target, value.type);
         }
         return CheckedExpression{simpleType(StaticType::Nil)};
     }

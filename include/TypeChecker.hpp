@@ -118,6 +118,8 @@ private:
     Scope& currentScope();
     const Scope& currentScope() const;
     Binding* findVariable(const std::string& name);
+    Binding* findSimpleVariableBinding(const Expr& expression);
+    const Binding* findSimpleVariableBinding(const Expr& expression) const;
     const Binding* findVariable(const std::string& name) const;
     Binding declareVariable(
         const Token& name,
@@ -182,6 +184,7 @@ private:
     std::optional<FlowNarrowing> nonNilNarrowingForVariable(const VariableExpr& variable) const;
     CheckedExpression checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType);
     TypeInfo inferArrayElementType(const ArrayExpr& expression);
+    void refineArrayBindingFromMutation(Binding& target, const TypeInfo& valueType);
     const TypeInfo* contextualFunctionType(const TypeInfo* expectedType) const;
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression, const TypeInfo* expectedType);
     CheckedExpression checkCall(const CallExpr& expression);
