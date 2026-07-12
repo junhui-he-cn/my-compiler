@@ -1,0 +1,1 @@
+Type error at 1:32: recursive struct field `makeNext` references `Node`

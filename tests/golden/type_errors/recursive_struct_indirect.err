@@ -1,0 +1,1 @@
+Type error at 2:15: recursive struct field `a` references `A`
