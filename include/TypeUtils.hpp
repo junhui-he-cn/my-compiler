@@ -38,6 +38,7 @@ bool isKnown(const TypeInfo& type);
 bool hasFunctionSignature(const TypeInfo& type);
 bool isNullable(const TypeInfo& type);
 bool compatible(const TypeInfo& expected, const TypeInfo& actual);
+std::optional<TypeInfo> mergeArrayElementTypes(const TypeInfo& left, const TypeInfo& right);
 
 std::string staticTypeName(StaticType type);
 std::string typeInfoName(const TypeInfo& type);

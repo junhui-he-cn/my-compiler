@@ -1,6 +1,7 @@
 #include "TypeUtils.hpp"
 
 #include <cstddef>
+#include <optional>
 #include <utility>
 
 TypeInfo unknownType()
@@ -173,4 +174,68 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
         }
     }
     return compatible(*expected.returnType, *actual.returnType);
+}
+
+std::optional<TypeInfo> mergeArrayElementTypes(const TypeInfo& left, const TypeInfo& right)
+{
+    if (!isKnown(left) || !isKnown(right)) {
+        return std::nullopt;
+    }
+
+    if (left.kind == StaticType::Nil && right.kind == StaticType::Nil) {
+        return simpleType(StaticType::Nil);
+    }
+
+    if (isNullable(left)) {
+        if (right.kind == StaticType::Nil) {
+            return left;
+        }
+        if (isNullable(right)) {
+            std::optional<TypeInfo> inner = mergeArrayElementTypes(*left.nullableOf, *right.nullableOf);
+            if (!inner) {
+                return std::nullopt;
+            }
+            return nullableType(std::move(*inner));
+        }
+        std::optional<TypeInfo> inner = mergeArrayElementTypes(*left.nullableOf, right);
+        if (!inner) {
+            return std::nullopt;
+        }
+        return nullableType(std::move(*inner));
+    }
+
+    if (isNullable(right)) {
+        if (left.kind == StaticType::Nil) {
+            return right;
+        }
+        std::optional<TypeInfo> inner = mergeArrayElementTypes(left, *right.nullableOf);
+        if (!inner) {
+            return std::nullopt;
+        }
+        return nullableType(std::move(*inner));
+    }
+
+    if (left.kind == StaticType::Nil) {
+        return nullableType(right);
+    }
+    if (right.kind == StaticType::Nil) {
+        return nullableType(left);
+    }
+
+    if (left.kind == StaticType::Array && right.kind == StaticType::Array) {
+        if (!left.elementType || !right.elementType) {
+            return simpleType(StaticType::Array);
+        }
+        std::optional<TypeInfo> element = mergeArrayElementTypes(*left.elementType, *right.elementType);
+        if (!element) {
+            return std::nullopt;
+        }
+        return arrayType(std::move(*element));
+    }
+
+    if (compatible(left, right) && compatible(right, left)) {
+        return left;
+    }
+
+    return std::nullopt;
 }

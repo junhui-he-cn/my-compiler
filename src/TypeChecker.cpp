@@ -1532,9 +1532,11 @@ TypeInfo TypeChecker::inferArrayElementType(const ArrayExpr& expression)
             current = std::move(elementType);
             continue;
         }
-        if (!(compatible(*current, elementType) && compatible(elementType, *current))) {
+        std::optional<TypeInfo> merged = mergeArrayElementTypes(*current, elementType);
+        if (!merged) {
             return unknownType();
         }
+        current = std::move(*merged);
     }
     return current ? *current : unknownType();
 }
