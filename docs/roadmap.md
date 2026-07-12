@@ -42,20 +42,21 @@ No active M2 module ergonomics items remain. Phase 14G module-interface metadata
 is implemented as a stable `--module-interface` debug output. Linker and
 separate-compilation work remain deferred.
 
-### M3: Language and Runtime Depth
+### M3: Language Depth
 
-1. Define a `.cdbc` version-compatibility policy.
-2. Treat GC as a dedicated backend project; continue to defer task scheduling
-   and JIT exploration.
+1. Continue struct language polish.
+2. Add focused standard builtin and collection helper slices.
+3. Improve language polish and diagnostics.
 
 The immediate dependency order is:
 
 ```text
-.cdbc version-compatibility policy
+struct language polish
 ```
 
 Each behavior-changing slice should start with a focused design spec and
-implementation plan.
+implementation plan. Backend and VM work is deferred and should not be mixed
+into these near-term language slices.
 
 ## Phase 9: Richer Type System
 
@@ -175,18 +176,17 @@ Recommended future cleanup slices:
 ## Deferred Backend Track
 
 Future backend work targets the Rust `compiler-design-vm` project and `.cdbc`
-bytecode artifacts.
+bytecode artifacts, but this track is paused for the active roadmap.
 
-Future work:
+Deferred work:
 
-- Phase 4A: define a `.cdbc` version-compatibility policy.
-- Phase 4B: design GC heap ownership and root scanning as a dedicated backend
-  project.
+- Define a `.cdbc` version-compatibility policy.
+- Design GC heap ownership and root scanning as a dedicated backend project.
 - Continue to defer task scheduling and JIT metadata/hot-path exploration.
 
-Before starting a backend implementation phase, create a dedicated backend
-design spec and implementation plan rather than mixing it into language feature
-work.
+Do not start backend implementation from the active near-term queue. Before
+resuming backend work, create a dedicated backend design spec and implementation
+plan rather than mixing it into language feature work.
 
 ## Near-Term Recommendation
 
@@ -194,9 +194,9 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-.cdbc version-compatibility policy
+struct language polish
 ```
 
 Do not start a visitor rewrite, unified assignment AST, separate compilation,
-additional nullable narrowing, GC, task scheduling, or JIT as part of these
-near-term slices.
+additional nullable narrowing, `.cdbc` versioning, GC, task scheduling, or JIT as
+part of these near-term language slices.
