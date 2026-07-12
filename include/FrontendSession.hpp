@@ -2,6 +2,7 @@
 
 #include "Ast.hpp"
 #include "Diagnostic.hpp"
+#include "Parser.hpp"
 #include "Token.hpp"
 
 #include <cstddef>
@@ -22,6 +23,7 @@ public:
     std::vector<Token> displayTokens() const;
     const std::string& sourceForDiagnostics() const;
     std::optional<FileDiagnosticError> remapDirectDiagnostic(const DiagnosticError& error) const;
+    std::optional<FileDiagnosticErrorList> remapDirectDiagnostics(const ParseErrorList& errors) const;
     std::size_t moduleCount() const;
 
 private:

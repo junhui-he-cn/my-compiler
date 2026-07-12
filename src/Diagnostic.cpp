@@ -161,6 +161,21 @@ const DiagnosticSourceContext& FileDiagnosticError::sourceContext() const
     return context_;
 }
 
+FileDiagnosticErrorList::FileDiagnosticErrorList(std::vector<FileDiagnosticError> errors)
+    : errors_(std::move(errors))
+{
+}
+
+const std::vector<FileDiagnosticError>& FileDiagnosticErrorList::errors() const
+{
+    return errors_;
+}
+
+const char* FileDiagnosticErrorList::what() const noexcept
+{
+    return "diagnostic errors";
+}
+
 DiagnosticKind DiagnosticError::kind() const
 {
     return kind_;

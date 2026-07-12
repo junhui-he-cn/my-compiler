@@ -3,6 +3,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 enum class DiagnosticKind {
     Lex,
@@ -48,6 +49,17 @@ public:
 
 private:
     DiagnosticSourceContext context_;
+};
+
+class FileDiagnosticErrorList final : public std::exception {
+public:
+    explicit FileDiagnosticErrorList(std::vector<FileDiagnosticError> errors);
+
+    const std::vector<FileDiagnosticError>& errors() const;
+    const char* what() const noexcept override;
+
+private:
+    std::vector<FileDiagnosticError> errors_;
 };
 
 std::string diagnosticKindName(DiagnosticKind kind);

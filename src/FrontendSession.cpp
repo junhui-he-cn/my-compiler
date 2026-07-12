@@ -149,6 +149,31 @@ struct ParsedSource {
     std::vector<StmtPtr> statements;
 };
 
+
+FileDiagnosticError fileDiagnosticFromError(
+    const DiagnosticError& error,
+    const std::string& path,
+    const std::string& source,
+    bool pathlessDiagnostics)
+{
+    return FileDiagnosticError(
+        error,
+        DiagnosticSourceContext{path, source, pathlessDiagnostics});
+}
+
+FileDiagnosticErrorList fileDiagnosticListFromParseErrors(
+    const ParseErrorList& errors,
+    const std::string& path,
+    const std::string& source,
+    bool pathlessDiagnostics)
+{
+    std::vector<FileDiagnosticError> mapped;
+    for (const ParseError& error : errors.errors()) {
+        mapped.push_back(fileDiagnosticFromError(error, path, source, pathlessDiagnostics));
+    }
+    return FileDiagnosticErrorList(std::move(mapped));
+}
+
 ParsedSource parseSource(
     const std::string& path,
     const std::string& source,
@@ -160,6 +185,8 @@ ParsedSource parseSource(
         Parser parser(tokens);
         Program program = parser.parse();
         return ParsedSource{std::move(tokens), std::move(program.statements)};
+    } catch (const ParseErrorList& errors) {
+        throw fileDiagnosticListFromParseErrors(errors, path, source, pathlessDiagnostics);
     } catch (const FileDiagnosticError&) {
         throw;
     } catch (const DiagnosticError& error) {
@@ -352,6 +379,11 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
             directProgram = parser.parse();
             hasImports = programLoadsSource(directProgram);
         }
+    } catch (const ParseErrorList& errors) {
+        if (const std::optional<FileDiagnosticErrorList> remapped = remapDirectDiagnostics(errors)) {
+            throw *remapped;
+        }
+        throw;
     } catch (const DiagnosticError& error) {
         if (const std::optional<FileDiagnosticError> remapped = remapDirectDiagnostic(error)) {
             throw *remapped;
@@ -429,6 +461,12 @@ std::size_t FrontendSession::loadFile(
             Parser parser(tokens);
             Program program = parser.parse();
             parsed = ParsedSource{std::move(tokens), std::move(program.statements)};
+        } catch (const ParseErrorList& errors) {
+            throw fileDiagnosticListFromParseErrors(
+                errors,
+                displayPath,
+                source,
+                !fileDiagnostics && !isImport && !thisUnitHasImport);
         } catch (const FileDiagnosticError&) {
             throw;
         } catch (const DiagnosticError& error) {
@@ -574,6 +612,53 @@ std::optional<FileDiagnosticError> FrontendSession::remapDirectDiagnostic(const 
     }
 
     return std::nullopt;
+}
+
+
+std::optional<FileDiagnosticErrorList> FrontendSession::remapDirectDiagnostics(const ParseErrorList& errors) const
+{
+    if (directInputs_.size() < 2) {
+        return std::nullopt;
+    }
+
+    std::vector<FileDiagnosticError> mapped;
+    for (const ParseError& error : errors.errors()) {
+        if (!error.location()) {
+            return std::nullopt;
+        }
+
+        std::size_t startLine = 1;
+        bool foundInput = false;
+        for (const DirectInput& input : directInputs_) {
+            const std::size_t span = sourceLineSpan(input.source);
+            if (span == 0) {
+                continue;
+            }
+
+            const std::size_t diagnosticLine = static_cast<std::size_t>(error.location()->line);
+            if (diagnosticLine >= startLine && diagnosticLine < startLine + span) {
+                DiagnosticError remapped(
+                    error.kind(),
+                    SourceLocation{
+                        static_cast<int>(diagnosticLine - startLine + 1),
+                        error.location()->column,
+                    },
+                    error.message());
+                mapped.push_back(FileDiagnosticError(
+                    remapped,
+                    DiagnosticSourceContext{input.path, input.source, false}));
+                foundInput = true;
+                break;
+            }
+            startLine += span;
+        }
+
+        if (!foundInput) {
+            return std::nullopt;
+        }
+    }
+
+    return FileDiagnosticErrorList(std::move(mapped));
 }
 
 std::size_t FrontendSession::moduleCount() const

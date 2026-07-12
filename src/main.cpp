@@ -37,6 +37,19 @@ void printParseErrorList(const ParseErrorList& errors, const std::string& source
     std::cerr << '\n';
 }
 
+void printFileDiagnosticErrorList(const FileDiagnosticErrorList& errors)
+{
+    bool first = true;
+    for (const FileDiagnosticError& error : errors.errors()) {
+        if (!first) {
+            std::cerr << '\n';
+        }
+        first = false;
+        std::cerr << formatDiagnosticWithSourceContext(error);
+    }
+    std::cerr << '\n';
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -157,6 +170,9 @@ int main(int argc, char** argv)
             }
 
         }
+    } catch (const FileDiagnosticErrorList& errors) {
+        printFileDiagnosticErrorList(errors);
+        return 1;
     } catch (const ParseErrorList& errors) {
         printParseErrorList(errors, frontend.sourceForDiagnostics());
         return 1;
