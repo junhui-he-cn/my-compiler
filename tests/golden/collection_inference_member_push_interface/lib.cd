@@ -1,0 +1,3 @@
+let xs = [];
+xs.push(1);
+export xs;

@@ -1,0 +1,4 @@
+module 0 "/home/junhe/compiler/tests/golden/collection_inference_nullable_literal_interface/lib.cd"
+  export value xs: [number?]
+
+module 1 entry "/home/junhe/compiler/tests/golden/collection_inference_nullable_literal_interface/input.cd"

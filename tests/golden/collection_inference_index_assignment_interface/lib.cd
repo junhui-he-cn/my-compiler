@@ -1,0 +1,3 @@
+let xs = [nil];
+xs[0] = 1;
+export xs;

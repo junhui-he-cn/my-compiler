@@ -1,0 +1,3 @@
+let xs = [];
+push(xs, "a");
+export xs;
