@@ -2190,12 +2190,19 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
     const IndexTargetTypes target = checkIndexTarget(
         *expression.collection, *expression.index, expression.bracket, "can only assign array elements");
 
-    const TypeInfo* expectedElement = target.collection.elementType.get();
+    Binding* binding = findSimpleVariableBinding(*expression.collection);
+    const bool strictElementCheck = binding == nullptr || binding->explicitType;
+    const TypeInfo* expectedElement = strictElementCheck ? target.collection.elementType.get() : nullptr;
     const CheckedExpression value = checkExpressionInfo(*expression.value, expectedElement);
-    if (expectedElement && !compatible(*expectedElement, value.type)) {
+    if (strictElementCheck && expectedElement && !compatible(*expectedElement, value.type)) {
         throw TypeError(expression.bracket,
             "array index assignment expects " + typeInfoName(*expectedElement)
                 + ", got " + typeInfoName(value.type));
+    }
+
+    if (binding && binding->type.kind == StaticType::Array) {
+        refineArrayBindingFromMutation(*binding, value.type);
+        return CheckedExpression{value.type};
     }
 
     return value;
