@@ -287,6 +287,8 @@ const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
     structTypes_.clear();
+    structDeclarations_.clear();
+    structCheckStates_.clear();
     methods_.clear();
     moduleSymbols_.clear();
     moduleInterfaces_.clear();
@@ -318,9 +320,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
         }
     } else {
         beginScope();
-        for (const auto& statement : program.statements) {
-            checkStatement(*statement);
-        }
+        checkStatementList(program.statements);
         endScope();
     }
 
@@ -447,6 +447,39 @@ std::string TypeChecker::makeResolvedName(const std::string& sourceName)
     return sourceName + "#" + std::to_string(nextResolvedName_++);
 }
 
+void TypeChecker::predeclareStructDeclaration(const StructDeclStmt& statement)
+{
+    if (structTypes_.find(statement.name.lexeme) != structTypes_.end()) {
+        throw TypeError(statement.name, "duplicate struct `" + statement.name.lexeme + "`");
+    }
+
+    StructTypeDecl declaration{statement.name, {}};
+    structTypes_.emplace(statement.name.lexeme, std::move(declaration));
+    structDeclarations_.emplace(statement.name.lexeme, &statement);
+    structCheckStates_.emplace(statement.name.lexeme, StructCheckState::Declared);
+
+    if (!moduleStack_.empty()) {
+        moduleSymbols_.markLocalStruct(moduleStack_.back(), statement.name.lexeme);
+    }
+}
+
+void TypeChecker::predeclareStructDeclarations(const std::vector<StmtPtr>& statements)
+{
+    for (const auto& statement : statements) {
+        if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(statement.get())) {
+            predeclareStructDeclaration(*structDecl);
+        }
+    }
+}
+
+void TypeChecker::checkStatementList(const std::vector<StmtPtr>& statements)
+{
+    predeclareStructDeclarations(statements);
+    for (const auto& statement : statements) {
+        checkStatement(*statement);
+    }
+}
+
 void TypeChecker::checkStatement(const Stmt& statement)
 {
     if (const auto* module = dynamic_cast<const ModuleStmt*>(&statement)) {
@@ -510,9 +543,7 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* block = dynamic_cast<const BlockStmt*>(&statement)) {
         beginScope();
-        for (const auto& child : block->statements) {
-            checkStatement(*child);
-        }
+        checkStatementList(block->statements);
         endScope();
         return;
     }
@@ -678,6 +709,8 @@ void TypeChecker::checkModule(const ModuleStmt& module)
 
     std::vector<Scope> savedScopes = std::move(scopes_);
     std::unordered_map<std::string, StructTypeDecl> savedStructTypes = std::move(structTypes_);
+    std::unordered_map<std::string, const StructDeclStmt*> savedStructDeclarations = std::move(structDeclarations_);
+    std::unordered_map<std::string, StructCheckState> savedStructCheckStates = std::move(structCheckStates_);
     MethodTable savedMethods = std::move(methods_);
     const std::size_t savedFunctionDepth = functionDepth_;
     const std::size_t savedLoopDepth = loopDepth_;
@@ -685,6 +718,8 @@ void TypeChecker::checkModule(const ModuleStmt& module)
 
     scopes_.clear();
     structTypes_.clear();
+    structDeclarations_.clear();
+    structCheckStates_.clear();
     methods_.clear();
     functionDepth_ = 0;
     loopDepth_ = 0;
@@ -693,9 +728,7 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     moduleStack_.push_back(module.moduleId);
     beginScope();
     try {
-        for (const auto& statement : module.statements) {
-            checkStatement(*statement);
-        }
+        checkStatementList(module.statements);
     } catch (const FileDiagnosticError&) {
         throw;
     } catch (const DiagnosticError& error) {
@@ -708,6 +741,8 @@ void TypeChecker::checkModule(const ModuleStmt& module)
 
     scopes_ = std::move(savedScopes);
     structTypes_ = std::move(savedStructTypes);
+    structDeclarations_ = std::move(savedStructDeclarations);
+    structCheckStates_ = std::move(savedStructCheckStates);
     methods_ = std::move(savedMethods);
     functionDepth_ = savedFunctionDepth;
     loopDepth_ = savedLoopDepth;
@@ -1028,8 +1063,12 @@ const TypeChecker::StructTypeDecl* TypeChecker::findStructType(const std::string
 
 void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
 {
-    if (structTypes_.find(statement.name.lexeme) != structTypes_.end()) {
-        throw TypeError(statement.name, "duplicate struct `" + statement.name.lexeme + "`");
+    const auto state = structCheckStates_.find(statement.name.lexeme);
+    if (state != structCheckStates_.end() && state->second == StructCheckState::Checked) {
+        return;
+    }
+    if (state == structCheckStates_.end()) {
+        predeclareStructDeclaration(statement);
     }
 
     StructTypeDecl declaration{statement.name, {}};
@@ -1043,10 +1082,8 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
         declaration.fields.push_back(StructFieldType{field.name, resolveAnnotation(field.typeName)});
     }
 
-    structTypes_.emplace(statement.name.lexeme, std::move(declaration));
-    if (!moduleStack_.empty()) {
-        moduleSymbols_.markLocalStruct(moduleStack_.back(), statement.name.lexeme);
-    }
+    structTypes_[statement.name.lexeme] = std::move(declaration);
+    structCheckStates_[statement.name.lexeme] = StructCheckState::Checked;
 }
 
 bool TypeChecker::isBuiltinMemberName(const std::string& name) const

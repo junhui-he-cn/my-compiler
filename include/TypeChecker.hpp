@@ -113,6 +113,12 @@ private:
     using Scope = std::unordered_map<std::string, Binding>;
     using MethodTable = std::unordered_map<std::string, std::unordered_map<std::string, MethodInfo>>;
 
+    enum class StructCheckState {
+        Declared,
+        Checking,
+        Checked,
+    };
+
     void beginScope();
     void endScope();
     Scope& currentScope();
@@ -137,6 +143,8 @@ private:
     std::string structConstructorTypeName(const StructConstructExpr& expression) const;
 
     void checkStatement(const Stmt& statement);
+    void predeclareStructDeclarations(const std::vector<StmtPtr>& statements);
+    void checkStatementList(const std::vector<StmtPtr>& statements);
     void checkModule(const ModuleStmt& module);
     void checkImport(const ImportStmt& statement);
     void checkExport(const ExportStmt& statement);
@@ -168,6 +176,7 @@ private:
     void recordStructMethodExports(std::size_t moduleId, const std::string& structName);
     bool isBuiltinMemberName(const std::string& name) const;
     const StructTypeDecl* findStructType(const std::string& name) const;
+    void predeclareStructDeclaration(const StructDeclStmt& statement);
     void checkFunction(const FunctionStmt& statement);
     TypeInfo checkFunctionBody(
         const std::vector<StmtPtr>& body,
@@ -228,6 +237,8 @@ private:
 
     std::vector<Scope> scopes_;
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
+    std::unordered_map<std::string, const StructDeclStmt*> structDeclarations_;
+    std::unordered_map<std::string, StructCheckState> structCheckStates_;
     MethodTable methods_;
     ModuleSymbols moduleSymbols_;
     std::vector<ModuleInterface> moduleInterfaces_;
