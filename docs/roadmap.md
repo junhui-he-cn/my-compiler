@@ -82,13 +82,17 @@ Likely touch points:
 
 ## Phase 12: Records / Structs
 
-Goal: extend named structs from local static method calls to cross-module method
-metadata and richer struct behavior.
+Goal: continue struct polish around field rules and future type-system features
+without expanding into object-system features prematurely.
+
+Current status:
+
+- Named constructor-created struct values expose their attached runtime struct name
+  through `typeOf`; anonymous struct values still report `struct`.
+- Struct methods are available on exported/imported named structs through direct,
+  namespace, and re-export imports.
 
 Future work:
-
-- Decide whether named runtime values should expose runtime type names beyond
-  the current generic `struct` result.
 - Recursive struct field types are explicitly rejected for now; revisit only with
   a dedicated design for recursive initialization and runtime representation.
 - Decide whether field creation by assignment should exist; current assignment

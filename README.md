@@ -132,7 +132,7 @@ print p.name;
 p.age = 37;
 ```
 
-Named structs are static-only in this phase: runtime values remain anonymous struct values. Named constructor expressions such as `Person { name: "Ada", age: 36 }` infer the named static type, require an exact field match, and allow fields in any order. Annotated anonymous literals such as `let p: Person = { name: "Ada", age: 36 };` remain supported. Field annotations may refer to non-recursive struct names declared later in the same scope, but recursive struct field types such as `struct Node { next: Node? }` are explicitly rejected for now. Field access/assignment on known named struct values is statically checked. Constructor functions such as `Person(...)` and runtime type names are not implemented yet.
+Named constructor expressions such as `Person { name: "Ada", age: 36 }` infer the named static type, require an exact field match, allow fields in any order, and attach the named runtime type used by `typeOf`; anonymous struct literals still report `"struct"` and all structs keep the same field-only print format. Annotated anonymous literals such as `let p: Person = { name: "Ada", age: 36 };` remain supported. Field annotations may refer to non-recursive struct names declared later in the same scope, but recursive struct field types such as `struct Node { next: Node? }` are explicitly rejected for now. Field access/assignment on known named struct values is statically checked. Constructor functions such as `Person(...)` are not implemented yet.
 
 Local named structs may define first-slice methods in top-level `impl` blocks. Methods are statically resolved on known named struct receiver types, and method calls lower to ordinary function calls with the receiver passed as implicit `this`:
 
@@ -164,7 +164,7 @@ The string native stdlib includes `str(value)`, `substr(string, start, length)`,
 
 Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `substr`, or `charAt` do not shadow member-call sugar.
 
-The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: `"nil"`, `"number"`, `"bool"`, `"string"`, `"function"`, `"array"`, or `"struct"`. Named struct values return `"struct"`, and arrays return `"array"` regardless of static element type. A user binding named `typeOf` shadows the builtin.
+The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`; anonymous struct values report `"struct"`. A user binding named `typeOf` shadows the builtin.
 
 Supported expressions:
 
