@@ -1,0 +1,2 @@
+fun make<T>(): T? { return nil; }
+make();

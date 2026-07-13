@@ -1,0 +1,13 @@
+Program
+  Fun identity<T>(value: T): T
+    Return value
+  Fun head<T>(values: [T]): T
+    Return (index values 0)
+  Fun same<T>(left: T, right: T): T
+    Return left
+  Print (call identity 42)
+  Print (call identity "hello")
+  Print (call head (array 1 2 3))
+  Print (call same true true)
+  Let alias = identity
+  Print (call alias "alias")

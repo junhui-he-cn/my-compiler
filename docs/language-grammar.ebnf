@@ -20,10 +20,13 @@ statement   = printStmt
             | block
             | exprStmt ;
 
-funDecl     = "fun", identifier,
+funDecl     = "fun", identifier, [ typeParameters ],
               "(", [ parameters ], ")",
               [ ":", typeExpr ],
               block ;
+
+typeParameters = "<", identifier,
+                 { ",", identifier }, ">" ;
 
 structDecl  = "struct", identifier,
               "{", [ structFields ], "}" ;

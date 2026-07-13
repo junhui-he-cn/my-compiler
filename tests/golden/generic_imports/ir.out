@@ -1,0 +1,19 @@
+IR
+0000  v0 = constant #0 nil
+0001  store_var @0 identity#0, v0
+0002  v1 = make_function $0 identity/1
+0003  assign_var @2 identity#0, v1
+0004  v2 = load_var @3 identity#0
+0005  v3 = constant #2 7
+0006  v4 = call v2(v3)
+0007  print v4
+0008  v5 = load_var @4 identity#0
+0009  v6 = constant #3 "module"
+0010  v7 = call v5(v6)
+0011  print v7
+
+function $0 identity(value#1)
+0000  v0 = load_var @1 value#1
+0001  return v0
+0002  v1 = constant #1 nil
+0003  return v1

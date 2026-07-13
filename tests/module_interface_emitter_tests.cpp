@@ -64,6 +64,9 @@ void testValuesStructsFieldsMethodsAndTypes()
         functionType(
             std::vector<TypeInfo>{simpleType(StaticType::Number), arrayType(nullableType(simpleType(StaticType::String)))},
             namedStructType("Point"))});
+    module.values.push_back(ModuleInterfaceValue{
+        "identity",
+        functionType({typeParameterType("T")}, typeParameterType("T"), {"T"})});
     module.values.push_back(ModuleInterfaceValue{"dynamic", unknownType()});
 
     ModuleInterfaceStruct point;
@@ -85,6 +88,7 @@ void testValuesStructsFieldsMethodsAndTypes()
         emit(std::vector<ModuleInterface>{module}),
         "module 0 entry \"main.cd\"\n"
         "  export value dynamic: unknown\n"
+        "  export value identity: fun<T>(T): T\n"
         "  export value make: fun(number, [string?]): Point\n"
         "  export value zeta: Point?\n"
         "  export struct Box\n"

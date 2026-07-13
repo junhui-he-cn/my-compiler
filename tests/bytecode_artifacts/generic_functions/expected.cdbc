@@ -1,0 +1,157 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = nil
+  c2 = nil
+  c3 = number 0
+  c4 = nil
+  c5 = nil
+  c6 = nil
+  c7 = number 42
+  c8 = string "hello"
+  c9 = number 1
+  c10 = number 2
+  c11 = number 3
+  c12 = bool true
+  c13 = bool true
+  c14 = string "alias"
+
+names:
+  n0 = "identity#0"
+  n1 = "value#1"
+  n2 = "identity#0"
+  n3 = "head#2"
+  n4 = "values#3"
+  n5 = "head#2"
+  n6 = "same#4"
+  n7 = "left#5"
+  n8 = "same#4"
+  n9 = "identity#0"
+  n10 = "identity#0"
+  n11 = "head#2"
+  n12 = "same#4"
+  n13 = "identity#0"
+  n14 = "alias#7"
+  n15 = "alias#7"
+
+main registers=26:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = make_function f0
+  assign_var n2, r1
+  r2 = constant c2
+  store_var n3, r2
+  r3 = make_function f1
+  assign_var n5, r3
+  r4 = constant c5
+  store_var n6, r4
+  r5 = make_function f2
+  assign_var n8, r5
+  r6 = load_var n9
+  r7 = constant c7
+  r8 = call r6 [r7]
+  print r8
+  r9 = load_var n10
+  r10 = constant c8
+  r11 = call r9 [r10]
+  print r11
+  r12 = load_var n11
+  r13 = constant c9
+  r14 = constant c10
+  r15 = constant c11
+  r16 = array [r13, r14, r15]
+  r17 = call r12 [r16]
+  print r17
+  r18 = load_var n12
+  r19 = constant c12
+  r20 = constant c13
+  r21 = call r18 [r19, r20]
+  print r21
+  r22 = load_var n13
+  store_var n14, r22
+  r23 = load_var n15
+  r24 = constant c14
+  r25 = call r23 [r24]
+  print r25
+
+function f0 name="identity" arity=1 registers=2:
+  param 0 = "value#1"
+  r0 = load_var n1
+  return r0
+  r1 = constant c1
+  return r1
+
+function f1 name="head" arity=1 registers=4:
+  param 0 = "values#3"
+  r0 = load_var n4
+  r1 = constant c3
+  r2 = index r0, r1
+  return r2
+  r3 = constant c4
+  return r3
+
+function f2 name="same" arity=2 registers=2:
+  param 0 = "left#5"
+  param 1 = "right#6"
+  r0 = load_var n7
+  return r0
+  r1 = constant c6
+  return r1
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/generic_functions/input.cd" text="fun identity<T>(value: T): T {\n  return value;\n}\nfun head<T>(values: [T]): T {\n  return values[0];\n}\nfun same<T>(left: T, right: T): T {\n  return left;\n}\nprint identity(42);\nprint identity(\"hello\");\nprint head([1, 2, 3]);\nprint same(true, true);\nlet alias = identity;\nprint alias(\"alias\");\n"
+
+debug_locations:
+  main 0 = s0:1:1
+  main 1 = s0:1:1
+  main 2 = s0:1:1
+  main 3 = s0:1:1
+  main 4 = s0:4:1
+  main 5 = s0:4:1
+  main 6 = s0:4:1
+  main 7 = s0:4:1
+  main 8 = s0:7:1
+  main 9 = s0:7:1
+  main 10 = s0:7:1
+  main 11 = s0:7:1
+  main 12 = s0:10:7
+  main 13 = s0:10:16
+  main 14 = s0:10:7
+  main 15 = s0:10:1
+  main 16 = s0:11:7
+  main 17 = s0:11:16
+  main 18 = s0:11:7
+  main 19 = s0:11:1
+  main 20 = s0:12:7
+  main 21 = s0:12:13
+  main 22 = s0:12:16
+  main 23 = s0:12:19
+  main 24 = s0:12:12
+  main 25 = s0:12:7
+  main 26 = s0:12:1
+  main 27 = s0:13:7
+  main 28 = s0:13:12
+  main 29 = s0:13:18
+  main 30 = s0:13:7
+  main 31 = s0:13:1
+  main 32 = s0:14:13
+  main 33 = s0:14:1
+  main 34 = s0:15:7
+  main 35 = s0:15:13
+  main 36 = s0:15:7
+  main 37 = s0:15:1
+  function f0 0 = s0:2:10
+  function f0 1 = s0:2:3
+  function f0 2 = s0:1:1
+  function f0 3 = s0:1:1
+  function f1 0 = s0:5:10
+  function f1 1 = s0:5:17
+  function f1 2 = s0:5:10
+  function f1 3 = s0:5:3
+  function f1 4 = s0:4:1
+  function f1 5 = s0:4:1
+  function f2 0 = s0:8:10
+  function f2 1 = s0:8:3
+  function f2 2 = s0:7:1
+  function f2 3 = s0:7:1

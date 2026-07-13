@@ -1,0 +1,3 @@
+Type error at 1:12: unknown type `T`
+  let value: T = 1;
+             ^

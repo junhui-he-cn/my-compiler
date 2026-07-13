@@ -1,0 +1,3 @@
+Type error at 1:18: duplicate type parameter `T`
+  fun duplicate<T, T>(value: T): T { return value; }
+                   ^

@@ -75,12 +75,14 @@ slices.
 Goal: evolve the current annotation checker into a more useful static type
 layer.
 
-Future work:
-
-- Design generic type abstraction for reusable collection and function APIs.
-  Decide type-parameter syntax, generic function inference boundaries, and the
-  relation between existing dynamic arrays and typed collections before adding
-  higher-order builtins.
+- Status: the first generic-function slice is implemented. Named functions may
+  declare type parameters such as `fun identity<T>(value: T): T`; calls infer
+  concrete types recursively through existing arrays, nullable types, and
+  function signatures, and generic values retain their signatures through
+  direct/namespace imports and unannotated aliases.
+- Remaining type-system work includes explicit type arguments, generic methods
+  and lambdas, constraints, generic container syntax, and the inference rules
+  needed by higher-order collection APIs.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -201,10 +203,12 @@ scope.
 Goal: establish a reusable, statically meaningful collection layer rather than
 growing an array-only helper list.
 
+Status: generic function/type abstraction is implemented for the current first
+slice. Generic collection syntax and higher-order collection APIs remain future
+work.
+
 Future work:
 
-- Add generic collection and function typing only after the Phase 9 design
-  specifies inference boundaries and dynamic-array escape hatches.
 - Add maps/dictionaries with explicit key equality and iteration semantics.
 - Add ranges and extend `for-in` beyond arrays only after collection iteration
   behavior is defined consistently for arrays, strings, maps, and ranges.

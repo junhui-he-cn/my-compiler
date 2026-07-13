@@ -1,0 +1,2 @@
+fun identity<T>(value: T): T { return value; }
+let typed: fun(number): number = identity;

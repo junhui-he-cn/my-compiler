@@ -1,0 +1,10 @@
+Program
+  Module 0
+    Fun identity<T>(value: T): T
+      Return value
+    Export identity
+  Module 1 entry
+    Import "lib.cd"
+    Import "lib.cd" as lib
+    Print (call identity 7)
+    Print (member-call lib identity "module")
