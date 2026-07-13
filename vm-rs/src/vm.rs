@@ -14,6 +14,137 @@ pub struct RuntimeError {
     pub message: String,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn empty_program() -> Program {
+        Program {
+            constants: Vec::new(),
+            names: Vec::new(),
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+            },
+            functions: Vec::new(),
+        }
+    }
+
+    fn array_elements(value: &Value) -> Vec<Value> {
+        let Value::Array(array) = value else {
+            panic!("expected array");
+        };
+        array.elements.borrow().clone()
+    }
+
+    #[test]
+    fn native_collection_helpers_query_and_copy_shallowly() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let shared = vm.make_array(vec![Value::number(9.0)]);
+        let source = vm.make_array(vec![Value::number(1.0), shared.clone(), Value::number(3.0)]);
+        let distinct = vm.make_array(vec![Value::number(9.0)]);
+
+        let contains_shared = vm
+            .execute_native_call("contains", vec![source.clone(), shared.clone()])
+            .expect("contains succeeds");
+        let contains_distinct = vm
+            .execute_native_call("contains", vec![source.clone(), distinct])
+            .expect("contains succeeds");
+        assert!(matches!(contains_shared, Value::Bool(true)));
+        assert!(matches!(contains_distinct, Value::Bool(false)));
+
+        let sliced = vm
+            .execute_native_call(
+                "slice",
+                vec![source.clone(), Value::number(1.0), Value::number(2.0)],
+            )
+            .expect("slice succeeds");
+        let copied = vm
+            .execute_native_call("copy", vec![source.clone()])
+            .expect("copy succeeds");
+        let concatenated = vm
+            .execute_native_call("concat", vec![sliced.clone(), copied.clone()])
+            .expect("concat succeeds");
+
+        assert_eq!(array_elements(&sliced).len(), 2);
+        assert_eq!(array_elements(&copied).len(), 3);
+        assert_eq!(array_elements(&concatenated).len(), 5);
+        assert!(!source.runtime_equals(&copied));
+        let source_elements = array_elements(&source);
+        let copied_elements = array_elements(&copied);
+        assert!(source_elements[1].runtime_equals(&copied_elements[1]));
+    }
+
+    #[test]
+    fn native_collection_helpers_validate_slice_boundaries() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let source = vm.make_array(vec![Value::number(1.0)]);
+
+        let empty = vm
+            .execute_native_call(
+                "slice",
+                vec![source.clone(), Value::number(1.0), Value::number(0.0)],
+            )
+            .expect("empty end slice succeeds");
+        assert!(array_elements(&empty).is_empty());
+
+        for (start, length, expected) in [
+            (f64::NAN, 0.0, "slice expects integer start offset"),
+            (-1.0, 0.0, "slice start offset out of bounds"),
+            (0.0, f64::INFINITY, "slice expects integer length"),
+            (0.0, 2.0, "slice length out of bounds"),
+        ] {
+            let error = vm
+                .execute_native_call(
+                    "slice",
+                    vec![source.clone(), Value::number(start), Value::number(length)],
+                )
+                .expect_err("slice should fail");
+            assert_eq!(error.message, expected);
+        }
+    }
+
+    #[test]
+    fn native_collection_helpers_validate_arity_and_types() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        assert_eq!(
+            vm.execute_native_call("contains", vec![])
+                .unwrap_err()
+                .message,
+            "contains expects 2 arguments"
+        );
+        assert_eq!(
+            vm.execute_native_call("slice", vec![]).unwrap_err().message,
+            "slice expects 3 arguments"
+        );
+        assert_eq!(
+            vm.execute_native_call("copy", vec![]).unwrap_err().message,
+            "copy expects 1 argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("concat", vec![])
+                .unwrap_err()
+                .message,
+            "concat expects 2 arguments"
+        );
+        assert_eq!(
+            vm.execute_native_call("copy", vec![Value::number(1.0)])
+                .unwrap_err()
+                .message,
+            "copy expects array as first argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("concat", vec![Value::Nil, Value::Nil])
+                .unwrap_err()
+                .message,
+            "concat expects array as first argument"
+        );
+    }
+}
+
 impl RuntimeError {
     fn new(message: impl Into<String>) -> Self {
         Self {
@@ -510,7 +641,7 @@ impl<'a> VM<'a> {
     }
 
     fn execute_native_call(
-        &self,
+        &mut self,
         name: &str,
         arguments: Vec<Value>,
     ) -> Result<Value, RuntimeError> {
@@ -524,6 +655,10 @@ impl<'a> VM<'a> {
             "substr" => self.execute_native_substr(arguments),
             "charAt" => self.execute_native_char_at(arguments),
             "typeOf" => self.execute_native_type_of(arguments),
+            "contains" => self.execute_native_contains(arguments),
+            "slice" => self.execute_native_slice(arguments),
+            "copy" => self.execute_native_copy(arguments),
+            "concat" => self.execute_native_concat(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
                 name
@@ -680,6 +815,83 @@ impl<'a> VM<'a> {
             return Err(RuntimeError::new("typeOf expects 1 arguments"));
         }
         Ok(Value::string(arguments[0].type_name()))
+    }
+
+    fn execute_native_contains(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("contains expects 2 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new(
+                "contains expects array as first argument",
+            ));
+        };
+        let found = array
+            .elements
+            .borrow()
+            .iter()
+            .any(|element| element.runtime_equals(&arguments[1]));
+        Ok(Value::boolean(found))
+    }
+
+    fn execute_native_slice(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 3 {
+            return Err(RuntimeError::new("slice expects 3 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("slice expects array as first argument"));
+        };
+        let Value::Number(start_value) = &arguments[1] else {
+            return Err(RuntimeError::new("slice expects number as second argument"));
+        };
+        let Value::Number(length_value) = &arguments[2] else {
+            return Err(RuntimeError::new("slice expects number as third argument"));
+        };
+
+        let source_len = array.elements.borrow().len();
+        let start = Self::checked_integer_index(
+            *start_value,
+            "slice expects integer start offset",
+            "slice start offset out of bounds",
+            source_len,
+        )?;
+        let length = Self::checked_integer_index(
+            *length_value,
+            "slice expects integer length",
+            "slice length out of bounds",
+            source_len,
+        )?;
+        if length > source_len - start {
+            return Err(RuntimeError::new("slice length out of bounds"));
+        }
+        let elements = array.elements.borrow()[start..start + length].to_vec();
+        Ok(self.make_array(elements))
+    }
+
+    fn execute_native_copy(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("copy expects 1 argument"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("copy expects array as first argument"));
+        };
+        let elements = array.elements.borrow().clone();
+        Ok(self.make_array(elements))
+    }
+
+    fn execute_native_concat(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("concat expects 2 arguments"));
+        }
+        let Value::Array(left) = &arguments[0] else {
+            return Err(RuntimeError::new("concat expects array as first argument"));
+        };
+        let Value::Array(right) = &arguments[1] else {
+            return Err(RuntimeError::new("concat expects array as second argument"));
+        };
+        let mut elements = left.elements.borrow().clone();
+        elements.extend(right.elements.borrow().iter().cloned());
+        Ok(self.make_array(elements))
     }
 
     fn read_name(&self, index: usize) -> Result<String, RuntimeError> {
