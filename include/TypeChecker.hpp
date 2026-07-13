@@ -216,6 +216,8 @@ private:
     std::optional<FlowNarrowing> nonNilNarrowingForVariable(const VariableExpr& variable) const;
     CheckedExpression checkArrayLiteral(const ArrayExpr& expression, const TypeInfo* expectedType);
     TypeInfo inferArrayElementType(const ArrayExpr& expression);
+    CheckedExpression checkMapLiteral(const MapExpr& expression, const TypeInfo* expectedType);
+    TypeInfo inferMapType(const MapExpr& expression);
     void refineArrayBindingFromMutation(Binding& target, const TypeInfo& valueType);
     const TypeInfo* contextualFunctionType(const TypeInfo* expectedType) const;
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression, const TypeInfo* expectedType);

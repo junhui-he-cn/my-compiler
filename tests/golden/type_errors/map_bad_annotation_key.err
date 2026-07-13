@@ -1,0 +1,3 @@
+Type error at 2:13: map key must be nil, number, bool, or string
+  let values: map<Point, string> = {};
+              ^

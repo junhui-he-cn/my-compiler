@@ -1,0 +1,2 @@
+let values: map<string, number> = {"one": 1};
+values["two"] = "not a number";

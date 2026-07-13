@@ -1,0 +1,2 @@
+struct Point { x: number }
+let values: map<Point, string> = {};

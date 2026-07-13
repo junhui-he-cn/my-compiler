@@ -52,6 +52,26 @@ TypeInfo concatenatedArrayType(const TypeInfo& left, const TypeInfo& right)
     return arrayType(std::move(*merged));
 }
 
+bool mapKeyTypeAllowed(const TypeInfo& type)
+{
+    if (!isKnown(type)) {
+        return true;
+    }
+    if (isNullable(type)) {
+        return type.nullableOf && mapKeyTypeAllowed(*type.nullableOf);
+    }
+    switch (type.kind) {
+    case StaticType::Nil:
+    case StaticType::Number:
+    case StaticType::Bool:
+    case StaticType::String:
+    case StaticType::TypeParameter:
+        return true;
+    default:
+        return false;
+    }
+}
+
 std::string binaryTypesMessage(const BinaryExpr& expression, const TypeInfo& left, const TypeInfo& right)
 {
     return "binary `" + expression.op.lexeme + "` expects numbers, got "
@@ -1133,6 +1153,14 @@ TypeInfo TypeChecker::resolveStructFieldAnnotation(const TypeAnnotation& typeNam
         return arrayType(resolveStructFieldAnnotation(*typeName.elementType, fieldName));
     }
 
+    if (typeName.kind == TypeAnnotation::Kind::Map) {
+        TypeInfo keyType = resolveStructFieldAnnotation(*typeName.keyType, fieldName);
+        if (!mapKeyTypeAllowed(keyType)) {
+            throw TypeError(typeName.token, "map key must be nil, number, bool, or string");
+        }
+        return mapType(std::move(keyType), resolveStructFieldAnnotation(*typeName.valueType, fieldName));
+    }
+
     if (typeName.kind == TypeAnnotation::Kind::Function) {
         std::vector<TypeInfo> parameterTypes;
         parameterTypes.reserve(typeName.parameterTypes.size());
@@ -1260,6 +1288,12 @@ bool TypeChecker::hasEscapingTypeParameter(
     if (type.elementType && hasEscapingTypeParameter(*type.elementType, allowed)) {
         return true;
     }
+    if (type.keyType && hasEscapingTypeParameter(*type.keyType, allowed)) {
+        return true;
+    }
+    if (type.valueType && hasEscapingTypeParameter(*type.valueType, allowed)) {
+        return true;
+    }
     if (type.nullableOf && hasEscapingTypeParameter(*type.nullableOf, allowed)) {
         return true;
     }
@@ -1316,6 +1350,15 @@ TypeInfo TypeChecker::qualifyNamespaceType(
     }
     if (result.kind == StaticType::Array && result.elementType) {
         result.elementType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.elementType, alias, structs));
+        return result;
+    }
+    if (result.kind == StaticType::Map) {
+        if (result.keyType) {
+            result.keyType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.keyType, alias, structs));
+        }
+        if (result.valueType) {
+            result.valueType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.valueType, alias, structs));
+        }
         return result;
     }
     if (isNullable(result) && result.nullableOf) {
@@ -1583,6 +1626,13 @@ void TypeChecker::inferTypeArguments(
         return;
     }
 
+    if (expected.kind == StaticType::Map && actual.kind == StaticType::Map
+        && expected.keyType && actual.keyType && expected.valueType && actual.valueType) {
+        inferTypeArguments(*expected.keyType, *actual.keyType, substitutions, callToken);
+        inferTypeArguments(*expected.valueType, *actual.valueType, substitutions, callToken);
+        return;
+    }
+
     if (expected.kind == StaticType::Nullable && expected.nullableOf) {
         if (actual.kind == StaticType::Nil) {
             return;
@@ -1620,6 +1670,14 @@ TypeInfo TypeChecker::substituteTypeParameters(
     if (type.elementType) {
         result.elementType = std::make_shared<TypeInfo>(
             substituteTypeParameters(*type.elementType, substitutions));
+    }
+    if (type.keyType) {
+        result.keyType = std::make_shared<TypeInfo>(
+            substituteTypeParameters(*type.keyType, substitutions));
+    }
+    if (type.valueType) {
+        result.valueType = std::make_shared<TypeInfo>(
+            substituteTypeParameters(*type.valueType, substitutions));
     }
     if (type.nullableOf) {
         result.nullableOf = std::make_shared<TypeInfo>(
@@ -1979,6 +2037,82 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayLiteral(const ArrayExpr& e
     return CheckedExpression{simpleType(StaticType::Array)};
 }
 
+TypeInfo TypeChecker::inferMapType(const MapExpr& expression)
+{
+    std::optional<TypeInfo> keyType;
+    std::optional<TypeInfo> valueType;
+    bool hasUnknownComponent = false;
+
+    for (const MapEntry& entry : expression.entries) {
+        const TypeInfo currentKey = checkExpression(*entry.key);
+        if (isKnown(currentKey) && !mapKeyTypeAllowed(currentKey)) {
+            throw TypeError(entry.colon, "map key must be nil, number, bool, or string");
+        }
+        const TypeInfo currentValue = checkExpression(*entry.value);
+
+        if (!isKnown(currentKey) || !isKnown(currentValue)) {
+            hasUnknownComponent = true;
+            continue;
+        }
+
+        if (!keyType) {
+            keyType = currentKey;
+        } else {
+            std::optional<TypeInfo> merged = mergeArrayElementTypes(*keyType, currentKey);
+            if (!merged) {
+                hasUnknownComponent = true;
+            } else {
+                keyType = std::move(*merged);
+            }
+        }
+
+        if (!valueType) {
+            valueType = currentValue;
+        } else {
+            std::optional<TypeInfo> merged = mergeArrayElementTypes(*valueType, currentValue);
+            if (!merged) {
+                hasUnknownComponent = true;
+            } else {
+                valueType = std::move(*merged);
+            }
+        }
+    }
+
+    if (hasUnknownComponent || !keyType || !valueType) {
+        return simpleType(StaticType::Map);
+    }
+    return mapType(std::move(*keyType), std::move(*valueType));
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkMapLiteral(
+    const MapExpr& expression,
+    const TypeInfo* expectedType)
+{
+    if (expectedType && expectedType->kind == StaticType::Map
+        && expectedType->keyType && expectedType->valueType) {
+        if (!mapKeyTypeAllowed(*expectedType->keyType)) {
+            throw TypeError(expression.brace, "map key must be nil, number, bool, or string");
+        }
+        for (const MapEntry& entry : expression.entries) {
+            const CheckedExpression key = checkExpressionInfo(*entry.key, expectedType->keyType.get());
+            if (isKnown(key.type) && !mapKeyTypeAllowed(key.type)) {
+                throw TypeError(entry.colon, "map key must be nil, number, bool, or string");
+            }
+            if (!compatible(*expectedType->keyType, key.type)) {
+                throw TypeError(entry.colon, "map key is incompatible with map key type");
+            }
+
+            const CheckedExpression value = checkExpressionInfo(*entry.value, expectedType->valueType.get());
+            if (!compatible(*expectedType->valueType, value.type)) {
+                throw TypeError(entry.colon, "map value is incompatible with map value type");
+            }
+        }
+        return CheckedExpression{*expectedType};
+    }
+
+    return CheckedExpression{inferMapType(expression)};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expression, const TypeInfo* expectedType)
 {
     if (const auto* literal = dynamic_cast<const LiteralExpr*>(&expression)) {
@@ -2108,6 +2242,10 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         return checkArrayLiteral(*array, expectedType);
     }
 
+    if (const auto* map = dynamic_cast<const MapExpr*>(&expression)) {
+        return checkMapLiteral(*map, expectedType);
+    }
+
     if (const auto* construct = dynamic_cast<const StructConstructExpr*>(&expression)) {
         return checkStructConstructor(*construct);
     }
@@ -2176,8 +2314,11 @@ TypeChecker::CheckedExpression TypeChecker::checkBuiltinLenCall(const CallExpr& 
     }
 
     const CheckedExpression argument = checkExpressionInfo(*expression.arguments.front());
-    if (isKnown(argument.type) && argument.type.kind != StaticType::Array && argument.type.kind != StaticType::String) {
-        throw TypeError(expression.paren, "len expects array or string, got " + typeInfoName(argument.type));
+    if (isKnown(argument.type)
+        && argument.type.kind != StaticType::Array
+        && argument.type.kind != StaticType::String
+        && argument.type.kind != StaticType::Map) {
+        throw TypeError(expression.paren, "len expects array, string, or map, got " + typeInfoName(argument.type));
     }
 
     return CheckedExpression{simpleType(StaticType::Number)};
@@ -2286,19 +2427,32 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         checkExpressionInfo(*expression.arguments[0]);
         return CheckedExpression{simpleType(StaticType::String)};
     case NativeFunctionKind::Contains: {
-        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
-        if (arrayArgument.type.kind != StaticType::Unknown && arrayArgument.type.kind != StaticType::Array) {
+        const CheckedExpression collectionArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (collectionArgument.type.kind != StaticType::Unknown
+            && collectionArgument.type.kind != StaticType::Array
+            && collectionArgument.type.kind != StaticType::Map) {
             throw TypeError(expression.paren,
-                "contains expects array as first argument, got " + typeInfoName(arrayArgument.type));
+                "contains expects array or map as first argument, got " + typeInfoName(collectionArgument.type));
         }
-        const TypeInfo* expectedElement = arrayArgument.type.kind == StaticType::Array
-            ? arrayArgument.type.elementType.get()
-            : nullptr;
-        const CheckedExpression valueArgument = checkExpressionInfo(*expression.arguments[1], expectedElement);
-        if (expectedElement && !compatible(*expectedElement, valueArgument.type)) {
+        const TypeInfo* expectedKey = nullptr;
+        if (collectionArgument.type.kind == StaticType::Array) {
+            expectedKey = collectionArgument.type.elementType.get();
+        } else if (collectionArgument.type.kind == StaticType::Map) {
+            expectedKey = collectionArgument.type.keyType.get();
+        }
+        const CheckedExpression keyArgument = checkExpressionInfo(*expression.arguments[1], expectedKey);
+        if (collectionArgument.type.kind == StaticType::Map
+            && isKnown(keyArgument.type)
+            && !mapKeyTypeAllowed(keyArgument.type)) {
+            throw TypeError(expression.paren, "map key must be nil, number, bool, or string");
+        }
+        if (expectedKey && !compatible(*expectedKey, keyArgument.type)) {
+            if (collectionArgument.type.kind == StaticType::Map) {
+                throw TypeError(expression.paren, "map key is incompatible with map key type");
+            }
             throw TypeError(expression.paren,
-                "contains value expects " + typeInfoName(*expectedElement)
-                    + ", got " + typeInfoName(valueArgument.type));
+                "contains value expects " + typeInfoName(*expectedKey)
+                    + ", got " + typeInfoName(keyArgument.type));
         }
         return CheckedExpression{simpleType(StaticType::Bool)};
     }
@@ -2439,16 +2593,29 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
     if (name == "contains") {
         expectArity(1);
         const CheckedExpression receiver = checkReceiver();
-        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
-            throw TypeError(expression.paren, "contains expects array receiver, got " + typeInfoName(receiver.type));
+        if (receiver.type.kind != StaticType::Unknown
+            && receiver.type.kind != StaticType::Array
+            && receiver.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren, "contains expects array or map receiver, got " + typeInfoName(receiver.type));
         }
-        const TypeInfo* expectedElement = receiver.type.kind == StaticType::Array
-            ? receiver.type.elementType.get()
-            : nullptr;
-        const CheckedExpression value = checkExpressionInfo(*expression.arguments[0], expectedElement);
-        if (expectedElement && !compatible(*expectedElement, value.type)) {
+        const TypeInfo* expectedKey = nullptr;
+        if (receiver.type.kind == StaticType::Array) {
+            expectedKey = receiver.type.elementType.get();
+        } else if (receiver.type.kind == StaticType::Map) {
+            expectedKey = receiver.type.keyType.get();
+        }
+        const CheckedExpression value = checkExpressionInfo(*expression.arguments[0], expectedKey);
+        if (receiver.type.kind == StaticType::Map
+            && isKnown(value.type)
+            && !mapKeyTypeAllowed(value.type)) {
+            throw TypeError(expression.paren, "map key must be nil, number, bool, or string");
+        }
+        if (expectedKey && !compatible(*expectedKey, value.type)) {
+            if (receiver.type.kind == StaticType::Map) {
+                throw TypeError(expression.paren, "map key is incompatible with map key type");
+            }
             throw TypeError(expression.paren,
-                "contains value expects " + typeInfoName(*expectedElement) + ", got " + typeInfoName(value.type));
+                "contains value expects " + typeInfoName(*expectedKey) + ", got " + typeInfoName(value.type));
         }
         return CheckedExpression{simpleType(StaticType::Bool)};
     }
@@ -2498,8 +2665,11 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
     if (name == "len") {
         expectArity(0);
         const CheckedExpression receiver = checkReceiver();
-        if (isKnown(receiver.type) && receiver.type.kind != StaticType::Array && receiver.type.kind != StaticType::String) {
-            throw TypeError(expression.paren, "len expects array or string receiver, got " + typeInfoName(receiver.type));
+        if (isKnown(receiver.type)
+            && receiver.type.kind != StaticType::Array
+            && receiver.type.kind != StaticType::String
+            && receiver.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren, "len expects array, string, or map receiver, got " + typeInfoName(receiver.type));
         }
         return CheckedExpression{simpleType(StaticType::Number)};
     }
@@ -2572,11 +2742,20 @@ TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
         checkExpression(indexExpression),
     };
 
-    if (result.collection.kind != StaticType::Unknown && result.collection.kind != StaticType::Array) {
+    if (result.collection.kind != StaticType::Unknown
+        && result.collection.kind != StaticType::Array
+        && result.collection.kind != StaticType::Map) {
         throw TypeError(bracket, nonArrayMessage);
     }
 
-    if (result.index.kind != StaticType::Unknown && result.index.kind != StaticType::Number) {
+    if (result.collection.kind == StaticType::Map) {
+        if (isKnown(result.index) && !mapKeyTypeAllowed(result.index)) {
+            throw TypeError(bracket, "map key must be nil, number, bool, or string");
+        }
+        if (result.collection.keyType && !compatible(*result.collection.keyType, result.index)) {
+            throw TypeError(bracket, "map key is incompatible with map key type");
+        }
+    } else if (result.index.kind != StaticType::Unknown && result.index.kind != StaticType::Number) {
         throw TypeError(bracket, "array index must be number");
     }
 
@@ -2586,10 +2765,13 @@ TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
 TypeInfo TypeChecker::checkIndex(const IndexExpr& expression)
 {
     const IndexTargetTypes target = checkIndexTarget(
-        *expression.collection, *expression.index, expression.bracket, "can only index arrays");
+        *expression.collection, *expression.index, expression.bracket, "can only index arrays or maps");
 
     if (target.collection.kind == StaticType::Array && target.collection.elementType) {
         return *target.collection.elementType;
+    }
+    if (target.collection.kind == StaticType::Map && target.collection.valueType) {
+        return *target.collection.valueType;
     }
     return unknownType();
 }
@@ -2597,9 +2779,19 @@ TypeInfo TypeChecker::checkIndex(const IndexExpr& expression)
 TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssignExpr& expression)
 {
     const IndexTargetTypes target = checkIndexTarget(
-        *expression.collection, *expression.index, expression.bracket, "can only assign array elements");
+        *expression.collection, *expression.index, expression.bracket, "can only assign array elements or map entries");
 
     Binding* binding = findSimpleVariableBinding(*expression.collection);
+    if (target.collection.kind == StaticType::Map) {
+        const CheckedExpression value = checkExpressionInfo(
+            *expression.value,
+            target.collection.valueType ? target.collection.valueType.get() : nullptr);
+        if (target.collection.valueType && !compatible(*target.collection.valueType, value.type)) {
+            throw TypeError(expression.bracket, "map value is incompatible with map value type");
+        }
+        return value;
+    }
+
     const bool strictElementCheck = binding == nullptr || binding->explicitType;
     const TypeInfo* expectedElement = strictElementCheck ? target.collection.elementType.get() : nullptr;
     const CheckedExpression value = checkExpressionInfo(*expression.value, expectedElement);
@@ -2620,7 +2812,11 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
 TypeChecker::CheckedExpression TypeChecker::checkIndexCompoundAssignment(const IndexCompoundAssignExpr& expression)
 {
     const IndexTargetTypes target = checkIndexTarget(
-        *expression.collection, *expression.index, expression.bracket, "can only assign array elements");
+        *expression.collection, *expression.index, expression.bracket, "can only assign array elements or map entries");
+
+    if (target.collection.kind == StaticType::Map) {
+        throw TypeError(expression.bracket, "compound assignment is not supported for map entries");
+    }
 
     if (target.collection.kind == StaticType::Array && target.collection.elementType) {
         checkKnownNumber(expression.op, *target.collection.elementType, "compound assignment target must be number, got ");
@@ -2704,6 +2900,14 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
 
     if (typeName.kind == TypeAnnotation::Kind::Array) {
         return arrayType(resolveAnnotation(*typeName.elementType));
+    }
+
+    if (typeName.kind == TypeAnnotation::Kind::Map) {
+        TypeInfo keyType = resolveAnnotation(*typeName.keyType);
+        if (!mapKeyTypeAllowed(keyType)) {
+            throw TypeError(typeName.token, "map key must be nil, number, bool, or string");
+        }
+        return mapType(std::move(keyType), resolveAnnotation(*typeName.valueType));
     }
 
     if (typeName.kind == TypeAnnotation::Kind::Function) {

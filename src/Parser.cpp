@@ -562,9 +562,6 @@ StmtPtr Parser::forStatement()
 
 StmtPtr Parser::forInStatement(Token keyword, Token variable)
 {
-    if (check(TokenType::LeftBrace)) {
-        throw ParseError(peek(), "expected expression");
-    }
     ExprPtr iterable = conditionExpression();
     consume(TokenType::LeftBrace, "expected `{` after for-in iterable");
     StmtPtr body = blockStatement();

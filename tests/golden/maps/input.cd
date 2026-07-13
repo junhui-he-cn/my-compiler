@@ -1,2 +1,9 @@
 let prices: map<string, number> = {"tea": 3, "coffee": 5};
 print prices["tea"];
+let alias = prices;
+alias["water"] = 2;
+print prices["water"];
+print len(prices);
+print prices.len();
+print contains(prices, "coffee");
+print prices.contains("tea");
