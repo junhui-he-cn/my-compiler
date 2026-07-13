@@ -176,13 +176,6 @@ struct StructField {
     ExprPtr value;
 };
 
-struct StructExpr final : Expr {
-    explicit StructExpr(std::vector<StructField> fields);
-    void print(std::ostream& out) const override;
-
-    std::vector<StructField> fields;
-};
-
 struct StructConstructExpr final : Expr {
     StructConstructExpr(std::optional<Token> qualifier, Token name, std::vector<StructField> fields);
     void print(std::ostream& out) const override;

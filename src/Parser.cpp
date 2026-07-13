@@ -792,13 +792,6 @@ std::vector<StructField> Parser::structLiteralFields()
     return fields;
 }
 
-ExprPtr Parser::structLiteral()
-{
-    std::vector<StructField> fields = structLiteralFields();
-    consume(TokenType::RightBrace, "expected `}` after struct fields");
-    return std::make_unique<StructExpr>(std::move(fields));
-}
-
 ExprPtr Parser::structConstructor()
 {
     Token name = consume(TokenType::Identifier, "expected struct constructor name");
@@ -868,8 +861,8 @@ ExprPtr Parser::primary()
         Token bracket = previous();
         return arrayLiteral(std::move(bracket));
     }
-    if (match(TokenType::LeftBrace)) {
-        return structLiteral();
+    if (check(TokenType::LeftBrace)) {
+        throw ParseError(peek(), "anonymous struct literals are not supported; use StructName { ... }");
     }
     if (allowStructConstructors_ && isQualifiedStructConstructorStart()) {
         return qualifiedStructConstructor();

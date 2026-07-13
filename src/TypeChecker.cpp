@@ -1519,12 +1519,6 @@ TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& s
     }
 
     const TypeInfo declared = resolveAnnotation(*statement.typeName);
-    if (declared.kind == StaticType::Struct && declared.structName) {
-        if (const auto* structLiteral = dynamic_cast<const StructExpr*>(statement.initializer.get())) {
-            return checkNamedStructLiteralInitializer(statement, declared, *structLiteral);
-        }
-    }
-
     const CheckedExpression initializer = checkExpressionInfo(*statement.initializer, &declared);
     checkAssignable(
         statement.name,
@@ -1587,14 +1581,6 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructFields(
     }
 
     return CheckedExpression{declared};
-}
-
-TypeChecker::CheckedExpression TypeChecker::checkNamedStructLiteralInitializer(
-    const LetStmt& statement,
-    const TypeInfo& declared,
-    const StructExpr& initializer)
-{
-    return checkNamedStructFields(statement.name, declared, initializer.fields);
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(const StructConstructExpr& expression)
@@ -1842,13 +1828,6 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
 
     if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
         return checkArrayLiteral(*array, expectedType);
-    }
-
-    if (const auto* structExpr = dynamic_cast<const StructExpr*>(&expression)) {
-        for (const StructField& field : structExpr->fields) {
-            checkExpression(*field.value);
-        }
-        return CheckedExpression{simpleType(StaticType::Struct)};
     }
 
     if (const auto* construct = dynamic_cast<const StructConstructExpr*>(&expression)) {

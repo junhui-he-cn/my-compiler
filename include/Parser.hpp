@@ -86,7 +86,6 @@ private:
     ExprPtr finishFieldAccess(ExprPtr object);
     ExprPtr arrayLiteral(Token bracket);
     std::vector<StructField> structLiteralFields();
-    ExprPtr structLiteral();
     ExprPtr structConstructor();
     ExprPtr qualifiedStructConstructor();
     bool isQualifiedStructConstructorStart() const;

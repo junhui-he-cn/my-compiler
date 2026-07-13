@@ -495,21 +495,6 @@ void ArrayExpr::print(std::ostream& out) const
     out << ')';
 }
 
-StructExpr::StructExpr(std::vector<StructField> fields)
-    : fields(std::move(fields))
-{
-}
-
-void StructExpr::print(std::ostream& out) const
-{
-    out << "(struct";
-    for (const StructField& field : fields) {
-        out << ' ' << field.name.lexeme << ": ";
-        writeExpr(out, field.value);
-    }
-    out << ')';
-}
-
 StructConstructExpr::StructConstructExpr(std::optional<Token> qualifier, Token name, std::vector<StructField> fields)
     : qualifier(std::move(qualifier))
     , name(std::move(name))

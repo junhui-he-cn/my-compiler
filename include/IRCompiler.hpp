@@ -43,7 +43,6 @@ private:
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
     IRRegister emitStructFields(const std::vector<StructField>& fields, std::optional<std::string> typeName = std::nullopt);
-    IRRegister emitStruct(const StructExpr& expression);
     IRRegister emitStructConstructor(const StructConstructExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);
     IRRegister emitCompoundAssign(const CompoundAssignExpr& expression);
