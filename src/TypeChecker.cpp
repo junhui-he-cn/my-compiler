@@ -307,6 +307,7 @@ void ResolvedNames::recordMemberCallCallee(const MemberCallExpr& expression, std
 const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
+    typeParameterScopes_.clear();
     structTypes_.clear();
     structDeclarations_.clear();
     structCheckStates_.clear();
@@ -366,6 +367,38 @@ void TypeChecker::endScope()
         throw TypeError("scope stack is empty");
     }
     scopes_.pop_back();
+}
+
+void TypeChecker::beginTypeParameterScope(const std::vector<Token>& parameters)
+{
+    std::unordered_map<std::string, TypeInfo> scope;
+    for (const Token& parameter : parameters) {
+        if (scope.find(parameter.lexeme) != scope.end()) {
+            throw TypeError(parameter,
+                "duplicate type parameter `" + parameter.lexeme + "`");
+        }
+        scope.emplace(parameter.lexeme, typeParameterType(parameter.lexeme));
+    }
+    typeParameterScopes_.push_back(std::move(scope));
+}
+
+void TypeChecker::endTypeParameterScope()
+{
+    if (typeParameterScopes_.empty()) {
+        throw TypeError("type parameter scope stack is empty");
+    }
+    typeParameterScopes_.pop_back();
+}
+
+const TypeInfo* TypeChecker::findTypeParameter(const std::string& name) const
+{
+    for (auto scope = typeParameterScopes_.rbegin(); scope != typeParameterScopes_.rend(); ++scope) {
+        const auto found = scope->find(name);
+        if (found != scope->end()) {
+            return &found->second;
+        }
+    }
+    return nullptr;
 }
 
 TypeChecker::Scope& TypeChecker::currentScope()
@@ -733,6 +766,7 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     std::unordered_map<std::string, const StructDeclStmt*> savedStructDeclarations = std::move(structDeclarations_);
     std::unordered_map<std::string, StructCheckState> savedStructCheckStates = std::move(structCheckStates_);
     MethodTable savedMethods = std::move(methods_);
+    std::vector<std::unordered_map<std::string, TypeInfo>> savedTypeParameterScopes = std::move(typeParameterScopes_);
     const std::size_t savedFunctionDepth = functionDepth_;
     const std::size_t savedLoopDepth = loopDepth_;
     std::vector<FunctionReturnContext> savedReturnContexts = std::move(returnContexts_);
@@ -742,6 +776,7 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     structDeclarations_.clear();
     structCheckStates_.clear();
     methods_.clear();
+    typeParameterScopes_.clear();
     functionDepth_ = 0;
     loopDepth_ = 0;
     returnContexts_.clear();
@@ -765,6 +800,7 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     structDeclarations_ = std::move(savedStructDeclarations);
     structCheckStates_ = std::move(savedStructCheckStates);
     methods_ = std::move(savedMethods);
+    typeParameterScopes_ = std::move(savedTypeParameterScopes);
     functionDepth_ = savedFunctionDepth;
     loopDepth_ = savedLoopDepth;
     returnContexts_ = std::move(savedReturnContexts);
@@ -1204,6 +1240,16 @@ std::optional<TypeInfo> TypeChecker::resolveOptionalReturnType(const std::option
     return resolveAnnotation(*returnTypeName);
 }
 
+std::vector<std::string> TypeChecker::typeParameterNames(const std::vector<Token>& parameters) const
+{
+    std::vector<std::string> names;
+    names.reserve(parameters.size());
+    for (const Token& parameter : parameters) {
+        names.push_back(parameter.lexeme);
+    }
+    return names;
+}
+
 const TypeChecker::MethodInfo* TypeChecker::findMethod(const std::string& structName, const std::string& methodName) const
 {
     const auto structFound = methods_.find(structName);
@@ -1406,6 +1452,8 @@ void TypeChecker::checkImpl(const ImplStmt& statement)
 
 void TypeChecker::checkFunction(const FunctionStmt& statement)
 {
+    beginTypeParameterScope(statement.typeParameters);
+
     std::vector<TypeInfo> declaredParameterTypes;
     declaredParameterTypes.reserve(statement.parameters.size());
     for (const Parameter& parameter : statement.parameters) {
@@ -1421,7 +1469,10 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
 
     Binding functionBinding = declareVariable(
         statement.name,
-        functionType(declaredParameterTypes, expectedReturnType ? *expectedReturnType : unknownType()),
+        functionType(
+            declaredParameterTypes,
+            expectedReturnType ? *expectedReturnType : unknownType(),
+            typeParameterNames(statement.typeParameters)),
         statement.returnTypeName.has_value());
     resolvedNames_.recordFunction(statement, functionBinding.resolvedName);
 
@@ -1452,7 +1503,151 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     if (!storedFunction) {
         throw TypeError(statement.name, "undefined function `" + statement.name.lexeme + "`");
     }
-    storedFunction->type = functionType(std::move(declaredParameterTypes), returnType);
+    storedFunction->type = functionType(
+        std::move(declaredParameterTypes),
+        returnType,
+        typeParameterNames(statement.typeParameters));
+    endTypeParameterScope();
+}
+
+void TypeChecker::inferTypeArguments(
+    const TypeInfo& expected,
+    const TypeInfo& actual,
+    TypeSubstitutions& substitutions,
+    const Token& callToken) const
+{
+    if (expected.kind == StaticType::TypeParameter && expected.typeParameterName) {
+        if (!isKnown(actual)) {
+            return;
+        }
+        const auto [it, inserted] = substitutions.emplace(*expected.typeParameterName, actual);
+        if (!inserted
+            && (!compatible(it->second, actual) || !compatible(actual, it->second))) {
+            throw TypeError(callToken,
+                "type parameter " + *expected.typeParameterName + " inferred as "
+                    + typeInfoName(it->second) + " and " + typeInfoName(actual));
+        }
+        return;
+    }
+
+    if (expected.kind == StaticType::Array && actual.kind == StaticType::Array
+        && expected.elementType && actual.elementType) {
+        inferTypeArguments(*expected.elementType, *actual.elementType, substitutions, callToken);
+        return;
+    }
+
+    if (expected.kind == StaticType::Nullable && expected.nullableOf) {
+        if (actual.kind == StaticType::Nil) {
+            return;
+        }
+        if (actual.kind == StaticType::Nullable && actual.nullableOf) {
+            inferTypeArguments(*expected.nullableOf, *actual.nullableOf, substitutions, callToken);
+        } else {
+            inferTypeArguments(*expected.nullableOf, actual, substitutions, callToken);
+        }
+        return;
+    }
+
+    if (expected.kind == StaticType::Function && actual.kind == StaticType::Function
+        && hasFunctionSignature(expected) && hasFunctionSignature(actual)
+        && expected.parameterTypes.size() == actual.parameterTypes.size()) {
+        for (std::size_t i = 0; i < expected.parameterTypes.size(); ++i) {
+            inferTypeArguments(expected.parameterTypes[i], actual.parameterTypes[i], substitutions, callToken);
+        }
+        inferTypeArguments(*expected.returnType, *actual.returnType, substitutions, callToken);
+    }
+}
+
+TypeInfo TypeChecker::substituteTypeParameters(
+    const TypeInfo& type,
+    const TypeSubstitutions& substitutions) const
+{
+    if (type.kind == StaticType::TypeParameter && type.typeParameterName) {
+        const auto found = substitutions.find(*type.typeParameterName);
+        if (found != substitutions.end()) {
+            return found->second;
+        }
+    }
+
+    TypeInfo result = type;
+    if (type.elementType) {
+        result.elementType = std::make_shared<TypeInfo>(
+            substituteTypeParameters(*type.elementType, substitutions));
+    }
+    if (type.nullableOf) {
+        result.nullableOf = std::make_shared<TypeInfo>(
+            substituteTypeParameters(*type.nullableOf, substitutions));
+    }
+    if (type.returnType) {
+        result.returnType = std::make_shared<TypeInfo>(
+            substituteTypeParameters(*type.returnType, substitutions));
+    }
+    for (TypeInfo& parameter : result.parameterTypes) {
+        parameter = substituteTypeParameters(parameter, substitutions);
+    }
+    return result;
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkFunctionCall(
+    const Token& callToken,
+    const TypeInfo& calleeType,
+    const std::vector<ExprPtr>& arguments)
+{
+    if (calleeType.kind != StaticType::Unknown && calleeType.kind != StaticType::Function) {
+        throw TypeError(callToken, "can only call functions");
+    }
+    if (calleeType.kind != StaticType::Function || !hasFunctionSignature(calleeType)) {
+        for (const auto& argument : arguments) {
+            checkExpressionInfo(*argument);
+        }
+        return CheckedExpression{unknownType()};
+    }
+
+    if (calleeType.parameterTypes.size() != arguments.size()) {
+        throw TypeError(callToken,
+            "expected " + std::to_string(calleeType.parameterTypes.size())
+                + " arguments but got " + std::to_string(arguments.size()));
+    }
+
+    std::vector<CheckedExpression> checkedArguments;
+    checkedArguments.reserve(arguments.size());
+    const bool generic = !calleeType.genericParameters.empty();
+    for (std::size_t i = 0; i < arguments.size(); ++i) {
+        checkedArguments.push_back(generic
+            ? checkExpressionInfo(*arguments[i])
+            : checkExpressionInfo(*arguments[i], &calleeType.parameterTypes[i]));
+    }
+
+    TypeSubstitutions substitutions;
+    if (generic) {
+        for (std::size_t i = 0; i < arguments.size(); ++i) {
+            inferTypeArguments(
+                calleeType.parameterTypes[i], checkedArguments[i].type,
+                substitutions, callToken);
+        }
+        for (const std::string& parameter : calleeType.genericParameters) {
+            if (substitutions.find(parameter) == substitutions.end()) {
+                throw TypeError(callToken, "cannot infer type parameter " + parameter);
+            }
+        }
+    }
+
+    for (std::size_t i = 0; i < arguments.size(); ++i) {
+        const TypeInfo expected = generic
+            ? substituteTypeParameters(calleeType.parameterTypes[i], substitutions)
+            : calleeType.parameterTypes[i];
+        const TypeInfo& actual = checkedArguments[i].type;
+        if (!compatible(expected, actual)) {
+            throw TypeError(callToken,
+                "argument " + std::to_string(i + 1) + " expects "
+                    + typeInfoName(expected) + ", got " + typeInfoName(actual));
+        }
+    }
+
+    const TypeInfo returnType = generic
+        ? substituteTypeParameters(*calleeType.returnType, substitutions)
+        : *calleeType.returnType;
+    return CheckedExpression{returnType};
 }
 
 const TypeInfo* TypeChecker::contextualFunctionType(const TypeInfo* expectedType) const
@@ -1543,6 +1738,13 @@ TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& s
 
     const TypeInfo declared = resolveAnnotation(*statement.typeName);
     const CheckedExpression initializer = checkExpressionInfo(*statement.initializer, &declared);
+    if (declared.kind == StaticType::Function
+        && declared.genericParameters.empty()
+        && initializer.type.kind == StaticType::Function
+        && !initializer.type.genericParameters.empty()) {
+        throw TypeError(statement.name,
+            "cannot assign generic function to monomorphic function type");
+    }
     checkAssignable(
         statement.name,
         "cannot initialize `" + statement.name.lexeme + "` of type " + typeInfoName(declared)
@@ -1773,6 +1975,12 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         const CheckedExpression value = checkExpressionInfo(*assign->value, &target->type);
 
         if (target->type.kind == StaticType::Function && value.type.kind == StaticType::Function) {
+            if (target->explicitType
+                && target->type.genericParameters.empty()
+                && !value.type.genericParameters.empty()) {
+                throw TypeError(assign->name,
+                    "cannot assign generic function to monomorphic function type");
+            }
             if (hasFunctionSignature(target->type) && hasFunctionSignature(value.type)
                 && target->type.parameterTypes.size() != value.type.parameterTypes.size()) {
                 throw TypeError(assign->name,
@@ -2133,43 +2341,7 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
                     "module namespace `" + variable->name.lexeme + "` has no exported member `" + name + "`");
             }
             resolvedNames_.recordMemberCallCallee(expression, found->second.resolvedName, false);
-
-            const TypeInfo& calleeType = found->second.type;
-            std::vector<CheckedExpression> arguments;
-            arguments.reserve(expression.arguments.size());
-
-            if (calleeType.kind == StaticType::Function && hasFunctionSignature(calleeType)) {
-                if (calleeType.parameterTypes.size() != expression.arguments.size()) {
-                    throw TypeError(expression.paren, "expected " + std::to_string(calleeType.parameterTypes.size())
-                        + " arguments but got " + std::to_string(expression.arguments.size()));
-                }
-                for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
-                    arguments.push_back(checkExpressionInfo(*expression.arguments[i], &calleeType.parameterTypes[i]));
-                }
-            } else {
-                for (const auto& argument : expression.arguments) {
-                    arguments.push_back(checkExpressionInfo(*argument));
-                }
-            }
-
-            if (calleeType.kind != StaticType::Unknown && calleeType.kind != StaticType::Function) {
-                throw TypeError(expression.paren, "can only call functions");
-            }
-
-            if (calleeType.kind == StaticType::Function && hasFunctionSignature(calleeType)) {
-                for (std::size_t i = 0; i < arguments.size(); ++i) {
-                    const TypeInfo& expected = calleeType.parameterTypes[i];
-                    const TypeInfo& actual = arguments[i].type;
-                    if (!compatible(expected, actual)) {
-                        throw TypeError(expression.paren,
-                            "argument " + std::to_string(i + 1) + " expects " + typeInfoName(expected)
-                                + ", got " + typeInfoName(actual));
-                    }
-                }
-                return CheckedExpression{*calleeType.returnType};
-            }
-
-            return CheckedExpression{unknownType()};
+            return checkFunctionCall(expression.paren, found->second.type, expression.arguments);
         }
     }
 
@@ -2339,41 +2511,7 @@ TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression
     }
 
     const CheckedExpression callee = checkExpressionInfo(*expression.callee);
-    std::vector<CheckedExpression> arguments;
-    arguments.reserve(expression.arguments.size());
-
-    if (callee.type.kind == StaticType::Function && hasFunctionSignature(callee.type)) {
-        if (callee.type.parameterTypes.size() != expression.arguments.size()) {
-            throw TypeError(expression.paren, "expected " + std::to_string(callee.type.parameterTypes.size())
-                + " arguments but got " + std::to_string(expression.arguments.size()));
-        }
-        for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
-            arguments.push_back(checkExpressionInfo(*expression.arguments[i], &callee.type.parameterTypes[i]));
-        }
-    } else {
-        for (const auto& argument : expression.arguments) {
-            arguments.push_back(checkExpressionInfo(*argument));
-        }
-    }
-
-    if (callee.type.kind != StaticType::Unknown && callee.type.kind != StaticType::Function) {
-        throw TypeError(expression.paren, "can only call functions");
-    }
-
-    if (callee.type.kind == StaticType::Function && hasFunctionSignature(callee.type)) {
-        for (std::size_t i = 0; i < arguments.size(); ++i) {
-            const TypeInfo& expected = callee.type.parameterTypes[i];
-            const TypeInfo& actual = arguments[i].type;
-            if (!compatible(expected, actual)) {
-                throw TypeError(expression.paren,
-                    "argument " + std::to_string(i + 1) + " expects " + typeInfoName(expected)
-                        + ", got " + typeInfoName(actual));
-            }
-        }
-        return CheckedExpression{*callee.type.returnType};
-    }
-
-    return CheckedExpression{unknownType()};
+    return checkFunctionCall(expression.paren, callee.type, expression.arguments);
 }
 
 TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
@@ -2540,6 +2678,10 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
                 "module namespace `" + typeName.qualifier.lexeme + "` has no exported type `" + typeName.token.lexeme + "`");
         }
         return namedStructType(qualifiedStructName(typeName.qualifier, typeName.token));
+    }
+
+    if (const TypeInfo* typeParameter = findTypeParameter(typeName.token.lexeme)) {
+        return *typeParameter;
     }
 
     if (typeName.token.lexeme == "number") {

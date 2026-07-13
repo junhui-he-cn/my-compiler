@@ -90,6 +90,7 @@ private:
     using Binding = TypeBinding;
     using StructFieldType = ::StructFieldType;
     using StructTypeDecl = ::StructTypeDecl;
+    using TypeSubstitutions = std::unordered_map<std::string, TypeInfo>;
 
     struct FunctionReturnContext {
         bool sawReturn = false;
@@ -121,6 +122,8 @@ private:
 
     void beginScope();
     void endScope();
+    void beginTypeParameterScope(const std::vector<Token>& parameters);
+    void endTypeParameterScope();
     Scope& currentScope();
     const Scope& currentScope() const;
     Binding* findVariable(const std::string& name);
@@ -181,6 +184,20 @@ private:
     TypeInfo resolveStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName);
     TypeInfo resolveSimpleStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName);
     void checkFunction(const FunctionStmt& statement);
+    std::vector<std::string> typeParameterNames(const std::vector<Token>& parameters) const;
+    const TypeInfo* findTypeParameter(const std::string& name) const;
+    void inferTypeArguments(
+        const TypeInfo& expected,
+        const TypeInfo& actual,
+        TypeSubstitutions& substitutions,
+        const Token& callToken) const;
+    TypeInfo substituteTypeParameters(
+        const TypeInfo& type,
+        const TypeSubstitutions& substitutions) const;
+    CheckedExpression checkFunctionCall(
+        const Token& callToken,
+        const TypeInfo& calleeType,
+        const std::vector<ExprPtr>& arguments);
     TypeInfo checkFunctionBody(
         const std::vector<StmtPtr>& body,
         std::optional<TypeInfo> expectedReturnType,
@@ -235,6 +252,7 @@ private:
     bool isCurrentFunctionBinding(const Binding& binding) const;
 
     std::vector<Scope> scopes_;
+    std::vector<std::unordered_map<std::string, TypeInfo>> typeParameterScopes_;
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
     std::unordered_map<std::string, const StructDeclStmt*> structDeclarations_;
     std::unordered_map<std::string, StructCheckState> structCheckStates_;
