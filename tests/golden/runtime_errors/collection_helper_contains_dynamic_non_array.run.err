@@ -1,1 +1,5 @@
-Runtime error: contains expects array as first argument
+Runtime error at tests/golden/runtime_errors/collection_helper_contains_dynamic_non_array.cd:2:1: contains expects array as first argument
+  contains(id(1), 1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/collection_helper_contains_dynamic_non_array.cd:2:1)

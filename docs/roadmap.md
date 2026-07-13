@@ -44,7 +44,9 @@ separate-compilation work remain deferred.
 
 ### M3: Language Depth
 
-1. Add source locations and call stacks to runtime diagnostics.
+1. Source locations and call stacks for runtime diagnostics are implemented
+   across the C++ compiler, `.cdbc` artifacts, and Rust VM. Continue preserving
+   metadata when extending runtime operations.
 2. Define Unicode string semantics and make string operations consistent with it.
 3. Add generic type abstraction before exposing strongly typed higher-order
    collection APIs.

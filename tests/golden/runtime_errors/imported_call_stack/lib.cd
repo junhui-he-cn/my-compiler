@@ -1,0 +1,2 @@
+fun boom() { return 1 / 0; }
+export boom;

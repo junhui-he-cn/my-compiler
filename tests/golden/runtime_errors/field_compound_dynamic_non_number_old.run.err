@@ -1,1 +1,6 @@
-Runtime error: `+=` expects number target
+Runtime error at tests/golden/runtime_errors/field_compound_dynamic_non_number_old.cd:3:3: `+=` expects number target
+    value.count += 1;
+    ^
+Call stack:
+  at fail (tests/golden/runtime_errors/field_compound_dynamic_non_number_old.cd:3:3)
+  at main (tests/golden/runtime_errors/field_compound_dynamic_non_number_old.cd:5:1)

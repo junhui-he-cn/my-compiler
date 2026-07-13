@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/closure_call_stack.cd:1:28: division by zero
+  let fail = fun () { return 1 / 0; };
+                             ^
+Call stack:
+  at <lambda> (tests/golden/runtime_errors/closure_call_stack.cd:1:28)
+  at main (tests/golden/runtime_errors/closure_call_stack.cd:2:1)

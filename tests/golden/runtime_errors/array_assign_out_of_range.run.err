@@ -1,1 +1,5 @@
-Runtime error: array index out of range
+Runtime error at tests/golden/runtime_errors/array_assign_out_of_range.cd:2:1: array index out of range
+  xs[9] = 2;
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/array_assign_out_of_range.cd:2:1)

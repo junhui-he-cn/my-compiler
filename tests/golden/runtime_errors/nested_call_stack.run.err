@@ -1,0 +1,7 @@
+Runtime error at tests/golden/runtime_errors/nested_call_stack.cd:1:22: array index out of range
+  fun inner() { return [1][2]; }
+                       ^
+Call stack:
+  at inner (tests/golden/runtime_errors/nested_call_stack.cd:1:22)
+  at outer (tests/golden/runtime_errors/nested_call_stack.cd:2:22)
+  at main (tests/golden/runtime_errors/nested_call_stack.cd:3:1)

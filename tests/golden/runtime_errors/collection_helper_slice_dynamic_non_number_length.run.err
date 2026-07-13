@@ -1,1 +1,5 @@
-Runtime error: slice expects number as third argument
+Runtime error at tests/golden/runtime_errors/collection_helper_slice_dynamic_non_number_length.cd:2:1: slice expects number as third argument
+  slice([1], 0, id(false));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/collection_helper_slice_dynamic_non_number_length.cd:2:1)

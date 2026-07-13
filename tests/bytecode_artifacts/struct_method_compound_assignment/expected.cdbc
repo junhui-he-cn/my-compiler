@@ -52,3 +52,32 @@ function f0 name="inc" arity=2 registers=10:
   return r8
   r9 = constant c1
   return r9
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/struct_method_compound_assignment/input.cd" text="struct Counter { value: number }\nimpl Counter { fun inc(delta: number): number { this.value += delta; return this.value; } }\nlet c: Counter = Counter { value: 1 };\nprint c.inc(2);\n"
+
+debug_locations:
+  main 0 = s0:2:1
+  main 1 = s0:2:1
+  main 2 = s0:2:1
+  main 3 = s0:2:1
+  main 4 = s0:3:35
+  main 5 = s0:3:18
+  main 6 = s0:3:1
+  main 7 = s0:4:7
+  main 8 = s0:4:7
+  main 9 = s0:4:13
+  main 10 = s0:4:7
+  main 11 = s0:4:1
+  function f0 0 = s0:2:49
+  function f0 1 = s0:2:49
+  function f0 2 = s0:2:49
+  function f0 3 = s0:2:63
+  function f0 4 = s0:2:49
+  function f0 5 = s0:2:49
+  function f0 6 = s0:2:49
+  function f0 7 = s0:2:77
+  function f0 8 = s0:2:77
+  function f0 9 = s0:2:70
+  function f0 10 = s0:2:1
+  function f0 11 = s0:2:1

@@ -1,1 +1,5 @@
-Runtime error: push expects array as first argument
+Runtime error at tests/golden/runtime_errors/member_call_push_dynamic_bad_receiver.cd:2:1: push expects array as first argument
+  id(123).push(1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/member_call_push_dynamic_bad_receiver.cd:2:1)

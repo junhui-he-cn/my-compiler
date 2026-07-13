@@ -1,1 +1,5 @@
-Runtime error: cannot pop from empty array
+Runtime error at tests/golden/runtime_errors/pop_empty_array.cd:1:1: cannot pop from empty array
+  pop([]);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/pop_empty_array.cd:1:1)

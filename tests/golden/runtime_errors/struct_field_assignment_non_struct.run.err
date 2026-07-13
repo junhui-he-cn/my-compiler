@@ -1,1 +1,5 @@
-Runtime error: can only assign fields on structs
+Runtime error at tests/golden/runtime_errors/struct_field_assignment_non_struct.cd:2:1: can only assign fields on structs
+  id(123).name = "x";
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/struct_field_assignment_non_struct.cd:2:1)

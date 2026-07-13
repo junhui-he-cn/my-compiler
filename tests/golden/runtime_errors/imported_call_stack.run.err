@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/imported_call_stack/lib.cd:1:21: division by zero
+  fun boom() { return 1 / 0; }
+                      ^
+Call stack:
+  at boom (tests/golden/runtime_errors/imported_call_stack/lib.cd:1:21)
+  at main (tests/golden/runtime_errors/imported_call_stack.cd:2:7)

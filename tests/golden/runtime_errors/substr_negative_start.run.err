@@ -1,1 +1,5 @@
-Runtime error: substr start offset out of bounds
+Runtime error at tests/golden/runtime_errors/substr_negative_start.cd:1:1: substr start offset out of bounds
+  substr("abc", -1, 1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/substr_negative_start.cd:1:1)

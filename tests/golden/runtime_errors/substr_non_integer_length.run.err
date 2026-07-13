@@ -1,1 +1,5 @@
-Runtime error: substr expects integer length
+Runtime error at tests/golden/runtime_errors/substr_non_integer_length.cd:1:1: substr expects integer length
+  substr("abc", 1, 1.5);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/substr_non_integer_length.cd:1:1)

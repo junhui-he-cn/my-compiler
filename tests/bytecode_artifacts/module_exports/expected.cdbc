@@ -50,3 +50,34 @@ function f1 name="answer" arity=0 registers=4:
   return r2
   r3 = constant c5
   return r3
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/module_exports/input.cd" text="import \"./lib.cd\";\nprint answer();\n"
+  s1 path="tests/bytecode_artifacts/module_exports/lib.cd" text="let base = 39;\nfun add3(x) { return x + 3; }\nfun answer() { return add3(base); }\nexport answer;\n"
+
+debug_locations:
+  main 0 = s1:1:12
+  main 1 = s1:1:1
+  main 2 = s1:2:1
+  main 3 = s1:2:1
+  main 4 = s1:2:1
+  main 5 = s1:2:1
+  main 6 = s1:3:1
+  main 7 = s1:3:1
+  main 8 = s1:3:1
+  main 9 = s1:3:1
+  main 10 = s0:2:7
+  main 11 = s0:2:7
+  main 12 = s0:2:1
+  function f0 0 = s1:2:22
+  function f0 1 = s1:2:26
+  function f0 2 = s1:2:22
+  function f0 3 = s1:2:15
+  function f0 4 = s1:2:1
+  function f0 5 = s1:2:1
+  function f1 0 = s1:3:23
+  function f1 1 = s1:3:28
+  function f1 2 = s1:3:23
+  function f1 3 = s1:3:16
+  function f1 4 = s1:3:1
+  function f1 5 = s1:3:1

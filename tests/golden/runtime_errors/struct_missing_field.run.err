@@ -1,1 +1,6 @@
-Runtime error: undefined field `age`
+Runtime error at tests/golden/runtime_errors/struct_missing_field.cd:3:9: undefined field `age`
+    print person.age;
+          ^
+Call stack:
+  at fail (tests/golden/runtime_errors/struct_missing_field.cd:3:9)
+  at main (tests/golden/runtime_errors/struct_missing_field.cd:5:1)

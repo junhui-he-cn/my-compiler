@@ -1,1 +1,5 @@
-Runtime error: charAt expects number as second argument
+Runtime error at tests/golden/runtime_errors/char_at_dynamic_non_number_index.cd:2:1: charAt expects number as second argument
+  charAt("abc", id("x"));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/char_at_dynamic_non_number_index.cd:2:1)

@@ -1,0 +1,2 @@
+let fail = fun () { return 1 / 0; };
+fail();

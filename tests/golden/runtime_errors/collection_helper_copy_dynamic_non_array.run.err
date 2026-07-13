@@ -1,1 +1,5 @@
-Runtime error: copy expects array as first argument
+Runtime error at tests/golden/runtime_errors/collection_helper_copy_dynamic_non_array.cd:2:1: copy expects array as first argument
+  copy(id(1));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/collection_helper_copy_dynamic_non_array.cd:2:1)

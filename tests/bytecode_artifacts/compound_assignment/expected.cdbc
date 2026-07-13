@@ -23,3 +23,18 @@ main registers=7:
   assign_var n4, r5
   r6 = load_var n5
   print r6
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/compound_assignment/input.cd" text="let x = 1;\nx += 2;\nprint x;\n"
+
+debug_locations:
+  main 0 = s0:1:9
+  main 1 = s0:1:1
+  main 2 = s0:2:1
+  main 3 = s0:2:1
+  main 4 = s0:2:6
+  main 5 = s0:2:1
+  main 6 = s0:2:1
+  main 7 = s0:2:1
+  main 8 = s0:3:7
+  main 9 = s0:3:1

@@ -1,1 +1,5 @@
-Runtime error: substr expects integer start offset
+Runtime error at tests/golden/runtime_errors/substr_non_integer_start.cd:1:1: substr expects integer start offset
+  substr("abc", 1.5, 1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/substr_non_integer_start.cd:1:1)

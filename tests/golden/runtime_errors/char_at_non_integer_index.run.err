@@ -1,1 +1,5 @@
-Runtime error: charAt expects integer index
+Runtime error at tests/golden/runtime_errors/char_at_non_integer_index.cd:1:1: charAt expects integer index
+  charAt("abc", 1.5);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/char_at_non_integer_index.cd:1:1)

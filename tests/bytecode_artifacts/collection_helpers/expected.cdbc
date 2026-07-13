@@ -41,3 +41,29 @@ main registers=16:
   r14 = array [r13]
   r15 = native_call n8 [r12, r14]
   print r15
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/collection_helpers/input.cd" text="let xs = [1, 2];\nprint contains(xs, 2);\nprint slice(xs, 0, 1);\nprint copy(xs);\nprint concat(xs, [3]);\n"
+
+debug_locations:
+  main 0 = s0:1:11
+  main 1 = s0:1:14
+  main 2 = s0:1:10
+  main 3 = s0:1:1
+  main 4 = s0:2:16
+  main 5 = s0:2:20
+  main 6 = s0:2:7
+  main 7 = s0:2:1
+  main 8 = s0:3:13
+  main 9 = s0:3:17
+  main 10 = s0:3:20
+  main 11 = s0:3:7
+  main 12 = s0:3:1
+  main 13 = s0:4:12
+  main 14 = s0:4:7
+  main 15 = s0:4:1
+  main 16 = s0:5:14
+  main 17 = s0:5:19
+  main 18 = s0:5:18
+  main 19 = s0:5:7
+  main 20 = s0:5:1

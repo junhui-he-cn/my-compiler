@@ -1,1 +1,5 @@
-Runtime error: pop expects array as first argument
+Runtime error at tests/golden/runtime_errors/pop_dynamic_non_array.cd:2:1: pop expects array as first argument
+  pop(id("x"));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/pop_dynamic_non_array.cd:2:1)

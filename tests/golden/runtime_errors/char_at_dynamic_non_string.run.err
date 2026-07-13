@@ -1,1 +1,5 @@
-Runtime error: charAt expects string as first argument
+Runtime error at tests/golden/runtime_errors/char_at_dynamic_non_string.cd:2:1: charAt expects string as first argument
+  charAt(id(123), 0);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/char_at_dynamic_non_string.cd:2:1)

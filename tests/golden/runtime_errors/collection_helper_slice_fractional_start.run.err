@@ -1,1 +1,5 @@
-Runtime error: slice expects integer start offset
+Runtime error at tests/golden/runtime_errors/collection_helper_slice_fractional_start.cd:1:1: slice expects integer start offset
+  slice([1], 0.5, 0);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/collection_helper_slice_fractional_start.cd:1:1)

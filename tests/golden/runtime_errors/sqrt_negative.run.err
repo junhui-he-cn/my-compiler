@@ -1,1 +1,5 @@
-Runtime error: sqrt expects non-negative number
+Runtime error at tests/golden/runtime_errors/sqrt_negative.cd:1:1: sqrt expects non-negative number
+  sqrt(-1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/sqrt_negative.cd:1:1)

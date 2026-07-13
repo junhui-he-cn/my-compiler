@@ -1,1 +1,5 @@
-Runtime error: slice expects number as second argument
+Runtime error at tests/golden/runtime_errors/collection_helper_slice_dynamic_non_number_start.cd:2:1: slice expects number as second argument
+  slice([1], id("x"), 0);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/collection_helper_slice_dynamic_non_number_start.cd:2:1)

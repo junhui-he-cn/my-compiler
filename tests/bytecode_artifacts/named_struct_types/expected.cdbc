@@ -31,3 +31,21 @@ main registers=10:
   r8 = load_var n8
   r9 = field r8, n9
   print r9
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/named_struct_types/input.cd" text="struct Person { name: string, age: number }\nlet p: Person = Person { name: \"Ada\", age: 36 };\np.age = 37;\nprint p.name;\nprint p.age;\n"
+
+debug_locations:
+  main 0 = s0:2:32
+  main 1 = s0:2:44
+  main 2 = s0:2:17
+  main 3 = s0:2:1
+  main 4 = s0:3:1
+  main 5 = s0:3:9
+  main 6 = s0:3:1
+  main 7 = s0:4:7
+  main 8 = s0:4:7
+  main 9 = s0:4:1
+  main 10 = s0:5:7
+  main 11 = s0:5:7
+  main 12 = s0:5:1

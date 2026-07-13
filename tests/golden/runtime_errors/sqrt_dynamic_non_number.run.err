@@ -1,1 +1,5 @@
-Runtime error: sqrt expects number
+Runtime error at tests/golden/runtime_errors/sqrt_dynamic_non_number.cd:2:1: sqrt expects number
+  sqrt(id([]));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/sqrt_dynamic_non_number.cd:2:1)

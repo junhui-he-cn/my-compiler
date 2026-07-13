@@ -1,1 +1,5 @@
-Runtime error: substr length out of bounds
+Runtime error at tests/golden/runtime_errors/substr_length_out_of_bounds.cd:1:1: substr length out of bounds
+  substr("abc", 2, 2);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/substr_length_out_of_bounds.cd:1:1)

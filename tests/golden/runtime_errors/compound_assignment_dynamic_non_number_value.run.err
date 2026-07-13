@@ -1,1 +1,5 @@
-Runtime error: `+=` expects number value
+Runtime error at tests/golden/runtime_errors/compound_assignment_dynamic_non_number_value.cd:3:1: `+=` expects number value
+  n += id("x");
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/compound_assignment_dynamic_non_number_value.cd:3:1)

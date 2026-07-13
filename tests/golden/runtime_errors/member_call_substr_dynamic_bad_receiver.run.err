@@ -1,1 +1,5 @@
-Runtime error: substr expects string as first argument
+Runtime error at tests/golden/runtime_errors/member_call_substr_dynamic_bad_receiver.cd:2:1: substr expects string as first argument
+  id(123).substr(0, 1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/member_call_substr_dynamic_bad_receiver.cd:2:1)

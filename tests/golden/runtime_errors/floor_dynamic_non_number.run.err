@@ -1,1 +1,5 @@
-Runtime error: floor expects number
+Runtime error at tests/golden/runtime_errors/floor_dynamic_non_number.cd:2:1: floor expects number
+  floor(id("x"));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/floor_dynamic_non_number.cd:2:1)

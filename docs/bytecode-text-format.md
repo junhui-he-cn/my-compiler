@@ -49,9 +49,42 @@ function f0 name="add_one" arity=1 registers=4:
   r1 = constant c0
   r2 = add r0, r1
   return r2
+
+debug_sources:
+  s0 path="examples/hello.cd" text="print 1;\n"
+
+debug_locations:
+  main 0 = s0:1:7
+  main 1 = s0:1:1
 ```
 
 The section names and reference prefixes are part of the canonical text format. Function `param` lines, when present, appear before instructions in a function section.
+
+## Debug metadata
+
+`debug_sources` and `debug_locations` are optional additive sections. The C++
+compiler emits them for source-backed instructions, and the Rust VM uses them
+to report runtime source locations, source lines, carets, and call stacks. Each
+`debug_sources` entry is ordered by zero-based `sN` index and embeds the display
+path plus original source text. Each location maps a section and instruction
+index to `sN:line:column`, using one-based source coordinates:
+
+```text
+debug_sources:
+  s0 path="lib.cd" text="fun fail() { return 1 / 0; }\n"
+
+debug_locations:
+  main 3 = s0:2:1
+  function f0 2 = s0:1:21
+```
+
+`main` identifies the top-level body; `function fN` identifies a function
+section. Locations are sparse, but every referenced source, function, and
+instruction must exist. Source, function, and instruction references are
+zero-based; line and column values are one-based and must be positive. Duplicate
+mappings and out-of-range references are Rust parser errors. A metadata-free
+`cdbc 0.1` artifact remains valid and executes with
+legacy one-line runtime errors.
 
 ## Value Encoding
 
@@ -135,7 +168,7 @@ Native stdlib calls use a name-table reference for the function name:
 rD = native_call nName [rArg0, rArg1, ...]
 ```
 
-`native_call` invokes a registered VM native stdlib function by name-table reference; in this version `push`, `pop`, `floor`, `ceil`, and `sqrt` are supported.
+`native_call` invokes a registered VM native stdlib function by name-table reference; in this version `push`, `pop`, `floor`, `ceil`, `sqrt`, `str`, `substr`, `charAt`, `typeOf`, `contains`, `slice`, `copy`, and `concat` are supported.
 
 New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter and executor together.
 

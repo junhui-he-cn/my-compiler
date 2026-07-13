@@ -54,3 +54,38 @@ main registers=19:
   r18 = load_var n12
   print r18
   jump 22
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/for_in_loops/input.cd" text="for x in [1, 2, 3] {\n  print x;\n}\n"
+
+debug_locations:
+  main 0 = s0:1:11
+  main 1 = s0:1:14
+  main 2 = s0:1:17
+  main 3 = s0:1:10
+  main 4 = s0:1:1
+  main 5 = s0:1:1
+  main 6 = s0:1:1
+  main 7 = s0:1:1
+  main 8 = s0:1:1
+  main 9 = s0:1:1
+  main 10 = s0:1:1
+  main 11 = s0:1:1
+  main 12 = s0:1:1
+  main 13 = s0:1:1
+  main 14 = s0:1:1
+  main 15 = s0:1:1
+  main 16 = s0:1:1
+  main 17 = s0:1:1
+  main 18 = s0:1:1
+  main 19 = s0:1:1
+  main 20 = s0:1:1
+  main 21 = s0:1:1
+  main 22 = s0:1:1
+  main 23 = s0:1:1
+  main 24 = s0:1:1
+  main 25 = s0:1:1
+  main 26 = s0:1:1
+  main 27 = s0:2:9
+  main 28 = s0:2:3
+  main 29 = s0:1:1

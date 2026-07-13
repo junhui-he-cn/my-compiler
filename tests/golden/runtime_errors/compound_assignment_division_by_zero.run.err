@@ -1,1 +1,5 @@
-Runtime error: division by zero
+Runtime error at tests/golden/runtime_errors/compound_assignment_division_by_zero.cd:2:1: division by zero
+  n /= 0;
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/compound_assignment_division_by_zero.cd:2:1)

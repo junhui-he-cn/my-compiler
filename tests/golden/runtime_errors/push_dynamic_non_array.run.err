@@ -1,1 +1,5 @@
-Runtime error: push expects array as first argument
+Runtime error at tests/golden/runtime_errors/push_dynamic_non_array.cd:2:1: push expects array as first argument
+  push(id(123), 1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/push_dynamic_non_array.cd:2:1)

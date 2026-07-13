@@ -29,3 +29,23 @@ main registers=13:
   r11 = constant c3
   r12 = index r10, r11
   print r12
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/index_compound_assignment/input.cd" text="let xs: [number] = [1];\nxs[0] += 2;\nprint xs[0];\n"
+
+debug_locations:
+  main 0 = s0:1:21
+  main 1 = s0:1:20
+  main 2 = s0:1:1
+  main 3 = s0:2:1
+  main 4 = s0:2:4
+  main 5 = s0:2:1
+  main 6 = s0:2:1
+  main 7 = s0:2:10
+  main 8 = s0:2:1
+  main 9 = s0:2:1
+  main 10 = s0:2:1
+  main 11 = s0:3:7
+  main 12 = s0:3:10
+  main 13 = s0:3:7
+  main 14 = s0:3:1

@@ -1,1 +1,5 @@
-Runtime error: ceil expects number
+Runtime error at tests/golden/runtime_errors/ceil_dynamic_non_number.cd:2:1: ceil expects number
+  ceil(id(true));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/ceil_dynamic_non_number.cd:2:1)

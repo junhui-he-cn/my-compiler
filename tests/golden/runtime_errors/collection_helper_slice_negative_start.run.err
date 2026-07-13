@@ -1,1 +1,5 @@
-Runtime error: slice start offset out of bounds
+Runtime error at tests/golden/runtime_errors/collection_helper_slice_negative_start.cd:1:1: slice start offset out of bounds
+  slice([1], -1, 0);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/collection_helper_slice_negative_start.cd:1:1)

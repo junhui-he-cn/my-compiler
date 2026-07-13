@@ -1,1 +1,6 @@
-Runtime error: undefined field `missing`
+Runtime error at tests/golden/runtime_errors/struct_field_assignment_missing_field.cd:3:3: undefined field `missing`
+    a.missing = 1;
+    ^
+Call stack:
+  at fail (tests/golden/runtime_errors/struct_field_assignment_missing_field.cd:3:3)
+  at main (tests/golden/runtime_errors/struct_field_assignment_missing_field.cd:5:1)

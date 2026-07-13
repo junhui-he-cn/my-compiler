@@ -20,3 +20,18 @@ main registers=8:
   r6 = constant c4
   r7 = equal r5, r6
   print r7
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/arithmetic/input.cd" text="print 1 + 2 * 3;\nprint 4 == 4;\n"
+
+debug_locations:
+  main 0 = s0:1:7
+  main 1 = s0:1:11
+  main 2 = s0:1:15
+  main 3 = s0:1:11
+  main 4 = s0:1:7
+  main 5 = s0:1:1
+  main 6 = s0:2:7
+  main 7 = s0:2:12
+  main 8 = s0:2:7
+  main 9 = s0:2:1

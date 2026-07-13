@@ -1,1 +1,5 @@
-Runtime error: charAt index out of bounds
+Runtime error at tests/golden/runtime_errors/char_at_index_out_of_bounds.cd:1:1: charAt index out of bounds
+  charAt("abc", 3);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/char_at_index_out_of_bounds.cd:1:1)

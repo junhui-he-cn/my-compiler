@@ -1,0 +1,2 @@
+import "./imported_call_stack/lib.cd";
+print boom();

@@ -1,1 +1,5 @@
-Runtime error: `+=` expects number variable
+Runtime error at tests/golden/runtime_errors/compound_assignment_dynamic_string_plus.cd:3:1: `+=` expects number variable
+  n += id("b");
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/compound_assignment_dynamic_string_plus.cd:3:1)

@@ -1,1 +1,5 @@
-Runtime error: slice length out of bounds
+Runtime error at tests/golden/runtime_errors/collection_helper_slice_length_out_of_bounds.cd:1:1: slice length out of bounds
+  slice([1], 1, 1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/collection_helper_slice_length_out_of_bounds.cd:1:1)

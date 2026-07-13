@@ -39,3 +39,29 @@ main registers=12:
   jump 9
   r11 = load_var n8
   print r11
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/for_loops/input.cd" text="let total = 0;\nfor let i = 0; i < 4; i = i + 1 {\n  total = total + i;\n}\nprint total;\n"
+
+debug_locations:
+  main 0 = s0:1:13
+  main 1 = s0:1:1
+  main 2 = s0:2:13
+  main 3 = s0:2:5
+  main 4 = s0:2:16
+  main 5 = s0:2:20
+  main 6 = s0:2:16
+  main 7 = s0:2:1
+  main 8 = s0:2:1
+  main 9 = s0:2:27
+  main 10 = s0:2:31
+  main 11 = s0:2:27
+  main 12 = s0:2:23
+  main 13 = s0:2:1
+  main 14 = s0:3:11
+  main 15 = s0:3:19
+  main 16 = s0:3:11
+  main 17 = s0:3:3
+  main 18 = s0:2:1
+  main 19 = s0:5:7
+  main 20 = s0:5:1

@@ -1,1 +1,5 @@
-Runtime error: substr expects string as first argument
+Runtime error at tests/golden/runtime_errors/substr_dynamic_non_string.cd:2:1: substr expects string as first argument
+  substr(id(123), 0, 1);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/substr_dynamic_non_string.cd:2:1)

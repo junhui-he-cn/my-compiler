@@ -1,1 +1,6 @@
-Runtime error: `+=` expects number target
+Runtime error at tests/golden/runtime_errors/index_compound_dynamic_non_number_old.cd:2:3: `+=` expects number target
+    xs[0] += 1;
+    ^
+Call stack:
+  at bump (tests/golden/runtime_errors/index_compound_dynamic_non_number_old.cd:2:3)
+  at main (tests/golden/runtime_errors/index_compound_dynamic_non_number_old.cd:7:1)

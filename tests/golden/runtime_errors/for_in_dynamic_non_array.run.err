@@ -1,1 +1,5 @@
-Runtime error: for-in expects array
+Runtime error at tests/golden/runtime_errors/for_in_dynamic_non_array.cd:2:1: for-in expects array
+  for x in id(123) {
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/for_in_dynamic_non_array.cd:2:1)

@@ -208,7 +208,7 @@ Type error at 1:7: undefined variable `missing`
         ^
 ```
 
-Located lexer, parser, and type diagnostics include a source line and caret. For imported files and direct multi-file inputs, diagnostics report the original file path plus file-local line and column. For stdin and single-file inputs without imports, diagnostics remain pathless. Locationless diagnostics, including import loading, compile, and runtime errors, remain one-line messages. When the parser can recover at statement boundaries, a single run may report multiple `Parse` diagnostics before later compiler phases are skipped. Lexer, import, type, compile, and runtime diagnostics still stop at the first reported error.
+Located lexer, parser, and type diagnostics include a source line and caret. For imported files and direct multi-file inputs, diagnostics report the original file path plus file-local line and column. For stdin and single-file inputs without imports, front-end diagnostics remain pathless. Runtime failures from compiler-emitted `.cdbc` artifacts include the embedded source path, source line, caret, and an innermost-to-outermost `Call stack`; metadata-free hand-written or legacy artifacts retain the one-line runtime form. When the parser can recover at statement boundaries, a single run may report multiple `Parse` diagnostics before later compiler phases are skipped. Lexer, import, type, and compile diagnostics still stop at the first reported error.
 
 ## Build
 

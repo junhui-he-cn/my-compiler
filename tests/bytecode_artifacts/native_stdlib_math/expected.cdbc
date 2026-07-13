@@ -20,3 +20,17 @@ main registers=6:
   r4 = constant c2
   r5 = native_call n2 [r4]
   print r5
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/native_stdlib_math/input.cd" text="print floor(4.8);\nprint ceil(4.2);\nprint sqrt(25);\n"
+
+debug_locations:
+  main 0 = s0:1:13
+  main 1 = s0:1:7
+  main 2 = s0:1:1
+  main 3 = s0:2:12
+  main 4 = s0:2:7
+  main 5 = s0:2:1
+  main 6 = s0:3:12
+  main 7 = s0:3:7
+  main 8 = s0:3:1

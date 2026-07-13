@@ -1,1 +1,5 @@
-Runtime error: len expects array or string
+Runtime error at tests/golden/runtime_errors/len_dynamic_invalid_type.cd:4:7: len expects array or string
+  print len(id(123));
+        ^
+Call stack:
+  at main (tests/golden/runtime_errors/len_dynamic_invalid_type.cd:4:7)

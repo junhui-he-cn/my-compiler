@@ -26,3 +26,20 @@ main registers=9:
   r7 = load_var n4
   r8 = native_call n5 [r7]
   print r8
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/native_stdlib_push_pop/input.cd" text="let xs = [1, 2];\npush(xs, 3);\nprint xs;\nprint pop(xs);\n"
+
+debug_locations:
+  main 0 = s0:1:11
+  main 1 = s0:1:14
+  main 2 = s0:1:10
+  main 3 = s0:1:1
+  main 4 = s0:2:6
+  main 5 = s0:2:10
+  main 6 = s0:2:1
+  main 7 = s0:3:7
+  main 8 = s0:3:1
+  main 9 = s0:4:11
+  main 10 = s0:4:7
+  main 11 = s0:4:1

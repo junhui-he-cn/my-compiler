@@ -1,1 +1,5 @@
-Runtime error: array index must be integer
+Runtime error at tests/golden/runtime_errors/array_assign_non_integer_index.cd:2:1: array index must be integer
+  xs[0.5] = 2;
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/array_assign_non_integer_index.cd:2:1)
