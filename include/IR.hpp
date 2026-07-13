@@ -17,6 +17,7 @@ enum class IROp {
     Constant,
     MakeFunction,
     Array,
+    Map,
     Struct,
     Copy,
     LoadVar,
@@ -84,6 +85,7 @@ public:
     IRRegister emitConstant(Value value);
     IRRegister emitMakeFunction(std::size_t functionIndex);
     IRRegister emitArray(std::vector<IRRegister> elements);
+    IRRegister emitMap(std::vector<IRRegister> keyValueRegisters);
     IRRegister emitStruct(
         std::vector<std::size_t> fieldNames,
         std::vector<IRRegister> fieldValues,

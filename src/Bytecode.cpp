@@ -27,6 +27,7 @@ bool isBinary(BytecodeOp op)
     case BytecodeOp::Constant:
     case BytecodeOp::MakeFunction:
     case BytecodeOp::Array:
+    case BytecodeOp::Map:
     case BytecodeOp::Struct:
     case BytecodeOp::Move:
     case BytecodeOp::LoadVar:
@@ -138,6 +139,15 @@ void printInstruction(
                 out << ", ";
             }
             out << instruction.arguments[arg];
+        }
+        out << "]";
+    } else if (instruction.op == BytecodeOp::Map) {
+        out << " [";
+        for (std::size_t arg = 0; arg + 1 < instruction.arguments.size(); arg += 2) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            out << instruction.arguments[arg] << ": " << instruction.arguments[arg + 1];
         }
         out << "]";
     } else if (instruction.op == BytecodeOp::Struct) {
@@ -345,6 +355,8 @@ std::string bytecodeOpName(BytecodeOp op)
         return "make_function";
     case BytecodeOp::Array:
         return "array";
+    case BytecodeOp::Map:
+        return "map";
     case BytecodeOp::Struct:
         return "struct";
     case BytecodeOp::Move:

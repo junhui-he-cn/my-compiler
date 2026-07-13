@@ -65,6 +65,8 @@ BytecodeOp lowerOp(IROp op)
         return BytecodeOp::MakeFunction;
     case IROp::Array:
         return BytecodeOp::Array;
+    case IROp::Map:
+        return BytecodeOp::Map;
     case IROp::Struct:
         return BytecodeOp::Struct;
     case IROp::Copy:

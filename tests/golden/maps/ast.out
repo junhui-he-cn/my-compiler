@@ -1,0 +1,10 @@
+Program
+  Let prices: map<string, number> = (map (entry "tea" 3) (entry "coffee" 5))
+  Print (index prices "tea")
+  Let alias = prices
+  Expr (= (index alias "water") 2)
+  Print (index prices "water")
+  Print (call len prices)
+  Print (member-call prices len)
+  Print (call contains prices "coffee")
+  Print (member-call prices contains "tea")

@@ -29,6 +29,7 @@ bool isBinary(IROp op)
     case IROp::MakeFunction:
     case IROp::Array:
     case IROp::Struct:
+    case IROp::Map:
     case IROp::Copy:
     case IROp::LoadVar:
     case IROp::StoreVar:
@@ -156,6 +157,18 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
                 out << ", ";
             }
             out << instruction.arguments[arg];
+        }
+        out << "]";
+    } else if (instruction.op == IROp::Map) {
+        if (instruction.arguments.size() % 2 != 0) {
+            throw std::logic_error("map expects key/value register pairs");
+        }
+        out << " [";
+        for (std::size_t arg = 0; arg < instruction.arguments.size(); arg += 2) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            out << instruction.arguments[arg] << ": " << instruction.arguments[arg + 1];
         }
         out << "]";
     } else if (instruction.op == IROp::Struct) {
@@ -356,6 +369,16 @@ IRRegister IRProgram::emitArray(std::vector<IRRegister> elements)
 {
     IRRegister dest = makeRegister();
     emit(IRInstruction{IROp::Array, dest, std::nullopt, std::nullopt, std::move(elements), 0});
+    return dest;
+}
+
+IRRegister IRProgram::emitMap(std::vector<IRRegister> keyValueRegisters)
+{
+    if (keyValueRegisters.size() % 2 != 0) {
+        throw std::logic_error("map expects key/value register pairs");
+    }
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::Map, dest, std::nullopt, std::nullopt, std::move(keyValueRegisters), 0});
     return dest;
 }
 
@@ -607,6 +630,8 @@ std::string irOpName(IROp op)
         return "make_function";
     case IROp::Array:
         return "array";
+    case IROp::Map:
+        return "map";
     case IROp::Struct:
         return "struct";
     case IROp::Copy:

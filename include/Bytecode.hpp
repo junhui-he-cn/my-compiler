@@ -17,6 +17,7 @@ enum class BytecodeOp {
     Constant,
     MakeFunction,
     Array,
+    Map,
     Struct,
     Move,
     LoadVar,

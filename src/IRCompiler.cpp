@@ -464,6 +464,10 @@ IRRegister IRCompiler::compileExpression(const Expr& expression)
         return emitArray(*array);
     }
 
+    if (const auto* map = dynamic_cast<const MapExpr*>(&expression)) {
+        return emitMap(*map);
+    }
+
     if (const auto* construct = dynamic_cast<const StructConstructExpr*>(&expression)) {
         return emitStructConstructor(*construct);
     }
@@ -599,6 +603,17 @@ IRRegister IRCompiler::emitArray(const ArrayExpr& expression)
         elements.push_back(compileExpression(*element));
     }
     return ir_.emitArray(std::move(elements));
+}
+
+IRRegister IRCompiler::emitMap(const MapExpr& expression)
+{
+    std::vector<IRRegister> keyValueRegisters;
+    keyValueRegisters.reserve(expression.entries.size() * 2);
+    for (const MapEntry& entry : expression.entries) {
+        keyValueRegisters.push_back(compileExpression(*entry.key));
+        keyValueRegisters.push_back(compileExpression(*entry.value));
+    }
+    return ir_.emitMap(std::move(keyValueRegisters));
 }
 
 IRRegister IRCompiler::emitStructFields(const std::vector<StructField>& fields, std::optional<std::string> typeName)

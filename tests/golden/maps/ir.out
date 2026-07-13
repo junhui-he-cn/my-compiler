@@ -1,0 +1,35 @@
+IR
+0000  v0 = constant #0 "tea"
+0001  v1 = constant #1 3
+0002  v2 = constant #2 "coffee"
+0003  v3 = constant #3 5
+0004  v4 = map [v0: v1, v2: v3]
+0005  store_var @0 prices#0, v4
+0006  v5 = load_var @1 prices#0
+0007  v6 = constant #4 "tea"
+0008  v7 = index v5, v6
+0009  print v7
+0010  v8 = load_var @2 prices#0
+0011  store_var @3 alias#1, v8
+0012  v9 = load_var @4 alias#1
+0013  v10 = constant #5 "water"
+0014  v11 = constant #6 2
+0015  v12 = assign_index v9, v10, v11
+0016  v13 = load_var @5 prices#0
+0017  v14 = constant #7 "water"
+0018  v15 = index v13, v14
+0019  print v15
+0020  v16 = load_var @6 prices#0
+0021  v17 = len v16
+0022  print v17
+0023  v18 = load_var @7 prices#0
+0024  v19 = len v18
+0025  print v19
+0026  v20 = load_var @8 prices#0
+0027  v21 = constant #8 "coffee"
+0028  v22 = native_call @9 contains(v20, v21)
+0029  print v22
+0030  v23 = load_var @10 prices#0
+0031  v24 = constant #9 "tea"
+0032  v25 = native_call @11 contains(v23, v24)
+0033  print v25

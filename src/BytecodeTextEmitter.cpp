@@ -135,6 +135,19 @@ void writeInstruction(std::ostream& out, const BytecodeInstruction& instruction)
         out << reg(requireDest(instruction)) << " = array ";
         writeRegisterList(out, instruction.arguments);
         break;
+    case BytecodeOp::Map:
+        if (instruction.arguments.size() % 2 != 0) {
+            throw std::runtime_error("map expects key/value register pairs");
+        }
+        out << reg(requireDest(instruction)) << " = map [";
+        for (std::size_t i = 0; i < instruction.arguments.size(); i += 2) {
+            if (i != 0) {
+                out << ", ";
+            }
+            out << reg(instruction.arguments[i]) << ": " << reg(instruction.arguments[i + 1]);
+        }
+        out << "]";
+        break;
     case BytecodeOp::Struct:
         if (instruction.arguments.size() != instruction.operands.size()) {
             throw std::runtime_error("struct expects matching field names and values");
