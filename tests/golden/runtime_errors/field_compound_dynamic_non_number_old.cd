@@ -1,2 +1,3 @@
-let value = { count: "bad" };
+struct Counter { count: string }
+let value = Counter { count: "bad" };
 value.count += 1;

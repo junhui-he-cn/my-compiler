@@ -1,2 +1,3 @@
-let person = { name: "Ada" };
+struct Person { name: string }
+let person = Person { name: "Ada" };
 print person.age;

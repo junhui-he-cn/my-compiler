@@ -1,2 +1,2 @@
 struct Person { name: string, age: number }
-let p: Person = { name: "Ada", name: "Grace", age: 36 };
+let p: Person = Person { name: "Ada", name: "Grace", age: 36 };

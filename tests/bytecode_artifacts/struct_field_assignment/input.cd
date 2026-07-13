@@ -1,3 +1,4 @@
-let person = { name: "Ada", age: 36 };
+struct Person { name: string, age: number }
+let person = Person { name: "Ada", age: 36 };
 person.age = 37;
 print person.age;

@@ -1,4 +1,4 @@
 struct Person { name: string }
 struct Pet { name: string }
-let pet: Pet = { name: "Milo" };
+let pet: Pet = Pet { name: "Milo" };
 let person: Person = pet;

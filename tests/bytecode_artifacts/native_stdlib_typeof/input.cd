@@ -1,4 +1,5 @@
 print typeOf(nil);
 print typeOf(1);
 print typeOf([1]);
-print typeOf({ x: 1 });
+struct Box { value: number }
+print typeOf(Box { value: 1 });

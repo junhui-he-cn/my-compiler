@@ -1,6 +1,7 @@
-let a = { x: 1 };
+struct Box { x: number }
+let a = Box { x: 1 };
 let b = a;
-let c = { x: 1 };
+let c = Box { x: 1 };
 print a == b;
 print a == c;
 fun id(value) {

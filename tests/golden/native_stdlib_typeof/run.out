@@ -4,6 +4,5 @@ bool
 string
 function
 array
-struct
 Box
 shadowed
