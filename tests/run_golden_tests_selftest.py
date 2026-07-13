@@ -359,6 +359,27 @@ class GoldenRunnerQualityTests(unittest.TestCase):
         self.assertTrue(results[0].passed)
         self.assertEqual(results[0].name, "module_interface_case --module-interface")
 
+    def test_module_interface_output_absolute_repo_paths_are_checkout_independent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            golden_dir = root / "golden"
+            case_dir = golden_dir / "module_interface_path_case"
+            case_dir.mkdir(parents=True)
+            (case_dir / "input.cd").write_text("print 1;\n", encoding="utf-8")
+            (case_dir / "module-interface.out").write_text(
+                'module 0 entry "/old checkout/tests/golden/module_interface_path_case/input.cd"\n',
+                encoding="utf-8",
+            )
+            compiler = self.make_fake_compiler(
+                root,
+                stdout='module 0 entry "/new checkout/tests/golden/module_interface_path_case/input.cd"\n',
+            )
+
+            results = run_golden_tests.run_all(compiler, golden_dir, update=False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed, results[0].message)
+
 
     def test_success_case_args_txt_replaces_default_input_path_for_ir(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

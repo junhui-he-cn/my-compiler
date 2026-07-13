@@ -33,7 +33,7 @@ def write_text(path: Path, text: str) -> None:
 
 
 def normalize_checkout_paths(text: str) -> str:
-    return re.sub(r"(?:[A-Za-z]:)?[/\\][^\s\n]*?(?=[/\\]tests[/\\]golden[/\\])", "<repo>", text)
+    return re.sub(r"(?:[A-Za-z]:)?[/\\][^\n]*?(?=[/\\]tests[/\\]golden[/\\])", "<repo>", text)
 
 
 def compiler_inputs(case_dir: Path) -> list[Path]:
@@ -170,13 +170,18 @@ def check_success_case(
             )
             continue
 
+        actual = completed.stdout
+        if golden_name == "module-interface.out":
+            actual = normalize_checkout_paths(actual)
+
         if update:
-            write_text(golden_path, completed.stdout)
+            write_text(golden_path, actual)
             results.append(CheckResult(check_name, True))
             continue
 
         expected = read_text(golden_path)
-        actual = completed.stdout
+        if golden_name == "module-interface.out":
+            expected = normalize_checkout_paths(expected)
         if actual != expected:
             diff = unified_diff(expected, actual, "expected", "actual")
             results.append(CheckResult(check_name, False, f"FAIL {check_name} stdout mismatch\n\n{diff}"))
