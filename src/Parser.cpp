@@ -296,6 +296,7 @@ StmtPtr Parser::functionDeclaration()
 {
     Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected function name after `fun`");
+    std::vector<Token> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftParen, "expected `(` after function name");
 
     std::vector<Parameter> parsedParameters = parameters();
@@ -309,10 +310,26 @@ StmtPtr Parser::functionDeclaration()
     return withSpan(
         std::make_unique<FunctionStmt>(
             std::move(name),
+            std::move(parsedTypeParameters),
             std::move(parsedParameters),
             std::move(returnTypeName),
             std::move(body)),
         span);
+}
+
+std::vector<Token> Parser::typeParameters()
+{
+    std::vector<Token> parameters;
+    if (!match(TokenType::Less)) {
+        return parameters;
+    }
+    do {
+        parameters.push_back(consume(
+            TokenType::Identifier,
+            "expected type parameter name after `<` or `,`"));
+    } while (match(TokenType::Comma));
+    consume(TokenType::Greater, "expected `>` after type parameters");
+    return parameters;
 }
 
 StmtPtr Parser::letDeclarationNoSemicolon(const std::string& terminatorMessage)

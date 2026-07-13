@@ -880,8 +880,9 @@ void ContinueStmt::print(std::ostream& out, int indent) const
     out << "Continue\n";
 }
 
-FunctionStmt::FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
+FunctionStmt::FunctionStmt(Token name, std::vector<Token> typeParameters, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
     : name(std::move(name))
+    , typeParameters(std::move(typeParameters))
     , parameters(std::move(parameters))
     , returnTypeName(std::move(returnTypeName))
     , body(std::move(body))
@@ -892,6 +893,16 @@ void FunctionStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
     out << "Fun " << name.lexeme;
+    if (!typeParameters.empty()) {
+        out << '<';
+        for (std::size_t i = 0; i < typeParameters.size(); ++i) {
+            if (i != 0) {
+                out << ", ";
+            }
+            out << typeParameters[i].lexeme;
+        }
+        out << '>';
+    }
     writeParameterList(out, parameters);
     writeReturnAnnotation(out, returnTypeName);
     out << '\n';

@@ -376,10 +376,11 @@ struct ContinueStmt final : Stmt {
 };
 
 struct FunctionStmt final : Stmt {
-    FunctionStmt(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
+    FunctionStmt(Token name, std::vector<Token> typeParameters, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
+    std::vector<Token> typeParameters;
     std::vector<Parameter> parameters;
     std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;

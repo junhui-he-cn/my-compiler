@@ -47,6 +47,7 @@ private:
     StmtPtr functionDeclaration();
     StmtPtr letDeclaration();
     StmtPtr importDeclaration();
+    std::vector<Token> typeParameters();
     std::vector<Parameter> parameters();
     Parameter parameter();
     TypeAnnotation typeAnnotation(const std::string& simpleTypeMessage = "expected type name");
