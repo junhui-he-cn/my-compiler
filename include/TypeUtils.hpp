@@ -13,6 +13,7 @@ enum class StaticType {
     String,
     Function,
     Array,
+    Map,
     Struct,
     Nullable,
     TypeParameter,
@@ -24,6 +25,8 @@ struct TypeInfo {
     std::shared_ptr<TypeInfo> returnType;
     std::optional<std::string> structName;
     std::shared_ptr<TypeInfo> elementType;
+    std::shared_ptr<TypeInfo> keyType;
+    std::shared_ptr<TypeInfo> valueType;
     std::shared_ptr<TypeInfo> nullableOf;
     std::optional<std::string> typeParameterName;
     std::vector<std::string> genericParameters;
@@ -33,6 +36,7 @@ TypeInfo unknownType();
 TypeInfo simpleType(StaticType kind);
 TypeInfo namedStructType(std::string name);
 TypeInfo arrayType(TypeInfo elementType);
+TypeInfo mapType(TypeInfo keyType, TypeInfo valueType);
 TypeInfo typeParameterType(std::string name);
 TypeInfo functionType(
     std::vector<TypeInfo> parameterTypes,

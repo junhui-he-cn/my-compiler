@@ -32,6 +32,15 @@ TypeInfo arrayType(TypeInfo elementType)
     return result;
 }
 
+TypeInfo mapType(TypeInfo keyType, TypeInfo valueType)
+{
+    TypeInfo result;
+    result.kind = StaticType::Map;
+    result.keyType = std::make_shared<TypeInfo>(std::move(keyType));
+    result.valueType = std::make_shared<TypeInfo>(std::move(valueType));
+    return result;
+}
+
 TypeInfo typeParameterType(std::string name)
 {
     TypeInfo result;
@@ -100,6 +109,8 @@ std::string staticTypeName(StaticType type)
         return "function";
     case StaticType::Array:
         return "array";
+    case StaticType::Map:
+        return "map";
     case StaticType::Struct:
         return "struct";
     case StaticType::Nullable:
@@ -123,6 +134,10 @@ std::string typeInfoName(const TypeInfo& type)
 
     if (type.kind == StaticType::Array && type.elementType) {
         return "[" + typeInfoName(*type.elementType) + "]";
+    }
+
+    if (type.kind == StaticType::Map && type.keyType && type.valueType) {
+        return "map<" + typeInfoName(*type.keyType) + ", " + typeInfoName(*type.valueType) + ">";
     }
 
     if (type.kind == StaticType::TypeParameter && type.typeParameterName) {
@@ -192,6 +207,13 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
             return true;
         }
         return compatible(*expected.elementType, *actual.elementType);
+    }
+    if (expected.kind == StaticType::Map) {
+        if (!expected.keyType || !actual.keyType || !expected.valueType || !actual.valueType) {
+            return true;
+        }
+        return compatible(*expected.keyType, *actual.keyType)
+            && compatible(*expected.valueType, *actual.valueType);
     }
     if (expected.kind != StaticType::Function) {
         return true;
