@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::bytecode::{Constant, FunctionBody, Instruction, Program};
+use crate::bytecode::{Constant, DebugLocation, DebugSource, FunctionBody, Instruction, Program};
 use crate::runtime::{
     new_cell, new_environment, ArrayValue, Cell, FunctionValue, SharedEnvironment, StructValue,
 };
@@ -10,13 +10,23 @@ use std::fmt;
 use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StackFrame {
+    pub function: String,
+    pub location: Option<DebugLocation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeError {
     pub message: String,
+    pub location: Option<DebugLocation>,
+    pub stack: Vec<StackFrame>,
+    pub sources: Vec<DebugSource>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bytecode::Function;
 
     fn empty_program() -> Program {
         Program {
@@ -37,6 +47,52 @@ mod tests {
             panic!("expected array");
         };
         array.elements.borrow().clone()
+    }
+
+    fn debug_failure_program() -> Program {
+        let source = DebugSource {
+            path: "demo.cd".to_string(),
+            text: "fun fail() { return 1 / 0; }\nfail();\n".to_string(),
+        };
+        Program {
+            constants: vec![Constant::Number("1".to_string()), Constant::Number("0".to_string())],
+            names: Vec::new(),
+            main: FunctionBody {
+                registers: 2,
+                instructions: vec![
+                    Instruction::MakeFunction { dest: 0, function: 0 },
+                    Instruction::Call {
+                        dest: 1,
+                        callee: 0,
+                        arguments: Vec::new(),
+                    },
+                ],
+                locations: vec![
+                    Some(DebugLocation { source: 0, line: 2, column: 1 }),
+                    Some(DebugLocation { source: 0, line: 2, column: 1 }),
+                ],
+            },
+            functions: vec![Function {
+                index: 0,
+                name: "fail".to_string(),
+                arity: 0,
+                registers: 4,
+                params: Vec::new(),
+                instructions: vec![
+                    Instruction::Constant { dest: 0, constant: 0 },
+                    Instruction::Constant { dest: 1, constant: 1 },
+                    Instruction::Divide { dest: 2, left: 0, right: 1 },
+                    Instruction::Return { value: 2 },
+                ],
+                locations: vec![
+                    Some(DebugLocation { source: 0, line: 1, column: 21 }),
+                    Some(DebugLocation { source: 0, line: 1, column: 25 }),
+                    Some(DebugLocation { source: 0, line: 1, column: 21 }),
+                    Some(DebugLocation { source: 0, line: 1, column: 14 }),
+                ],
+            }],
+            debug_sources: vec![source],
+        }
     }
 
     #[test]
@@ -145,19 +201,135 @@ mod tests {
             "concat expects array as first argument"
         );
     }
+
+    #[test]
+    fn runtime_error_reports_inner_location_then_outer_call_site() {
+        let error = VM::new(&debug_failure_program()).run().unwrap_err();
+        assert_eq!(error.location.as_ref().unwrap().line, 1);
+        assert_eq!(error.stack[0].function, "fail");
+        assert_eq!(error.stack[1].function, "main");
+        assert!(error.to_string().contains("Call stack:\n"));
+        assert!(error.to_string().contains("  fun fail() { return 1 / 0; }\n"));
+    }
+
+    #[test]
+    fn native_failure_uses_native_call_location() {
+        let program = Program {
+            constants: vec![Constant::Nil],
+            names: vec!["sqrt".to_string()],
+            main: FunctionBody {
+                registers: 2,
+                instructions: vec![
+                    Instruction::Constant { dest: 0, constant: 0 },
+                    Instruction::NativeCall {
+                        dest: 1,
+                        name: 0,
+                        arguments: vec![0],
+                    },
+                ],
+                locations: vec![
+                    Some(DebugLocation { source: 0, line: 1, column: 7 }),
+                    Some(DebugLocation { source: 0, line: 1, column: 1 }),
+                ],
+            },
+            functions: Vec::new(),
+            debug_sources: vec![DebugSource {
+                path: "native.cd".to_string(),
+                text: "sqrt(nil);\n".to_string(),
+            }],
+        };
+        let error = VM::new(&program).run().unwrap_err();
+        assert_eq!(error.location.as_ref().unwrap().column, 1);
+        assert!(error.to_string().contains("sqrt(nil);"));
+    }
+
+    #[test]
+    fn metadata_free_runtime_errors_keep_legacy_format() {
+        let error = VM::new(&empty_program()).execute_native_call("sqrt", vec![Value::Nil]).unwrap_err();
+        assert_eq!(error.to_string(), "Runtime error: sqrt expects number");
+    }
+
+    #[test]
+    fn invalid_debug_source_lookup_does_not_panic() {
+        let mut program = debug_failure_program();
+        program.functions[0].locations[2] = Some(DebugLocation { source: 99, line: 1, column: 1 });
+        let error = VM::new(&program).run().unwrap_err();
+        assert!(error.to_string().starts_with("Runtime error: "));
+    }
 }
 
 impl RuntimeError {
     fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
+            location: None,
+            stack: Vec::new(),
+            sources: Vec::new(),
         }
+    }
+
+    fn push_frame(&mut self, function: String, location: Option<DebugLocation>) {
+        self.stack.push(StackFrame { function, location });
+    }
+
+    fn source_location(&self, location: &DebugLocation) -> Option<(&DebugSource, &str)> {
+        let source = self.sources.get(location.source)?;
+        if location.line == 0 || location.column == 0 {
+            return None;
+        }
+        let line = source.text.split('\n').nth(location.line - 1)?;
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        if location.column > line.len() + 1 {
+            return None;
+        }
+        Some((source, line))
     }
 }
 
 impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Runtime error: {}", self.message)
+        let mut output = String::new();
+        if let Some(location) = self.location.as_ref() {
+            if let Some((source, line)) = self.source_location(location) {
+                output.push_str(&format!(
+                    "Runtime error at {}:{}:{}: {}\n",
+                    source.path, location.line, location.column, self.message
+                ));
+                output.push_str(&format!("  {}\n", line));
+                output.push_str(&format!(
+                    "  {}^",
+                    " ".repeat(location.column.saturating_sub(1))
+                ));
+            } else {
+                output.push_str(&format!("Runtime error: {}", self.message));
+            }
+        } else {
+            output.push_str(&format!("Runtime error: {}", self.message));
+        }
+
+        let valid_frames = self
+            .stack
+            .iter()
+            .filter_map(|frame| frame.location.as_ref().map(|location| (frame, location)))
+            .filter(|(_, location)| self.source_location(location).is_some())
+            .collect::<Vec<_>>();
+        if !valid_frames.is_empty() {
+            output.push_str("\nCall stack:\n");
+            for (index, (frame, location)) in valid_frames.iter().enumerate() {
+                let source = self
+                    .sources
+                    .get(location.source)
+                    .expect("validated debug source");
+                if index != 0 {
+                    output.push('\n');
+                }
+                output.push_str(&format!(
+                    "  at {} ({}:{}:{})",
+                    frame.function, source.path, location.line, location.column
+                ));
+            }
+        }
+        write!(f, "{}", output)
     }
 }
 
@@ -167,6 +339,8 @@ struct Frame {
     locals: SharedEnvironment,
     closure: SharedEnvironment,
     is_main: bool,
+    function: String,
+    function_index: Option<usize>,
 }
 
 pub struct VM<'a> {
@@ -197,14 +371,23 @@ impl<'a> VM<'a> {
             locals: new_environment(),
             closure: new_environment(),
             is_main: true,
+            function: "main".to_string(),
+            function_index: None,
         };
         let main = FunctionBody {
             registers: self.program.main.registers,
             instructions: self.program.main.instructions.clone(),
             locations: self.program.main.locations.clone(),
         };
-        self.execute_body(&main, &mut frame)?;
-        Ok(self.output)
+        match self.execute_body(&main, &mut frame) {
+            Ok(_) => Ok(self.output),
+            Err(mut error) => {
+                if error.sources.is_empty() {
+                    error.sources = self.program.debug_sources.clone();
+                }
+                Err(error)
+            }
+        }
     }
 
     fn execute_body(
@@ -215,7 +398,9 @@ impl<'a> VM<'a> {
         frame.ip = 0;
         while frame.ip < body.instructions.len() {
             let instruction = &body.instructions[frame.ip];
-            match instruction {
+            let mut jumped = false;
+            let result = (|| -> Result<Option<Value>, RuntimeError> {
+                match instruction {
                 Instruction::Constant { dest, constant } => {
                     let value = self.constant_value(*constant)?;
                     self.write_register(frame, *dest, value)?;
@@ -278,7 +463,13 @@ impl<'a> VM<'a> {
                     for argument in arguments {
                         values.push(self.read_register(frame, *argument)?);
                     }
-                    let result = self.call_function(function, values)?;
+                    let call_site = body.locations.get(frame.ip).cloned().flatten();
+                    let result = self.call_function(
+                        function,
+                        values,
+                        frame.function.clone(),
+                        call_site,
+                    )?;
                     self.write_register(frame, *dest, result)?;
                 }
                 Instruction::NativeCall {
@@ -360,20 +551,23 @@ impl<'a> VM<'a> {
                 Instruction::Jump { target } => {
                     self.validate_jump_target(*target, body.instructions.len())?;
                     frame.ip = *target;
-                    continue;
+                    jumped = true;
+                    return Ok(None);
                 }
                 Instruction::JumpIfFalse { condition, target } => {
                     self.validate_jump_target(*target, body.instructions.len())?;
                     if !self.read_register(frame, *condition)?.is_truthy() {
                         frame.ip = *target;
-                        continue;
+                        jumped = true;
+                        return Ok(None);
                     }
                 }
                 Instruction::JumpIfTrue { condition, target } => {
                     self.validate_jump_target(*target, body.instructions.len())?;
                     if self.read_register(frame, *condition)?.is_truthy() {
                         frame.ip = *target;
-                        continue;
+                        jumped = true;
+                        return Ok(None);
                     }
                 }
                 Instruction::Index {
@@ -443,8 +637,27 @@ impl<'a> VM<'a> {
                 Instruction::Return { value } => {
                     return Ok(Some(self.read_register(frame, *value)?))
                 }
+                }
+                Ok(None)
+            })();
+            match result {
+                Ok(Some(value)) => return Ok(Some(value)),
+                Ok(None) => {
+                    if !jumped {
+                        frame.ip += 1;
+                    }
+                }
+                Err(mut error) => {
+                    let location = body.locations.get(frame.ip).cloned().flatten();
+                    if error.location.is_none() {
+                        error.location = location.clone();
+                    }
+                    if error.stack.is_empty() {
+                        error.push_frame(frame.function.clone(), location);
+                    }
+                    return Err(error);
+                }
             }
-            frame.ip += 1;
         }
         Ok(None)
     }
@@ -488,22 +701,28 @@ impl<'a> VM<'a> {
         &mut self,
         function: FunctionValue,
         arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
     ) -> Result<Value, RuntimeError> {
-        let bytecode_function = self
-            .program
-            .functions
-            .get(function.function_index)
-            .ok_or_else(|| RuntimeError::new("function index out of range"))?;
+        let Some(bytecode_function) = self.program.functions.get(function.function_index) else {
+            let mut error = RuntimeError::new("function index out of range");
+            error.location = call_site.clone();
+            error.push_frame(caller, call_site);
+            return Err(error);
+        };
         let params = bytecode_function.params.clone();
         let registers = bytecode_function.registers;
         let instructions = bytecode_function.instructions.clone();
 
         if arguments.len() != params.len() {
-            return Err(RuntimeError::new(format!(
+            let mut error = RuntimeError::new(format!(
                 "expected {} arguments but got {}",
                 params.len(),
                 arguments.len()
-            )));
+            ));
+            error.location = call_site.clone();
+            error.push_frame(caller, call_site);
+            return Err(error);
         }
 
         let mut frame = Frame {
@@ -512,6 +731,8 @@ impl<'a> VM<'a> {
             locals: new_environment(),
             closure: function.closure.clone(),
             is_main: false,
+            function: bytecode_function.name.clone(),
+            function_index: Some(function.function_index),
         };
 
         for (index, argument) in arguments.into_iter().enumerate() {
@@ -526,8 +747,16 @@ impl<'a> VM<'a> {
             instructions,
             locations: bytecode_function.locations.clone(),
         };
-        let result = self.execute_body(&body, &mut frame)?;
-        Ok(result.unwrap_or(Value::Nil))
+        match self.execute_body(&body, &mut frame) {
+            Ok(result) => Ok(result.unwrap_or(Value::Nil)),
+            Err(mut error) => {
+                if error.location.is_none() {
+                    error.location = call_site.clone();
+                }
+                error.push_frame(caller, call_site);
+                Err(error)
+            }
+        }
     }
 
     fn make_array(&mut self, elements: Vec<Value>) -> Value {
