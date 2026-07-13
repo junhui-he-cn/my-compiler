@@ -44,21 +44,19 @@ separate-compilation work remain deferred.
 
 ### M3: Language Depth
 
-1. Add focused, non-higher-order collection helpers.
-2. Add source locations and call stacks to runtime diagnostics.
-3. Define Unicode string semantics and make string operations consistent with it.
-4. Add generic type abstraction before exposing strongly typed higher-order
+1. Add source locations and call stacks to runtime diagnostics.
+2. Define Unicode string semantics and make string operations consistent with it.
+3. Add generic type abstraction before exposing strongly typed higher-order
    collection APIs.
-5. Add maps, ranges, and broader `for-in` iteration on top of that collection
+4. Add maps, ranges, and broader `for-in` iteration on top of that collection
    type foundation.
-6. Consider algebraic data types and pattern matching as the next data-modeling
+5. Consider algebraic data types and pattern matching as the next data-modeling
    layer, including the decision on recursive data.
 
 The immediate dependency order is:
 
 ```text
-small collection helpers
--> runtime diagnostics
+runtime diagnostics
 -> Unicode strings
 -> generics
 -> maps, ranges, and iteration
@@ -134,9 +132,12 @@ where practical and preserving bytecode/Rust VM parity.
 
 Future work:
 
-- Start with a small set of non-higher-order collection helpers. Define each
-  helper's mutation, shadowing, runtime-validation, static-checking, and error
-  conventions before selecting the concrete API.
+- The first non-higher-order collection slice is implemented with `contains`,
+  `slice`, `copy`, and `concat` in function and member forms. Returned arrays use
+  shallow-copy semantics and preserve existing static element information where
+  possible.
+- Add further non-higher-order helpers only as focused slices with explicit
+  mutation, shadowing, runtime-validation, static-checking, and error conventions.
 - Defer callback-based helpers such as `map`, `filter`, and `reduce` until
   generic function and collection types have a focused design.
 - Consider migrating legacy `len` lowering onto the generic native-call path if
@@ -282,8 +283,7 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-small collection helpers
--> runtime diagnostics
+runtime diagnostics
 -> Unicode strings
 -> generic collection types
 -> maps, ranges, and iteration

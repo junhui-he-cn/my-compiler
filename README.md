@@ -9,7 +9,8 @@ The language currently supports variables, lexical blocks, `if`/`else`,
 element assignment, numeric compound assignment for variables, array elements, and struct fields, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
-`sqrt`, `str`, `substr`, `charAt`, and `typeOf`.
+`sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`, and
+`typeOf`.
 
 The compiler pipeline includes:
 
@@ -159,11 +160,20 @@ The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3]
 
 The native stdlib functions `push(array, value)` and `pop(array)` mutate arrays in place. `push` appends a value and returns `nil`; `pop` removes and returns the last value. When an array has a known element type, `push` statically checks the appended value and `pop` returns that element type. Arrays are reference values, so aliases observe length changes. Calling `pop([])` is a runtime error. User bindings named `push` or `pop` shadow the stdlib functions, matching `len` shadowing behavior.
 
+The non-mutating array collection helpers are `contains(array, value)`,
+`slice(array, start, length)`, `copy(array)`, and `concat(left, right)`.
+`contains` uses the language's existing equality rules. `slice`, `copy`, and
+`concat` allocate a new top-level array and shallow-copy elements, so nested
+arrays, structs, and closures remain shared. Function-style names are shadowable;
+the corresponding member forms `array.contains(value)`,
+`array.slice(start, length)`, `array.copy()`, and `array.concat(right)` are
+builtin member sugar and are not shadowed by lexical bindings.
+
 The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(number)` each return a number. `sqrt` rejects negative inputs at runtime. User bindings with the same names shadow these stdlib functions.
 
 The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use byte offsets, matching the current `len(string)` byte-length behavior; offsets must be finite integer numbers and in bounds. User bindings with the same names shadow these builtins.
 
-Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `substr`, or `charAt` do not shadow member-call sugar.
+Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `array.contains(value)`, `array.slice(start, length)`, `array.copy()`, `array.concat(right)`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`, `substr`, or `charAt` do not shadow member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
 
