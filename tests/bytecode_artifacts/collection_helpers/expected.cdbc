@@ -1,0 +1,43 @@
+cdbc 0.1
+
+constants:
+  c0 = number 1
+  c1 = number 2
+  c2 = number 2
+  c3 = number 0
+  c4 = number 1
+  c5 = number 3
+
+names:
+  n0 = "xs#0"
+  n1 = "xs#0"
+  n2 = "contains"
+  n3 = "xs#0"
+  n4 = "slice"
+  n5 = "xs#0"
+  n6 = "copy"
+  n7 = "xs#0"
+  n8 = "concat"
+
+main registers=16:
+  r0 = constant c0
+  r1 = constant c1
+  r2 = array [r0, r1]
+  store_var n0, r2
+  r3 = load_var n1
+  r4 = constant c2
+  r5 = native_call n2 [r3, r4]
+  print r5
+  r6 = load_var n3
+  r7 = constant c3
+  r8 = constant c4
+  r9 = native_call n4 [r6, r7, r8]
+  print r9
+  r10 = load_var n5
+  r11 = native_call n6 [r10]
+  print r11
+  r12 = load_var n7
+  r13 = constant c5
+  r14 = array [r13]
+  r15 = native_call n8 [r12, r14]
+  print r15
