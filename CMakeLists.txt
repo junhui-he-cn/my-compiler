@@ -54,6 +54,7 @@ add_executable(compiler_design
     src/ModuleInterfaceEmitter.cpp
     src/NativeStdlib.cpp
     src/Parser.cpp
+    src/SourceMap.cpp
     src/TypeChecker.cpp
     src/TypeUtils.cpp
     src/Value.cpp
@@ -64,7 +65,16 @@ target_include_directories(compiler_design PRIVATE include)
 compiler_design_apply_warnings(compiler_design)
 compiler_design_apply_sanitizers(compiler_design)
 
+add_executable(source_map_tests
+    tests/source_map_tests.cpp
+    src/SourceMap.cpp
+)
+target_include_directories(source_map_tests PRIVATE include)
+compiler_design_apply_warnings(source_map_tests)
+compiler_design_apply_sanitizers(source_map_tests)
+
 enable_testing()
+add_test(NAME source_map COMMAND source_map_tests)
 add_test(
     NAME golden_runner_selftest
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
