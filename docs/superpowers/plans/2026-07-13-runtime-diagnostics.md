@@ -248,7 +248,7 @@ Add an expected artifact that includes the exact sections:
 
 ```text
 debug_sources:
-  s0 path=".../input.cd" text="fun fail() { return 1 / 0; }\\nfail();\\n"
+  s0 path="tests/golden/runtime_diagnostics/input.cd" text="fun fail() { return 1 / 0; }\\nfail();\\n"
 
 debug_locations:
   main 1 = s0:2:1
@@ -269,10 +269,11 @@ opcode or ordinary bytecode text changes.
 
 After all function instructions in `writeBytecodeText`, emit `debug_sources:`
 and `debug_locations:` only when their vectors are non-empty. Use the existing
-`escapedString` format for path/text. Emit main mappings as `main <index> =
-s<source>:<line>:<column>` and function mappings as `function f<index> <index>
-= ...`, sorted by section then instruction index. Do not add locations to
-`--bytecode`/`--ir` human-readable printers.
+`escapedString` format for path/text. Emit main mappings as
+`main 1 = s0:2:1` and function mappings as `function f0 1 = s0:1:22`, with
+source/index values substituted for each real mapping, sorted by section then
+instruction index. Do not add locations to `--bytecode`/`--ir` human-readable
+printers.
 
 - [ ] **Step 4: Run the artifact test and commit**
 
@@ -337,6 +338,16 @@ pub struct FunctionBody {
     pub locations: Vec<Option<DebugLocation>>,
 }
 
+pub struct Function {
+    pub index: usize,
+    pub name: String,
+    pub arity: usize,
+    pub registers: usize,
+    pub params: Vec<String>,
+    pub instructions: Vec<Instruction>,
+    pub locations: Vec<Option<DebugLocation>>,
+}
+
 pub struct Program {
     pub constants: Vec<Constant>,
     pub names: Vec<String>,
@@ -346,7 +357,8 @@ pub struct Program {
 }
 ```
 
-Initialize empty location vectors for all existing unit-test programs. Extend
+Initialize empty location vectors for the main body and every `Function` in all
+existing unit-test programs. Extend
 `format::Parser` so instruction parsing stops at `debug_sources:` and
 `debug_locations:`. Parse quoted path/text entries, then sparse mappings into
 each body's `locations` vector. Validate source indexes, positive coordinates,
@@ -421,6 +433,7 @@ pub struct RuntimeError {
     pub message: String,
     pub location: Option<DebugLocation>,
     pub stack: Vec<StackFrame>,
+    pub sources: Vec<DebugSource>,
 }
 ```
 
@@ -431,7 +444,9 @@ the current instruction's location only when it has none. In `call_function`,
 catch the callee error, append a frame for the caller's `Call` instruction
 location, and rethrow; `run` appends the outer `main` frame. Do not overwrite
 an inner location. Keep direct `execute_native_call` errors with empty stack
-and no location.
+and no location. Before `VM::run` returns an error, copy
+`self.program.debug_sources` into `RuntimeError::sources`; nested error
+wrapping must preserve this field when it is already populated.
 
 - [ ] **Step 4: Render embedded snippets and stacks**
 
@@ -445,8 +460,9 @@ if let Some(location) = self.location.as_ref() {
 }
 ```
 
-Then print `Call stack:` and one `  at name (path:line:column)` per frame only
-when at least one frame has a valid location. Invalid source/line/column
+Then print `Call stack:` and one `  at name (path:line:column)` per frame with a
+valid location when at least one frame has a valid location. Invalid
+source/line/column
 lookups use the legacy one-line message and omit the snippet without panicking.
 `main.rs` continues to print the error to stderr and return code 1.
 
