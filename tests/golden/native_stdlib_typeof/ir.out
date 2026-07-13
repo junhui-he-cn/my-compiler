@@ -23,12 +23,12 @@ IR
 0021  v15 = native_call @7 typeOf(v14)
 0022  print v15
 0023  v16 = constant #8 1
-0024  v17 = struct {value: v16}
-0025  v18 = native_call @9 typeOf(v17)
+0024  v17 = struct Box {value: v16}
+0025  v18 = native_call @10 typeOf(v17)
 0026  print v18
 0027  v19 = make_function $1 <lambda>/1
-0028  store_var @10 typeOf#1, v19
-0029  v20 = load_var @11 typeOf#1
+0028  store_var @11 typeOf#1, v19
+0029  v20 = load_var @12 typeOf#1
 0030  v21 = constant #11 123
 0031  v22 = call v20(v21)
 0032  print v22

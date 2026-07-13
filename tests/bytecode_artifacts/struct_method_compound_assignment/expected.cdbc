@@ -17,10 +17,11 @@ names:
   n7 = "this#1"
   n8 = "value"
   n9 = "__method_Counter_inc#0"
-  n10 = "value"
-  n11 = "c#3"
-  n12 = "__method_Counter_inc#0"
-  n13 = "c#3"
+  n10 = "Counter"
+  n11 = "value"
+  n12 = "c#3"
+  n13 = "__method_Counter_inc#0"
+  n14 = "c#3"
 
 main registers=8:
   r0 = constant c0
@@ -28,10 +29,10 @@ main registers=8:
   r1 = make_function f0
   assign_var n9, r1
   r2 = constant c2
-  r3 = struct {n10: r2}
-  store_var n11, r3
-  r4 = load_var n12
-  r5 = load_var n13
+  r3 = struct n10 {n11: r2}
+  store_var n12, r3
+  r4 = load_var n13
+  r5 = load_var n14
   r6 = constant c3
   r7 = call r4 [r5, r6]
   print r7

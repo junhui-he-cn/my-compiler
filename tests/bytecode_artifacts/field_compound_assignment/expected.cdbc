@@ -5,27 +5,28 @@ constants:
   c1 = number 2
 
 names:
-  n0 = "value"
-  n1 = "c#0"
+  n0 = "Counter"
+  n1 = "value"
   n2 = "c#0"
-  n3 = "value"
-  n4 = "`+=` expects number target"
-  n5 = "`+=` expects number value"
-  n6 = "value"
-  n7 = "c#0"
-  n8 = "value"
+  n3 = "c#0"
+  n4 = "value"
+  n5 = "`+=` expects number target"
+  n6 = "`+=` expects number value"
+  n7 = "value"
+  n8 = "c#0"
+  n9 = "value"
 
 main registers=11:
   r0 = constant c0
-  r1 = struct {n0: r0}
-  store_var n1, r1
-  r2 = load_var n2
-  r3 = field r2, n3
-  r4 = assert_number r3, n4
+  r1 = struct n0 {n1: r0}
+  store_var n2, r1
+  r2 = load_var n3
+  r3 = field r2, n4
+  r4 = assert_number r3, n5
   r5 = constant c1
-  r6 = assert_number r5, n5
+  r6 = assert_number r5, n6
   r7 = add r4, r6
-  r8 = assign_field r2, n6, r7
-  r9 = load_var n7
-  r10 = field r9, n8
+  r8 = assign_field r2, n7, r7
+  r9 = load_var n8
+  r10 = field r9, n9
   print r10

@@ -14,12 +14,13 @@ names:
   n3 = "value"
   n4 = "value"
   n5 = "__method_Counter_inc#0"
-  n6 = "value"
-  n7 = "c#2"
-  n8 = "__method_Counter_inc#0"
-  n9 = "c#2"
+  n6 = "Counter"
+  n7 = "value"
+  n8 = "c#2"
+  n9 = "__method_Counter_inc#0"
   n10 = "c#2"
-  n11 = "value"
+  n11 = "c#2"
+  n12 = "value"
 
 main registers=9:
   r0 = constant c0
@@ -27,13 +28,13 @@ main registers=9:
   r1 = make_function f0
   assign_var n5, r1
   r2 = constant c4
-  r3 = struct {n6: r2}
-  store_var n7, r3
-  r4 = load_var n8
-  r5 = load_var n9
+  r3 = struct n6 {n7: r2}
+  store_var n8, r3
+  r4 = load_var n9
+  r5 = load_var n10
   r6 = call r4 [r5]
-  r7 = load_var n10
-  r8 = field r7, n11
+  r7 = load_var n11
+  r8 = field r7, n12
   print r8
 
 function f0 name="inc" arity=1 registers=8:

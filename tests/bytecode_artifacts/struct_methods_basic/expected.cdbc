@@ -11,10 +11,11 @@ names:
   n1 = "this#1"
   n2 = "name"
   n3 = "__method_Person_label#0"
-  n4 = "name"
-  n5 = "p#2"
-  n6 = "__method_Person_label#0"
-  n7 = "p#2"
+  n4 = "Person"
+  n5 = "name"
+  n6 = "p#2"
+  n7 = "__method_Person_label#0"
+  n8 = "p#2"
 
 main registers=7:
   r0 = constant c0
@@ -22,10 +23,10 @@ main registers=7:
   r1 = make_function f0
   assign_var n3, r1
   r2 = constant c3
-  r3 = struct {n4: r2}
-  store_var n5, r3
-  r4 = load_var n6
-  r5 = load_var n7
+  r3 = struct n4 {n5: r2}
+  store_var n6, r3
+  r4 = load_var n7
+  r5 = load_var n8
   r6 = call r4 [r5]
   print r6
 

@@ -23,12 +23,12 @@ main registers=23
 0021  b15 = native_call @7 typeOf [b14]
 0022  print b15
 0023  b16 = constant #8 1
-0024  b17 = struct { @8 value: b16}
-0025  b18 = native_call @9 typeOf [b17]
+0024  b17 = struct @8 Box { @9 value: b16}
+0025  b18 = native_call @10 typeOf [b17]
 0026  print b18
 0027  b19 = make_function $1 <lambda>/1
-0028  store_var @10 typeOf#1, b19
-0029  b20 = load_var @11 typeOf#1
+0028  store_var @11 typeOf#1, b19
+0029  b20 = load_var @12 typeOf#1
 0030  b21 = constant #11 123
 0031  b22 = call b20(b21)
 0032  print b22
