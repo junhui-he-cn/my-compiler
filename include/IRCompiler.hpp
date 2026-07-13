@@ -6,6 +6,7 @@
 #include "TypeChecker.hpp"
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -41,7 +42,7 @@ private:
     IRRegister emitNativeStdlibCall(const CallExpr& expression);
     IRRegister emitFunctionExpr(const FunctionExpr& expression);
     IRRegister emitArray(const ArrayExpr& expression);
-    IRRegister emitStructFields(const std::vector<StructField>& fields);
+    IRRegister emitStructFields(const std::vector<StructField>& fields, std::optional<std::string> typeName = std::nullopt);
     IRRegister emitStruct(const StructExpr& expression);
     IRRegister emitStructConstructor(const StructConstructExpr& expression);
     IRRegister emitIndex(const IndexExpr& expression);

@@ -28,6 +28,7 @@ bool isBinary(IROp op)
     case IROp::Constant:
     case IROp::MakeFunction:
     case IROp::Array:
+    case IROp::Struct:
     case IROp::Copy:
     case IROp::LoadVar:
     case IROp::StoreVar:
@@ -158,6 +159,14 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
         }
         out << "]";
     } else if (instruction.op == IROp::Struct) {
+        if (instruction.typeNameOperand) {
+            out << " ";
+            if (*instruction.typeNameOperand < program.names().size()) {
+                out << program.names()[*instruction.typeNameOperand];
+            } else {
+                out << "@" << *instruction.typeNameOperand;
+            }
+        }
         out << " {";
         for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
             if (arg != 0) {
@@ -335,11 +344,15 @@ IRRegister IRProgram::emitArray(std::vector<IRRegister> elements)
     return dest;
 }
 
-IRRegister IRProgram::emitStruct(std::vector<std::size_t> fieldNames, std::vector<IRRegister> fieldValues)
+IRRegister IRProgram::emitStruct(
+    std::vector<std::size_t> fieldNames,
+    std::vector<IRRegister> fieldValues,
+    std::optional<std::size_t> typeNameOperand)
 {
     IRRegister dest = makeRegister();
     IRInstruction instruction{IROp::Struct, dest, std::nullopt, std::nullopt, std::move(fieldValues), 0};
     instruction.operands = std::move(fieldNames);
+    instruction.typeNameOperand = typeNameOperand;
     emit(std::move(instruction));
     return dest;
 }

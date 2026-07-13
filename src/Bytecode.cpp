@@ -141,6 +141,9 @@ void printInstruction(
         }
         out << "]";
     } else if (instruction.op == BytecodeOp::Struct) {
+        if (instruction.typeNameOperand) {
+            printNameOperand(out, program, *instruction.typeNameOperand);
+        }
         out << " {";
         for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
             if (arg != 0) {

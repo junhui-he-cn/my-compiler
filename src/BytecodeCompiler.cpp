@@ -48,6 +48,14 @@ std::vector<std::uint32_t> lowerOperands(const std::vector<std::size_t>& operand
     return lowered;
 }
 
+std::optional<std::uint32_t> lowerOperand(std::optional<std::size_t> operand)
+{
+    if (!operand) {
+        return std::nullopt;
+    }
+    return checkedU32(*operand, "operand out of range");
+}
+
 BytecodeOp lowerOp(IROp op)
 {
     switch (op) {
@@ -168,7 +176,8 @@ BytecodeInstruction BytecodeCompiler::lowerInstruction(const IRInstruction& inst
         lowerRegister(instruction.right),
         lowerRegisters(instruction.arguments),
         checkedU32(instruction.operand, "operand out of range"),
-        lowerOperands(instruction.operands)};
+        lowerOperands(instruction.operands),
+        lowerOperand(instruction.typeNameOperand)};
 }
 
 BytecodeFunction BytecodeCompiler::lowerFunction(const IRFunction& function)

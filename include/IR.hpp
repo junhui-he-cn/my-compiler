@@ -56,7 +56,8 @@ struct IRInstruction {
     std::optional<IRRegister> right;
     std::vector<IRRegister> arguments;
     std::size_t operand = 0;
-    std::vector<std::size_t> operands;
+    std::vector<std::size_t> operands{};
+    std::optional<std::size_t> typeNameOperand = std::nullopt;
 };
 
 struct IRFunction {
@@ -77,7 +78,10 @@ public:
     IRRegister emitConstant(Value value);
     IRRegister emitMakeFunction(std::size_t functionIndex);
     IRRegister emitArray(std::vector<IRRegister> elements);
-    IRRegister emitStruct(std::vector<std::size_t> fieldNames, std::vector<IRRegister> fieldValues);
+    IRRegister emitStruct(
+        std::vector<std::size_t> fieldNames,
+        std::vector<IRRegister> fieldValues,
+        std::optional<std::size_t> typeNameOperand = std::nullopt);
     IRRegister emitCopy(IRRegister value);
     void emitCopyTo(IRRegister dest, IRRegister value);
     IRRegister emitLoadVar(std::string name);

@@ -578,17 +578,23 @@ IRRegister IRCompiler::emitArray(const ArrayExpr& expression)
     return ir_.emitArray(std::move(elements));
 }
 
-IRRegister IRCompiler::emitStructFields(const std::vector<StructField>& fields)
+IRRegister IRCompiler::emitStructFields(const std::vector<StructField>& fields, std::optional<std::string> typeName)
 {
     std::vector<std::size_t> names;
     std::vector<IRRegister> values;
     names.reserve(fields.size());
     values.reserve(fields.size());
+
+    std::optional<std::size_t> typeNameOperand;
+    if (typeName) {
+        typeNameOperand = ir_.addName(std::move(*typeName));
+    }
+
     for (const StructField& field : fields) {
         names.push_back(ir_.addName(field.name.lexeme));
         values.push_back(compileExpression(*field.value));
     }
-    return ir_.emitStruct(std::move(names), std::move(values));
+    return ir_.emitStruct(std::move(names), std::move(values), typeNameOperand);
 }
 
 IRRegister IRCompiler::emitStruct(const StructExpr& expression)
@@ -598,7 +604,11 @@ IRRegister IRCompiler::emitStruct(const StructExpr& expression)
 
 IRRegister IRCompiler::emitStructConstructor(const StructConstructExpr& expression)
 {
-    return emitStructFields(expression.fields);
+    std::string typeName = expression.name.lexeme;
+    if (expression.qualifier) {
+        typeName = expression.qualifier->lexeme + "." + typeName;
+    }
+    return emitStructFields(expression.fields, std::move(typeName));
 }
 
 IRRegister IRCompiler::emitIndex(const IndexExpr& expression)

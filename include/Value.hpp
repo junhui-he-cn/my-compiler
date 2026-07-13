@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -67,6 +68,7 @@ struct ArrayValue {
 
 struct StructValue {
     std::size_t identity = 0;
+    std::optional<std::string> typeName;
     std::shared_ptr<std::vector<std::pair<std::string, Value>>> fields;
 };
 

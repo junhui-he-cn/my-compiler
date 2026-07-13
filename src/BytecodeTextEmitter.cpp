@@ -139,7 +139,11 @@ void writeInstruction(std::ostream& out, const BytecodeInstruction& instruction)
         if (instruction.arguments.size() != instruction.operands.size()) {
             throw std::runtime_error("struct expects matching field names and values");
         }
-        out << reg(requireDest(instruction)) << " = struct {";
+        out << reg(requireDest(instruction)) << " = struct";
+        if (instruction.typeNameOperand) {
+            out << ' ' << nameRef(*instruction.typeNameOperand);
+        }
+        out << " {";
         for (std::size_t i = 0; i < instruction.arguments.size(); ++i) {
             if (i != 0) {
                 out << ", ";
