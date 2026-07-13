@@ -203,6 +203,77 @@ mod tests {
     }
 
     #[test]
+    fn native_string_helpers_use_unicode_scalar_boundaries() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let source = Value::string("你🙂e\u{301}");
+
+        let length = vm.execute_len(source.clone()).expect("len succeeds");
+        assert!(matches!(length, Value::Number(value) if value == 4.0));
+
+        let sliced = vm
+            .execute_native_call(
+                "substr",
+                vec![source.clone(), Value::number(1.0), Value::number(2.0)],
+            )
+            .expect("substr succeeds");
+        assert!(matches!(sliced, Value::String(value) if value == "🙂e"));
+
+        let combined = vm
+            .execute_native_call(
+                "substr",
+                vec![source.clone(), Value::number(2.0), Value::number(2.0)],
+            )
+            .expect("combining scalar slice succeeds");
+        assert!(matches!(combined, Value::String(value) if value == "e\u{301}"));
+
+        let character = vm
+            .execute_native_call("charAt", vec![source, Value::number(1.0)])
+            .expect("charAt succeeds");
+        assert!(matches!(character, Value::String(value) if value == "🙂"));
+    }
+
+    #[test]
+    fn native_string_helpers_validate_scalar_boundaries() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let source = Value::string("你🙂");
+
+        let empty = vm
+            .execute_native_call(
+                "substr",
+                vec![source.clone(), Value::number(2.0), Value::number(0.0)],
+            )
+            .expect("empty end slice succeeds");
+        assert!(matches!(empty, Value::String(value) if value.is_empty()));
+
+        for (start, length, expected) in [
+            (3.0, 0.0, "substr start offset out of bounds"),
+            (1.0, 2.0, "substr length out of bounds"),
+            (-1.0, 0.0, "substr start offset out of bounds"),
+            (1.5, 0.0, "substr expects integer start offset"),
+        ] {
+            let error = vm
+                .execute_native_call(
+                    "substr",
+                    vec![source.clone(), Value::number(start), Value::number(length)],
+                )
+                .expect_err("substr should fail");
+            assert_eq!(error.message, expected);
+        }
+
+        for (index, expected) in [
+            (2.0, "charAt index out of bounds"),
+            (1.5, "charAt expects integer index"),
+        ] {
+            let error = vm
+                .execute_native_call("charAt", vec![source.clone(), Value::number(index)])
+                .expect_err("charAt should fail");
+            assert_eq!(error.message, expected);
+        }
+    }
+
+    #[test]
     fn runtime_error_reports_inner_location_then_outer_call_site() {
         let error = VM::new(&debug_failure_program()).run().unwrap_err();
         assert_eq!(error.location.as_ref().unwrap().line, 1);
@@ -868,7 +939,7 @@ impl<'a> VM<'a> {
     fn execute_len(&self, value: Value) -> Result<Value, RuntimeError> {
         match value {
             Value::Array(array) => Ok(Value::number(array.elements.borrow().len() as f64)),
-            Value::String(value) => Ok(Value::number(value.len() as f64)),
+            Value::String(value) => Ok(Value::number(value.chars().count() as f64)),
             _ => Err(RuntimeError::new("len expects array or string")),
         }
     }
@@ -972,6 +1043,15 @@ impl<'a> VM<'a> {
         Ok(value as usize)
     }
 
+    fn string_scalar_offsets(text: &str) -> Vec<usize> {
+        let mut offsets = text
+            .char_indices()
+            .map(|(offset, _)| offset)
+            .collect::<Vec<_>>();
+        offsets.push(text.len());
+        offsets
+    }
+
     fn execute_native_str(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
         if arguments.len() != 1 {
             return Err(RuntimeError::new("str expects 1 arguments"));
@@ -995,25 +1075,26 @@ impl<'a> VM<'a> {
             return Err(RuntimeError::new("substr expects number as third argument"));
         };
 
+        let offsets = Self::string_scalar_offsets(text);
+        let scalar_count = offsets.len() - 1;
         let start = Self::checked_integer_index(
             *start_value,
             "substr expects integer start offset",
             "substr start offset out of bounds",
-            text.len(),
+            scalar_count,
         )?;
         let length = Self::checked_integer_index(
             *length_value,
             "substr expects integer length",
             "substr length out of bounds",
-            text.len(),
+            scalar_count,
         )?;
-        if length > text.len() - start {
+        if length > scalar_count - start {
             return Err(RuntimeError::new("substr length out of bounds"));
         }
-        let bytes = &text.as_bytes()[start..start + length];
-        let value = String::from_utf8(bytes.to_vec())
-            .map_err(|_| RuntimeError::new("substr produced invalid utf-8"))?;
-        Ok(Value::string(value))
+        let begin = offsets[start];
+        let end = offsets[start + length];
+        Ok(Value::string(text[begin..end].to_string()))
     }
 
     fn execute_native_char_at(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
@@ -1028,19 +1109,20 @@ impl<'a> VM<'a> {
                 "charAt expects number as second argument",
             ));
         };
-        if text.is_empty() {
+        let offsets = Self::string_scalar_offsets(text);
+        let scalar_count = offsets.len() - 1;
+        if scalar_count == 0 {
             return Err(RuntimeError::new("charAt index out of bounds"));
         }
         let index = Self::checked_integer_index(
             *index_value,
             "charAt expects integer index",
             "charAt index out of bounds",
-            text.len() - 1,
+            scalar_count - 1,
         )?;
-        let bytes = &text.as_bytes()[index..index + 1];
-        let value = String::from_utf8(bytes.to_vec())
-            .map_err(|_| RuntimeError::new("charAt produced invalid utf-8"))?;
-        Ok(Value::string(value))
+        let begin = offsets[index];
+        let end = offsets[index + 1];
+        Ok(Value::string(text[begin..end].to_string()))
     }
 
     fn execute_native_type_of(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
