@@ -1,1 +1,3 @@
-Type error at 2:32: duplicate field `name` in struct literal
+Type error at 2:39: duplicate field `name` in struct literal
+  let p: Person = Person { name: "Ada", name: "Grace", age: 36 };
+                                        ^

@@ -1,1 +1,6 @@
-Parse error at 1:14: expected `:` after struct field name, found Number `1`
+Parse error at 2:21: expected `:` after struct field name, found Number `1`
+  print Person { name 1 };
+                      ^
+Parse error at 2:24: expected expression
+  print Person { name 1 };
+                         ^

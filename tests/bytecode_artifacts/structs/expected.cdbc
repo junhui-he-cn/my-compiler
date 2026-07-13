@@ -7,33 +7,36 @@ constants:
   c3 = string "p"
 
 names:
-  n0 = "name"
-  n1 = "age"
-  n2 = "person#0"
+  n0 = "Person"
+  n1 = "name"
+  n2 = "age"
   n3 = "person#0"
-  n4 = "name"
-  n5 = "point"
-  n6 = "x"
-  n7 = "label"
-  n8 = "nested#1"
-  n9 = "nested#1"
-  n10 = "point"
-  n11 = "x"
+  n4 = "person#0"
+  n5 = "name"
+  n6 = "Nested"
+  n7 = "point"
+  n8 = "Point"
+  n9 = "x"
+  n10 = "label"
+  n11 = "nested#1"
+  n12 = "nested#1"
+  n13 = "point"
+  n14 = "x"
 
 main registers=12:
   r0 = constant c0
   r1 = constant c1
-  r2 = struct {n0: r0, n1: r1}
-  store_var n2, r2
-  r3 = load_var n3
-  r4 = field r3, n4
+  r2 = struct n0 {n1: r0, n2: r1}
+  store_var n3, r2
+  r3 = load_var n4
+  r4 = field r3, n5
   print r4
   r5 = constant c2
-  r6 = struct {n6: r5}
+  r6 = struct n8 {n9: r5}
   r7 = constant c3
-  r8 = struct {n5: r6, n7: r7}
-  store_var n8, r8
-  r9 = load_var n9
-  r10 = field r9, n10
-  r11 = field r10, n11
+  r8 = struct n6 {n7: r6, n10: r7}
+  store_var n11, r8
+  r9 = load_var n12
+  r10 = field r9, n13
+  r11 = field r10, n14
   print r11

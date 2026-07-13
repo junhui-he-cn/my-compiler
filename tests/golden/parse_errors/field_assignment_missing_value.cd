@@ -1,2 +1,3 @@
-let person = { age: 36 };
+struct Person { age: number }
+let person = Person { age: 36 };
 person.age = ;

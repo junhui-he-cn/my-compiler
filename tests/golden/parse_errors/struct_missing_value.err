@@ -1,1 +1,6 @@
-Parse error at 1:15: expected expression
+Parse error at 2:22: expected expression
+  print Person { name: };
+                       ^
+Parse error at 2:23: expected expression
+  print Person { name: };
+                        ^

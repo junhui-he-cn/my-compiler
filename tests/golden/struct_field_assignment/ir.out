@@ -1,38 +1,38 @@
 IR
 0000  v0 = constant #0 "Ada"
 0001  v1 = constant #1 36
-0002  v2 = struct {name: v0, age: v1}
-0003  store_var @2 person#0, v2
-0004  v3 = load_var @3 person#0
+0002  v2 = struct Person {name: v0, age: v1}
+0003  store_var @3 person#0, v2
+0004  v3 = load_var @4 person#0
 0005  v4 = constant #2 37
 0006  v5 = assign_field v3.age, v4
-0007  v6 = load_var @5 person#0
+0007  v6 = load_var @6 person#0
 0008  v7 = field v6.age
 0009  print v7
-0010  v8 = load_var @7 person#0
+0010  v8 = load_var @8 person#0
 0011  v9 = constant #3 38
 0012  v10 = assign_field v8.age, v9
 0013  print v10
 0014  v11 = constant #4 1
-0015  v12 = struct {x: v11}
-0016  v13 = struct {inner: v12}
-0017  store_var @11 outer#1, v13
-0018  v14 = load_var @12 outer#1
+0015  v12 = struct Inner {x: v11}
+0016  v13 = struct Outer {inner: v12}
+0017  store_var @14 outer#1, v13
+0018  v14 = load_var @15 outer#1
 0019  v15 = field v14.inner
 0020  v16 = constant #5 2
 0021  v17 = assign_field v15.x, v16
-0022  v18 = load_var @15 outer#1
+0022  v18 = load_var @18 outer#1
 0023  v19 = field v18.inner
 0024  v20 = field v19.x
 0025  print v20
 0026  v21 = constant #6 1
-0027  v22 = struct {x: v21}
-0028  store_var @19 a#2, v22
-0029  v23 = load_var @20 a#2
-0030  store_var @21 b#3, v23
-0031  v24 = load_var @22 b#3
+0027  v22 = struct Box {x: v21}
+0028  store_var @23 a#2, v22
+0029  v23 = load_var @24 a#2
+0030  store_var @25 b#3, v23
+0031  v24 = load_var @26 b#3
 0032  v25 = constant #7 3
 0033  v26 = assign_field v24.x, v25
-0034  v27 = load_var @24 a#2
+0034  v27 = load_var @28 a#2
 0035  v28 = field v27.x
 0036  print v28

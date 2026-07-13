@@ -1,1 +1,6 @@
-Parse error at 1:9: expected struct field name, found Colon `:`
+Parse error at 2:16: expected struct field name, found Colon `:`
+  print Person { : 1 };
+                 ^
+Parse error at 2:21: expected expression
+  print Person { : 1 };
+                      ^

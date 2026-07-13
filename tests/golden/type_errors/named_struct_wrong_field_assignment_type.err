@@ -1,1 +1,3 @@
 Type error at 3:3: field `age` expects number, got string
+  p.age = "old";
+    ^

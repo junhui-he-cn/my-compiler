@@ -1,2 +1,3 @@
-let value = { name: "Ada" };
+struct Person { name: string }
+let value = Person { name: "Ada" };
 print value.;

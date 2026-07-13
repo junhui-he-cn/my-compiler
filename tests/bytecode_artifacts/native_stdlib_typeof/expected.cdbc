@@ -10,8 +10,9 @@ names:
   n0 = "typeOf"
   n1 = "typeOf"
   n2 = "typeOf"
-  n3 = "x"
-  n4 = "typeOf"
+  n3 = "Box"
+  n4 = "value"
+  n5 = "typeOf"
 
 main registers=10:
   r0 = constant c0
@@ -25,6 +26,6 @@ main registers=10:
   r6 = native_call n2 [r5]
   print r6
   r7 = constant c3
-  r8 = struct {n3: r7}
-  r9 = native_call n4 [r8]
+  r8 = struct n3 {n4: r7}
+  r9 = native_call n5 [r8]
   print r9

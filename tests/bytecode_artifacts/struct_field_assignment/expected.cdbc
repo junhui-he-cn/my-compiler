@@ -6,22 +6,23 @@ constants:
   c2 = number 37
 
 names:
-  n0 = "name"
-  n1 = "age"
-  n2 = "person#0"
+  n0 = "Person"
+  n1 = "name"
+  n2 = "age"
   n3 = "person#0"
-  n4 = "age"
-  n5 = "person#0"
-  n6 = "age"
+  n4 = "person#0"
+  n5 = "age"
+  n6 = "person#0"
+  n7 = "age"
 
 main registers=8:
   r0 = constant c0
   r1 = constant c1
-  r2 = struct {n0: r0, n1: r1}
-  store_var n2, r2
-  r3 = load_var n3
+  r2 = struct n0 {n1: r0, n2: r1}
+  store_var n3, r2
+  r3 = load_var n4
   r4 = constant c2
-  r5 = assign_field r3, n4, r4
-  r6 = load_var n5
-  r7 = field r6, n6
+  r5 = assign_field r3, n5, r4
+  r6 = load_var n6
+  r7 = field r6, n7
   print r7

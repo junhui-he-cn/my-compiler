@@ -1,6 +1,6 @@
 Program
   Struct Person {name: string, age: number}
-  Let p: Person = (struct age: 36 name: "Ada")
+  Let p: Person = (construct Person age: 36 name: "Ada")
   Print (field p name)
   Expr (= (field p age) 37)
   Print (field p age)

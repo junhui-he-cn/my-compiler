@@ -1,12 +1,16 @@
 Program
-  Let person = (struct name: "Ada" age: 36)
+  Struct Person {name: string, age: number}
+  Struct Inner {x: number}
+  Struct Outer {inner: Inner}
+  Struct Box {x: number}
+  Let person = (construct Person name: "Ada" age: 36)
   Expr (= (field person age) 37)
   Print (field person age)
   Print (= (field person age) 38)
-  Let outer = (struct inner: (struct x: 1))
+  Let outer = (construct Outer inner: (construct Inner x: 1))
   Expr (= (field (field outer inner) x) 2)
   Print (field (field outer inner) x)
-  Let a = (struct x: 1)
+  Let a = (construct Box x: 1)
   Let b = a
   Expr (= (field b x) 3)
   Print (field a x)
