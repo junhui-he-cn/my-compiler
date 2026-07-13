@@ -156,7 +156,7 @@ print person.age;      // 37
 print person.age = 38; // 38
 ```
 
-The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and `len("hello")` returns `5` using the current runtime string byte length. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
+The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and string length counts Unicode scalar values: `len("hello")` is `5` and `len("你🙂")` is `2`. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
 
 The native stdlib functions `push(array, value)` and `pop(array)` mutate arrays in place. `push` appends a value and returns `nil`; `pop` removes and returns the last value. When an array has a known element type, `push` statically checks the appended value and `pop` returns that element type. Arrays are reference values, so aliases observe length changes. Calling `pop([])` is a runtime error. User bindings named `push` or `pop` shadow the stdlib functions, matching `len` shadowing behavior.
 
@@ -171,7 +171,7 @@ builtin member sugar and are not shadowed by lexical bindings.
 
 The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(number)` each return a number. `sqrt` rejects negative inputs at runtime. User bindings with the same names shadow these stdlib functions.
 
-The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use byte offsets, matching the current `len(string)` byte-length behavior; offsets must be finite integer numbers and in bounds. User bindings with the same names shadow these builtins.
+The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use Unicode scalar-value offsets and always return complete UTF-8 values: `substr("你🙂", 1, 1)` is `"🙂"`, and `charAt("你🙂", 1)` is `"🙂"`. Offsets must be finite integer numbers and in bounds. Combining marks are counted as separate scalar values; grapheme segmentation and normalization are not provided. User bindings with the same names shadow these builtins.
 
 Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `array.contains(value)`, `array.slice(start, length)`, `array.copy()`, `array.concat(right)`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`, `substr`, or `charAt` do not shadow member-call sugar.
 

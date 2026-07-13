@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/substr_unicode_length_out_of_bounds.cd:1:1: substr length out of bounds
+  substr("你🙂", 1, 2);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/substr_unicode_length_out_of_bounds.cd:1:1)

@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/char_at_unicode_non_integer_index.cd:1:1: charAt expects integer index
+  charAt("你🙂", 1.5);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/char_at_unicode_non_integer_index.cd:1:1)

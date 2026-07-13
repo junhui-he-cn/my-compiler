@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/char_at_unicode_out_of_bounds.cd:1:1: charAt index out of bounds
+  charAt("你🙂", 2);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/char_at_unicode_out_of_bounds.cd:1:1)

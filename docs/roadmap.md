@@ -189,14 +189,12 @@ Future work:
 
 Goal: make string behavior predictable for non-ASCII source programs.
 
-Future work:
-
-- Choose and document whether language string indexing and length use Unicode
-  scalar values, grapheme clusters, or intentionally remain byte-oriented.
-- If changing the current byte-oriented behavior, update `len`, `substr`, and
-  `charAt` together, including bounds diagnostics and Rust VM parity.
-- Keep text normalization, locale-sensitive collation, and regex support out of
-  the initial Unicode slice.
+Status: implemented across C++ string constants, `.cdbc` artifacts, and the
+Rust VM. `len`, `substr`, and `charAt` count and index Unicode scalar values;
+ASCII behavior and existing bounds diagnostics remain stable. Combining marks
+are intentionally counted separately. Grapheme-cluster segmentation, text
+normalization, locale-sensitive collation, and regex support remain out of
+scope.
 
 ## Phase 17: Generic Collections and Iteration
 

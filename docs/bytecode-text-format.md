@@ -99,6 +99,11 @@ c3 = string "escaped string"
 
 Strings use double quotes and backslash escapes for at least `\\`, `\"`, `\n`, `\r`, and `\t`.
 
+String constants are UTF-8 text. The Rust VM's `len`, `substr`, and `charAt`
+operations interpret string offsets as Unicode scalar-value positions and
+never split a scalar's UTF-8 encoding. Grapheme segmentation and normalization
+are language-level non-goals for this format version.
+
 ## References
 
 References use stable prefixes:
