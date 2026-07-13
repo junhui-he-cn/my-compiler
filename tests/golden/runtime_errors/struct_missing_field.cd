@@ -1,3 +1,5 @@
 struct Person { name: string }
-let person = Person { name: "Ada" };
-print person.age;
+fun fail(person) {
+  print person.age;
+}
+fail(Person { name: "Ada" });

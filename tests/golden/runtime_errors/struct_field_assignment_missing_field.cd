@@ -1,3 +1,5 @@
 struct Empty {}
-let a = Empty {};
-a.missing = 1;
+fun fail(a) {
+  a.missing = 1;
+}
+fail(Empty {});
