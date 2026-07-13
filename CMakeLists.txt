@@ -182,3 +182,11 @@ target_include_directories(module_interface_emitter_tests PRIVATE include)
 compiler_design_apply_warnings(module_interface_emitter_tests)
 compiler_design_apply_sanitizers(module_interface_emitter_tests)
 add_test(NAME module_interface_emitter COMMAND module_interface_emitter_tests)
+
+set_tests_properties(
+    cli_multi_source
+    golden
+    bytecode_artifacts
+    rust_vm
+    PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
