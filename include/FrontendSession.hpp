@@ -29,6 +29,7 @@ public:
 private:
     struct ParsedUnit {
         std::size_t id = 0;
+        std::size_t sourceId = 0;
         std::string path;
         std::string canonicalPath;
         std::string source;
@@ -38,6 +39,7 @@ private:
     };
 
     struct DirectInput {
+        std::size_t sourceId = 0;
         std::string path;
         std::string canonicalPath;
         std::string source;
@@ -53,12 +55,16 @@ private:
     ImportResolution resolveImportPath(const std::filesystem::path& importingPath, const Token& pathToken) const;
     Program assembleProgram();
     void rebuildCombinedSource();
+    void annotateSourceTokens(std::vector<Token>& tokens, std::size_t sourceId) const;
+    void annotateDirectTokens(std::vector<Token>& tokens) const;
 
     std::vector<ParsedUnit> units_;
     std::unordered_map<std::string, std::size_t> canonicalToUnitId_;
     std::vector<std::string> loadingStack_;
     std::vector<std::size_t> entryUnitIds_;
     std::vector<DirectInput> directInputs_;
+    std::vector<SourceFile> sourceFiles_;
+    std::vector<int> directSourceLineStarts_;
     std::vector<Token> directDisplayTokens_;
     std::vector<std::filesystem::path> importSearchPaths_;
     std::string combinedSource_;

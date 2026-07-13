@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <optional>
 #include <ostream>
 #include <string>
 
@@ -69,6 +71,10 @@ struct Token {
     // 1-based source location for diagnostics.
     int line;
     int column;
+    // Source identity and source-local line are populated by FrontendSession.
+    // Parser diagnostics continue to use the combined `line` coordinate.
+    std::optional<std::size_t> source = std::nullopt;
+    std::optional<int> sourceLine = std::nullopt;
 };
 
 std::string tokenTypeName(TokenType type);

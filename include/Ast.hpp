@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SourceMap.hpp"
 #include "Token.hpp"
 
 #include <cstddef>
@@ -14,6 +15,8 @@
 struct Expr {
     virtual ~Expr() = default;
     virtual void print(std::ostream& out) const = 0;
+
+    std::optional<SourceSpan> span;
 };
 
 using ExprPtr = std::unique_ptr<Expr>;
@@ -239,6 +242,8 @@ struct FunctionExpr final : Expr {
 struct Stmt {
     virtual ~Stmt() = default;
     virtual void print(std::ostream& out, int indent) const = 0;
+
+    std::optional<SourceSpan> span;
 };
 
 struct StructDeclStmt final : Stmt {
@@ -390,6 +395,7 @@ struct ReturnStmt final : Stmt {
 
 struct Program {
     std::vector<StmtPtr> statements;
+    std::vector<SourceFile> sources;
 
     // Emit a readable tree view of the parsed program.
     void print(std::ostream& out) const;

@@ -17,6 +17,32 @@ std::string expectedFunStartMessage(const Token& token)
     return message.str();
 }
 
+std::optional<SourceSpan> spanForToken(const Token& token)
+{
+    if (!token.source) {
+        return std::nullopt;
+    }
+    return SourceSpan{
+        *token.source,
+        token.sourceLine.value_or(token.line),
+        token.column,
+    };
+}
+
+template <typename Node>
+std::unique_ptr<Node> withSpan(std::unique_ptr<Node> node, const Token& token)
+{
+    node->span = spanForToken(token);
+    return node;
+}
+
+template <typename Node>
+std::unique_ptr<Node> withSpan(std::unique_ptr<Node> node, const std::optional<SourceSpan>& span)
+{
+    node->span = span;
+    return node;
+}
+
 template <typename VariableBuilder, typename IndexBuilder, typename FieldBuilder>
 ExprPtr buildAssignmentTarget(
     ExprPtr& expr,
@@ -197,16 +223,21 @@ StmtPtr Parser::exportDeclaration()
         consume(TokenType::Semicolon, "expected `;` after export list");
     }
 
-    return std::make_unique<ExportStmt>(std::move(keyword), std::move(names), std::move(sourcePath));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<ExportStmt>(std::move(keyword), std::move(names), std::move(sourcePath)),
+        span);
 }
 
 StmtPtr Parser::structDeclaration()
 {
+    Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected struct name after `struct`");
     consume(TokenType::LeftBrace, "expected `{` after struct name");
     std::vector<StructFieldDecl> fields = structFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
-    return std::make_unique<StructDeclStmt>(std::move(name), std::move(fields));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<StructDeclStmt>(std::move(name), std::move(fields)), span);
 }
 
 std::vector<StructFieldDecl> Parser::structFields()
@@ -230,6 +261,7 @@ StructFieldDecl Parser::structField()
 
 StmtPtr Parser::implDeclaration()
 {
+    Token keyword = previous();
     Token typeName = consume(TokenType::Identifier, "expected struct name after `impl`");
     consume(TokenType::LeftBrace, "expected `{` after impl type name");
     std::vector<MethodDecl> methods;
@@ -237,7 +269,8 @@ StmtPtr Parser::implDeclaration()
         methods.push_back(methodDeclaration());
     }
     consume(TokenType::RightBrace, "expected `}` after impl methods");
-    return std::make_unique<ImplStmt>(std::move(typeName), std::move(methods));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<ImplStmt>(std::move(typeName), std::move(methods)), span);
 }
 
 MethodDecl Parser::methodDeclaration()
@@ -261,6 +294,7 @@ MethodDecl Parser::methodDeclaration()
 
 StmtPtr Parser::functionDeclaration()
 {
+    Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected function name after `fun`");
     consume(TokenType::LeftParen, "expected `(` after function name");
 
@@ -271,15 +305,19 @@ StmtPtr Parser::functionDeclaration()
     ++blockDepth_;
     std::vector<StmtPtr> body = blockStatements();
     --blockDepth_;
-    return std::make_unique<FunctionStmt>(
-        std::move(name),
-        std::move(parsedParameters),
-        std::move(returnTypeName),
-        std::move(body));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<FunctionStmt>(
+            std::move(name),
+            std::move(parsedParameters),
+            std::move(returnTypeName),
+            std::move(body)),
+        span);
 }
 
 StmtPtr Parser::letDeclarationNoSemicolon(const std::string& terminatorMessage)
 {
+    Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected variable name after `let`");
 
     std::optional<TypeAnnotation> typeName;
@@ -293,7 +331,10 @@ StmtPtr Parser::letDeclarationNoSemicolon(const std::string& terminatorMessage)
     if (!terminatorMessage.empty()) {
         consume(TokenType::Semicolon, terminatorMessage);
     }
-    return std::make_unique<LetStmt>(std::move(name), std::move(typeName), std::move(initializer));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<LetStmt>(std::move(name), std::move(typeName), std::move(initializer)),
+        span);
 }
 
 StmtPtr Parser::letDeclaration()
@@ -310,7 +351,10 @@ StmtPtr Parser::importDeclaration()
         alias = consume(TokenType::Identifier, "expected namespace alias after `as`");
     }
     consume(TokenType::Semicolon, alias ? "expected `;` after import alias" : "expected `;` after import path");
-    return std::make_unique<ImportStmt>(std::move(keyword), std::move(path), std::move(alias));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<ImportStmt>(std::move(keyword), std::move(path), std::move(alias)),
+        span);
 }
 
 std::vector<Parameter> Parser::parameters()
@@ -421,6 +465,7 @@ StmtPtr Parser::statement()
 
 StmtPtr Parser::ifStatement()
 {
+    Token keyword = previous();
     ExprPtr condition = conditionExpression();
     consume(TokenType::LeftBrace, "expected `{` after if condition");
     StmtPtr thenBranch = blockStatement();
@@ -431,7 +476,10 @@ StmtPtr Parser::ifStatement()
         elseBranch = blockStatement();
     }
 
-    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch)),
+        span);
 }
 
 StmtPtr Parser::forInitializer()
@@ -474,7 +522,10 @@ StmtPtr Parser::forStatement()
     consume(TokenType::LeftBrace, "expected `{` after for clauses");
     StmtPtr body = blockStatement();
 
-    return std::make_unique<ForStmt>(std::move(keyword), std::move(initializer), std::move(condition), std::move(increment), std::move(body));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<ForStmt>(std::move(keyword), std::move(initializer), std::move(condition), std::move(increment), std::move(body)),
+        span);
 }
 
 StmtPtr Parser::forInStatement(Token keyword, Token variable)
@@ -485,37 +536,46 @@ StmtPtr Parser::forInStatement(Token keyword, Token variable)
     ExprPtr iterable = conditionExpression();
     consume(TokenType::LeftBrace, "expected `{` after for-in iterable");
     StmtPtr body = blockStatement();
-    return std::make_unique<ForInStmt>(std::move(keyword), std::move(variable), std::move(iterable), std::move(body));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<ForInStmt>(std::move(keyword), std::move(variable), std::move(iterable), std::move(body)),
+        span);
 }
 
 StmtPtr Parser::whileStatement()
 {
+    Token keyword = previous();
     ExprPtr condition = conditionExpression();
     consume(TokenType::LeftBrace, "expected `{` after while condition");
     StmtPtr body = blockStatement();
-    return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<WhileStmt>(std::move(condition), std::move(body)), span);
 }
 
 StmtPtr Parser::breakStatement()
 {
     Token keyword = previous();
     consume(TokenType::Semicolon, "expected `;` after break");
-    return std::make_unique<BreakStmt>(std::move(keyword));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<BreakStmt>(std::move(keyword)), span);
 }
 
 StmtPtr Parser::continueStatement()
 {
     Token keyword = previous();
     consume(TokenType::Semicolon, "expected `;` after continue");
-    return std::make_unique<ContinueStmt>(std::move(keyword));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<ContinueStmt>(std::move(keyword)), span);
 }
 
 StmtPtr Parser::blockStatement()
 {
+    Token brace = previous();
     ++blockDepth_;
     std::vector<StmtPtr> statements = blockStatements();
     --blockDepth_;
-    return std::make_unique<BlockStmt>(std::move(statements));
+    const std::optional<SourceSpan> span = spanForToken(brace);
+    return withSpan(std::make_unique<BlockStmt>(std::move(statements)), span);
 }
 
 std::vector<StmtPtr> Parser::blockStatements()
@@ -532,9 +592,11 @@ std::vector<StmtPtr> Parser::blockStatements()
 
 StmtPtr Parser::printStatement()
 {
+    Token keyword = previous();
     ExprPtr value = expression();
     consume(TokenType::Semicolon, "expected `;` after print value");
-    return std::make_unique<PrintStmt>(std::move(value));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<PrintStmt>(std::move(value)), span);
 }
 
 StmtPtr Parser::returnStatement()
@@ -545,13 +607,15 @@ StmtPtr Parser::returnStatement()
         value = expression();
     }
     consume(TokenType::Semicolon, "expected `;` after return value");
-    return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<ReturnStmt>(std::move(keyword), std::move(value)), span);
 }
 
 StmtPtr Parser::expressionStatementNoSemicolon()
 {
     ExprPtr value = expression();
-    return std::make_unique<ExpressionStmt>(std::move(value));
+    std::optional<SourceSpan> span = value ? value->span : std::nullopt;
+    return withSpan(std::make_unique<ExpressionStmt>(std::move(value)), span);
 }
 
 StmtPtr Parser::expressionStatement()
@@ -583,6 +647,7 @@ ExprPtr Parser::assignment()
         Token equals = previous();
         ExprPtr value = assignment();
 
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
         ExprPtr assignment = buildAssignmentTarget(
             expr,
             [&](Token name) -> ExprPtr {
@@ -596,6 +661,7 @@ ExprPtr Parser::assignment()
                 return std::make_unique<FieldAssignExpr>(std::move(object), std::move(name), std::move(value));
             });
         if (assignment) {
+            assignment->span = span;
             return assignment;
         }
 
@@ -606,6 +672,7 @@ ExprPtr Parser::assignment()
         Token op = previous();
         ExprPtr value = assignment();
 
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
         ExprPtr assignment = buildAssignmentTarget(
             expr,
             [&](Token name) -> ExprPtr {
@@ -619,6 +686,7 @@ ExprPtr Parser::assignment()
                 return std::make_unique<FieldCompoundAssignExpr>(std::move(object), std::move(name), std::move(op), std::move(value));
             });
         if (assignment) {
+            assignment->span = span;
             return assignment;
         }
 
@@ -642,7 +710,10 @@ ExprPtr Parser::logicalOr()
     while (match(TokenType::PipePipe)) {
         Token op = previous();
         ExprPtr right = logicalAnd();
-        expr = std::make_unique<LogicalExpr>(std::move(expr), std::move(op), std::move(right));
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
+        expr = withSpan(
+            std::make_unique<LogicalExpr>(std::move(expr), std::move(op), std::move(right)),
+            span);
     }
     return expr;
 }
@@ -653,7 +724,10 @@ ExprPtr Parser::logicalAnd()
     while (match(TokenType::AmpersandAmpersand)) {
         Token op = previous();
         ExprPtr right = equality();
-        expr = std::make_unique<LogicalExpr>(std::move(expr), std::move(op), std::move(right));
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
+        expr = withSpan(
+            std::make_unique<LogicalExpr>(std::move(expr), std::move(op), std::move(right)),
+            span);
     }
     return expr;
 }
@@ -666,7 +740,10 @@ ExprPtr Parser::equality()
     while (match(TokenType::BangEqual) || match(TokenType::EqualEqual)) {
         Token op = previous();
         ExprPtr right = comparison();
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
+        expr = withSpan(
+            std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right)),
+            span);
     }
     return expr;
 }
@@ -678,7 +755,10 @@ ExprPtr Parser::comparison()
         || match(TokenType::Less) || match(TokenType::LessEqual)) {
         Token op = previous();
         ExprPtr right = term();
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
+        expr = withSpan(
+            std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right)),
+            span);
     }
     return expr;
 }
@@ -689,7 +769,10 @@ ExprPtr Parser::term()
     while (match(TokenType::Minus) || match(TokenType::Plus)) {
         Token op = previous();
         ExprPtr right = factor();
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
+        expr = withSpan(
+            std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right)),
+            span);
     }
     return expr;
 }
@@ -700,7 +783,10 @@ ExprPtr Parser::factor()
     while (match(TokenType::Slash) || match(TokenType::Star)) {
         Token op = previous();
         ExprPtr right = unary();
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+        const std::optional<SourceSpan> span = expr ? expr->span : std::nullopt;
+        expr = withSpan(
+            std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right)),
+            span);
     }
     return expr;
 }
@@ -710,7 +796,8 @@ ExprPtr Parser::unary()
     if (match(TokenType::Bang) || match(TokenType::Minus)) {
         Token op = previous();
         ExprPtr right = unary();
-        return std::make_unique<UnaryExpr>(std::move(op), std::move(right));
+        const std::optional<SourceSpan> span = spanForToken(op);
+        return withSpan(std::make_unique<UnaryExpr>(std::move(op), std::move(right)), span);
     }
 
     return call();
@@ -735,6 +822,7 @@ ExprPtr Parser::call()
 
 ExprPtr Parser::finishCall(ExprPtr callee)
 {
+    const std::optional<SourceSpan> span = callee ? callee->span : std::nullopt;
     std::vector<ExprPtr> arguments;
     if (!check(TokenType::RightParen)) {
         do {
@@ -746,28 +834,37 @@ ExprPtr Parser::finishCall(ExprPtr callee)
     if (auto* field = dynamic_cast<FieldAccessExpr*>(callee.get())) {
         ExprPtr receiver = std::move(field->object);
         Token name = std::move(field->name);
-        return std::make_unique<MemberCallExpr>(std::move(receiver), std::move(name), std::move(paren), std::move(arguments));
+        return withSpan(
+            std::make_unique<MemberCallExpr>(std::move(receiver), std::move(name), std::move(paren), std::move(arguments)),
+            span);
     }
 
-    return std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments));
+    return withSpan(
+        std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments)),
+        span);
 }
 
 ExprPtr Parser::finishIndex(ExprPtr collection)
 {
+    const std::optional<SourceSpan> span = collection ? collection->span : std::nullopt;
     Token bracket = previous();
     ExprPtr index = expression();
     consume(TokenType::RightBracket, "expected `]` after index");
-    return std::make_unique<IndexExpr>(std::move(collection), std::move(bracket), std::move(index));
+    return withSpan(
+        std::make_unique<IndexExpr>(std::move(collection), std::move(bracket), std::move(index)),
+        span);
 }
 
 ExprPtr Parser::finishFieldAccess(ExprPtr object)
 {
+    const std::optional<SourceSpan> span = object ? object->span : std::nullopt;
     Token name = consume(TokenType::Identifier, "expected field name after `.`");
-    return std::make_unique<FieldAccessExpr>(std::move(object), std::move(name));
+    return withSpan(std::make_unique<FieldAccessExpr>(std::move(object), std::move(name)), span);
 }
 
 ExprPtr Parser::arrayLiteral(Token bracket)
 {
+    const std::optional<SourceSpan> span = spanForToken(bracket);
     std::vector<ExprPtr> elements;
     if (!check(TokenType::RightBracket)) {
         do {
@@ -775,7 +872,7 @@ ExprPtr Parser::arrayLiteral(Token bracket)
         } while (match(TokenType::Comma));
     }
     consume(TokenType::RightBracket, "expected `]` after array elements");
-    return std::make_unique<ArrayExpr>(std::move(bracket), std::move(elements));
+    return withSpan(std::make_unique<ArrayExpr>(std::move(bracket), std::move(elements)), span);
 }
 
 std::vector<StructField> Parser::structLiteralFields()
@@ -795,10 +892,13 @@ std::vector<StructField> Parser::structLiteralFields()
 ExprPtr Parser::structConstructor()
 {
     Token name = consume(TokenType::Identifier, "expected struct constructor name");
+    const std::optional<SourceSpan> span = spanForToken(name);
     consume(TokenType::LeftBrace, "expected `{` after struct constructor name");
     std::vector<StructField> fields = structLiteralFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
-    return std::make_unique<StructConstructExpr>(std::nullopt, std::move(name), std::move(fields));
+    return withSpan(
+        std::make_unique<StructConstructExpr>(std::nullopt, std::move(name), std::move(fields)),
+        span);
 }
 
 bool Parser::isQualifiedStructConstructorStart() const
@@ -813,12 +913,15 @@ bool Parser::isQualifiedStructConstructorStart() const
 ExprPtr Parser::qualifiedStructConstructor()
 {
     Token qualifier = consume(TokenType::Identifier, "expected namespace alias before `.`");
+    const std::optional<SourceSpan> span = spanForToken(qualifier);
     consume(TokenType::Dot, "expected `.` after namespace alias");
     Token name = consume(TokenType::Identifier, "expected struct constructor name after `.`");
     consume(TokenType::LeftBrace, "expected `{` after struct constructor name");
     std::vector<StructField> fields = structLiteralFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
-    return std::make_unique<StructConstructExpr>(std::move(qualifier), std::move(name), std::move(fields));
+    return withSpan(
+        std::make_unique<StructConstructExpr>(std::move(qualifier), std::move(name), std::move(fields)),
+        span);
 }
 
 ExprPtr Parser::functionExpression()
@@ -833,11 +936,14 @@ ExprPtr Parser::functionExpression()
     ++blockDepth_;
     std::vector<StmtPtr> body = blockStatements();
     --blockDepth_;
-    return std::make_unique<FunctionExpr>(
-        std::move(keyword),
-        std::move(parsedParameters),
-        std::move(returnTypeName),
-        std::move(body));
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(
+        std::make_unique<FunctionExpr>(
+            std::move(keyword),
+            std::move(parsedParameters),
+            std::move(returnTypeName),
+            std::move(body)),
+        span);
 }
 
 ExprPtr Parser::primary()
@@ -846,16 +952,17 @@ ExprPtr Parser::primary()
         return functionExpression();
     }
     if (match(TokenType::False)) {
-        return std::make_unique<LiteralExpr>("false");
+        return withSpan(std::make_unique<LiteralExpr>("false"), previous());
     }
     if (match(TokenType::True)) {
-        return std::make_unique<LiteralExpr>("true");
+        return withSpan(std::make_unique<LiteralExpr>("true"), previous());
     }
     if (match(TokenType::Nil)) {
-        return std::make_unique<LiteralExpr>("nil");
+        return withSpan(std::make_unique<LiteralExpr>("nil"), previous());
     }
     if (match(TokenType::Number) || match(TokenType::String)) {
-        return std::make_unique<LiteralExpr>(previous().lexeme);
+        Token token = previous();
+        return withSpan(std::make_unique<LiteralExpr>(token.lexeme), token);
     }
     if (match(TokenType::LeftBracket)) {
         Token bracket = previous();
@@ -871,12 +978,14 @@ ExprPtr Parser::primary()
         return structConstructor();
     }
     if (match(TokenType::Identifier)) {
-        return std::make_unique<VariableExpr>(previous());
+        Token name = previous();
+        return withSpan(std::make_unique<VariableExpr>(name), name);
     }
     if (match(TokenType::LeftParen)) {
+        Token paren = previous();
         ExprPtr expr = expression();
         consume(TokenType::RightParen, "expected `)` after expression");
-        return std::make_unique<GroupingExpr>(std::move(expr));
+        return withSpan(std::make_unique<GroupingExpr>(std::move(expr)), paren);
     }
 
     throw ParseError(peek(), "expected expression");

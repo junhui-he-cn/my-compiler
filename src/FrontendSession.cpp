@@ -177,11 +177,18 @@ FileDiagnosticErrorList fileDiagnosticListFromParseErrors(
 ParsedSource parseSource(
     const std::string& path,
     const std::string& source,
-    bool pathlessDiagnostics)
+    bool pathlessDiagnostics,
+    std::optional<std::size_t> sourceId = std::nullopt)
 {
     try {
         Lexer lexer(source);
         std::vector<Token> tokens = lexer.scanTokens();
+        if (sourceId) {
+            for (Token& token : tokens) {
+                token.source = sourceId;
+                token.sourceLine = token.line;
+            }
+        }
         Parser parser(tokens);
         Program program = parser.parse();
         return ParsedSource{std::move(tokens), std::move(program.statements)};
@@ -252,6 +259,8 @@ void FrontendSession::reset()
     loadingStack_.clear();
     entryUnitIds_.clear();
     directInputs_.clear();
+    sourceFiles_.clear();
+    directSourceLineStarts_.clear();
     directDisplayTokens_.clear();
     combinedSource_.clear();
     hasImports_ = false;
@@ -262,6 +271,34 @@ void FrontendSession::setImportSearchPaths(std::vector<std::string> paths)
     importSearchPaths_.clear();
     for (const std::string& path : paths) {
         importSearchPaths_.push_back(std::filesystem::path(path).lexically_normal());
+    }
+}
+
+void FrontendSession::annotateSourceTokens(std::vector<Token>& tokens, std::size_t sourceId) const
+{
+    for (Token& token : tokens) {
+        token.source = sourceId;
+        token.sourceLine = token.line;
+    }
+}
+
+void FrontendSession::annotateDirectTokens(std::vector<Token>& tokens) const
+{
+    for (Token& token : tokens) {
+        std::size_t sourceIndex = directInputs_.empty() ? 0 : directInputs_.size() - 1;
+        int sourceStart = 1;
+        for (std::size_t index = 0; index < directSourceLineStarts_.size(); ++index) {
+            if (token.line >= directSourceLineStarts_[index]) {
+                sourceIndex = index;
+                sourceStart = directSourceLineStarts_[index];
+            } else {
+                break;
+            }
+        }
+        if (sourceIndex < directInputs_.size()) {
+            token.source = directInputs_[sourceIndex].sourceId;
+            token.sourceLine = token.line - sourceStart + 1;
+        }
     }
 }
 
@@ -311,7 +348,8 @@ Program FrontendSession::loadStdin(std::istream& input)
     reset();
 
     std::string source = readAll(input);
-    ParsedSource parsed = parseSource("<stdin>", source, true);
+    sourceFiles_.push_back(SourceFile{"<stdin>", source});
+    ParsedSource parsed = parseSource("<stdin>", source, true, 0);
     if (hasImportToken(parsed.tokens)) {
         throw DiagnosticError(DiagnosticKind::Import, "import is not supported from stdin");
     }
@@ -324,6 +362,7 @@ Program FrontendSession::loadStdin(std::istream& input)
 
     units_.push_back(ParsedUnit{
         0,
+        0,
         "<stdin>",
         "<stdin>",
         std::move(source),
@@ -333,7 +372,9 @@ Program FrontendSession::loadStdin(std::istream& input)
     });
     entryUnitIds_.push_back(0);
     rebuildCombinedSource();
-    return assembleProgram();
+    Program program = assembleProgram();
+    program.sources = sourceFiles_;
+    return program;
 }
 
 Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
@@ -357,8 +398,11 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
         }
 
         std::string source = readAll(input);
+        const std::size_t sourceId = sourceFiles_.size();
+        sourceFiles_.push_back(SourceFile{displayPath, source});
         directInputIds.emplace(canonicalPath, directInputs_.size());
         directInputs_.push_back(DirectInput{
+            sourceId,
             displayPath,
             canonicalPath,
             std::move(source),
@@ -366,6 +410,11 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
     }
 
     for (const DirectInput& input : directInputs_) {
+        int sourceStart = lineAtEnd(combinedSource_);
+        if (!combinedSource_.empty() && combinedSource_.back() != '\n') {
+            ++sourceStart;
+        }
+        directSourceLineStarts_.push_back(sourceStart);
         appendWithNewlineSeparation(combinedSource_, input.source);
     }
     Program directProgram;
@@ -375,6 +424,7 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
         hasImports = !directDisplayTokens_.empty()
             && directDisplayTokens_.back().type == TokenType::Import;
         if (!hasImports) {
+            annotateDirectTokens(directDisplayTokens_);
             Parser parser(directDisplayTokens_);
             directProgram = parser.parse();
             hasImports = programLoadsSource(directProgram);
@@ -392,11 +442,14 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
     }
 
     if (!hasImports) {
+        directProgram.sources = sourceFiles_;
         return directProgram;
     }
 
     directInputs_.clear();
     directDisplayTokens_.clear();
+    sourceFiles_.clear();
+    directSourceLineStarts_.clear();
     for (const std::string& path : paths) {
         const std::size_t id = loadFile(path, false, true, true);
         if (std::find(entryUnitIds_.begin(), entryUnitIds_.end(), id) == entryUnitIds_.end()) {
@@ -443,10 +496,13 @@ std::size_t FrontendSession::loadFile(
     loadingStack_.push_back(canonicalPath);
     try {
         std::string source = readAll(input);
+        const std::size_t sourceId = sourceFiles_.size();
+        sourceFiles_.push_back(SourceFile{displayPath, source});
         std::vector<Token> tokens;
         try {
             Lexer lexer(source);
             tokens = lexer.scanTokens();
+            annotateSourceTokens(tokens, sourceId);
         } catch (const DiagnosticError& error) {
             if (error.location()) {
                 throw FileDiagnosticError(
@@ -484,6 +540,7 @@ std::size_t FrontendSession::loadFile(
 
         ParsedUnit unit{
             0,
+            sourceId,
             displayPath,
             canonicalPath,
             std::move(source),
@@ -523,6 +580,7 @@ std::size_t FrontendSession::loadFile(
 Program FrontendSession::assembleProgram()
 {
     Program program;
+    program.sources = sourceFiles_;
     if (hasImports_) {
         for (ParsedUnit& unit : units_) {
             program.statements.push_back(std::make_unique<ModuleStmt>(

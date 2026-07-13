@@ -145,6 +145,27 @@ void test_explicit_relative_import_does_not_use_search_path(const fs::path& root
         "failed to open import: " + pathString(app / "missing"));
 }
 
+void test_direct_inputs_preserve_source_spans(const fs::path& root)
+{
+    fs::remove_all(root);
+    const fs::path first = root / "first.cd";
+    const fs::path second = root / "second.cd";
+    writeFile(first, "print 1;\n");
+    writeFile(second, "print 2;\n");
+
+    FrontendSession session;
+    Program program = session.loadFiles({first.string(), second.string()});
+
+    assert(program.sources.size() == 2);
+    assert(program.sources[0].path == pathString(first));
+    assert(program.sources[1].path == pathString(second));
+    const auto* firstPrint = dynamic_cast<const PrintStmt*>(program.statements.front().get());
+    assert(firstPrint != nullptr);
+    assert(firstPrint->span.has_value());
+    assert(firstPrint->span->source == 0);
+    assert(firstPrint->span->line == 1);
+}
+
 } // namespace
 
 int main()
@@ -155,6 +176,7 @@ int main()
     test_search_path_resolves_extensionless_import_and_reexport(root / "search_reexport");
     test_importing_file_directory_precedes_search_path(root / "precedence");
     test_explicit_relative_import_does_not_use_search_path(root / "explicit_no_fallback");
+    test_direct_inputs_preserve_source_spans(root / "direct_sources");
 
     fs::remove_all(root);
 }
