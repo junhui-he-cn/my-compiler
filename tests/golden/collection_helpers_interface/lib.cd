@@ -1,0 +1,8 @@
+let numbers: [number] = [1, 2];
+let maybeNumbers: [number?] = [nil];
+let sliced = slice(numbers, 0, 1);
+let copied = numbers.copy();
+let nullable = concat(numbers, maybeNumbers);
+let mixed = numbers.concat(["x"]);
+let present = contains(numbers, 1);
+export sliced, copied, nullable, mixed, present;

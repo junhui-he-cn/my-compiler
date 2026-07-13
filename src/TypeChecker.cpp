@@ -31,6 +31,27 @@ TypeInfo mergeReturnTypes(const TypeInfo& current, const TypeInfo& next)
     return unknownType();
 }
 
+TypeInfo copiedArrayType(const TypeInfo& source)
+{
+    if (source.kind == StaticType::Array && source.elementType) {
+        return arrayType(*source.elementType);
+    }
+    return simpleType(StaticType::Array);
+}
+
+TypeInfo concatenatedArrayType(const TypeInfo& left, const TypeInfo& right)
+{
+    if (left.kind != StaticType::Array || right.kind != StaticType::Array
+        || !left.elementType || !right.elementType) {
+        return simpleType(StaticType::Array);
+    }
+    std::optional<TypeInfo> merged = mergeArrayElementTypes(*left.elementType, *right.elementType);
+    if (!merged) {
+        return simpleType(StaticType::Array);
+    }
+    return arrayType(std::move(*merged));
+}
+
 std::string binaryTypesMessage(const BinaryExpr& expression, const TypeInfo& left, const TypeInfo& right)
 {
     return "binary `" + expression.op.lexeme + "` expects numbers, got "
@@ -1158,7 +1179,9 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
 
 bool TypeChecker::isBuiltinMemberName(const std::string& name) const
 {
-    return name == "push" || name == "pop" || name == "len" || name == "substr" || name == "charAt";
+    return name == "push" || name == "pop" || name == "len"
+        || name == "substr" || name == "charAt"
+        || name == "contains" || name == "slice" || name == "copy" || name == "concat";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -2007,6 +2030,62 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     case NativeFunctionKind::TypeOf:
         checkExpressionInfo(*expression.arguments[0]);
         return CheckedExpression{simpleType(StaticType::String)};
+    case NativeFunctionKind::Contains: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (arrayArgument.type.kind != StaticType::Unknown && arrayArgument.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "contains expects array as first argument, got " + typeInfoName(arrayArgument.type));
+        }
+        const TypeInfo* expectedElement = arrayArgument.type.kind == StaticType::Array
+            ? arrayArgument.type.elementType.get()
+            : nullptr;
+        const CheckedExpression valueArgument = checkExpressionInfo(*expression.arguments[1], expectedElement);
+        if (expectedElement && !compatible(*expectedElement, valueArgument.type)) {
+            throw TypeError(expression.paren,
+                "contains value expects " + typeInfoName(*expectedElement)
+                    + ", got " + typeInfoName(valueArgument.type));
+        }
+        return CheckedExpression{simpleType(StaticType::Bool)};
+    }
+    case NativeFunctionKind::Slice: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (arrayArgument.type.kind != StaticType::Unknown && arrayArgument.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "slice expects array as first argument, got " + typeInfoName(arrayArgument.type));
+        }
+        const CheckedExpression startArgument = checkExpressionInfo(*expression.arguments[1]);
+        if (startArgument.type.kind != StaticType::Unknown && startArgument.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "slice expects number as second argument, got " + typeInfoName(startArgument.type));
+        }
+        const CheckedExpression lengthArgument = checkExpressionInfo(*expression.arguments[2]);
+        if (lengthArgument.type.kind != StaticType::Unknown && lengthArgument.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "slice expects number as third argument, got " + typeInfoName(lengthArgument.type));
+        }
+        return CheckedExpression{copiedArrayType(arrayArgument.type)};
+    }
+    case NativeFunctionKind::Copy: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (arrayArgument.type.kind != StaticType::Unknown && arrayArgument.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "copy expects array as first argument, got " + typeInfoName(arrayArgument.type));
+        }
+        return CheckedExpression{copiedArrayType(arrayArgument.type)};
+    }
+    case NativeFunctionKind::Concat: {
+        const CheckedExpression leftArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (leftArgument.type.kind != StaticType::Unknown && leftArgument.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "concat expects array as first argument, got " + typeInfoName(leftArgument.type));
+        }
+        const CheckedExpression rightArgument = checkExpressionInfo(*expression.arguments[1]);
+        if (rightArgument.type.kind != StaticType::Unknown && rightArgument.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "concat expects array as second argument, got " + typeInfoName(rightArgument.type));
+        }
+        return CheckedExpression{concatenatedArrayType(leftArgument.type, rightArgument.type)};
+    }
     }
 
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
@@ -2136,6 +2215,65 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
             return CheckedExpression{*receiver.type.elementType};
         }
         return CheckedExpression{unknownType()};
+    }
+
+    if (name == "contains") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren, "contains expects array receiver, got " + typeInfoName(receiver.type));
+        }
+        const TypeInfo* expectedElement = receiver.type.kind == StaticType::Array
+            ? receiver.type.elementType.get()
+            : nullptr;
+        const CheckedExpression value = checkExpressionInfo(*expression.arguments[0], expectedElement);
+        if (expectedElement && !compatible(*expectedElement, value.type)) {
+            throw TypeError(expression.paren,
+                "contains value expects " + typeInfoName(*expectedElement) + ", got " + typeInfoName(value.type));
+        }
+        return CheckedExpression{simpleType(StaticType::Bool)};
+    }
+
+    if (name == "slice") {
+        expectArity(2);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren, "slice expects array receiver, got " + typeInfoName(receiver.type));
+        }
+        const CheckedExpression start = checkExpressionInfo(*expression.arguments[0]);
+        if (start.type.kind != StaticType::Unknown && start.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "slice expects number as first argument, got " + typeInfoName(start.type));
+        }
+        const CheckedExpression length = checkExpressionInfo(*expression.arguments[1]);
+        if (length.type.kind != StaticType::Unknown && length.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "slice expects number as second argument, got " + typeInfoName(length.type));
+        }
+        return CheckedExpression{copiedArrayType(receiver.type)};
+    }
+
+    if (name == "copy") {
+        expectArity(0);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren, "copy expects array receiver, got " + typeInfoName(receiver.type));
+        }
+        return CheckedExpression{copiedArrayType(receiver.type)};
+    }
+
+    if (name == "concat") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren, "concat expects array receiver, got " + typeInfoName(receiver.type));
+        }
+        const CheckedExpression right = checkExpressionInfo(*expression.arguments[0]);
+        if (right.type.kind != StaticType::Unknown && right.type.kind != StaticType::Array) {
+            throw TypeError(expression.paren,
+                "concat expects array as first argument, got " + typeInfoName(right.type));
+        }
+        return CheckedExpression{concatenatedArrayType(receiver.type, right.type)};
     }
 
     if (name == "len") {

@@ -535,7 +535,11 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
     if (expression.name.lexeme == "push"
         || expression.name.lexeme == "pop"
         || expression.name.lexeme == "substr"
-        || expression.name.lexeme == "charAt") {
+        || expression.name.lexeme == "charAt"
+        || expression.name.lexeme == "contains"
+        || expression.name.lexeme == "slice"
+        || expression.name.lexeme == "copy"
+        || expression.name.lexeme == "concat") {
         std::vector<IRRegister> arguments;
         arguments.push_back(receiver);
         for (const auto& argument : expression.arguments) {

@@ -14,6 +14,10 @@ enum class NativeFunctionKind {
     Substr,
     CharAt,
     TypeOf,
+    Contains,
+    Slice,
+    Copy,
+    Concat,
 };
 
 struct NativeFunctionSignature {
