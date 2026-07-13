@@ -139,7 +139,6 @@ arguments   = expression,
 
 array       = "[", [ arguments ], "]" ;
 
-struct      = "{", [ fields ], "}" ;
 
 structConstructor = [ identifier, "." ], identifier, "{", [ fields ], "}" ;
 
@@ -160,7 +159,6 @@ primary     = functionExpr
             | string
             | array
             | structConstructor
-            | struct
             | identifier
             | "(", expression, ")" ;
 

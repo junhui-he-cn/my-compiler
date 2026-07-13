@@ -88,7 +88,9 @@ without expanding into object-system features prematurely.
 Current status:
 
 - Named constructor-created struct values expose their attached runtime struct name
-  through `typeOf`; anonymous struct values still report `struct`.
+  through `typeOf`.
+- Source-level anonymous struct literals are removed; users construct only
+  declared named structs with `Name { ... }` or `alias.Name { ... }`.
 - Struct methods are available on exported/imported named structs through direct,
   namespace, and re-export imports.
 
