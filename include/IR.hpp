@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SourceMap.hpp"
 #include "Value.hpp"
 
 #include <cstddef>
@@ -58,6 +59,7 @@ struct IRInstruction {
     std::size_t operand = 0;
     std::vector<std::size_t> operands{};
     std::optional<std::size_t> typeNameOperand = std::nullopt;
+    std::optional<SourceSpan> span = std::nullopt;
 };
 
 struct IRFunction {
@@ -69,6 +71,10 @@ struct IRFunction {
 
 class IRProgram {
 public:
+    void setSources(std::vector<SourceFile> sources);
+    const std::vector<SourceFile>& sources() const;
+    void setCurrentSpan(std::optional<SourceSpan> span);
+
     std::size_t addConstant(Value value);
     std::size_t addName(std::string name);
     IRRegister makeRegister();
@@ -125,6 +131,8 @@ private:
     std::size_t registerCount_ = 0;
     std::vector<IRFunction> functionStack_;
     std::vector<IRFunction> functions_;
+    std::vector<SourceFile> sources_;
+    std::optional<SourceSpan> currentSpan_;
 };
 
 std::string irOpName(IROp op);

@@ -287,6 +287,21 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
 
 } // namespace
 
+void IRProgram::setSources(std::vector<SourceFile> sources)
+{
+    sources_ = std::move(sources);
+}
+
+const std::vector<SourceFile>& IRProgram::sources() const
+{
+    return sources_;
+}
+
+void IRProgram::setCurrentSpan(std::optional<SourceSpan> span)
+{
+    currentSpan_ = std::move(span);
+}
+
 std::size_t IRProgram::addConstant(Value value)
 {
     constants_.push_back(std::move(value));
@@ -575,6 +590,7 @@ void IRProgram::print(std::ostream& out) const
 
 void IRProgram::emit(IRInstruction instruction)
 {
+    instruction.span = currentSpan_;
     if (hasActiveFunction(functionStack_)) {
         activeFunction(functionStack_).instructions.push_back(std::move(instruction));
         return;

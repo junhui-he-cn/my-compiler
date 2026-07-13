@@ -37,9 +37,30 @@ IRCompileError::IRCompileError(std::string message)
 {
 }
 
+IRCompiler::SpanScope::SpanScope(IRCompiler& owner, const std::optional<SourceSpan>& span)
+    : owner_(owner)
+    , previous_(owner.currentSpan_)
+{
+    owner_.setCurrentSpan(span);
+}
+
+IRCompiler::SpanScope::~SpanScope()
+{
+    owner_.setCurrentSpan(previous_);
+}
+
+void IRCompiler::setCurrentSpan(std::optional<SourceSpan> span)
+{
+    currentSpan_ = std::move(span);
+    ir_.setCurrentSpan(currentSpan_);
+}
+
 IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resolvedNames)
 {
     ir_ = IRProgram();
+    ir_.setSources(program.sources);
+    currentSpan_ = std::nullopt;
+    ir_.setCurrentSpan(std::nullopt);
     resolvedNames_ = &resolvedNames;
     modules_.clear();
     compiledModules_.clear();
@@ -61,6 +82,7 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
 
 void IRCompiler::compileStatement(const Stmt& statement)
 {
+    SpanScope scope(*this, statement.span);
     if (const auto* module = dynamic_cast<const ModuleStmt*>(&statement)) {
         if (module->isEntry) {
             compileModule(*module);
@@ -372,6 +394,7 @@ void IRCompiler::compileForIn(const ForInStmt& statement)
 
 IRRegister IRCompiler::compileExpression(const Expr& expression)
 {
+    SpanScope scope(*this, expression.span);
     if (const auto* literal = dynamic_cast<const LiteralExpr*>(&expression)) {
         return ir_.emitConstant(literalValue(literal->value));
     }

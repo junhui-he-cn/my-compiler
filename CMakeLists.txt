@@ -73,8 +73,30 @@ target_include_directories(source_map_tests PRIVATE include)
 compiler_design_apply_warnings(source_map_tests)
 compiler_design_apply_sanitizers(source_map_tests)
 
+add_executable(ir_source_location_tests
+    tests/ir_source_location_tests.cpp
+    src/Ast.cpp
+    src/Diagnostic.cpp
+    src/FlowFacts.cpp
+    src/FrontendSession.cpp
+    src/IR.cpp
+    src/IRCompiler.cpp
+    src/Lexer.cpp
+    src/ModuleSymbols.cpp
+    src/NativeStdlib.cpp
+    src/Parser.cpp
+    src/SourceMap.cpp
+    src/TypeChecker.cpp
+    src/TypeUtils.cpp
+    src/Value.cpp
+)
+target_include_directories(ir_source_location_tests PRIVATE include)
+compiler_design_apply_warnings(ir_source_location_tests)
+compiler_design_apply_sanitizers(ir_source_location_tests)
+
 enable_testing()
 add_test(NAME source_map COMMAND source_map_tests)
+add_test(NAME ir_source_location COMMAND ir_source_location_tests)
 add_test(
     NAME golden_runner_selftest
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1

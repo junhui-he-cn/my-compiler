@@ -22,6 +22,18 @@ public:
     IRProgram compile(const Program& program, const ResolvedNames& resolvedNames);
 
 private:
+    class SpanScope {
+    public:
+        SpanScope(IRCompiler& owner, const std::optional<SourceSpan>& span);
+        ~SpanScope();
+
+    private:
+        IRCompiler& owner_;
+        std::optional<SourceSpan> previous_;
+    };
+
+    void setCurrentSpan(std::optional<SourceSpan> span);
+
     void compileStatement(const Stmt& statement);
     void compileModule(const ModuleStmt& module);
     void compileFunctionStatement(const FunctionStmt& function);
@@ -72,4 +84,5 @@ private:
     std::unordered_set<std::size_t> compiledModules_;
     std::vector<LoopContext> loopContexts_;
     std::size_t nextSyntheticName_ = 0;
+    std::optional<SourceSpan> currentSpan_;
 };
