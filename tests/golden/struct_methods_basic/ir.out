@@ -9,14 +9,14 @@ IR
 0007  assign_var @7 __method_Person_nextAge#1, v3
 0008  v4 = constant #6 "Ada"
 0009  v5 = constant #7 36
-0010  v6 = struct {name: v4, age: v5}
-0011  store_var @10 p#4, v6
-0012  v7 = load_var @11 __method_Person_label#0
-0013  v8 = load_var @12 p#4
+0010  v6 = struct Person {name: v4, age: v5}
+0011  store_var @11 p#4, v6
+0012  v7 = load_var @12 __method_Person_label#0
+0013  v8 = load_var @13 p#4
 0014  v9 = call v7(v8)
 0015  print v9
-0016  v10 = load_var @13 __method_Person_nextAge#1
-0017  v11 = load_var @14 p#4
+0016  v10 = load_var @14 __method_Person_nextAge#1
+0017  v11 = load_var @15 p#4
 0018  v12 = call v10(v11)
 0019  print v12
 

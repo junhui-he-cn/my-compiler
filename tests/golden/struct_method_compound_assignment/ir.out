@@ -4,14 +4,14 @@ IR
 0002  v1 = make_function $0 inc/2
 0003  assign_var @9 __method_Counter_inc#0, v1
 0004  v2 = constant #2 1
-0005  v3 = struct {value: v2}
-0006  store_var @11 c#3, v3
-0007  v4 = load_var @12 __method_Counter_inc#0
-0008  v5 = load_var @13 c#3
+0005  v3 = struct Counter {value: v2}
+0006  store_var @12 c#3, v3
+0007  v4 = load_var @13 __method_Counter_inc#0
+0008  v5 = load_var @14 c#3
 0009  v6 = constant #3 4
 0010  v7 = call v4(v5, v6)
 0011  print v7
-0012  v8 = load_var @14 c#3
+0012  v8 = load_var @15 c#3
 0013  v9 = field v8.value
 0014  print v9
 
