@@ -5,5 +5,5 @@ string
 function
 array
 struct
-struct
+Box
 shadowed

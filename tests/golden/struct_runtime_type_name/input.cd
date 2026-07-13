@@ -1,0 +1,7 @@
+struct Person { name: string }
+let p = Person { name: "Ada" };
+let q = p;
+q.name = "Grace";
+print typeOf(p);
+print p.name;
+print typeOf({ name: "Ada" });

@@ -1,0 +1,15 @@
+cdbc 0.1
+
+constants:
+  c0 = number 1
+
+names:
+  n0 = "Box"
+  n1 = "value"
+  n2 = "typeOf"
+
+main registers=3:
+  r0 = constant c0
+  r1 = struct n0 {n1: r0}
+  r2 = native_call n2 [r1]
+  print r2
