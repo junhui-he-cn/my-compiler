@@ -262,6 +262,28 @@ void writeInstructions(std::ostream& out, const std::vector<BytecodeInstruction>
     }
 }
 
+bool hasDebugLocations(const BytecodeProgram& program)
+{
+    for (const BytecodeInstruction& instruction : program.instructions()) {
+        if (instruction.span) {
+            return true;
+        }
+    }
+    for (const BytecodeFunction& function : program.functions()) {
+        for (const BytecodeInstruction& instruction : function.instructions) {
+            if (instruction.span) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void writeDebugLocation(std::ostream& out, const std::string& section, std::size_t index, const SourceSpan& span)
+{
+    out << "  " << section << ' ' << index << " = s" << span.source << ':' << span.line << ':' << span.column << '\n';
+}
+
 } // namespace
 
 void writeBytecodeText(std::ostream& out, const BytecodeProgram& program)
@@ -291,5 +313,35 @@ void writeBytecodeText(std::ostream& out, const BytecodeProgram& program)
             out << "  param " << parameter << " = " << escapedString(function.parameters[parameter]) << '\n';
         }
         writeInstructions(out, function.instructions);
+    }
+
+    if (!program.sources().empty()) {
+        out << "\ndebug_sources:\n";
+        for (std::size_t index = 0; index < program.sources().size(); ++index) {
+            const SourceFile& source = program.sources()[index];
+            out << "  s" << index
+                << " path=" << escapedString(source.path)
+                << " text=" << escapedString(source.text)
+                << '\n';
+        }
+    }
+
+    if (hasDebugLocations(program)) {
+        out << "\ndebug_locations:\n";
+        for (std::size_t index = 0; index < program.instructions().size(); ++index) {
+            const auto& instruction = program.instructions()[index];
+            if (instruction.span) {
+                writeDebugLocation(out, "main", index, *instruction.span);
+            }
+        }
+        for (std::size_t functionIndex = 0; functionIndex < program.functions().size(); ++functionIndex) {
+            const BytecodeFunction& function = program.functions()[functionIndex];
+            for (std::size_t instructionIndex = 0; instructionIndex < function.instructions.size(); ++instructionIndex) {
+                const auto& instruction = function.instructions[instructionIndex];
+                if (instruction.span) {
+                    writeDebugLocation(out, "function f" + std::to_string(functionIndex), instructionIndex, *instruction.span);
+                }
+            }
+        }
     }
 }

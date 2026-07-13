@@ -35,6 +35,24 @@ std::string pathString(const std::filesystem::path& path)
     return path.lexically_normal().generic_string();
 }
 
+std::string sourceMetadataPath(const std::string& displayPath)
+{
+    const std::filesystem::path path(displayPath);
+    if (!path.is_absolute()) {
+        return displayPath;
+    }
+
+    std::error_code error;
+    const std::filesystem::path relative = std::filesystem::relative(
+        path,
+        std::filesystem::current_path(error),
+        error);
+    if (!error && !relative.empty()) {
+        return pathString(relative);
+    }
+    return displayPath;
+}
+
 std::string displayCycle(const std::vector<std::string>& stack, const std::string& repeated)
 {
     const auto found = std::find(stack.begin(), stack.end(), repeated);
@@ -399,7 +417,7 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
 
         std::string source = readAll(input);
         const std::size_t sourceId = sourceFiles_.size();
-        sourceFiles_.push_back(SourceFile{displayPath, source});
+        sourceFiles_.push_back(SourceFile{sourceMetadataPath(displayPath), source});
         directInputIds.emplace(canonicalPath, directInputs_.size());
         directInputs_.push_back(DirectInput{
             sourceId,
@@ -497,7 +515,7 @@ std::size_t FrontendSession::loadFile(
     try {
         std::string source = readAll(input);
         const std::size_t sourceId = sourceFiles_.size();
-        sourceFiles_.push_back(SourceFile{displayPath, source});
+        sourceFiles_.push_back(SourceFile{sourceMetadataPath(displayPath), source});
         std::vector<Token> tokens;
         try {
             Lexer lexer(source);

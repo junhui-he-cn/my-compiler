@@ -142,6 +142,7 @@ BytecodeCompileError::BytecodeCompileError(std::string message)
 BytecodeProgram BytecodeCompiler::compile(const IRProgram& ir)
 {
     BytecodeProgram program;
+    program.setSources(ir.sources());
     program.setConstants(ir.constants());
     program.setNames(ir.names());
     program.setRegisterCount(checkedU32(ir.registerCount(), "register index out of range"));
@@ -177,7 +178,8 @@ BytecodeInstruction BytecodeCompiler::lowerInstruction(const IRInstruction& inst
         lowerRegisters(instruction.arguments),
         checkedU32(instruction.operand, "operand out of range"),
         lowerOperands(instruction.operands),
-        lowerOperand(instruction.typeNameOperand)};
+        lowerOperand(instruction.typeNameOperand),
+        instruction.span};
 }
 
 BytecodeFunction BytecodeCompiler::lowerFunction(const IRFunction& function)

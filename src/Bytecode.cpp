@@ -258,6 +258,16 @@ void printInstruction(
 
 } // namespace
 
+void BytecodeProgram::setSources(std::vector<SourceFile> sources)
+{
+    sources_ = std::move(sources);
+}
+
+const std::vector<SourceFile>& BytecodeProgram::sources() const
+{
+    return sources_;
+}
+
 void BytecodeProgram::setConstants(std::vector<Value> constants)
 {
     constants_ = std::move(constants);

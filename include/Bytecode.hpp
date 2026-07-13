@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SourceMap.hpp"
 #include "Value.hpp"
 
 #include <cstdint>
@@ -58,6 +59,7 @@ struct BytecodeInstruction {
     std::uint32_t operand = 0;
     std::vector<std::uint32_t> operands{};
     std::optional<std::uint32_t> typeNameOperand = std::nullopt;
+    std::optional<SourceSpan> span = std::nullopt;
 };
 
 struct BytecodeFunction {
@@ -69,6 +71,9 @@ struct BytecodeFunction {
 
 class BytecodeProgram {
 public:
+    void setSources(std::vector<SourceFile> sources);
+    const std::vector<SourceFile>& sources() const;
+
     void setConstants(std::vector<Value> constants);
     void setNames(std::vector<std::string> names);
     void setInstructions(std::vector<BytecodeInstruction> instructions);
@@ -89,6 +94,7 @@ private:
     std::vector<BytecodeInstruction> instructions_;
     std::uint32_t registerCount_ = 0;
     std::vector<BytecodeFunction> functions_;
+    std::vector<SourceFile> sources_;
 };
 
 std::string bytecodeOpName(BytecodeOp op);
