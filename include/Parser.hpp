@@ -86,6 +86,7 @@ private:
     ExprPtr finishIndex(ExprPtr collection);
     ExprPtr finishFieldAccess(ExprPtr object);
     ExprPtr arrayLiteral(Token bracket);
+    ExprPtr mapLiteral(Token brace);
     std::vector<StructField> structLiteralFields();
     ExprPtr structConstructor();
     ExprPtr qualifiedStructConstructor();

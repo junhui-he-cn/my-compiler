@@ -416,6 +416,21 @@ TypeAnnotation Parser::typeAnnotation(const std::string& simpleTypeMessage)
         return annotation;
     }
 
+    if (checkContextualIdentifier("map") && checkNext(TokenType::Less)) {
+        Token mapToken = advance();
+        consume(TokenType::Less, "expected `<` after `map` type");
+        TypeAnnotation keyType = typeAnnotation("expected map key type after `<`");
+        consume(TokenType::Comma, "expected `,` between map key and value types");
+        TypeAnnotation valueType = typeAnnotation("expected map value type after `,`");
+        consume(TokenType::Greater, "expected `>` after map value type");
+        TypeAnnotation annotation = TypeAnnotation::map(
+            std::move(mapToken), std::move(keyType), std::move(valueType));
+        if (match(TokenType::Question)) {
+            annotation = TypeAnnotation::nullable(previous(), std::move(annotation));
+        }
+        return annotation;
+    }
+
     if (match(TokenType::Fun)) {
         Token keyword = previous();
         consume(TokenType::LeftParen, "expected `(` after `fun` in function type");
@@ -892,6 +907,22 @@ ExprPtr Parser::arrayLiteral(Token bracket)
     return withSpan(std::make_unique<ArrayExpr>(std::move(bracket), std::move(elements)), span);
 }
 
+ExprPtr Parser::mapLiteral(Token brace)
+{
+    const std::optional<SourceSpan> span = spanForToken(brace);
+    std::vector<MapEntry> entries;
+    if (!check(TokenType::RightBrace)) {
+        do {
+            ExprPtr key = expression();
+            Token colon = consume(TokenType::Colon, "expected `:` after map key");
+            ExprPtr value = expression();
+            entries.push_back(MapEntry{std::move(key), std::move(colon), std::move(value)});
+        } while (match(TokenType::Comma));
+    }
+    consume(TokenType::RightBrace, "expected `}` after map entries");
+    return withSpan(std::make_unique<MapExpr>(std::move(brace), std::move(entries)), span);
+}
+
 std::vector<StructField> Parser::structLiteralFields()
 {
     std::vector<StructField> fields;
@@ -985,8 +1016,9 @@ ExprPtr Parser::primary()
         Token bracket = previous();
         return arrayLiteral(std::move(bracket));
     }
-    if (check(TokenType::LeftBrace)) {
-        throw ParseError(peek(), "anonymous struct literals are not supported; use StructName { ... }");
+    if (match(TokenType::LeftBrace)) {
+        Token brace = previous();
+        return mapLiteral(std::move(brace));
     }
     if (allowStructConstructors_ && isQualifiedStructConstructorStart()) {
         return qualifiedStructConstructor();

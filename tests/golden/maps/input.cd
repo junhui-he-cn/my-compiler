@@ -1,0 +1,2 @@
+let prices: map<string, number> = {"tea": 3, "coffee": 5};
+print prices["tea"];
