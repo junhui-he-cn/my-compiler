@@ -25,8 +25,10 @@ mod tests {
             main: FunctionBody {
                 registers: 0,
                 instructions: Vec::new(),
+                locations: Vec::new(),
             },
             functions: Vec::new(),
+            debug_sources: Vec::new(),
         }
     }
 
@@ -199,6 +201,7 @@ impl<'a> VM<'a> {
         let main = FunctionBody {
             registers: self.program.main.registers,
             instructions: self.program.main.instructions.clone(),
+            locations: self.program.main.locations.clone(),
         };
         self.execute_body(&main, &mut frame)?;
         Ok(self.output)
@@ -521,6 +524,7 @@ impl<'a> VM<'a> {
         let body = FunctionBody {
             registers,
             instructions,
+            locations: bytecode_function.locations.clone(),
         };
         let result = self.execute_body(&body, &mut frame)?;
         Ok(result.unwrap_or(Value::Nil))

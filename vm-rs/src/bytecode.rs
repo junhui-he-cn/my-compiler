@@ -4,6 +4,20 @@ pub struct Program {
     pub names: Vec<String>,
     pub main: FunctionBody,
     pub functions: Vec<Function>,
+    pub debug_sources: Vec<DebugSource>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DebugSource {
+    pub path: String,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DebugLocation {
+    pub source: usize,
+    pub line: usize,
+    pub column: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -22,12 +36,14 @@ pub struct Function {
     pub registers: usize,
     pub params: Vec<String>,
     pub instructions: Vec<Instruction>,
+    pub locations: Vec<Option<DebugLocation>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionBody {
     pub registers: usize,
     pub instructions: Vec<Instruction>,
+    pub locations: Vec<Option<DebugLocation>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

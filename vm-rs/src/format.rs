@@ -1,4 +1,6 @@
-use crate::bytecode::{Constant, Function, FunctionBody, Instruction, Program};
+use crate::bytecode::{
+    Constant, DebugLocation, DebugSource, Function, FunctionBody, Instruction, Program,
+};
 use std::fmt;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -33,10 +35,6 @@ impl<'a> Parser<'a> {
             })
             .collect();
         Self { lines, current: 0 }
-    }
-
-    fn is_at_end(&self) -> bool {
-        self.current >= self.lines.len()
     }
 
     fn peek(&self) -> Option<(usize, &'a str)> {
@@ -118,15 +116,20 @@ impl<'a> Parser<'a> {
         let registers =
             parse_wrapped_usize(line_number, line, "main registers=", ":", "main section")?;
         let instructions = self.parse_instructions_until_function()?;
+        let instruction_count = instructions.len();
         Ok(FunctionBody {
             registers,
             instructions,
+            locations: vec![None; instruction_count],
         })
     }
 
     fn parse_functions(&mut self) -> Result<Vec<Function>, ParseError> {
         let mut functions = Vec::new();
-        while !self.is_at_end() {
+        while let Some((_, line)) = self.peek() {
+            if line == "debug_sources:" || line == "debug_locations:" {
+                break;
+            }
             let (line_number, line) = self.advance().expect("checked end");
             let (index, name, arity, registers) = parse_function_header(line_number, line)?;
             if index != functions.len() {
@@ -163,6 +166,7 @@ impl<'a> Parser<'a> {
                 });
             }
             let instructions = self.parse_instructions_until_function()?;
+            let instruction_count = instructions.len();
             functions.push(Function {
                 index,
                 name,
@@ -170,6 +174,7 @@ impl<'a> Parser<'a> {
                 registers,
                 params,
                 instructions,
+                locations: vec![None; instruction_count],
             });
         }
         Ok(functions)
@@ -178,7 +183,7 @@ impl<'a> Parser<'a> {
     fn parse_instructions_until_function(&mut self) -> Result<Vec<Instruction>, ParseError> {
         let mut instructions = Vec::new();
         while let Some((line_number, line)) = self.peek() {
-            if line.starts_with("function ") {
+            if line.starts_with("function ") || line == "debug_sources:" || line == "debug_locations:" {
                 break;
             }
             self.advance();
@@ -186,6 +191,142 @@ impl<'a> Parser<'a> {
         }
         Ok(instructions)
     }
+
+    fn parse_debug_sources(&mut self) -> Result<Vec<DebugSource>, ParseError> {
+        let Some((line_number, line)) = self.peek() else {
+            return Ok(Vec::new());
+        };
+        if line != "debug_sources:" {
+            return Ok(Vec::new());
+        }
+        self.advance();
+        let mut sources = Vec::new();
+        while let Some((line_number, line)) = self.peek() {
+            if line == "debug_locations:" {
+                break;
+            }
+            self.advance();
+            let (source_ref, rest) = split_once(line_number, line, " path=")?;
+            let index = parse_prefixed(line_number, source_ref, 's', "source reference")?;
+            if index != sources.len() {
+                return Err(ParseError {
+                    line: line_number,
+                    message: format!("expected source s{}", sources.len()),
+                });
+            }
+            let (path, rest) = parse_string_prefix(line_number, rest)?;
+            let rest = rest.strip_prefix(" text=").ok_or_else(|| ParseError {
+                line: line_number,
+                message: "expected source text".to_string(),
+            })?;
+            let text = parse_string_full(line_number, rest)?;
+            sources.push(DebugSource { path, text });
+        }
+        if self.peek().is_some() && self.peek().unwrap().1 != "debug_locations:" {
+            return Err(ParseError {
+                line: line_number,
+                message: "expected debug_locations section".to_string(),
+            });
+        }
+        Ok(sources)
+    }
+
+    fn parse_debug_locations(&mut self, program: &mut Program) -> Result<(), ParseError> {
+        let Some((line_number, line)) = self.peek() else {
+            return Ok(());
+        };
+        if line != "debug_locations:" {
+            return Err(ParseError {
+                line: line_number,
+                message: format!("unexpected section `{}`", line),
+            });
+        }
+        self.advance();
+        while let Some((line_number, line)) = self.peek() {
+            self.advance();
+            let (left, location_text) = split_once(line_number, line, " = ")?;
+            let (section, instruction_text) = split_location_target(line_number, left)?;
+            let instruction = parse_usize(line_number, instruction_text, "instruction index")?;
+            let location = parse_debug_location(line_number, location_text)?;
+            if location.source >= program.debug_sources.len() {
+                return Err(ParseError {
+                    line: line_number,
+                    message: "debug location source index out of range".to_string(),
+                });
+            }
+
+            let locations = match section {
+                DebugSection::Main => &mut program.main.locations,
+                DebugSection::Function(index) => {
+                    let Some(function) = program.functions.get_mut(index) else {
+                        return Err(ParseError {
+                            line: line_number,
+                            message: "debug location function index out of range".to_string(),
+                        });
+                    };
+                    &mut function.locations
+                }
+            };
+            let Some(slot) = locations.get_mut(instruction) else {
+                return Err(ParseError {
+                    line: line_number,
+                    message: "debug location instruction index out of range".to_string(),
+                });
+            };
+            if slot.is_some() {
+                return Err(ParseError {
+                    line: line_number,
+                    message: "duplicate debug location".to_string(),
+                });
+            }
+            *slot = Some(location);
+        }
+        Ok(())
+    }
+}
+
+enum DebugSection {
+    Main,
+    Function(usize),
+}
+
+fn split_location_target(line: usize, text: &str) -> Result<(DebugSection, &str), ParseError> {
+    let parts = text.split_whitespace().collect::<Vec<_>>();
+    match parts.as_slice() {
+        ["main", instruction] => Ok((DebugSection::Main, instruction)),
+        ["function", function_ref, instruction] => Ok((
+            DebugSection::Function(parse_function_ref(line, function_ref)?),
+            instruction,
+        )),
+        _ => Err(ParseError {
+            line,
+            message: "expected debug location target".to_string(),
+        }),
+    }
+}
+
+fn parse_debug_location(line: usize, text: &str) -> Result<DebugLocation, ParseError> {
+    let parts = text.split(':').collect::<Vec<_>>();
+    if parts.len() != 3 {
+        return Err(ParseError {
+            line,
+            message: "expected source:line:column location".to_string(),
+        });
+    }
+    let source = parse_prefixed(line, parts[0], 's', "source reference")?;
+    let location_line = parse_usize(line, parts[1], "source line")?;
+    let column = parse_usize(line, parts[2], "source column")?;
+    if location_line == 0 || column == 0 {
+        return Err(ParseError {
+            line,
+            message: "source line and column must be positive".to_string(),
+        });
+    }
+    Ok(DebugLocation {
+        source,
+        line: location_line,
+        column,
+    })
 }
 
 pub fn parse_program(source: &str) -> Result<Program, ParseError> {
@@ -195,12 +336,16 @@ pub fn parse_program(source: &str) -> Result<Program, ParseError> {
     let names = parser.parse_names()?;
     let main = parser.parse_main()?;
     let functions = parser.parse_functions()?;
-    Ok(Program {
+    let debug_sources = parser.parse_debug_sources()?;
+    let mut program = Program {
         constants,
         names,
         main,
         functions,
-    })
+        debug_sources,
+    };
+    parser.parse_debug_locations(&mut program)?;
+    Ok(program)
 }
 
 pub fn format_program(program: &Program) -> String {
@@ -237,7 +382,51 @@ pub fn format_program(program: &Program) -> String {
             out.push('\n');
         }
     }
+
+    if !program.debug_sources.is_empty() {
+        out.push_str("\ndebug_sources:\n");
+        for (index, source) in program.debug_sources.iter().enumerate() {
+            out.push_str(&format!(
+                "  s{} path={} text={}\n",
+                index,
+                quote_string(&source.path),
+                quote_string(&source.text)
+            ));
+        }
+    }
+
+    let has_debug_locations = program.main.locations.iter().any(Option::is_some)
+        || program
+            .functions
+            .iter()
+            .any(|function| function.locations.iter().any(Option::is_some));
+    if has_debug_locations {
+        out.push_str("\ndebug_locations:\n");
+        for (index, location) in program.main.locations.iter().enumerate() {
+            if let Some(location) = location {
+                out.push_str(&format_debug_location("main", index, location));
+            }
+        }
+        for (function_index, function) in program.functions.iter().enumerate() {
+            for (instruction, location) in function.locations.iter().enumerate() {
+                if let Some(location) = location {
+                    out.push_str(&format_debug_location(
+                        &format!("function f{}", function_index),
+                        instruction,
+                        location,
+                    ));
+                }
+            }
+        }
+    }
     out
+}
+
+fn format_debug_location(section: &str, instruction: usize, location: &DebugLocation) -> String {
+    format!(
+        "  {} {} = s{}:{}:{}\n",
+        section, instruction, location.source, location.line, location.column
+    )
 }
 
 fn parse_constant(line: usize, text: &str) -> Result<Constant, ParseError> {
@@ -916,5 +1105,55 @@ mod tests {
         let source = "cdbc 0.1\n\nconstants:\n  c0 = nil\n  c1 = number 1.5\n  c2 = bool true\n  c3 = string \"hello\"\n\nnames:\n  n0 = \"x#0\"\n  n1 = \"Box\"\n\nmain registers=38:\n  r0 = constant c0\n  r1 = make_function f0\n  r2 = array [r0, r1]\n  r3 = struct {n0: r1}\n  r4 = struct n1 {n0: r1}\n  r5 = move r2\n  r6 = load_var n0\n  store_var n0, r6\n  assign_var n0, r6\n  r7 = call r1 [r0, r2]\n  r8 = index r2, r0\n  r9 = assign_index r2, r0, r1\n  r10 = len r2\n  print r10\n  return r10\n  r11 = negate r10\n  r12 = not r10\n  r13 = add r10, r11\n  r14 = subtract r10, r11\n  r15 = multiply r10, r11\n  r16 = divide r10, r11\n  r17 = equal r10, r11\n  r18 = not_equal r10, r11\n  r19 = greater r10, r11\n  r20 = greater_equal r10, r11\n  r21 = less r10, r11\n  r22 = less_equal r10, r11\n  jump 29\n  jump_if_false r22, 30\n  jump_if_true r22, 31\n\nfunction f0 name=\"id\" arity=1 registers=1:\n  param 0 = \"arg#0\"\n  return r0\n";
         let program = parse_program(source).expect("parse all opcode shapes");
         assert_eq!(format_program(&program), source);
+    }
+
+    #[test]
+    fn parses_debug_sources_and_locations() {
+        let source = r#"cdbc 0.1
+
+constants:
+  c0 = number 1
+  c1 = number 0
+
+names:
+
+main registers=3:
+  r0 = constant c0
+  r1 = constant c1
+  r2 = divide r0, r1
+  print r2
+
+debug_sources:
+  s0 path="demo.cd" text="print 1 / 0;\n"
+
+debug_locations:
+  main 2 = s0:1:7
+"#;
+        let program = parse_program(source).expect("valid debug artifact");
+        assert_eq!(program.debug_sources[0].path, "demo.cd");
+        assert_eq!(program.debug_sources[0].text, "print 1 / 0;\n");
+        assert_eq!(program.main.locations[2].as_ref().unwrap().line, 1);
+        assert_eq!(program.main.locations[2].as_ref().unwrap().column, 7);
+    }
+
+    #[test]
+    fn rejects_location_for_unknown_instruction() {
+        let source = r#"cdbc 0.1
+
+constants:
+
+names:
+
+main registers=1:
+  print r0
+
+debug_sources:
+  s0 path="demo.cd" text="print 1;\n"
+
+debug_locations:
+  main 9 = s0:1:1
+"#;
+        let error = parse_program(source).expect_err("invalid instruction mapping should fail");
+        assert!(error.message.contains("instruction"));
     }
 }
