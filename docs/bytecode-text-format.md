@@ -125,7 +125,7 @@ rD = field rObject, nName
 rD = assign_field rObject, nName, rValue
 ```
 
-The optional `nType` name-table reference records a named struct runtime type name for `typeOf`. Anonymous struct literals omit it and continue to report `"struct"`.
+The optional `nType` name-table reference records a named struct runtime type name for `typeOf`. Anonymous bytecode struct instructions omit it and continue to report `"struct"` when executed by the VM.
 
 `assign_field` mutates an existing struct field and stores the assigned value in `rD`; assigning to a missing field is a runtime error.
 
