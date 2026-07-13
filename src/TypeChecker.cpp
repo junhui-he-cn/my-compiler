@@ -1250,6 +1250,30 @@ std::vector<std::string> TypeChecker::typeParameterNames(const std::vector<Token
     return names;
 }
 
+bool TypeChecker::hasEscapingTypeParameter(
+    const TypeInfo& type,
+    const std::unordered_set<std::string>& allowed) const
+{
+    if (type.kind == StaticType::TypeParameter && type.typeParameterName) {
+        return allowed.find(*type.typeParameterName) == allowed.end();
+    }
+    if (type.elementType && hasEscapingTypeParameter(*type.elementType, allowed)) {
+        return true;
+    }
+    if (type.nullableOf && hasEscapingTypeParameter(*type.nullableOf, allowed)) {
+        return true;
+    }
+    if (type.returnType && hasEscapingTypeParameter(*type.returnType, allowed)) {
+        return true;
+    }
+    for (const TypeInfo& parameter : type.parameterTypes) {
+        if (hasEscapingTypeParameter(parameter, allowed)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const TypeChecker::MethodInfo* TypeChecker::findMethod(const std::string& structName, const std::string& methodName) const
 {
     const auto structFound = methods_.find(structName);
@@ -1452,6 +1476,7 @@ void TypeChecker::checkImpl(const ImplStmt& statement)
 
 void TypeChecker::checkFunction(const FunctionStmt& statement)
 {
+    const bool nestedFunction = functionDepth_ > 0;
     beginTypeParameterScope(statement.typeParameters);
 
     std::vector<TypeInfo> declaredParameterTypes;
@@ -1494,6 +1519,28 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
         expectedReturnType,
         statement.name,
         statement.name.lexeme);
+
+    std::unordered_set<std::string> allowedTypeParameters;
+    for (const Token& parameter : statement.typeParameters) {
+        allowedTypeParameters.insert(parameter.lexeme);
+    }
+    if (nestedFunction) {
+        for (const TypeInfo& parameterType : declaredParameterTypes) {
+            if (hasEscapingTypeParameter(parameterType, allowedTypeParameters)) {
+                throw TypeError(statement.name,
+                    "type parameter escapes nested function");
+            }
+        }
+        if (hasEscapingTypeParameter(returnType, allowedTypeParameters)) {
+            throw TypeError(statement.name,
+                "type parameter escapes nested function");
+        }
+        if (expectedReturnType
+            && hasEscapingTypeParameter(*expectedReturnType, allowedTypeParameters)) {
+            throw TypeError(statement.name,
+                "type parameter escapes nested function");
+        }
+    }
 
     loopDepth_ = enclosingLoopDepth;
     --functionDepth_;

@@ -186,6 +186,9 @@ private:
     void checkFunction(const FunctionStmt& statement);
     std::vector<std::string> typeParameterNames(const std::vector<Token>& parameters) const;
     const TypeInfo* findTypeParameter(const std::string& name) const;
+    bool hasEscapingTypeParameter(
+        const TypeInfo& type,
+        const std::unordered_set<std::string>& allowed) const;
     void inferTypeArguments(
         const TypeInfo& expected,
         const TypeInfo& actual,
