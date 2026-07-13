@@ -50,8 +50,7 @@ separate-compilation work remain deferred.
 2. Define Unicode string semantics and make string operations consistent with it.
 3. Add generic type abstraction before exposing strongly typed higher-order
    collection APIs.
-4. Add maps, ranges, and broader `for-in` iteration on top of that collection
-   type foundation.
+4. Add maps and ranges on top of that collection type foundation.
 5. Consider algebraic data types and pattern matching as the next data-modeling
    layer, including the decision on recursive data.
 
@@ -61,7 +60,7 @@ The immediate dependency order is:
 runtime diagnostics
 -> Unicode strings
 -> generics
--> maps, ranges, and iteration
+-> maps and ranges
 -> enums and pattern matching
 ```
 
@@ -198,7 +197,7 @@ are intentionally counted separately. Grapheme-cluster segmentation, text
 normalization, locale-sensitive collation, and regex support remain out of
 scope.
 
-## Phase 17: Generic Collections and Iteration
+## Phase 17: Generic Collections
 
 Goal: establish a reusable, statically meaningful collection layer rather than
 growing an array-only helper list.
@@ -209,10 +208,8 @@ work.
 
 Future work:
 
-- Add maps/dictionaries with explicit key equality and iteration semantics.
-- Add ranges and extend `for-in` beyond arrays only after collection iteration
-  behavior is defined consistently for arrays, strings, maps, and ranges.
-- Do not introduce a general custom-iterator protocol in the first slice.
+- Add maps/dictionaries with explicit key equality and lookup/update semantics.
+- Add ranges with explicit construction and bounds semantics.
 
 ## Phase 18: Algebraic Data Types and Pattern Matching
 
@@ -290,7 +287,7 @@ type-system, and refactoring tracks:
 runtime diagnostics
 -> Unicode strings
 -> generic collection types
--> maps, ranges, and iteration
+-> maps and ranges
 -> enums and pattern matching
 ```
 
