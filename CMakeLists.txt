@@ -163,6 +163,15 @@ compiler_design_apply_warnings(flow_facts_tests)
 compiler_design_apply_sanitizers(flow_facts_tests)
 add_test(NAME flow_facts COMMAND flow_facts_tests)
 
+add_executable(type_utils_tests
+    tests/type_utils_tests.cpp
+    src/TypeUtils.cpp
+)
+target_include_directories(type_utils_tests PRIVATE include)
+compiler_design_apply_warnings(type_utils_tests)
+compiler_design_apply_sanitizers(type_utils_tests)
+add_test(NAME type_utils COMMAND type_utils_tests)
+
 add_executable(module_symbols_tests
     tests/module_symbols_tests.cpp
     src/ModuleSymbols.cpp

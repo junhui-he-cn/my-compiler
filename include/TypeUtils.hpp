@@ -15,6 +15,7 @@ enum class StaticType {
     Array,
     Struct,
     Nullable,
+    TypeParameter,
 };
 
 struct TypeInfo {
@@ -24,13 +25,19 @@ struct TypeInfo {
     std::optional<std::string> structName;
     std::shared_ptr<TypeInfo> elementType;
     std::shared_ptr<TypeInfo> nullableOf;
+    std::optional<std::string> typeParameterName;
+    std::vector<std::string> genericParameters;
 };
 
 TypeInfo unknownType();
 TypeInfo simpleType(StaticType kind);
 TypeInfo namedStructType(std::string name);
 TypeInfo arrayType(TypeInfo elementType);
-TypeInfo functionType(std::vector<TypeInfo> parameterTypes, TypeInfo returnType);
+TypeInfo typeParameterType(std::string name);
+TypeInfo functionType(
+    std::vector<TypeInfo> parameterTypes,
+    TypeInfo returnType,
+    std::vector<std::string> genericParameters = {});
 TypeInfo nullableType(TypeInfo innerType);
 TypeInfo functionWithoutSignature();
 

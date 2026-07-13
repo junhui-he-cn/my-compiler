@@ -32,12 +32,24 @@ TypeInfo arrayType(TypeInfo elementType)
     return result;
 }
 
-TypeInfo functionType(std::vector<TypeInfo> parameterTypes, TypeInfo returnType)
+TypeInfo typeParameterType(std::string name)
+{
+    TypeInfo result;
+    result.kind = StaticType::TypeParameter;
+    result.typeParameterName = std::move(name);
+    return result;
+}
+
+TypeInfo functionType(
+    std::vector<TypeInfo> parameterTypes,
+    TypeInfo returnType,
+    std::vector<std::string> genericParameters)
 {
     TypeInfo result;
     result.kind = StaticType::Function;
     result.parameterTypes = std::move(parameterTypes);
     result.returnType = std::make_shared<TypeInfo>(std::move(returnType));
+    result.genericParameters = std::move(genericParameters);
     return result;
 }
 
@@ -92,6 +104,8 @@ std::string staticTypeName(StaticType type)
         return "struct";
     case StaticType::Nullable:
         return "nullable";
+    case StaticType::TypeParameter:
+        return "type parameter";
     }
 
     return "unknown";
@@ -111,11 +125,26 @@ std::string typeInfoName(const TypeInfo& type)
         return "[" + typeInfoName(*type.elementType) + "]";
     }
 
+    if (type.kind == StaticType::TypeParameter && type.typeParameterName) {
+        return *type.typeParameterName;
+    }
+
     if (type.kind != StaticType::Function || !type.returnType) {
         return staticTypeName(type.kind);
     }
 
-    std::string result = "fun(";
+    std::string result = "fun";
+    if (!type.genericParameters.empty()) {
+        result += '<';
+        for (std::size_t i = 0; i < type.genericParameters.size(); ++i) {
+            if (i != 0) {
+                result += ", ";
+            }
+            result += type.genericParameters[i];
+        }
+        result += '>';
+    }
+    result += '(';
     for (std::size_t i = 0; i < type.parameterTypes.size(); ++i) {
         if (i != 0) {
             result += ", ";
@@ -143,6 +172,11 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
     }
     if (isNullable(actual)) {
         return false;
+    }
+    if (expected.kind == StaticType::TypeParameter || actual.kind == StaticType::TypeParameter) {
+        return expected.kind == StaticType::TypeParameter
+            && actual.kind == StaticType::TypeParameter
+            && expected.typeParameterName == actual.typeParameterName;
     }
     if (expected.kind != actual.kind) {
         return false;
