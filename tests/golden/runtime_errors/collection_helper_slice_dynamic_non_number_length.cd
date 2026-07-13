@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+slice([1], 0, id(false));

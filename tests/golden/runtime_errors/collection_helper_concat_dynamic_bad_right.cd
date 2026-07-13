@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+concat([], id(1));

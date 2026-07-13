@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+copy(id(1));
