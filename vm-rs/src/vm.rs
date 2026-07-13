@@ -103,8 +103,13 @@ impl<'a> VM<'a> {
                     let value = self.make_array(values);
                     self.write_register(frame, *dest, value)?;
                 }
-                Instruction::Struct { dest, fields } => {
-                    let value = self.make_struct(frame, fields)?;
+                Instruction::Struct {
+                    dest,
+                    type_name,
+                    fields,
+                } => {
+                    let type_name = type_name.map(|index| self.read_name(index)).transpose()?;
+                    let value = self.make_struct(frame, type_name, fields)?;
                     self.write_register(frame, *dest, value)?;
                 }
                 Instruction::Move { dest, source } => {
@@ -289,7 +294,11 @@ impl<'a> VM<'a> {
                     }
                     self.write_register(frame, *dest, input)?;
                 }
-                Instruction::AssertNumber { dest, value, message } => {
+                Instruction::AssertNumber {
+                    dest,
+                    value,
+                    message,
+                } => {
                     let input = self.read_register(frame, *value)?;
                     if !matches!(input, Value::Number(_)) {
                         let message = self.read_name(*message)?;
@@ -395,15 +404,24 @@ impl<'a> VM<'a> {
         })
     }
 
-    fn make_struct(&mut self, frame: &Frame, fields: &[(usize, usize)]) -> Result<Value, RuntimeError> {
+    fn make_struct(
+        &mut self,
+        frame: &Frame,
+        type_name: Option<String>,
+        fields: &[(usize, usize)],
+    ) -> Result<Value, RuntimeError> {
         let identity = self.next_struct_identity;
         self.next_struct_identity += 1;
         let mut values = Vec::with_capacity(fields.len());
         for (name_index, register) in fields {
-            values.push((self.read_name(*name_index)?, self.read_register(frame, *register)?));
+            values.push((
+                self.read_name(*name_index)?,
+                self.read_register(frame, *register)?,
+            ));
         }
         Ok(Value::structure(StructValue {
             identity,
+            type_name,
             fields: Rc::new(RefCell::new(values)),
         }))
     }
@@ -601,7 +619,9 @@ impl<'a> VM<'a> {
             return Err(RuntimeError::new("substr expects string as first argument"));
         };
         let Value::Number(start_value) = &arguments[1] else {
-            return Err(RuntimeError::new("substr expects number as second argument"));
+            return Err(RuntimeError::new(
+                "substr expects number as second argument",
+            ));
         };
         let Value::Number(length_value) = &arguments[2] else {
             return Err(RuntimeError::new("substr expects number as third argument"));
@@ -636,7 +656,9 @@ impl<'a> VM<'a> {
             return Err(RuntimeError::new("charAt expects string as first argument"));
         };
         let Value::Number(index_value) = &arguments[1] else {
-            return Err(RuntimeError::new("charAt expects number as second argument"));
+            return Err(RuntimeError::new(
+                "charAt expects number as second argument",
+            ));
         };
         if text.is_empty() {
             return Err(RuntimeError::new("charAt index out of bounds"));

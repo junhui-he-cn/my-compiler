@@ -39,7 +39,7 @@ impl Value {
         Self::Struct(value)
     }
 
-    pub fn type_name(&self) -> &'static str {
+    pub fn type_name(&self) -> &str {
         match self {
             Self::Nil => "nil",
             Self::Number(_) => "number",
@@ -47,7 +47,7 @@ impl Value {
             Self::String(_) => "string",
             Self::Function(_) => "function",
             Self::Array(_) => "array",
-            Self::Struct(_) => "struct",
+            Self::Struct(value) => value.type_name.as_deref().unwrap_or("struct"),
         }
     }
 

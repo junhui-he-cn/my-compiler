@@ -297,10 +297,14 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                 dest,
                 elements: parse_register_list(line, operands)?,
             }),
-            "struct" => Ok(Instruction::Struct {
-                dest,
-                fields: parse_struct_fields(line, operands)?,
-            }),
+            "struct" => {
+                let (type_name, field_text) = parse_optional_struct_type_name(line, operands)?;
+                Ok(Instruction::Struct {
+                    dest,
+                    type_name,
+                    fields: parse_struct_fields(line, field_text)?,
+                })
+            }
             "move" => Ok(Instruction::Move {
                 dest,
                 source: parse_register(line, operands)?,
@@ -467,13 +471,20 @@ fn format_instruction(instruction: &Instruction) -> String {
         Instruction::Array { dest, elements } => {
             format!("r{} = array {}", dest, format_register_list(elements))
         }
-        Instruction::Struct { dest, fields } => {
+        Instruction::Struct {
+            dest,
+            type_name,
+            fields,
+        } => {
             let parts = fields
                 .iter()
                 .map(|(name, value)| format!("n{}: r{}", name, value))
                 .collect::<Vec<_>>()
                 .join(", ");
-            format!("r{} = struct {{{}}}", dest, parts)
+            match type_name {
+                Some(type_name) => format!("r{} = struct n{} {{{}}}", dest, type_name, parts),
+                None => format!("r{} = struct {{{}}}", dest, parts),
+            }
         }
         Instruction::Move { dest, source } => format!("r{} = move r{}", dest, source),
         Instruction::LoadVar { dest, name } => format!("r{} = load_var n{}", dest, name),
@@ -521,10 +532,17 @@ fn format_instruction(instruction: &Instruction) -> String {
             object,
             name,
             value,
-        } => format!("r{} = assign_field r{}, n{}, r{}", dest, object, name, value),
+        } => format!(
+            "r{} = assign_field r{}, n{}, r{}",
+            dest, object, name, value
+        ),
         Instruction::Len { dest, value } => format!("r{} = len r{}", dest, value),
         Instruction::AssertArray { dest, value } => format!("r{} = assert_array r{}", dest, value),
-        Instruction::AssertNumber { dest, value, message } => {
+        Instruction::AssertNumber {
+            dest,
+            value,
+            message,
+        } => {
             format!("r{} = assert_number r{}, n{}", dest, value, message)
         }
         Instruction::Print { value } => format!("print r{}", value),
@@ -674,6 +692,29 @@ fn parse_struct_fields(line: usize, text: &str) -> Result<Vec<(usize, usize)>, P
         fields.push((parse_name_ref(line, name)?, parse_register(line, value)?));
     }
     Ok(fields)
+}
+
+fn parse_optional_struct_type_name<'a>(
+    line: usize,
+    text: &'a str,
+) -> Result<(Option<usize>, &'a str), ParseError> {
+    let trimmed = text.trim();
+    if trimmed.starts_with('{') {
+        return Ok((None, trimmed));
+    }
+    let Some((name_text, rest)) = trimmed.split_once(' ') else {
+        return Err(ParseError {
+            line,
+            message: "struct expects fields".to_string(),
+        });
+    };
+    if !rest.trim_start().starts_with('{') {
+        return Err(ParseError {
+            line,
+            message: "struct type name must be followed by fields".to_string(),
+        });
+    }
+    Ok((Some(parse_name_ref(line, name_text)?), rest.trim_start()))
 }
 
 fn format_register_list(registers: &[usize]) -> String {
@@ -872,7 +913,7 @@ mod tests {
 
     #[test]
     fn parses_all_opcode_shapes() {
-        let source = "cdbc 0.1\n\nconstants:\n  c0 = nil\n  c1 = number 1.5\n  c2 = bool true\n  c3 = string \"hello\"\n\nnames:\n  n0 = \"x#0\"\n\nmain registers=36:\n  r0 = constant c0\n  r1 = make_function f0\n  r2 = array [r0, r1]\n  r3 = move r2\n  r4 = load_var n0\n  store_var n0, r4\n  assign_var n0, r4\n  r5 = call r1 [r0, r2]\n  r6 = index r2, r0\n  r7 = assign_index r2, r0, r1\n  r8 = len r2\n  print r8\n  return r8\n  r9 = negate r8\n  r10 = not r8\n  r11 = add r8, r9\n  r12 = subtract r8, r9\n  r13 = multiply r8, r9\n  r14 = divide r8, r9\n  r15 = equal r8, r9\n  r16 = not_equal r8, r9\n  r17 = greater r8, r9\n  r18 = greater_equal r8, r9\n  r19 = less r8, r9\n  r20 = less_equal r8, r9\n  jump 27\n  jump_if_false r20, 28\n  jump_if_true r20, 29\n\nfunction f0 name=\"id\" arity=1 registers=1:\n  param 0 = \"arg#0\"\n  return r0\n";
+        let source = "cdbc 0.1\n\nconstants:\n  c0 = nil\n  c1 = number 1.5\n  c2 = bool true\n  c3 = string \"hello\"\n\nnames:\n  n0 = \"x#0\"\n  n1 = \"Box\"\n\nmain registers=38:\n  r0 = constant c0\n  r1 = make_function f0\n  r2 = array [r0, r1]\n  r3 = struct {n0: r1}\n  r4 = struct n1 {n0: r1}\n  r5 = move r2\n  r6 = load_var n0\n  store_var n0, r6\n  assign_var n0, r6\n  r7 = call r1 [r0, r2]\n  r8 = index r2, r0\n  r9 = assign_index r2, r0, r1\n  r10 = len r2\n  print r10\n  return r10\n  r11 = negate r10\n  r12 = not r10\n  r13 = add r10, r11\n  r14 = subtract r10, r11\n  r15 = multiply r10, r11\n  r16 = divide r10, r11\n  r17 = equal r10, r11\n  r18 = not_equal r10, r11\n  r19 = greater r10, r11\n  r20 = greater_equal r10, r11\n  r21 = less r10, r11\n  r22 = less_equal r10, r11\n  jump 29\n  jump_if_false r22, 30\n  jump_if_true r22, 31\n\nfunction f0 name=\"id\" arity=1 registers=1:\n  param 0 = \"arg#0\"\n  return r0\n";
         let program = parse_program(source).expect("parse all opcode shapes");
         assert_eq!(format_program(&program), source);
     }

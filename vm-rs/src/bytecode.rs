@@ -46,6 +46,7 @@ pub enum Instruction {
     },
     Struct {
         dest: usize,
+        type_name: Option<usize>,
         fields: Vec<(usize, usize)>,
     },
     Move {

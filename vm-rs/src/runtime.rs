@@ -29,6 +29,7 @@ pub struct ArrayValue {
 #[derive(Clone, Debug)]
 pub struct StructValue {
     pub identity: usize,
+    pub type_name: Option<String>,
     pub fields: SharedStructFields,
 }
 
