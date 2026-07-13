@@ -44,19 +44,31 @@ separate-compilation work remain deferred.
 
 ### M3: Language Depth
 
-1. Continue struct language polish.
-2. Add focused standard builtin and collection helper slices.
-3. Improve language polish and diagnostics.
+1. Add focused, non-higher-order collection helpers.
+2. Add source locations and call stacks to runtime diagnostics.
+3. Define Unicode string semantics and make string operations consistent with it.
+4. Add generic type abstraction before exposing strongly typed higher-order
+   collection APIs.
+5. Add maps, ranges, and broader `for-in` iteration on top of that collection
+   type foundation.
+6. Consider algebraic data types and pattern matching as the next data-modeling
+   layer, including the decision on recursive data.
 
 The immediate dependency order is:
 
 ```text
-struct language polish
+small collection helpers
+-> runtime diagnostics
+-> Unicode strings
+-> generics
+-> maps, ranges, and iteration
+-> enums and pattern matching
 ```
 
 Each behavior-changing slice should start with a focused design spec and
-implementation plan. Backend and VM work is deferred and should not be mixed
-into these near-term language slices.
+implementation plan. Compiler-pipeline, artifact, VM, and editor-tooling work
+remain separate tracks and should not be mixed into these near-term language
+slices.
 
 ## Phase 9: Richer Type System
 
@@ -65,8 +77,10 @@ layer.
 
 Future work:
 
-- No active near-term collection inference work remains after nullable-aware
-  array literal merging and direct unannotated array mutation refinement.
+- Design generic type abstraction for reusable collection and function APIs.
+  Decide type-parameter syntax, generic function inference boundaries, and the
+  relation between existing dynamic arrays and typed collections before adding
+  higher-order builtins.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -95,10 +109,11 @@ Current status:
   namespace, and re-export imports.
 
 Future work:
-- Recursive struct field types are explicitly rejected for now; revisit only with
-  a dedicated design for recursive initialization and runtime representation.
-- Decide whether field creation by assignment should exist; current assignment
-  only mutates existing fields.
+- No active near-term struct language polish slice remains.
+- Recursive struct field types remain unsupported. Do not plan recursive
+  initialization or runtime representation without a future dedicated decision.
+- Field creation by assignment remains unsupported; assignment only mutates
+  declared existing fields.
 - Keep dynamic dispatch, inheritance, overloading, protocols, and optional
   chaining out of the near-term struct slice unless a dedicated design justifies
   them.
@@ -119,7 +134,11 @@ where practical and preserving bytecode/Rust VM parity.
 
 Future work:
 
-- Add additional collection helpers beyond current array mutation basics.
+- Start with a small set of non-higher-order collection helpers. Define each
+  helper's mutation, shadowing, runtime-validation, static-checking, and error
+  conventions before selecting the concrete API.
+- Defer callback-based helpers such as `map`, `filter`, and `reduce` until
+  generic function and collection types have a focused design.
 - Consider migrating legacy `len` lowering onto the generic native-call path if
   it simplifies the backend without changing user behavior.
 - Define conventions for future standard-library functions: shadowing behavior,
@@ -154,11 +173,54 @@ Goal: improve ergonomics after the core language grows.
 
 Future work:
 
-- Add parser recovery and multi-error reporting.
+- Parser recovery and multi-error Parse reporting are implemented. Extend
+  diagnostics next with source locations and call stacks for runtime failures;
+  consider multi-error type reporting only as a separately designed recovery
+  slice.
 - Decide whether comments or doc comments need language-level documentation or
   additional syntax support.
 - Do not plan additional nullable narrowing beyond the currently implemented
-  direct `if` nil-check branch behavior.
+  simple-variable `if` nil-check and logical-guard behavior.
+
+## Phase 16: Unicode Strings
+
+Goal: make string behavior predictable for non-ASCII source programs.
+
+Future work:
+
+- Choose and document whether language string indexing and length use Unicode
+  scalar values, grapheme clusters, or intentionally remain byte-oriented.
+- If changing the current byte-oriented behavior, update `len`, `substr`, and
+  `charAt` together, including bounds diagnostics and Rust VM parity.
+- Keep text normalization, locale-sensitive collation, and regex support out of
+  the initial Unicode slice.
+
+## Phase 17: Generic Collections and Iteration
+
+Goal: establish a reusable, statically meaningful collection layer rather than
+growing an array-only helper list.
+
+Future work:
+
+- Add generic collection and function typing only after the Phase 9 design
+  specifies inference boundaries and dynamic-array escape hatches.
+- Add maps/dictionaries with explicit key equality and iteration semantics.
+- Add ranges and extend `for-in` beyond arrays only after collection iteration
+  behavior is defined consistently for arrays, strings, maps, and ranges.
+- Do not introduce a general custom-iterator protocol in the first slice.
+
+## Phase 18: Algebraic Data Types and Pattern Matching
+
+Goal: support values with explicit alternatives, such as success/failure or
+tree-shaped data, without prematurely expanding the struct object model.
+
+Future work:
+
+- Design named variants/enums and exhaustive pattern matching together.
+- Decide recursive type representation as part of this phase rather than
+  enabling recursive struct fields in isolation.
+- Defer inheritance, dynamic dispatch, and protocol/trait systems unless this
+  phase identifies a concrete need for one.
 
 ## Code Health / Refactoring Backlog
 
@@ -167,8 +229,9 @@ hotspots without changing language behavior or golden outputs.
 
 Recommended future cleanup slices:
 
-- **Add sanitizer guardrails.** Add opt-in ASan and UBSan configurations before
-  larger front-end changes.
+- **Maintain sanitizer guardrails.** Opt-in ASan and UBSan configurations and
+  a sanitizer CI job are implemented; keep them passing as front-end work
+  evolves.
 - **Consider a unified assignment AST only after more target forms appear.**
   Current separate nodes (`AssignExpr`, `IndexAssignExpr`, `FieldAssignExpr`,
   and their compound variants) are acceptable, but a future `AssignmentTarget`
@@ -180,6 +243,21 @@ Recommended future cleanup slices:
   larger architecture change and should be planned as its own behavior-preserving
   refactor.
 
+## Compiler Pipeline and Tooling Track
+
+These directions are valuable for a compiler-design project, but are not
+dependencies of the near-term language sequence.
+
+- **IR and optimization:** add control-flow/basic-block inspection, IR
+  validation, then behavior-preserving optimizations such as constant folding
+  and dead-code elimination. Consider register allocation only after the IR
+  invariants and measurement goals are clear.
+- **Developer tools:** consider a formatter, REPL, language-server support, and
+  source-level debugging as separate products with stable syntax and diagnostic
+  requirements.
+- **Robustness testing:** add lexer/parser and `.cdbc` parser fuzzing or
+  property tests, especially around malformed artifacts and source locations.
+
 ## Deferred Backend Track
 
 Future backend work targets the Rust `compiler-design-vm` project and `.cdbc`
@@ -188,6 +266,9 @@ bytecode artifacts, but this track is paused for the active roadmap.
 Deferred work:
 
 - Define a `.cdbc` version-compatibility policy.
+- Design linker inputs and separate-compilation artifacts around the existing
+  module-interface metadata; package manifests and import maps are later
+  product decisions, not prerequisites for a linker.
 - Design GC heap ownership and root scanning as a dedicated backend project.
 - Continue to defer task scheduling and JIT metadata/hot-path exploration.
 
@@ -201,9 +282,15 @@ Follow one dependency-driven sequence rather than choosing among parallel module
 type-system, and refactoring tracks:
 
 ```text
-struct language polish
+small collection helpers
+-> runtime diagnostics
+-> Unicode strings
+-> generic collection types
+-> maps, ranges, and iteration
+-> enums and pattern matching
 ```
 
-Do not start a visitor rewrite, unified assignment AST, separate compilation,
-additional nullable narrowing, `.cdbc` versioning, GC, task scheduling, or JIT as
-part of these near-term language slices.
+Do not start field creation by assignment, recursive struct field types, a visitor
+rewrite, unified assignment AST, separate compilation, additional nullable
+narrowing, higher-order collection helpers before generics, `.cdbc` versioning,
+GC, task scheduling, or JIT as part of these near-term language slices.
