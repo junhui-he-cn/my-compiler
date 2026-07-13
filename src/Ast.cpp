@@ -40,6 +40,15 @@ void writeTypeAnnotation(std::ostream& out, const TypeAnnotation& annotation)
         return;
     }
 
+    if (annotation.kind == TypeAnnotation::Kind::Map) {
+        out << "map<";
+        writeTypeAnnotation(out, *annotation.keyType);
+        out << ", ";
+        writeTypeAnnotation(out, *annotation.valueType);
+        out << '>';
+        return;
+    }
+
     if (annotation.kind == TypeAnnotation::Kind::Nullable) {
         writeTypeAnnotation(out, *annotation.innerType);
         out << '?';
@@ -281,6 +290,16 @@ TypeAnnotation TypeAnnotation::array(Token token, TypeAnnotation elementType)
     return result;
 }
 
+TypeAnnotation TypeAnnotation::map(Token token, TypeAnnotation keyType, TypeAnnotation valueType)
+{
+    TypeAnnotation result;
+    result.kind = Kind::Map;
+    result.token = std::move(token);
+    result.keyType = std::make_shared<TypeAnnotation>(std::move(keyType));
+    result.valueType = std::make_shared<TypeAnnotation>(std::move(valueType));
+    return result;
+}
+
 TypeAnnotation TypeAnnotation::nullable(Token token, TypeAnnotation innerType)
 {
     TypeAnnotation result;
@@ -491,6 +510,25 @@ void ArrayExpr::print(std::ostream& out) const
     for (const auto& element : elements) {
         out << ' ';
         writeExpr(out, element);
+    }
+    out << ')';
+}
+
+MapExpr::MapExpr(Token brace, std::vector<MapEntry> entries)
+    : brace(std::move(brace))
+    , entries(std::move(entries))
+{
+}
+
+void MapExpr::print(std::ostream& out) const
+{
+    out << "(map";
+    for (const MapEntry& entry : entries) {
+        out << " (entry ";
+        writeExpr(out, entry.key);
+        out << ' ';
+        writeExpr(out, entry.value);
+        out << ')';
     }
     out << ')';
 }

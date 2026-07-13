@@ -30,6 +30,7 @@ struct TypeAnnotation {
         Qualified,
         Function,
         Array,
+        Map,
         Nullable,
     };
 
@@ -37,6 +38,7 @@ struct TypeAnnotation {
     static TypeAnnotation qualified(Token qualifier, Token name);
     static TypeAnnotation function(Token token, std::vector<TypeAnnotation> parameterTypes, TypeAnnotation returnType);
     static TypeAnnotation array(Token token, TypeAnnotation elementType);
+    static TypeAnnotation map(Token token, TypeAnnotation keyType, TypeAnnotation valueType);
     static TypeAnnotation nullable(Token token, TypeAnnotation innerType);
 
     Kind kind = Kind::Simple;
@@ -45,6 +47,8 @@ struct TypeAnnotation {
     std::vector<TypeAnnotation> parameterTypes;
     std::shared_ptr<TypeAnnotation> returnType;
     std::shared_ptr<TypeAnnotation> elementType;
+    std::shared_ptr<TypeAnnotation> keyType;
+    std::shared_ptr<TypeAnnotation> valueType;
     std::shared_ptr<TypeAnnotation> innerType;
 };
 
@@ -172,6 +176,20 @@ struct ArrayExpr final : Expr {
 
     Token bracket;
     std::vector<ExprPtr> elements;
+};
+
+struct MapEntry {
+    ExprPtr key;
+    Token colon;
+    ExprPtr value;
+};
+
+struct MapExpr final : Expr {
+    MapExpr(Token brace, std::vector<MapEntry> entries);
+    void print(std::ostream& out) const override;
+
+    Token brace;
+    std::vector<MapEntry> entries;
 };
 
 struct StructField {
