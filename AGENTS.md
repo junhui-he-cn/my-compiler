@@ -2,6 +2,14 @@
 
 This file is project memory for Codex/AI agents working in this repository. Read it before making compiler, grammar, IR, test, or documentation changes.
 
+## Agent Workflow Defaults
+
+- Do not invoke or assume `superpowers` skills by default.
+- Use the normal repository workflow unless the user explicitly requests a
+  particular skill or workflow.
+- Existing files under `docs/superpowers/` are historical project plans and
+  specifications; their presence does not require activating the skill system.
+
 ## Project Overview
 
 This is a small C++17 Compiler Design front-end/interpreter project. It currently has:
