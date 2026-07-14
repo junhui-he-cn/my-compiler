@@ -5,10 +5,9 @@ and engineering work. Historical roadmap details are preserved in
 `docs/roadmap-archive-2026-07-04.md` and the current pre-cleanup roadmap is
 backed up in `docs/roadmap-backup-2026-07-10.md`.
 
-Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable. The
-old in-process C++ bytecode VM path is gone; future backend work targets the
-standalone Rust `compiler-design-vm` project under `vm-rs/` and `.cdbc`
-artifacts.
+Backend VM follow-ups such as GC, task scheduling, and JIT remain valuable. Future
+backend work targets the standalone Rust `compiler-design-vm` project under
+`vm-rs/` and `.cdbc` artifacts.
 
 For exact implemented grammar and user behavior, see
 `docs/language-grammar.ebnf` and `README.md`.
@@ -27,48 +26,16 @@ For exact implemented grammar and user behavior, see
 - Preserve parse errors, type errors, compile errors, import errors, and runtime
   errors as distinct test categories.
 
-## Development Priority Bands
+## Active Priorities
 
-The front end remains the main scaling constraint. Prefer finishing existing
-language semantics before adding broader module ergonomics or backend depth.
-
-### M1: Complete Existing Language Semantics
-
-No active M1 language semantics items remain.
-
-### M2: Module Ergonomics
-
-No active M2 module ergonomics items remain. Phase 14G module-interface metadata
-is implemented as a stable `--module-interface` debug output. Linker and
-separate-compilation work remain deferred.
-
-### M3: Language Depth
-
-1. Source locations and call stacks for runtime diagnostics are implemented
-   across the C++ compiler, `.cdbc` artifacts, and Rust VM. Continue preserving
-   metadata when extending runtime operations.
-2. Define Unicode string semantics and make string operations consistent with it.
-3. Add generic type abstraction before exposing strongly typed higher-order
-   collection APIs.
-4. Ranges are implemented on top of the generic collection type foundation;
-   the first map slice is complete in Phase 17.
-5. Algebraic data types and pattern matching are implemented as the first
-   named-enum slice. Recursive enum payloads are supported; match expressions,
-   guards, generic enums, and nullable enum patterns remain deferred.
-
-The completed dependency order now reaches enums:
-
-```text
-runtime diagnostics
--> Unicode strings
--> generics
--> ranges (implemented)
--> enums and pattern matching (implemented)
-```
+The front end remains the main scaling constraint. Focus near-term language work
+on the remaining type-system and collection extensions, then on extensions to
+pattern matching. Separate compilation and deeper backend work remain deferred
+tracks.
 
 Each behavior-changing slice should start with a focused design spec and
 implementation plan. Compiler-pipeline, artifact, VM, and editor-tooling work
-remain separate tracks and should not be mixed into these near-term language
+remain separate tracks and should not be mixed into the near-term language
 slices.
 
 ## Phase 9: Richer Type System
@@ -76,14 +43,11 @@ slices.
 Goal: evolve the current annotation checker into a more useful static type
 layer.
 
-- Status: the first generic-function slice is implemented. Named functions may
-  declare type parameters such as `fun identity<T>(value: T): T`; calls infer
-  concrete types recursively through existing arrays, nullable types, and
-  function signatures, and generic values retain their signatures through
-  direct/namespace imports and unannotated aliases.
-- Remaining type-system work includes explicit type arguments, generic methods
-  and lambdas, constraints, generic container syntax beyond the built-in map
-  form, and the inference rules needed by higher-order collection APIs.
+Future work:
+
+- Add explicit type arguments, generic methods and lambdas, constraints, generic
+  container syntax beyond the built-in `map` form, and the inference rules
+  needed by higher-order collection APIs.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -102,24 +66,13 @@ Likely touch points:
 Goal: continue struct polish around field rules and future type-system features
 without expanding into object-system features prematurely.
 
-Current status:
-
-- Named constructor-created struct values expose their attached runtime struct name
-  through `typeOf`.
-- Source-level anonymous struct literals are removed; users construct only
-  declared named structs with `Name { ... }` or `alias.Name { ... }`.
-- Struct methods are available on exported/imported named structs through direct,
-  namespace, and re-export imports.
-
 Future work:
-- No active near-term struct language polish slice remains.
-- Recursive struct field types remain unsupported. Do not plan recursive
-  initialization or runtime representation without a future dedicated decision.
-- Field creation by assignment remains unsupported; assignment only mutates
-  declared existing fields.
-- Keep dynamic dispatch, inheritance, overloading, protocols, and optional
-  chaining out of the near-term struct slice unless a dedicated design justifies
-  them.
+- Treat recursive struct field types as a separate design decision; do not add
+  recursive initialization or runtime representation in an incremental polish
+  slice.
+- Keep field creation by assignment, dynamic dispatch, inheritance, overloading,
+  protocols, and optional chaining out of the near-term struct work unless a
+  dedicated design justifies them.
 
 Likely touch points:
 
@@ -137,10 +90,6 @@ where practical and preserving bytecode/Rust VM parity.
 
 Future work:
 
-- The first non-higher-order collection slice is implemented with `contains`,
-  `slice`, `copy`, and `concat` in function and member forms. Returned arrays use
-  shallow-copy semantics and preserve existing static element information where
-  possible.
 - Add further non-higher-order helpers only as focused slices with explicit
   mutation, shadowing, runtime-validation, static-checking, and error conventions.
 - Defer callback-based helpers such as `map`, `filter`, and `reduce` until
@@ -160,15 +109,8 @@ early.
 
 Future work:
 
-- No active near-term module ergonomics work remains.
 - Linker and separate-compilation implementation remain deferred to a dedicated
   future compiler/backend effort.
-
-Recommended split:
-
-- Phase 14G: stable module-interface metadata is complete. The compiler now
-  supports `--module-interface` for inspecting each loaded module's exported
-  static API.
 
 Why late: modules affect diagnostics, CLI source management, test layout, and
 name resolution across compilation units.
@@ -179,50 +121,31 @@ Goal: improve ergonomics after the core language grows.
 
 Future work:
 
-- Parser recovery and multi-error Parse reporting are implemented. Extend
-  diagnostics next with source locations and call stacks for runtime failures;
-  consider multi-error type reporting only as a separately designed recovery
+- Consider multi-error type reporting only as a separately designed recovery
   slice.
 - Decide whether comments or doc comments need language-level documentation or
   additional syntax support.
-- Do not plan additional nullable narrowing beyond the currently implemented
-  simple-variable `if` nil-check and logical-guard behavior.
+- Do not add nullable narrowing beyond direct simple-variable `if` nil-checks
+  and the supported logical-guard behavior.
 
-## Phase 16: Unicode Strings
+## Phase 17: Collection Extensions
 
-Goal: make string behavior predictable for non-ASCII source programs.
-
-Status: implemented across C++ string constants, `.cdbc` artifacts, and the
-Rust VM. `len`, `substr`, and `charAt` count and index Unicode scalar values;
-ASCII behavior and existing bounds diagnostics remain stable. Combining marks
-are intentionally counted separately. Grapheme-cluster segmentation, text
-normalization, locale-sensitive collation, and regex support remain out of
-scope.
-
-## Phase 17: Generic Collections
-
-Goal: establish a reusable, statically meaningful collection layer rather than
-growing an array-only helper list.
-
-Status: generic function/type abstraction, the first built-in map collection
-slice, and immutable integer ranges are implemented. Other generic collection
-syntax and higher-order collection APIs remain future work.
+Goal: extend the existing collection types without committing prematurely to a
+large general-purpose collection protocol.
 
 Future work:
 
+- Add generic collection syntax and higher-order collection APIs once the
+  remaining type-system inference boundaries are defined.
 - Add further map operations, such as deletion, only as focused slices with
   explicit mutation and missing-key conventions.
 - Add further range/collection operations only as focused slices with explicit
   mutation and bounds semantics.
 
-## Phase 18: Algebraic Data Types and Pattern Matching
+## Phase 18: Pattern-Matching Extensions
 
-Goal: support values with explicit alternatives, such as success/failure or
-tree-shaped data, without prematurely expanding the struct object model.
-
-Status: implemented for named enums with positional payloads, recursive enum
-references, qualified constructors, nested patterns, exhaustive statement-level
-matching, C++ IR, .cdbc, and the Rust VM.
+Goal: extend the existing named-enum and statement-level pattern-matching
+facilities without prematurely expanding the struct object model.
 
 Future work:
 
@@ -238,9 +161,6 @@ hotspots without changing language behavior or golden outputs.
 
 Recommended future cleanup slices:
 
-- **Maintain sanitizer guardrails.** Opt-in ASan and UBSan configurations and
-  a sanitizer CI job are implemented; keep them passing as front-end work
-  evolves.
 - **Consider a unified assignment AST only after more target forms appear.**
   Current separate nodes (`AssignExpr`, `IndexAssignExpr`, `FieldAssignExpr`,
   and their compound variants) are acceptable, but a future `AssignmentTarget`
@@ -265,7 +185,7 @@ dependencies of the near-term language sequence.
   source-level debugging as separate products with stable syntax and diagnostic
   requirements.
 - **Robustness testing:** add lexer/parser and `.cdbc` parser fuzzing or
-  property tests, especially around malformed artifacts and source locations.
+  property tests, especially around malformed source and artifacts.
 
 ## Deferred Backend Track
 
@@ -275,9 +195,9 @@ bytecode artifacts, but this track is paused for the active roadmap.
 Deferred work:
 
 - Define a `.cdbc` version-compatibility policy.
-- Design linker inputs and separate-compilation artifacts around the existing
-  module-interface metadata; package manifests and import maps are later
-  product decisions, not prerequisites for a linker.
+- Design linker inputs and separate-compilation artifacts around module
+  interfaces; package manifests and import maps are later product decisions, not
+  prerequisites for a linker.
 - Design GC heap ownership and root scanning as a dedicated backend project.
 - Continue to defer task scheduling and JIT metadata/hot-path exploration.
 
@@ -287,20 +207,14 @@ plan rather than mixing it into language feature work.
 
 ## Near-Term Recommendation
 
-Follow one dependency-driven sequence rather than choosing among parallel module,
-type-system, and refactoring tracks:
+Prioritize the remaining language extensions in this order:
 
 ```text
-runtime diagnostics
--> Unicode strings
--> generic collection types
--> ranges (implemented)
--> enums and pattern matching
+type-system extensions
+-> collection extensions and higher-order APIs
+-> pattern-matching extensions
 ```
 
-The first map collection slice is complete; future map operations remain
-focused follow-ups alongside the ranges work above. Do not start field creation
-by assignment, recursive struct field types, a visitor
-rewrite, unified assignment AST, separate compilation, additional nullable
-narrowing, higher-order collection helpers before generics, `.cdbc` versioning,
-GC, task scheduling, or JIT as part of these near-term language slices.
+Keep field creation by assignment, recursive struct fields, separate
+compilation, additional nullable narrowing, `.cdbc` versioning, GC, task
+scheduling, and JIT outside these near-term language slices.
