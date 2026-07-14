@@ -1,1 +1,0 @@
-Parse error at 1:9: anonymous struct literals are not supported; use StructName { ... }

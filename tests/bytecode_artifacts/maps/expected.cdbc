@@ -1,0 +1,84 @@
+cdbc 0.1
+
+constants:
+  c0 = string "tea"
+  c1 = number 3
+  c2 = string "coffee"
+  c3 = number 5
+  c4 = string "water"
+  c5 = number 2
+  c6 = string "tea"
+  c7 = string "water"
+  c8 = string "coffee"
+
+names:
+  n0 = "prices#0"
+  n1 = "prices#0"
+  n2 = "alias#1"
+  n3 = "alias#1"
+  n4 = "prices#0"
+  n5 = "prices#0"
+  n6 = "prices#0"
+  n7 = "prices#0"
+  n8 = "contains"
+
+main registers=21:
+  r0 = constant c0
+  r1 = constant c1
+  r2 = constant c2
+  r3 = constant c3
+  r4 = map [r0: r1, r2: r3]
+  store_var n0, r4
+  r5 = load_var n1
+  store_var n2, r5
+  r6 = load_var n3
+  r7 = constant c4
+  r8 = constant c5
+  r9 = assign_index r6, r7, r8
+  r10 = load_var n4
+  r11 = constant c6
+  r12 = index r10, r11
+  print r12
+  r13 = load_var n5
+  r14 = constant c7
+  r15 = index r13, r14
+  print r15
+  r16 = load_var n6
+  r17 = len r16
+  print r17
+  r18 = load_var n7
+  r19 = constant c8
+  r20 = native_call n8 [r18, r19]
+  print r20
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/maps/input.cd" text="let prices: map<string, number> = {\"tea\": 3, \"coffee\": 5};\nlet alias = prices;\nalias[\"water\"] = 2;\nprint prices[\"tea\"];\nprint prices[\"water\"];\nprint len(prices);\nprint contains(prices, \"coffee\");\n"
+
+debug_locations:
+  main 0 = s0:1:36
+  main 1 = s0:1:43
+  main 2 = s0:1:46
+  main 3 = s0:1:56
+  main 4 = s0:1:35
+  main 5 = s0:1:1
+  main 6 = s0:2:13
+  main 7 = s0:2:1
+  main 8 = s0:3:1
+  main 9 = s0:3:7
+  main 10 = s0:3:18
+  main 11 = s0:3:1
+  main 12 = s0:4:7
+  main 13 = s0:4:14
+  main 14 = s0:4:7
+  main 15 = s0:4:1
+  main 16 = s0:5:7
+  main 17 = s0:5:14
+  main 18 = s0:5:7
+  main 19 = s0:5:1
+  main 20 = s0:6:11
+  main 21 = s0:6:7
+  main 22 = s0:6:1
+  main 23 = s0:7:16
+  main 24 = s0:7:24
+  main 25 = s0:7:7
+  main 26 = s0:7:1

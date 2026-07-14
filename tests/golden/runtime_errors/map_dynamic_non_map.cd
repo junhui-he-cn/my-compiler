@@ -1,0 +1,4 @@
+fun id(value) {
+  return value;
+}
+print id(1)["a"];

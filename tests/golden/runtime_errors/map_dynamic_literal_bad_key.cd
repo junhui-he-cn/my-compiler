@@ -1,0 +1,4 @@
+fun id(value) {
+  return value;
+}
+let values = {id([1]): "array key"};

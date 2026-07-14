@@ -1,4 +1,4 @@
-Runtime error at tests/golden/runtime_errors/member_call_len_dynamic_bad_receiver.cd:2:1: len expects array or string
+Runtime error at tests/golden/runtime_errors/member_call_len_dynamic_bad_receiver.cd:2:1: len expects array, string, or map
   id(123).len();
   ^
 Call stack:

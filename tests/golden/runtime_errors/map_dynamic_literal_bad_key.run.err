@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_dynamic_literal_bad_key.cd:4:14: map key must be nil, number, bool, or string
+  let values = {id([1]): "array key"};
+               ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_dynamic_literal_bad_key.cd:4:14)

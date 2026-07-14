@@ -2755,7 +2755,9 @@ TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
         if (result.collection.keyType && !compatible(*result.collection.keyType, result.index)) {
             throw TypeError(bracket, "map key is incompatible with map key type");
         }
-    } else if (result.index.kind != StaticType::Unknown && result.index.kind != StaticType::Number) {
+    } else if (result.collection.kind == StaticType::Array
+        && result.index.kind != StaticType::Unknown
+        && result.index.kind != StaticType::Number) {
         throw TypeError(bracket, "array index must be number");
     }
 

@@ -1,0 +1,3 @@
+Type error at 1:11: undefined variable `name`
+  let p = { name: "Ada" };
+            ^

@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_dynamic_non_map.cd:4:7: can only index arrays or maps
+  print id(1)["a"];
+        ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_dynamic_non_map.cd:4:7)

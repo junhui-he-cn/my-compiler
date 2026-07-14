@@ -1,0 +1,5 @@
+fun id(value) {
+  return value;
+}
+let values = {"a": 1};
+contains(values, id([1]));

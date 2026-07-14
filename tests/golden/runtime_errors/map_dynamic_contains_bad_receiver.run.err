@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_dynamic_contains_bad_receiver.cd:4:1: contains expects array or map as first argument
+  contains(id(1), "a");
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_dynamic_contains_bad_receiver.cd:4:1)

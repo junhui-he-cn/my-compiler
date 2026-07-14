@@ -1,1 +1,3 @@
-Type error at 2:2: can only assign array elements
+Type error at 2:2: can only assign array elements or map entries
+  x[0] = 2;
+   ^

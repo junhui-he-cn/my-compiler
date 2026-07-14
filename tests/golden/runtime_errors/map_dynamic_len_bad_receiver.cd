@@ -1,0 +1,4 @@
+fun id(value) {
+  return value;
+}
+print len(id(1));
