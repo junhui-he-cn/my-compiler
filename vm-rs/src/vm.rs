@@ -159,6 +159,31 @@ mod tests {
     }
 
     #[test]
+    fn map_aliases_share_updates_through_cells() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(vec![(Value::string("a"), Value::number(1.0))]);
+        let left = new_cell(map.clone());
+        let right = new_cell(map);
+
+        vm.execute_assign_index(
+            left.borrow().clone(),
+            Value::string("b"),
+            Value::number(2.0),
+        )
+        .expect("map assignment succeeds");
+
+        assert!(matches!(
+            vm.execute_index(left.borrow().clone(), Value::string("b")).unwrap(),
+            Value::Number(value) if value == 2.0
+        ));
+        assert!(matches!(
+            vm.execute_index(right.borrow().clone(), Value::string("b")).unwrap(),
+            Value::Number(value) if value == 2.0
+        ));
+    }
+
+    #[test]
     fn map_rejects_reference_keys() {
         let program = empty_program();
         let mut vm = VM::new(&program);

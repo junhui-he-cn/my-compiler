@@ -33,3 +33,100 @@ IR
 0031  v24 = constant #9 "tea"
 0032  v25 = native_call @11 contains(v23, v24)
 0033  print v25
+0034  v26 = map []
+0035  store_var @12 empty#2, v26
+0036  v27 = load_var @13 empty#2
+0037  v28 = constant #10 "new"
+0038  v29 = constant #11 1
+0039  v30 = assign_index v27, v28, v29
+0040  v31 = load_var @14 empty#2
+0041  v32 = len v31
+0042  print v32
+0043  v33 = load_var @15 empty#2
+0044  v34 = constant #12 "new"
+0045  v35 = index v33, v34
+0046  print v35
+0047  v36 = constant #13 nil
+0048  v37 = constant #14 "nil"
+0049  v38 = constant #15 true
+0050  v39 = constant #16 "bool"
+0051  v40 = constant #17 1
+0052  v41 = constant #18 "number"
+0053  v42 = constant #19 "text"
+0054  v43 = constant #20 "string"
+0055  v44 = map [v36: v37, v38: v39, v40: v41, v42: v43]
+0056  store_var @16 primitives#3, v44
+0057  v45 = load_var @17 primitives#3
+0058  v46 = constant #21 nil
+0059  v47 = index v45, v46
+0060  print v47
+0061  v48 = load_var @18 primitives#3
+0062  v49 = constant #22 true
+0063  v50 = index v48, v49
+0064  print v50
+0065  v51 = load_var @19 primitives#3
+0066  v52 = constant #23 1
+0067  v53 = index v51, v52
+0068  print v53
+0069  v54 = load_var @20 primitives#3
+0070  v55 = constant #24 "text"
+0071  v56 = index v54, v55
+0072  print v56
+0073  v57 = constant #25 "a"
+0074  v58 = constant #26 1
+0075  v59 = constant #27 "a"
+0076  v60 = constant #28 2
+0077  v61 = map [v57: v58, v59: v60]
+0078  store_var @21 duplicates#4, v61
+0079  v62 = load_var @22 duplicates#4
+0080  v63 = constant #29 "a"
+0081  v64 = index v62, v63
+0082  print v64
+0083  v65 = load_var @23 duplicates#4
+0084  v66 = constant #30 "b"
+0085  v67 = constant #31 3
+0086  v68 = assign_index v65, v66, v67
+0087  print v68
+0088  v69 = load_var @24 duplicates#4
+0089  print v69
+0090  v70 = constant #32 "inner"
+0091  v71 = constant #33 "value"
+0092  v72 = constant #34 7
+0093  v73 = map [v71: v72]
+0094  v74 = map [v70: v73]
+0095  store_var @25 nested#5, v74
+0096  v75 = load_var @26 nested#5
+0097  v76 = constant #35 "inner"
+0098  v77 = index v75, v76
+0099  v78 = constant #36 "value"
+0100  v79 = index v77, v78
+0101  print v79
+0102  v80 = constant #37 "present"
+0103  v81 = constant #38 1
+0104  v82 = constant #39 "missing"
+0105  v83 = constant #40 nil
+0106  v84 = map [v80: v81, v82: v83]
+0107  store_var @27 nullable#6, v84
+0108  v85 = load_var @28 nullable#6
+0109  v86 = constant #41 "missing"
+0110  v87 = index v85, v86
+0111  print v87
+0112  v88 = load_var @29 duplicates#4
+0113  store_var @30 same#7, v88
+0114  v89 = constant #42 "a"
+0115  v90 = constant #43 2
+0116  v91 = constant #44 "b"
+0117  v92 = constant #45 3
+0118  v93 = map [v89: v90, v91: v92]
+0119  store_var @31 other#8, v93
+0120  v94 = load_var @32 duplicates#4
+0121  v95 = load_var @33 same#7
+0122  v96 = equal v94, v95
+0123  print v96
+0124  v97 = load_var @34 duplicates#4
+0125  v98 = load_var @35 other#8
+0126  v99 = equal v97, v98
+0127  print v99
+0128  v100 = load_var @36 duplicates#4
+0129  v101 = native_call @37 typeOf(v100)
+0130  print v101
