@@ -5,8 +5,8 @@ project. The repository contains the language implementation, a C++17 compiler
 pipeline, bytecode artifact emission, and a standalone Rust bytecode VM.
 
 The language currently supports variables, lexical blocks, `if`/`else`,
-`while`, `break`, `continue`, functions, closures, arrays, indexing, array
-element assignment, numeric compound assignment for variables, array elements, and struct fields, structs, field access and assignment, short-circuit logical
+`while`, `break`, `continue`, functions, closures, arrays, maps, indexing, array
+and map element assignment, numeric compound assignment for variables, array elements, and struct fields, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`, and
@@ -46,7 +46,16 @@ return [expression];
 expression;
 ```
 
-Type annotations support `number`, `bool`, `string`, `nil`, named struct types, namespaced struct types such as `math.Point`, array types such as `[number]` and `[[string]]`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Array type annotations may be used in the same positions and carry static element types through indexing, index assignment, `push`, and `pop`. Nullable annotations use postfix `?`, for example `number?`, `Person?`, `[number?]`, and `[number]?`. A value of type `T?` may be either `nil` or a `T`; `nil` is not assignable to non-nullable `T`, and `T?` is not assignable back to `T` except inside supported simple-variable nil-check branches: direct checks such as `if (x != nil) { ... }`, the `else` branch of `if (x == nil) { ... } else { ... }`, conservative `&&` guards such as `if (x != nil && y != nil) { ... }`, and conservative `||` else branches such as `if (x == nil || y == nil) { ... } else { ... }`; supported logical guards can narrow multiple simple variables. Function parameter and return annotations may use nullable types, such as `fun(number?): string?`. Named functions may declare inferred type parameters, for example `fun identity<T>(value: T): T { return value; }`; calls infer `T` from known arguments, aliases retain generic signatures, and existing array annotations such as `[T]` can carry the inferred type. Explicit type arguments, generic methods and lambdas, constraints, and generic container syntax are not implemented. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and named struct constructors; non-empty unannotated array literals merge compatible element types, including nullable combinations such as `[1, nil]` becoming `[number?]` and nested homogeneous arrays preserving nested element types. Empty unannotated arrays start as dynamic arrays with unknown element type, then direct simple-variable mutations such as `push(xs, value)`, `xs.push(value)`, and `xs[index] = value` can refine the element type for later indexing, `pop`, and `for-in` reads. Mixed unannotated arrays and incompatible direct mutations fall back to dynamic arrays with unknown element type, while explicit array annotations remain strict. Known function signatures are checked for assignment compatibility, call argument types, and function returns; anonymous function expressions in expected function-typed positions use that context for unannotated parameter and return checking. Broader flow-sensitive nullable narrowing for fields, indexes, loops, and post-branch flow is not implemented. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
+Type annotations support `number`, `bool`, `string`, `nil`, named struct types, namespaced struct types such as `math.Point`, array types such as `[number]` and `[[string]]`, and function types such as `fun(number): string`. Function type annotations may be used on `let` bindings, function parameters, and function returns. Array type annotations may be used in the same positions and carry static element types through indexing, index assignment, `push`, and `pop`. Nullable annotations use postfix `?`, for example `number?`, `Person?`, `[number?]`, and `[number]?`. A value of type `T?` may be either `nil` or a `T`; `nil` is not assignable to non-nullable `T`, and `T?` is not assignable back to `T` except inside supported simple-variable nil-check branches: direct checks such as `if (x != nil) { ... }`, the `else` branch of `if (x == nil) { ... } else { ... }`, conservative `&&` guards such as `if (x != nil && y != nil) { ... }`, and conservative `||` else branches such as `if (x == nil || y == nil) { ... } else { ... }`; supported logical guards can narrow multiple simple variables. Function parameter and return annotations may use nullable types, such as `fun(number?): string?`. Named functions may declare inferred type parameters, for example `fun identity<T>(value: T): T { return value; }`; calls infer `T` from known arguments, aliases retain generic signatures, and existing array annotations such as `[T]` can carry the inferred type. Explicit type arguments, generic methods and lambdas, constraints, and generic container syntax beyond the built-in `map<K, V>` form are not implemented. Unannotated `let` bindings infer known initializer types such as `number`, `bool`, `string`, `nil`, `function`, `array`, and named struct constructors; non-empty unannotated array literals merge compatible element types, including nullable combinations such as `[1, nil]` becoming `[number?]` and nested homogeneous arrays preserving nested element types. Empty unannotated arrays start as dynamic arrays with unknown element type, then direct simple-variable mutations such as `push(xs, value)`, `xs.push(value)`, and `xs[index] = value` can refine the element type for later indexing, `pop`, and `for-in` reads. Mixed unannotated arrays and incompatible direct mutations fall back to dynamic arrays with unknown element type, while explicit array annotations remain strict. Known function signatures are checked for assignment compatibility, call argument types, and function returns; anonymous function expressions in expected function-typed positions use that context for unannotated parameter and return checking. Broader flow-sensitive nullable narrowing for fields, indexes, loops, and post-branch flow is not implemented. Blocks introduce lexical scope resolved at compile time: variables declared inside a block are not visible outside it, inner blocks may shadow outer variables, re-declaring a variable in the same scope is a type error, and reading or assigning an undefined variable is a type error.
+
+The built-in `map<K, V>` type is the first implemented generic collection form.
+Map literals use `{ key: value }` in expression position, infer key and value
+types independently, and fall back to a dynamic map when either component is
+unknown or incompatible. Map keys are limited to `nil`, `number`, `bool`, and
+`string`; arrays, structs, functions, and maps are rejected as keys. Maps keep
+insertion order, use identity equality, and are shared reference values. When
+a literal repeats an equal key, the last value wins while the key keeps its
+original insertion position.
 
 Examples of nullable annotations:
 
@@ -133,7 +142,7 @@ print p.name;
 p.age = 37;
 ```
 
-Named constructor expressions infer the named static type and attach the named runtime type used by `typeOf`; all structs keep the same field-only print format. Annotated bindings must still use an explicit constructor, for example `let p: Person = Person { name: "Ada", age: 36 };`. Field annotations may refer to non-recursive struct names declared later in the same scope, but recursive struct field types such as `struct Node { next: Node? }` are explicitly rejected for now. Field access/assignment on known named struct values is statically checked. Anonymous source struct literals such as `{ name: "Ada" }` and constructor functions such as `Person(...)` are not implemented.
+Named constructor expressions infer the named static type and attach the named runtime type used by `typeOf`; all structs keep the same field-only print format. Annotated bindings must still use an explicit constructor, for example `let p: Person = Person { name: "Ada", age: 36 };`. Field annotations may refer to non-recursive struct names declared later in the same scope, but recursive struct field types such as `struct Node { next: Node? }` are explicitly rejected for now. Field access/assignment on known named struct values is statically checked. Anonymous source struct literals are not a separate form: bare braces such as `{ name: "Ada" }` are map literals, while named constructors such as `Person { name: "Ada" }` remain structs. Constructor functions such as `Person(...)` are not implemented.
 
 Local named structs may define first-slice methods in top-level `impl` blocks. Methods are statically resolved on known named struct receiver types, and method calls lower to ordinary function calls with the receiver passed as implicit `this`:
 
@@ -156,7 +165,12 @@ print person.age;      // 37
 print person.age = 38; // 38
 ```
 
-The builtin `len(value)` returns a number for arrays and strings. `len([1, 2, 3])` returns `3`, and string length counts Unicode scalar values: `len("hello")` is `5` and `len("你🙂")` is `2`. Statically known non-array and non-string arguments are type errors; unknown arguments are checked at runtime. A user binding named `len` shadows the builtin in its lexical scope.
+The builtin `len(value)` returns a number for arrays, maps, and strings.
+`len([1, 2, 3])` returns `3`, `len({"a": 1})` returns `1`, and string length
+counts Unicode scalar values: `len("hello")` is `5` and `len("你🙂")` is `2`.
+Statically known values outside those three types are type errors; unknown
+arguments are checked at runtime. A user binding named `len` shadows the
+builtin in its lexical scope.
 
 The native stdlib functions `push(array, value)` and `pop(array)` mutate arrays in place. `push` appends a value and returns `nil`; `pop` removes and returns the last value. When an array has a known element type, `push` statically checks the appended value and `pop` returns that element type. Arrays are reference values, so aliases observe length changes. Calling `pop([])` is a runtime error. User bindings named `push` or `pop` shadow the stdlib functions, matching `len` shadowing behavior.
 
@@ -169,26 +183,51 @@ the corresponding member forms `array.contains(value)`,
 `array.slice(start, length)`, `array.copy()`, and `array.concat(right)` are
 builtin member sugar and are not shadowed by lexical bindings.
 
+Maps support `map[key]` lookup and `map[key] = value` upsert assignment. A
+missing lookup is a runtime error (`map key not found`), while assigning an
+existing key replaces its value and assigning a new key appends it. The
+`contains` helper also accepts maps (`contains(map, key)` and
+`map.contains(key)`) and tests key presence. `map.len()` is the member form of
+`len(map)`. Equality between maps is identity-based, so aliases compare equal
+but separately constructed maps do not. Map values print as
+`map{key: value, ...}` in insertion order.
+Map deletion, map `for-in`, custom iterators, and higher-order map helpers are
+not implemented.
+
 The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(number)` each return a number. `sqrt` rejects negative inputs at runtime. User bindings with the same names shadow these stdlib functions.
 
 The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use Unicode scalar-value offsets and always return complete UTF-8 values: `substr("你🙂", 1, 1)` is `"🙂"`, and `charAt("你🙂", 1)` is `"🙂"`. Offsets must be finite integer numbers and in bounds. Combining marks are counted as separate scalar values; grapheme segmentation and normalization are not provided. User bindings with the same names shadow these builtins.
 
-Builtin member-call sugar is available for selected array and string helpers: `array.push(value)`, `array.pop()`, `array.len()`, `array.contains(value)`, `array.slice(start, length)`, `array.copy()`, `array.concat(right)`, `string.len()`, `string.substr(start, length)`, and `string.charAt(index)`. These forms lower to the existing builtins with the receiver as the first argument; lexical bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`, `substr`, or `charAt` do not shadow member-call sugar.
+Builtin member-call sugar is available for selected array, map, and string
+helpers: `array.push(value)`, `array.pop()`, `array.len()`,
+`array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
+`array.concat(right)`, `map.len()`, `map.contains(key)`, `string.len()`,
+`string.substr(start, length)`, and `string.charAt(index)`. These forms lower
+to the existing builtins with the receiver as the first argument; lexical
+bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
+`substr`, or `charAt` do not shadow member-call sugar.
 
-The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
+The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
 
 Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Arrays: `[element, ...]` and `[]`; elements may be mixed runtime types.
+- Maps: `{ key: value, ... }` and `{}`; keys are `nil`, `number`, `bool`, or
+  `string`, and entries preserve insertion order.
 - Structs: named constructors such as `Name { field: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
 - Function expressions: `fun (parameter[: type]*) [: type] { declaration* }`, including direct expression statements such as `fun () { return nil; };`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Compound assignment: `name += expression`, `array[index] += expression`, and `object.field += expression` forms, plus `-=`, `*=`, and `/=`, update the target and evaluate to the assigned value. Compound assignment is numeric-only for both the old target value and the right-hand value.
 - Calls: `callee(argument*)` and member calls `receiver.method(argument*)`
-- Indexing: `array[index]` reads an element. Indexes must be integer numbers in range.
+- Indexing: `array[index]` reads an array element; `map[key]` reads a map entry.
+  Array indexes must be integer numbers in range. Missing map keys are runtime
+  errors.
 - Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element and length mutation through `push(array, value)` and `pop(array)`.
+- Map element assignment: `map[key] = value` inserts or updates an entry and
+  evaluates to the assigned value. Maps are reference values, so aliases observe
+  updates. Map compound assignment is not implemented.
 - Struct field assignment: `object.field = value` mutates an existing field and evaluates to the assigned value. Structs are reference values, so aliases observe field mutation. Assigning a missing field is a runtime error.
 - Logical operators: `left || right` and `left && right` short-circuit using the same truthiness rules as `if` and `!`. They return the selected operand value rather than forcing a boolean.
 - Grouping: `(expression)`

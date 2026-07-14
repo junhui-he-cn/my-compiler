@@ -142,6 +142,16 @@ arguments   = expression,
 
 array       = "[", [ arguments ], "]" ;
 
+map         = "{", [ mapEntries ], "}" ;
+
+mapEntries  = mapEntry,
+              { ",", mapEntry } ;
+
+mapEntry    = expression, ":", expression ;
+
+(* A brace in expression position is a map literal; statement-level braces
+   remain blocks. Anonymous struct literals are not a separate form. *)
+
 
 structConstructor = [ identifier, "." ], identifier, "{", [ fields ], "}" ;
 
@@ -161,6 +171,7 @@ primary     = functionExpr
             | number
             | string
             | array
+            | map
             | structConstructor
             | identifier
             | "(", expression, ")" ;
@@ -171,11 +182,14 @@ nullableType = primaryType,
                [ "?" ] ;
 
 primaryType = arrayType
+            | mapType
             | functionType
             | qualifiedType
             | simpleType ;
 
 arrayType   = "[", typeExpr, "]" ;
+
+mapType     = "map", "<", typeExpr, ",", typeExpr, ">" ;
 
 simpleType  = identifier ;
 

@@ -50,7 +50,8 @@ separate-compilation work remain deferred.
 2. Define Unicode string semantics and make string operations consistent with it.
 3. Add generic type abstraction before exposing strongly typed higher-order
    collection APIs.
-4. Add maps and ranges on top of that collection type foundation.
+4. Add ranges on top of the generic collection type foundation; the first map
+   slice is complete in Phase 17.
 5. Consider algebraic data types and pattern matching as the next data-modeling
    layer, including the decision on recursive data.
 
@@ -60,7 +61,7 @@ The immediate dependency order is:
 runtime diagnostics
 -> Unicode strings
 -> generics
--> maps and ranges
+-> ranges
 -> enums and pattern matching
 ```
 
@@ -80,8 +81,8 @@ layer.
   function signatures, and generic values retain their signatures through
   direct/namespace imports and unannotated aliases.
 - Remaining type-system work includes explicit type arguments, generic methods
-  and lambdas, constraints, generic container syntax, and the inference rules
-  needed by higher-order collection APIs.
+  and lambdas, constraints, generic container syntax beyond the built-in map
+  form, and the inference rules needed by higher-order collection APIs.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -202,13 +203,14 @@ scope.
 Goal: establish a reusable, statically meaningful collection layer rather than
 growing an array-only helper list.
 
-Status: generic function/type abstraction is implemented for the current first
-slice. Generic collection syntax and higher-order collection APIs remain future
-work.
+Status: generic function/type abstraction and the first built-in map collection
+slice are implemented. Other generic collection syntax and higher-order
+collection APIs remain future work.
 
 Future work:
 
-- Add maps/dictionaries with explicit key equality and lookup/update semantics.
+- Add further map operations, such as deletion, only as focused slices with
+  explicit mutation and missing-key conventions.
 - Add ranges with explicit construction and bounds semantics.
 
 ## Phase 18: Algebraic Data Types and Pattern Matching
@@ -287,11 +289,13 @@ type-system, and refactoring tracks:
 runtime diagnostics
 -> Unicode strings
 -> generic collection types
--> maps and ranges
+-> ranges
 -> enums and pattern matching
 ```
 
-Do not start field creation by assignment, recursive struct field types, a visitor
+The first map collection slice is complete; future map operations remain
+focused follow-ups alongside the ranges work above. Do not start field creation
+by assignment, recursive struct field types, a visitor
 rewrite, unified assignment AST, separate compilation, additional nullable
 narrowing, higher-order collection helpers before generics, `.cdbc` versioning,
 GC, task scheduling, or JIT as part of these near-term language slices.
