@@ -86,7 +86,9 @@ private:
     ExprPtr factor();
     ExprPtr unary();
     ExprPtr call();
-    ExprPtr finishCall(ExprPtr callee);
+    bool isExplicitTypeArgumentCall(const Expr& callee) const;
+    std::vector<TypeAnnotation> explicitTypeArguments();
+    ExprPtr finishCall(ExprPtr callee, std::vector<TypeAnnotation> typeArguments);
     ExprPtr finishIndex(ExprPtr collection);
     ExprPtr finishFieldAccess(ExprPtr object);
     ExprPtr arrayLiteral(Token bracket);

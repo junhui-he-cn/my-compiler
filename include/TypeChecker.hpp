@@ -237,6 +237,7 @@ private:
     CheckedExpression checkFunctionCall(
         const Token& callToken,
         const TypeInfo& calleeType,
+        const std::vector<TypeAnnotation>& typeArguments,
         const std::vector<ExprPtr>& arguments);
     TypeInfo checkFunctionBody(
         const std::vector<StmtPtr>& body,

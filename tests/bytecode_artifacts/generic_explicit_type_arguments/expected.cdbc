@@ -1,0 +1,196 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = nil
+  c2 = nil
+  c3 = nil
+  c4 = nil
+  c5 = number 0
+  c6 = nil
+  c7 = nil
+  c8 = nil
+  c9 = nil
+  c10 = number 42
+  c11 = string "hello"
+  c12 = number 1
+  c13 = number 2
+  c14 = number 3
+  c15 = number 4
+  c16 = bool true
+  c17 = number 7
+
+names:
+  n0 = "identity#0"
+  n1 = "value#1"
+  n2 = "identity#0"
+  n3 = "identity#2"
+  n4 = "value#3"
+  n5 = "identity#2"
+  n6 = "head#4"
+  n7 = "values#5"
+  n8 = "head#4"
+  n9 = "make#6"
+  n10 = "make#6"
+  n11 = "identity#2"
+  n12 = "identity#2"
+  n13 = "head#4"
+  n14 = "identity#2"
+  n15 = "make#6"
+  n16 = "identity#2"
+  n17 = "alias#7"
+  n18 = "alias#7"
+  n19 = "identity#0"
+
+main registers=33:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = make_function f0
+  assign_var n2, r1
+  r2 = constant c2
+  store_var n3, r2
+  r3 = make_function f1
+  assign_var n5, r3
+  r4 = constant c4
+  store_var n6, r4
+  r5 = make_function f2
+  assign_var n8, r5
+  r6 = constant c7
+  store_var n9, r6
+  r7 = make_function f3
+  assign_var n10, r7
+  r8 = load_var n11
+  r9 = constant c10
+  r10 = call r8 [r9]
+  print r10
+  r11 = load_var n12
+  r12 = constant c11
+  r13 = call r11 [r12]
+  print r13
+  r14 = load_var n13
+  r15 = constant c12
+  r16 = constant c13
+  r17 = array [r15, r16]
+  r18 = call r14 [r17]
+  print r18
+  r19 = load_var n14
+  r20 = constant c14
+  r21 = constant c15
+  r22 = array [r20, r21]
+  r23 = call r19 [r22]
+  print r23
+  r24 = load_var n15
+  r25 = call r24 []
+  print r25
+  r26 = load_var n16
+  store_var n17, r26
+  r27 = load_var n18
+  r28 = constant c16
+  r29 = call r27 [r28]
+  print r29
+  r30 = load_var n19
+  r31 = constant c17
+  r32 = call r30 [r31]
+  print r32
+
+function f0 name="identity" arity=1 registers=2:
+  param 0 = "value#1"
+  r0 = load_var n1
+  return r0
+  r1 = constant c1
+  return r1
+
+function f1 name="identity" arity=1 registers=2:
+  param 0 = "value#3"
+  r0 = load_var n4
+  return r0
+  r1 = constant c3
+  return r1
+
+function f2 name="head" arity=1 registers=4:
+  param 0 = "values#5"
+  r0 = load_var n7
+  r1 = constant c5
+  r2 = index r0, r1
+  return r2
+  r3 = constant c6
+  return r3
+
+function f3 name="make" arity=0 registers=2:
+  r0 = constant c8
+  return r0
+  r1 = constant c9
+  return r1
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/generic_explicit_type_arguments/input.cd" text="import \"lib.cd\" as lib;\n\nfun identity<T>(value: T): T {\n  return value;\n}\nfun head<T>(values: [T]): T {\n  return values[0];\n}\nfun make<T>(): T? {\n  return nil;\n}\nprint identity<number>(42);\nprint identity<string>(\"hello\");\nprint head<number>([1, 2]);\nprint identity<[number]>([3, 4]);\nprint make<number>();\nlet alias = identity;\nprint alias<bool>(true);\nprint lib.identity<number>(7);\n"
+  s1 path="tests/bytecode_artifacts/generic_explicit_type_arguments/lib.cd" text="fun identity<T>(value: T): T {\n  return value;\n}\nexport identity;\n"
+
+debug_locations:
+  main 0 = s1:1:1
+  main 1 = s1:1:1
+  main 2 = s1:1:1
+  main 3 = s1:1:1
+  main 4 = s0:3:1
+  main 5 = s0:3:1
+  main 6 = s0:3:1
+  main 7 = s0:3:1
+  main 8 = s0:6:1
+  main 9 = s0:6:1
+  main 10 = s0:6:1
+  main 11 = s0:6:1
+  main 12 = s0:9:1
+  main 13 = s0:9:1
+  main 14 = s0:9:1
+  main 15 = s0:9:1
+  main 16 = s0:12:7
+  main 17 = s0:12:24
+  main 18 = s0:12:7
+  main 19 = s0:12:1
+  main 20 = s0:13:7
+  main 21 = s0:13:24
+  main 22 = s0:13:7
+  main 23 = s0:13:1
+  main 24 = s0:14:7
+  main 25 = s0:14:21
+  main 26 = s0:14:24
+  main 27 = s0:14:20
+  main 28 = s0:14:7
+  main 29 = s0:14:1
+  main 30 = s0:15:7
+  main 31 = s0:15:27
+  main 32 = s0:15:30
+  main 33 = s0:15:26
+  main 34 = s0:15:7
+  main 35 = s0:15:1
+  main 36 = s0:16:7
+  main 37 = s0:16:7
+  main 38 = s0:16:1
+  main 39 = s0:17:13
+  main 40 = s0:17:1
+  main 41 = s0:18:7
+  main 42 = s0:18:19
+  main 43 = s0:18:7
+  main 44 = s0:18:1
+  main 45 = s0:19:7
+  main 46 = s0:19:28
+  main 47 = s0:19:7
+  main 48 = s0:19:1
+  function f0 0 = s1:2:10
+  function f0 1 = s1:2:3
+  function f0 2 = s1:1:1
+  function f0 3 = s1:1:1
+  function f1 0 = s0:4:10
+  function f1 1 = s0:4:3
+  function f1 2 = s0:3:1
+  function f1 3 = s0:3:1
+  function f2 0 = s0:7:10
+  function f2 1 = s0:7:17
+  function f2 2 = s0:7:10
+  function f2 3 = s0:7:3
+  function f2 4 = s0:6:1
+  function f2 5 = s0:6:1
+  function f3 0 = s0:10:10
+  function f3 1 = s0:10:3
+  function f3 2 = s0:9:1
+  function f3 3 = s0:9:1

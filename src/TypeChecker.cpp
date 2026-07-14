@@ -1979,16 +1979,31 @@ TypeInfo TypeChecker::substituteTypeParameters(
 TypeChecker::CheckedExpression TypeChecker::checkFunctionCall(
     const Token& callToken,
     const TypeInfo& calleeType,
+    const std::vector<TypeAnnotation>& typeArguments,
     const std::vector<ExprPtr>& arguments)
 {
+    const bool explicitTypes = !typeArguments.empty();
     if (calleeType.kind != StaticType::Unknown && calleeType.kind != StaticType::Function) {
         throw TypeError(callToken, "can only call functions");
     }
     if (calleeType.kind != StaticType::Function || !hasFunctionSignature(calleeType)) {
+        if (explicitTypes) {
+            throw TypeError(callToken, "explicit type arguments require a known function signature");
+        }
         for (const auto& argument : arguments) {
             checkExpressionInfo(*argument);
         }
         return CheckedExpression{unknownType()};
+    }
+
+    const bool generic = !calleeType.genericParameters.empty();
+    if (explicitTypes && !generic) {
+        throw TypeError(callToken, "function is not generic");
+    }
+    if (explicitTypes && typeArguments.size() != calleeType.genericParameters.size()) {
+        throw TypeError(callToken,
+            "expected " + std::to_string(calleeType.genericParameters.size())
+                + " type arguments but got " + std::to_string(typeArguments.size()));
     }
 
     if (calleeType.parameterTypes.size() != arguments.size()) {
@@ -1999,7 +2014,6 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionCall(
 
     std::vector<CheckedExpression> checkedArguments;
     checkedArguments.reserve(arguments.size());
-    const bool generic = !calleeType.genericParameters.empty();
     for (std::size_t i = 0; i < arguments.size(); ++i) {
         checkedArguments.push_back(generic
             ? checkExpressionInfo(*arguments[i])
@@ -2008,10 +2022,18 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionCall(
 
     TypeSubstitutions substitutions;
     if (generic) {
-        for (std::size_t i = 0; i < arguments.size(); ++i) {
-            inferTypeArguments(
-                calleeType.parameterTypes[i], checkedArguments[i].type,
-                substitutions, callToken);
+        if (explicitTypes) {
+            for (std::size_t i = 0; i < typeArguments.size(); ++i) {
+                substitutions.emplace(
+                    calleeType.genericParameters[i],
+                    resolveAnnotation(typeArguments[i]));
+            }
+        } else {
+            for (std::size_t i = 0; i < arguments.size(); ++i) {
+                inferTypeArguments(
+                    calleeType.parameterTypes[i], checkedArguments[i].type,
+                    substitutions, callToken);
+            }
         }
         for (const std::string& parameter : calleeType.genericParameters) {
             if (substitutions.find(parameter) == substitutions.end()) {
@@ -2749,6 +2771,9 @@ bool TypeChecker::isBuiltinLenCall(const CallExpr& expression) const
 
 TypeChecker::CheckedExpression TypeChecker::checkBuiltinLenCall(const CallExpr& expression)
 {
+    if (!expression.typeArguments.empty()) {
+        throw TypeError(expression.paren, "function is not generic");
+    }
     if (expression.arguments.size() != 1) {
         throw TypeError(expression.paren, "expected 1 arguments but got " + std::to_string(expression.arguments.size()));
     }
@@ -2773,6 +2798,9 @@ bool TypeChecker::isNativeStdlibCall(const CallExpr& expression) const
 
 TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr& expression)
 {
+    if (!expression.typeArguments.empty()) {
+        throw TypeError(expression.paren, "function is not generic");
+    }
     const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
     if (!variable) {
         throw TypeError("native stdlib call missing variable callee");
@@ -2988,6 +3016,9 @@ void TypeChecker::checkMethodArguments(const MemberCallExpr& expression, const M
 
 TypeChecker::CheckedExpression TypeChecker::checkStructMethodCall(const MemberCallExpr& expression, const TypeInfo& receiverType)
 {
+    if (!expression.typeArguments.empty()) {
+        throw TypeError(expression.paren, "function is not generic");
+    }
     const std::string& name = expression.name.lexeme;
     const MethodInfo* method = findMethod(*receiverType.structName, name);
     if (!method) {
@@ -3005,6 +3036,9 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
     const std::size_t arity = expression.arguments.size();
 
     if (!enumConstructorTypeName(expression).empty()) {
+        if (!expression.typeArguments.empty()) {
+            throw TypeError(expression.paren, "function is not generic");
+        }
         return checkVariantConstructor(expression);
     }
 
@@ -3016,8 +3050,16 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
                     "module namespace `" + variable->name.lexeme + "` has no exported member `" + name + "`");
             }
             resolvedNames_.recordMemberCallCallee(expression, found->second.resolvedName, false);
-            return checkFunctionCall(expression.paren, found->second.type, expression.arguments);
+            return checkFunctionCall(
+                expression.paren,
+                found->second.type,
+                expression.typeArguments,
+                expression.arguments);
         }
+    }
+
+    if (!expression.typeArguments.empty()) {
+        throw TypeError(expression.paren, "function is not generic");
     }
 
     auto expectArity = [&](std::size_t expected) {
@@ -3210,7 +3252,11 @@ TypeChecker::CheckedExpression TypeChecker::checkCall(const CallExpr& expression
     }
 
     const CheckedExpression callee = checkExpressionInfo(*expression.callee);
-    return checkFunctionCall(expression.paren, callee.type, expression.arguments);
+    return checkFunctionCall(
+        expression.paren,
+        callee.type,
+        expression.typeArguments,
+        expression.arguments);
 }
 
 TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(

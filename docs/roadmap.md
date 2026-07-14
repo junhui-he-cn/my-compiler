@@ -45,9 +45,9 @@ layer.
 
 Future work:
 
-- Add explicit type arguments, generic methods and lambdas, constraints, generic
-  container syntax beyond the built-in `map` form, and the inference rules
-  needed by higher-order collection APIs.
+- Add generic methods and lambdas, constraints, generic container syntax beyond
+  the built-in `map` form, and the inference rules needed by higher-order
+  collection APIs.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 

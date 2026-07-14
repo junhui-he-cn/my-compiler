@@ -152,21 +152,32 @@ struct GroupingExpr final : Expr {
 };
 
 struct CallExpr final : Expr {
-    CallExpr(ExprPtr callee, Token paren, std::vector<ExprPtr> arguments);
+    CallExpr(
+        ExprPtr callee,
+        Token paren,
+        std::vector<TypeAnnotation> typeArguments,
+        std::vector<ExprPtr> arguments);
     void print(std::ostream& out) const override;
 
     ExprPtr callee;
     Token paren;
+    std::vector<TypeAnnotation> typeArguments;
     std::vector<ExprPtr> arguments;
 };
 
 struct MemberCallExpr final : Expr {
-    MemberCallExpr(ExprPtr receiver, Token name, Token paren, std::vector<ExprPtr> arguments);
+    MemberCallExpr(
+        ExprPtr receiver,
+        Token name,
+        Token paren,
+        std::vector<TypeAnnotation> typeArguments,
+        std::vector<ExprPtr> arguments);
     void print(std::ostream& out) const override;
 
     ExprPtr receiver;
     Token name;
     Token paren;
+    std::vector<TypeAnnotation> typeArguments;
     std::vector<ExprPtr> arguments;
 };
 

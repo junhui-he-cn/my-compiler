@@ -66,6 +66,22 @@ void writeTypeAnnotation(std::ostream& out, const TypeAnnotation& annotation)
     writeTypeAnnotation(out, *annotation.returnType);
 }
 
+void writeTypeArguments(std::ostream& out, const std::vector<TypeAnnotation>& arguments)
+{
+    if (arguments.empty()) {
+        return;
+    }
+
+    out << '<';
+    for (std::size_t i = 0; i < arguments.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        writeTypeAnnotation(out, arguments[i]);
+    }
+    out << '>';
+}
+
 void writeOptionalTypeAnnotation(std::ostream& out, const std::optional<TypeAnnotation>& annotation)
 {
     if (annotation) {
@@ -493,9 +509,14 @@ void GroupingExpr::print(std::ostream& out) const
     out << ')';
 }
 
-CallExpr::CallExpr(ExprPtr callee, Token paren, std::vector<ExprPtr> arguments)
+CallExpr::CallExpr(
+    ExprPtr callee,
+    Token paren,
+    std::vector<TypeAnnotation> typeArguments,
+    std::vector<ExprPtr> arguments)
     : callee(std::move(callee))
     , paren(std::move(paren))
+    , typeArguments(std::move(typeArguments))
     , arguments(std::move(arguments))
 {
 }
@@ -504,6 +525,7 @@ void CallExpr::print(std::ostream& out) const
 {
     out << "(call ";
     writeExpr(out, callee);
+    writeTypeArguments(out, typeArguments);
     for (const auto& argument : arguments) {
         out << ' ';
         writeExpr(out, argument);
@@ -511,10 +533,16 @@ void CallExpr::print(std::ostream& out) const
     out << ')';
 }
 
-MemberCallExpr::MemberCallExpr(ExprPtr receiver, Token name, Token paren, std::vector<ExprPtr> arguments)
+MemberCallExpr::MemberCallExpr(
+    ExprPtr receiver,
+    Token name,
+    Token paren,
+    std::vector<TypeAnnotation> typeArguments,
+    std::vector<ExprPtr> arguments)
     : receiver(std::move(receiver))
     , name(std::move(name))
     , paren(std::move(paren))
+    , typeArguments(std::move(typeArguments))
     , arguments(std::move(arguments))
 {
 }
@@ -524,6 +552,7 @@ void MemberCallExpr::print(std::ostream& out) const
     out << "(member-call ";
     writeExpr(out, receiver);
     out << ' ' << name.lexeme;
+    writeTypeArguments(out, typeArguments);
     for (const auto& argument : arguments) {
         out << ' ';
         writeExpr(out, argument);

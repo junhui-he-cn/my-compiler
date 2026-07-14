@@ -904,8 +904,12 @@ ExprPtr Parser::call()
 {
     ExprPtr expr = primary();
     while (true) {
-        if (match(TokenType::LeftParen)) {
-            expr = finishCall(std::move(expr));
+        if (isExplicitTypeArgumentCall(*expr)) {
+            std::vector<TypeAnnotation> typeArguments = explicitTypeArguments();
+            consume(TokenType::LeftParen, "expected `(` after type arguments");
+            expr = finishCall(std::move(expr), std::move(typeArguments));
+        } else if (match(TokenType::LeftParen)) {
+            expr = finishCall(std::move(expr), {});
         } else if (match(TokenType::LeftBracket)) {
             expr = finishIndex(std::move(expr));
         } else if (match(TokenType::Dot)) {
@@ -917,7 +921,57 @@ ExprPtr Parser::call()
     return expr;
 }
 
-ExprPtr Parser::finishCall(ExprPtr callee)
+bool Parser::isExplicitTypeArgumentCall(const Expr& callee) const
+{
+    const Token* calleeName = nullptr;
+    if (const auto* variable = dynamic_cast<const VariableExpr*>(&callee)) {
+        calleeName = &variable->name;
+    } else if (const auto* field = dynamic_cast<const FieldAccessExpr*>(&callee)) {
+        calleeName = &field->name;
+    }
+
+    if (!calleeName || !check(TokenType::Less)) {
+        return false;
+    }
+
+    const Token& less = peek();
+    if (less.line != calleeName->line
+        || less.column != calleeName->column + static_cast<int>(calleeName->lexeme.size())) {
+        return false;
+    }
+
+    int angleDepth = 0;
+    for (std::size_t index = current_; index < tokens_.size(); ++index) {
+        if (tokens_[index].type == TokenType::Less) {
+            ++angleDepth;
+        } else if (tokens_[index].type == TokenType::Greater) {
+            --angleDepth;
+            if (angleDepth == 0) {
+                return index + 1 < tokens_.size()
+                    && tokens_[index + 1].type == TokenType::LeftParen;
+            }
+        } else if (tokens_[index].type == TokenType::EndOfFile) {
+            return false;
+        }
+    }
+    return false;
+}
+
+std::vector<TypeAnnotation> Parser::explicitTypeArguments()
+{
+    consume(TokenType::Less, "expected `<` before type arguments");
+    std::vector<TypeAnnotation> typeArguments;
+    if (check(TokenType::Greater)) {
+        throw ParseError(peek(), "expected type argument after `<`");
+    }
+    do {
+        typeArguments.push_back(typeAnnotation("expected type argument after `<`"));
+    } while (match(TokenType::Comma));
+    consume(TokenType::Greater, "expected `>` after type arguments");
+    return typeArguments;
+}
+
+ExprPtr Parser::finishCall(ExprPtr callee, std::vector<TypeAnnotation> typeArguments)
 {
     const std::optional<SourceSpan> span = callee ? callee->span : std::nullopt;
     std::vector<ExprPtr> arguments;
@@ -932,12 +986,21 @@ ExprPtr Parser::finishCall(ExprPtr callee)
         ExprPtr receiver = std::move(field->object);
         Token name = std::move(field->name);
         return withSpan(
-            std::make_unique<MemberCallExpr>(std::move(receiver), std::move(name), std::move(paren), std::move(arguments)),
+            std::make_unique<MemberCallExpr>(
+                std::move(receiver),
+                std::move(name),
+                std::move(paren),
+                std::move(typeArguments),
+                std::move(arguments)),
             span);
     }
 
     return withSpan(
-        std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments)),
+        std::make_unique<CallExpr>(
+            std::move(callee),
+            std::move(paren),
+            std::move(typeArguments),
+            std::move(arguments)),
         span);
 }
 

@@ -1,0 +1,4 @@
+module 0 "<repo>/tests/golden/generic_explicit_type_arguments/lib.cd"
+  export value identity: fun<T>(T): T
+
+module 1 entry "<repo>/tests/golden/generic_explicit_type_arguments/input.cd"
