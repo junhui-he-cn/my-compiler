@@ -14,6 +14,7 @@ enum class StaticType {
     Function,
     Array,
     Map,
+    Range,
     Struct,
     Nullable,
     TypeParameter,

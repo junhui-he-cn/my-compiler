@@ -29,5 +29,10 @@ int main()
     assert(compatible(
         mapType(typeParameterType("K"), arrayType(typeParameterType("V"))),
         mapType(typeParameterType("K"), arrayType(typeParameterType("V")))));
+
+    const TypeInfo range = simpleType(StaticType::Range);
+    assert(typeInfoName(range) == "range");
+    assert(compatible(range, simpleType(StaticType::Range)));
+    assert(!compatible(range, simpleType(StaticType::Array)));
     return 0;
 }

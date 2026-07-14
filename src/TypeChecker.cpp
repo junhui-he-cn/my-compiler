@@ -668,14 +668,18 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* forInStmt = dynamic_cast<const ForInStmt*>(&statement)) {
         const TypeInfo iterableType = checkExpression(*forInStmt->iterable);
-        if (iterableType.kind != StaticType::Unknown && iterableType.kind != StaticType::Array) {
+        if (iterableType.kind != StaticType::Unknown
+            && iterableType.kind != StaticType::Array
+            && iterableType.kind != StaticType::Range) {
             throw TypeError(forInStmt->variable,
-                "for-in expects array, got " + typeInfoName(iterableType));
+                "for-in expects array or range, got " + typeInfoName(iterableType));
         }
 
         TypeInfo elementType = unknownType();
         if (iterableType.kind == StaticType::Array && iterableType.elementType) {
             elementType = *iterableType.elementType;
+        } else if (iterableType.kind == StaticType::Range) {
+            elementType = simpleType(StaticType::Number);
         }
 
         beginScope();
@@ -2317,8 +2321,9 @@ TypeChecker::CheckedExpression TypeChecker::checkBuiltinLenCall(const CallExpr& 
     if (isKnown(argument.type)
         && argument.type.kind != StaticType::Array
         && argument.type.kind != StaticType::String
-        && argument.type.kind != StaticType::Map) {
-        throw TypeError(expression.paren, "len expects array, string, or map, got " + typeInfoName(argument.type));
+        && argument.type.kind != StaticType::Map
+        && argument.type.kind != StaticType::Range) {
+        throw TypeError(expression.paren, "len expects array, string, map, or range, got " + typeInfoName(argument.type));
     }
 
     return CheckedExpression{simpleType(StaticType::Number)};
@@ -2341,9 +2346,17 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     if (!function) {
         throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
     }
-    if (expression.arguments.size() != function->arity) {
+    const bool validArity = function->kind == NativeFunctionKind::Range
+        ? expression.arguments.size() >= function->arity
+            && expression.arguments.size() <= function->maxArity
+        : expression.arguments.size() == function->arity;
+    if (!validArity) {
+        std::string expectedArity = std::to_string(function->arity);
+        if (function->maxArity != 0) {
+            expectedArity += " to " + std::to_string(function->maxArity);
+        }
         throw TypeError(expression.paren,
-            "expected " + std::to_string(function->arity) + " arguments but got " + std::to_string(expression.arguments.size()));
+            "expected " + expectedArity + " arguments but got " + std::to_string(expression.arguments.size()));
     }
 
     switch (function->kind) {
@@ -2430,15 +2443,18 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         const CheckedExpression collectionArgument = checkExpressionInfo(*expression.arguments[0]);
         if (collectionArgument.type.kind != StaticType::Unknown
             && collectionArgument.type.kind != StaticType::Array
-            && collectionArgument.type.kind != StaticType::Map) {
+            && collectionArgument.type.kind != StaticType::Map
+            && collectionArgument.type.kind != StaticType::Range) {
             throw TypeError(expression.paren,
-                "contains expects array or map as first argument, got " + typeInfoName(collectionArgument.type));
+                "contains expects array, map, or range as first argument, got " + typeInfoName(collectionArgument.type));
         }
         const TypeInfo* expectedKey = nullptr;
         if (collectionArgument.type.kind == StaticType::Array) {
             expectedKey = collectionArgument.type.elementType.get();
         } else if (collectionArgument.type.kind == StaticType::Map) {
             expectedKey = collectionArgument.type.keyType.get();
+        } else if (collectionArgument.type.kind == StaticType::Range) {
+            expectedKey = nullptr;
         }
         const CheckedExpression keyArgument = checkExpressionInfo(*expression.arguments[1], expectedKey);
         if (collectionArgument.type.kind == StaticType::Map
@@ -2453,6 +2469,12 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
             throw TypeError(expression.paren,
                 "contains value expects " + typeInfoName(*expectedKey)
                     + ", got " + typeInfoName(keyArgument.type));
+        }
+        if (collectionArgument.type.kind == StaticType::Range
+            && keyArgument.type.kind != StaticType::Unknown
+            && keyArgument.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "contains expects number as range value, got " + typeInfoName(keyArgument.type));
         }
         return CheckedExpression{simpleType(StaticType::Bool)};
     }
@@ -2494,6 +2516,18 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
                 "concat expects array as second argument, got " + typeInfoName(rightArgument.type));
         }
         return CheckedExpression{concatenatedArrayType(leftArgument.type, rightArgument.type)};
+    }
+    case NativeFunctionKind::Range: {
+        for (std::size_t index = 0; index < expression.arguments.size(); ++index) {
+            const CheckedExpression argument = checkExpressionInfo(*expression.arguments[index]);
+            if (argument.type.kind != StaticType::Unknown && argument.type.kind != StaticType::Number) {
+                const char* ordinal = index == 0 ? "first" : (index == 1 ? "second" : "third");
+                throw TypeError(expression.paren,
+                    std::string("range expects number as ") + ordinal + " argument, got "
+                        + typeInfoName(argument.type));
+            }
+        }
+        return CheckedExpression{simpleType(StaticType::Range)};
     }
     }
 
@@ -2595,8 +2629,9 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
         const CheckedExpression receiver = checkReceiver();
         if (receiver.type.kind != StaticType::Unknown
             && receiver.type.kind != StaticType::Array
-            && receiver.type.kind != StaticType::Map) {
-            throw TypeError(expression.paren, "contains expects array or map receiver, got " + typeInfoName(receiver.type));
+            && receiver.type.kind != StaticType::Map
+            && receiver.type.kind != StaticType::Range) {
+            throw TypeError(expression.paren, "contains expects array, map, or range receiver, got " + typeInfoName(receiver.type));
         }
         const TypeInfo* expectedKey = nullptr;
         if (receiver.type.kind == StaticType::Array) {
@@ -2616,6 +2651,12 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
             }
             throw TypeError(expression.paren,
                 "contains value expects " + typeInfoName(*expectedKey) + ", got " + typeInfoName(value.type));
+        }
+        if (receiver.type.kind == StaticType::Range
+            && value.type.kind != StaticType::Unknown
+            && value.type.kind != StaticType::Number) {
+            throw TypeError(expression.paren,
+                "contains expects number as range value, got " + typeInfoName(value.type));
         }
         return CheckedExpression{simpleType(StaticType::Bool)};
     }
@@ -2668,8 +2709,9 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
         if (isKnown(receiver.type)
             && receiver.type.kind != StaticType::Array
             && receiver.type.kind != StaticType::String
-            && receiver.type.kind != StaticType::Map) {
-            throw TypeError(expression.paren, "len expects array, string, or map receiver, got " + typeInfoName(receiver.type));
+            && receiver.type.kind != StaticType::Map
+            && receiver.type.kind != StaticType::Range) {
+            throw TypeError(expression.paren, "len expects array, string, map, or range receiver, got " + typeInfoName(receiver.type));
         }
         return CheckedExpression{simpleType(StaticType::Number)};
     }
@@ -2744,7 +2786,8 @@ TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
 
     if (result.collection.kind != StaticType::Unknown
         && result.collection.kind != StaticType::Array
-        && result.collection.kind != StaticType::Map) {
+        && result.collection.kind != StaticType::Map
+        && result.collection.kind != StaticType::Range) {
         throw TypeError(bracket, nonArrayMessage);
     }
 
@@ -2759,6 +2802,10 @@ TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
         && result.index.kind != StaticType::Unknown
         && result.index.kind != StaticType::Number) {
         throw TypeError(bracket, "array index must be number");
+    } else if (result.collection.kind == StaticType::Range
+        && result.index.kind != StaticType::Unknown
+        && result.index.kind != StaticType::Number) {
+        throw TypeError(bracket, "range index must be number");
     }
 
     return result;
@@ -2767,7 +2814,7 @@ TypeChecker::IndexTargetTypes TypeChecker::checkIndexTarget(
 TypeInfo TypeChecker::checkIndex(const IndexExpr& expression)
 {
     const IndexTargetTypes target = checkIndexTarget(
-        *expression.collection, *expression.index, expression.bracket, "can only index arrays or maps");
+        *expression.collection, *expression.index, expression.bracket, "can only index arrays, maps, or ranges");
 
     if (target.collection.kind == StaticType::Array && target.collection.elementType) {
         return *target.collection.elementType;
@@ -2775,13 +2822,20 @@ TypeInfo TypeChecker::checkIndex(const IndexExpr& expression)
     if (target.collection.kind == StaticType::Map && target.collection.valueType) {
         return *target.collection.valueType;
     }
+    if (target.collection.kind == StaticType::Range) {
+        return simpleType(StaticType::Number);
+    }
     return unknownType();
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssignExpr& expression)
 {
     const IndexTargetTypes target = checkIndexTarget(
-        *expression.collection, *expression.index, expression.bracket, "can only assign array elements or map entries");
+        *expression.collection, *expression.index, expression.bracket, "can only assign array elements, map entries, or range elements");
+
+    if (target.collection.kind == StaticType::Range) {
+        throw TypeError(expression.bracket, "cannot assign range elements");
+    }
 
     Binding* binding = findSimpleVariableBinding(*expression.collection);
     if (target.collection.kind == StaticType::Map) {
@@ -2814,10 +2868,14 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexAssignment(const IndexAssi
 TypeChecker::CheckedExpression TypeChecker::checkIndexCompoundAssignment(const IndexCompoundAssignExpr& expression)
 {
     const IndexTargetTypes target = checkIndexTarget(
-        *expression.collection, *expression.index, expression.bracket, "can only assign array elements or map entries");
+        *expression.collection, *expression.index, expression.bracket, "can only assign array elements, map entries, or range elements");
 
     if (target.collection.kind == StaticType::Map) {
         throw TypeError(expression.bracket, "compound assignment is not supported for map entries");
+    }
+
+    if (target.collection.kind == StaticType::Range) {
+        throw TypeError(expression.bracket, "cannot assign range elements");
     }
 
     if (target.collection.kind == StaticType::Array && target.collection.elementType) {

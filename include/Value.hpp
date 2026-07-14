@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -12,6 +13,7 @@
 struct Environment;
 struct ArrayValue;
 struct MapValue;
+struct RangeValue;
 struct StructValue;
 
 struct FunctionValue {
@@ -32,6 +34,7 @@ public:
         Function,
         Array,
         Map,
+        Range,
         Struct,
     };
 
@@ -42,6 +45,7 @@ public:
     static Value function(FunctionValue value);
     static Value array(ArrayValue value);
     static Value map(MapValue value);
+    static Value range(RangeValue value);
     static Value structure(StructValue value);
 
     Type type() const;
@@ -51,6 +55,7 @@ public:
     const FunctionValue& asFunction() const;
     const ArrayValue& asArray() const;
     const MapValue& asMap() const;
+    const RangeValue& asRange() const;
     const StructValue& asStruct() const;
 
 private:
@@ -63,6 +68,7 @@ private:
     FunctionValue function_;
     std::shared_ptr<ArrayValue> array_;
     std::shared_ptr<MapValue> map_;
+    std::shared_ptr<RangeValue> range_;
     std::shared_ptr<StructValue> struct_;
 };
 
@@ -74,6 +80,13 @@ struct ArrayValue {
 struct MapValue {
     std::size_t identity = 0;
     std::shared_ptr<std::vector<std::pair<Value, Value>>> entries;
+};
+
+struct RangeValue {
+    std::int64_t start = 0;
+    std::int64_t stop = 0;
+    std::int64_t step = 1;
+    std::size_t length = 0;
 };
 
 struct StructValue {

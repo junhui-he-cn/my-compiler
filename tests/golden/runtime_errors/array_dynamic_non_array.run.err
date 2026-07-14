@@ -1,4 +1,4 @@
-Runtime error at tests/golden/runtime_errors/array_dynamic_non_array.cd:4:7: can only index arrays or maps
+Runtime error at tests/golden/runtime_errors/array_dynamic_non_array.cd:4:7: can only index arrays, maps, or ranges
   print id(1)[0];
         ^
 Call stack:

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::runtime::{ArrayValue, FunctionValue, MapValue, StructValue};
+use crate::runtime::{ArrayValue, FunctionValue, MapValue, RangeValue, StructValue};
 use std::fmt;
 
 #[derive(Clone, Debug)]
@@ -12,6 +12,7 @@ pub enum Value {
     Function(FunctionValue),
     Array(ArrayValue),
     Map(MapValue),
+    Range(RangeValue),
     Struct(StructValue),
 }
 
@@ -40,6 +41,10 @@ impl Value {
         Self::Map(value)
     }
 
+    pub fn range(value: RangeValue) -> Self {
+        Self::Range(value)
+    }
+
     pub fn structure(value: StructValue) -> Self {
         Self::Struct(value)
     }
@@ -53,6 +58,7 @@ impl Value {
             Self::Function(_) => "function",
             Self::Array(_) => "array",
             Self::Map(_) => "map",
+            Self::Range(_) => "range",
             Self::Struct(value) => value.type_name.as_deref().unwrap_or("struct"),
         }
     }
@@ -70,6 +76,9 @@ impl Value {
             (Self::Function(left), Self::Function(right)) => left.identity == right.identity,
             (Self::Array(left), Self::Array(right)) => left.identity == right.identity,
             (Self::Map(left), Self::Map(right)) => left.identity == right.identity,
+            (Self::Range(left), Self::Range(right)) => {
+                left.start == right.start && left.stop == right.stop && left.step == right.step
+            }
             (Self::Struct(left), Self::Struct(right)) => left.identity == right.identity,
             _ => false,
         }
@@ -114,6 +123,7 @@ impl fmt::Display for Value {
                 }
                 write!(f, "}}")
             }
+            Self::Range(range) => write!(f, "range({}, {}, {})", range.start, range.stop, range.step),
             Self::Struct(value) => {
                 write!(f, "{{")?;
                 let fields = value.fields.borrow();

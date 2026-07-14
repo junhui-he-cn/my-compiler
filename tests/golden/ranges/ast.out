@@ -1,0 +1,15 @@
+Program
+  Let ascending = (call range 1 6)
+  Print ascending
+  Print (call len ascending)
+  Print (index ascending 2)
+  Print (member-call ascending contains 5)
+  Print (call contains ascending 4)
+  Print (member-call ascending len)
+  Print (call typeOf ascending)
+  ForIn item in (call range 5)
+    Block
+      Print item
+  ForIn item in (call range 5 0 (- 2))
+    Block
+      Print item

@@ -187,6 +187,11 @@ rD = native_call nName [rArg0, rArg1, ...]
 
 `native_call` invokes a registered VM native stdlib function by name-table reference; in this version `push`, `pop`, `floor`, `ceil`, `sqrt`, `str`, `substr`, `charAt`, `typeOf`, `contains`, `slice`, `copy`, and `concat` are supported.
 
+The `range` native is also supported with one to three numeric arguments. Its
+result is consumed by the existing `len`, `index`, and `assert_array`
+instructions; `assert_array` accepts both arrays and ranges for compatibility
+with existing artifacts.
+
 New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter and executor together.
 
 ## Non-Goals for This Phase

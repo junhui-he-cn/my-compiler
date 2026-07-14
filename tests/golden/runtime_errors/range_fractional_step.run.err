@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/range_fractional_step.cd:1:1: range expects integer as third argument
+  range(0, 3, 1.5);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/range_fractional_step.cd:1:1)

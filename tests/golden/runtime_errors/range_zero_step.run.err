@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/range_zero_step.cd:1:1: range step must not be zero
+  range(0, 3, 0);
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/range_zero_step.cd:1:1)

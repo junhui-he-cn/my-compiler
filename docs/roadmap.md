@@ -50,18 +50,18 @@ separate-compilation work remain deferred.
 2. Define Unicode string semantics and make string operations consistent with it.
 3. Add generic type abstraction before exposing strongly typed higher-order
    collection APIs.
-4. Add ranges on top of the generic collection type foundation; the first map
-   slice is complete in Phase 17.
+4. Ranges are implemented on top of the generic collection type foundation;
+   the first map slice is complete in Phase 17.
 5. Consider algebraic data types and pattern matching as the next data-modeling
    layer, including the decision on recursive data.
 
-The immediate dependency order is:
+The completed dependency order now reaches ranges:
 
 ```text
 runtime diagnostics
 -> Unicode strings
 -> generics
--> ranges
+-> ranges (implemented)
 -> enums and pattern matching
 ```
 
@@ -203,15 +203,16 @@ scope.
 Goal: establish a reusable, statically meaningful collection layer rather than
 growing an array-only helper list.
 
-Status: generic function/type abstraction and the first built-in map collection
-slice are implemented. Other generic collection syntax and higher-order
-collection APIs remain future work.
+Status: generic function/type abstraction, the first built-in map collection
+slice, and immutable integer ranges are implemented. Other generic collection
+syntax and higher-order collection APIs remain future work.
 
 Future work:
 
 - Add further map operations, such as deletion, only as focused slices with
   explicit mutation and missing-key conventions.
-- Add ranges with explicit construction and bounds semantics.
+- Add further range/collection operations only as focused slices with explicit
+  mutation and bounds semantics.
 
 ## Phase 18: Algebraic Data Types and Pattern Matching
 
@@ -289,7 +290,7 @@ type-system, and refactoring tracks:
 runtime diagnostics
 -> Unicode strings
 -> generic collection types
--> ranges
+-> ranges (implemented)
 -> enums and pattern matching
 ```
 

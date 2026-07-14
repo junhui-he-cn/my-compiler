@@ -1,4 +1,4 @@
-Runtime error at tests/golden/runtime_errors/collection_helper_contains_dynamic_non_array.cd:2:1: contains expects array or map as first argument
+Runtime error at tests/golden/runtime_errors/collection_helper_contains_dynamic_non_array.cd:2:1: contains expects array, map, or range as first argument
   contains(id(1), 1);
   ^
 Call stack:

@@ -1,4 +1,4 @@
-Runtime error at tests/golden/runtime_errors/map_dynamic_len_bad_receiver.cd:4:7: len expects array, string, or map
+Runtime error at tests/golden/runtime_errors/map_dynamic_len_bad_receiver.cd:4:7: len expects array, string, map, or range
   print len(id(1));
         ^
 Call stack:

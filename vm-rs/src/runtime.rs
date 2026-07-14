@@ -34,6 +34,14 @@ pub struct MapValue {
 }
 
 #[derive(Clone, Debug)]
+pub struct RangeValue {
+    pub start: i64,
+    pub stop: i64,
+    pub step: i64,
+    pub length: usize,
+}
+
+#[derive(Clone, Debug)]
 pub struct StructValue {
     pub identity: usize,
     pub type_name: Option<String>,

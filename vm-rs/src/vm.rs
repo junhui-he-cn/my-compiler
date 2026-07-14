@@ -2,8 +2,8 @@
 
 use crate::bytecode::{Constant, DebugLocation, DebugSource, FunctionBody, Instruction, Program};
 use crate::runtime::{
-    new_cell, new_environment, ArrayValue, Cell, FunctionValue, MapValue, SharedEnvironment,
-    StructValue,
+    new_cell, new_environment, ArrayValue, Cell, FunctionValue, MapValue, RangeValue,
+    SharedEnvironment, StructValue,
 };
 use crate::value::Value;
 use std::cell::RefCell;
@@ -213,6 +213,96 @@ mod tests {
         assert_eq!(map.to_string(), "map{a: 3, b: 2}");
         assert!(map.runtime_equals(&map));
         assert!(!map.runtime_equals(&distinct));
+    }
+
+    #[test]
+    fn native_ranges_are_indexable_and_iterable_values() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+
+        let ascending = vm
+            .execute_native_call("range", vec![Value::number(1.0), Value::number(6.0)])
+            .expect("range succeeds");
+        let equivalent = vm
+            .execute_native_call("range", vec![Value::number(1.0), Value::number(6.0)])
+            .expect("equivalent range succeeds");
+        let different = vm
+            .execute_native_call("range", vec![Value::number(1.0), Value::number(7.0)])
+            .expect("different range succeeds");
+        assert_eq!(ascending.to_string(), "range(1, 6, 1)");
+        assert_eq!(ascending.type_name(), "range");
+        assert!(ascending.runtime_equals(&equivalent));
+        assert!(!ascending.runtime_equals(&different));
+        assert!(matches!(
+            vm.execute_len(ascending.clone()).unwrap(),
+            Value::Number(value) if value == 5.0
+        ));
+        assert!(matches!(
+            vm.execute_index(ascending.clone(), Value::number(2.0)).unwrap(),
+            Value::Number(value) if value == 3.0
+        ));
+        assert!(matches!(
+            vm.execute_native_call("contains", vec![ascending.clone(), Value::number(5.0)]).unwrap(),
+            Value::Bool(true)
+        ));
+        assert!(matches!(
+            vm.execute_native_call("contains", vec![ascending.clone(), Value::number(5.5)]).unwrap(),
+            Value::Bool(false)
+        ));
+
+        let descending = vm
+            .execute_native_call(
+                "range",
+                vec![Value::number(5.0), Value::number(0.0), Value::number(-2.0)],
+            )
+            .expect("descending range succeeds");
+        assert!(matches!(
+            vm.execute_len(descending.clone()).unwrap(),
+            Value::Number(value) if value == 3.0
+        ));
+        assert!(matches!(
+            vm.execute_index(descending, Value::number(1.0)).unwrap(),
+            Value::Number(value) if value == 3.0
+        ));
+
+        let empty = vm
+            .execute_native_call("range", vec![Value::number(5.0), Value::number(0.0)])
+            .expect("empty range succeeds");
+        assert!(matches!(
+            vm.execute_len(empty).unwrap(),
+            Value::Number(value) if value == 0.0
+        ));
+    }
+
+    #[test]
+    fn native_ranges_validate_bounds_and_indexes() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+
+        let zero_step = vm
+            .execute_native_call(
+                "range",
+                vec![Value::number(0.0), Value::number(3.0), Value::number(0.0)],
+            )
+            .expect_err("zero step should fail");
+        assert_eq!(zero_step.message, "range step must not be zero");
+
+        let fractional = vm
+            .execute_native_call("range", vec![Value::number(0.0), Value::number(3.0), Value::number(1.5)])
+            .expect_err("fractional step should fail");
+        assert_eq!(fractional.message, "range expects integer as third argument");
+
+        let range = vm
+            .execute_native_call("range", vec![Value::number(3.0)])
+            .expect("range succeeds");
+        let wrong_type = vm
+            .execute_index(range.clone(), Value::boolean(true))
+            .expect_err("bool index should fail");
+        assert_eq!(wrong_type.message, "range index must be number");
+        let out_of_bounds = vm
+            .execute_index(range, Value::number(3.0))
+            .expect_err("out-of-bounds index should fail");
+        assert_eq!(out_of_bounds.message, "range index out of bounds");
     }
 
     #[test]
@@ -782,8 +872,8 @@ impl<'a> VM<'a> {
                 }
                 Instruction::AssertArray { dest, value } => {
                     let input = self.read_register(frame, *value)?;
-                    if !matches!(input, Value::Array(_)) {
-                        return Err(RuntimeError::new("for-in expects array"));
+                    if !matches!(input, Value::Array(_) | Value::Range(_)) {
+                        return Err(RuntimeError::new("for-in expects array or range"));
                     }
                     self.write_register(frame, *dest, input)?;
                 }
@@ -953,6 +1043,79 @@ impl<'a> VM<'a> {
         })
     }
 
+    fn range_bound(value: &Value, position: usize) -> Result<i64, RuntimeError> {
+        let ordinal = match position {
+            0 => "first",
+            1 => "second",
+            _ => "third",
+        };
+        let Value::Number(number) = value else {
+            return Err(RuntimeError::new(format!(
+                "range expects number as {} argument",
+                ordinal
+            )));
+        };
+        if !number.is_finite() || number.fract() != 0.0 {
+            return Err(RuntimeError::new(format!(
+                "range expects integer as {} argument",
+                ordinal
+            )));
+        }
+        const MIN: f64 = -9223372036854775808.0;
+        const MAX_EXCLUSIVE: f64 = 9223372036854775808.0;
+        if *number < MIN || *number >= MAX_EXCLUSIVE {
+            return Err(RuntimeError::new("range bound out of range"));
+        }
+        Ok(*number as i64)
+    }
+
+    fn range_length(start: i64, stop: i64, step: i64) -> Result<usize, RuntimeError> {
+        let start = start as i128;
+        let stop = stop as i128;
+        let step = step as i128;
+        let length = if step > 0 && start < stop {
+            ((stop - start - 1) / step + 1) as u128
+        } else if step < 0 && start > stop {
+            ((start - stop - 1) / (-step) + 1) as u128
+        } else {
+            0
+        };
+        if length > usize::MAX as u128 {
+            return Err(RuntimeError::new("range length out of bounds"));
+        }
+        Ok(length as usize)
+    }
+
+    fn execute_native_range(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.is_empty() || arguments.len() > 3 {
+            return Err(RuntimeError::new("range expects 1 to 3 arguments"));
+        }
+        let (start, stop, step) = match arguments.len() {
+            1 => (0, Self::range_bound(&arguments[0], 0)?, 1),
+            2 => (
+                Self::range_bound(&arguments[0], 0)?,
+                Self::range_bound(&arguments[1], 1)?,
+                1,
+            ),
+            3 => (
+                Self::range_bound(&arguments[0], 0)?,
+                Self::range_bound(&arguments[1], 1)?,
+                Self::range_bound(&arguments[2], 2)?,
+            ),
+            _ => unreachable!(),
+        };
+        if step == 0 {
+            return Err(RuntimeError::new("range step must not be zero"));
+        }
+        let length = Self::range_length(start, stop, step)?;
+        Ok(Value::range(RangeValue {
+            start,
+            stop,
+            step,
+            length,
+        }))
+    }
+
     fn validate_map_key(&self, key: &Value) -> Result<(), RuntimeError> {
         if matches!(key, Value::Nil | Value::Number(_) | Value::Bool(_) | Value::String(_)) {
             Ok(())
@@ -1016,7 +1179,23 @@ impl<'a> VM<'a> {
                     .map(|(_, value)| value.clone())
                     .ok_or_else(|| RuntimeError::new("map key not found"))
             }
-            _ => Err(RuntimeError::new("can only index arrays or maps")),
+            Value::Range(range) => {
+                if range.length == 0 {
+                    return Err(RuntimeError::new("range index out of bounds"));
+                }
+                let position = Self::checked_integer_index(
+                    match index {
+                        Value::Number(value) => value,
+                        _ => return Err(RuntimeError::new("range index must be number")),
+                    },
+                    "range index must be integer",
+                    "range index out of bounds",
+                    range.length.saturating_sub(1),
+                )?;
+                let value = range.start as i128 + range.step as i128 * position as i128;
+                Ok(Value::number(value as i64 as f64))
+            }
+            _ => Err(RuntimeError::new("can only index arrays, maps, or ranges")),
         }
     }
 
@@ -1049,7 +1228,8 @@ impl<'a> VM<'a> {
                 }
                 Ok(value)
             }
-            _ => Err(RuntimeError::new("can only assign array elements or map entries")),
+            Value::Range(_) => Err(RuntimeError::new("cannot assign range elements")),
+            _ => Err(RuntimeError::new("can only assign array elements, map entries, or range elements")),
         }
     }
 
@@ -1088,8 +1268,9 @@ impl<'a> VM<'a> {
         match value {
             Value::Array(array) => Ok(Value::number(array.elements.borrow().len() as f64)),
             Value::Map(map) => Ok(Value::number(map.entries.borrow().len() as f64)),
+            Value::Range(range) => Ok(Value::number(range.length as f64)),
             Value::String(value) => Ok(Value::number(value.chars().count() as f64)),
-            _ => Err(RuntimeError::new("len expects array, string, or map")),
+            _ => Err(RuntimeError::new("len expects array, string, map, or range")),
         }
     }
 
@@ -1112,6 +1293,7 @@ impl<'a> VM<'a> {
             "slice" => self.execute_native_slice(arguments),
             "copy" => self.execute_native_copy(arguments),
             "concat" => self.execute_native_concat(arguments),
+            "range" => self.execute_native_range(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
                 name
@@ -1303,8 +1485,29 @@ impl<'a> VM<'a> {
                     .any(|(key, _)| key.runtime_equals(&arguments[1]));
                 Ok(Value::boolean(found))
             }
+            Value::Range(range) => {
+                let Value::Number(number) = &arguments[1] else {
+                    return Err(RuntimeError::new("contains expects number for range"));
+                };
+                if !number.is_finite() || number.fract() != 0.0 {
+                    return Ok(Value::boolean(false));
+                }
+                const MIN: f64 = -9223372036854775808.0;
+                const MAX_EXCLUSIVE: f64 = 9223372036854775808.0;
+                if *number < MIN || *number >= MAX_EXCLUSIVE {
+                    return Ok(Value::boolean(false));
+                }
+                let candidate = *number as i64;
+                let in_bounds = if range.step > 0 {
+                    candidate >= range.start && candidate < range.stop
+                } else {
+                    candidate <= range.start && candidate > range.stop
+                };
+                let offset = candidate as i128 - range.start as i128;
+                Ok(Value::boolean(in_bounds && offset % range.step as i128 == 0))
+            }
             _ => Err(RuntimeError::new(
-                "contains expects array or map as first argument",
+                "contains expects array, map, or range as first argument",
             )),
         }
     }

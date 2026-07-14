@@ -67,7 +67,7 @@ let values: [number?] = [1, nil, 3];
 let maybeValues: [number]? = nil;
 ```
 
-`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. C-style `for` loops use clauses: `for initializer; condition; increment { ... }`. Each clause is optional. A `let` initializer is scoped to the loop condition, body, and increment, and is not visible after the loop. `for item in array { ... }` iterates arrays in index order. The item binding is scoped to the loop body and may shadow an outer variable. The loop snapshots the array length before iteration, so appending during iteration does not extend the loop; existing elements are still read at their current index when reached. `break;` exits the nearest enclosing loop. `continue;` in a `while` skips to that loop's next condition check, in a C-style `for` evaluates the increment before checking the condition again, and in a `for-in` advances to the next item. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
+`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. C-style `for` loops use clauses: `for initializer; condition; increment { ... }`. Each clause is optional. A `let` initializer is scoped to the loop condition, body, and increment, and is not visible after the loop. `for item in array { ... }` iterates arrays in index order, and `for item in range(...) { ... }` iterates finite integer ranges. The item binding is scoped to the loop body and may shadow an outer variable. Array iteration snapshots the array length before iteration, while ranges are immutable. `break;` exits the nearest enclosing loop. `continue;` in a `while` skips to that loop's next condition check, in a C-style `for` evaluates the increment before checking the condition again, and in a `for-in` advances to the next item. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
 
 ### Source imports
 
@@ -165,10 +165,10 @@ print person.age;      // 37
 print person.age = 38; // 38
 ```
 
-The builtin `len(value)` returns a number for arrays, maps, and strings.
+The builtin `len(value)` returns a number for arrays, maps, ranges, and strings.
 `len([1, 2, 3])` returns `3`, `len({"a": 1})` returns `1`, and string length
 counts Unicode scalar values: `len("hello")` is `5` and `len("你🙂")` is `2`.
-Statically known values outside those three types are type errors; unknown
+Statically known values outside those four types are type errors; unknown
 arguments are checked at runtime. A user binding named `len` shadows the
 builtin in its lexical scope.
 
@@ -194,6 +194,14 @@ but separately constructed maps do not. Map values print as
 Map deletion, map `for-in`, custom iterators, and higher-order map helpers are
 not implemented.
 
+The native `range` helper constructs immutable finite integer ranges:
+`range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are
+half-open, so `range(1, 5)` contains `1, 2, 3, 4`; descending ranges require a
+negative step, and a zero step is a runtime error. Bounds and steps must be
+finite integers. Ranges support zero-based indexing, `len`, `contains`,
+`for-in`, structural equality by `(start, stop, step)`, and print as
+`range(start, stop, step)`.
+
 The numeric native stdlib functions `floor(number)`, `ceil(number)`, and `sqrt(number)` each return a number. `sqrt` rejects negative inputs at runtime. User bindings with the same names shadow these stdlib functions.
 
 The string native stdlib includes `str(value)`, `substr(string, start, length)`, and `charAt(string, index)`. `str` returns the same textual representation used by `print`. `substr` and `charAt` use Unicode scalar-value offsets and always return complete UTF-8 values: `substr("你🙂", 1, 1)` is `"🙂"`, and `charAt("你🙂", 1)` is `"🙂"`. Offsets must be finite integer numbers and in bounds. Combining marks are counted as separate scalar values; grapheme segmentation and normalization are not provided. User bindings with the same names shadow these builtins.
@@ -202,17 +210,20 @@ Builtin member-call sugar is available for selected array, map, and string
 helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
 `array.concat(right)`, `map.len()`, `map.contains(key)`, `string.len()`,
-`string.substr(start, length)`, and `string.charAt(index)`. These forms lower
+`string.substr(start, length)`, `string.charAt(index)`, and
+`range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
 `substr`, or `charAt` do not shadow member-call sugar.
 
-The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
+The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
 
 Supported expressions:
 
 - Literals: numbers, strings, `true`, `false`, `nil`
 - Arrays: `[element, ...]` and `[]`; elements may be mixed runtime types.
+- Ranges: `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`;
+  ranges are finite, half-open, integer sequences.
 - Maps: `{ key: value, ... }` and `{}`; keys are `nil`, `number`, `bool`, or
   `string`, and entries preserve insertion order.
 - Structs: named constructors such as `Name { field: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
@@ -221,8 +232,9 @@ Supported expressions:
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Compound assignment: `name += expression`, `array[index] += expression`, and `object.field += expression` forms, plus `-=`, `*=`, and `/=`, update the target and evaluate to the assigned value. Compound assignment is numeric-only for both the old target value and the right-hand value.
 - Calls: `callee(argument*)` and member calls `receiver.method(argument*)`
-- Indexing: `array[index]` reads an array element; `map[key]` reads a map entry.
-  Array indexes must be integer numbers in range. Missing map keys are runtime
+- Indexing: `array[index]` reads an array element, `map[key]` reads a map entry,
+  and `range[index]` reads a range element. Array and range indexes must be
+  integer numbers in range. Missing map keys are runtime
   errors.
 - Array element assignment: `array[index] = value` mutates an existing element and evaluates to the assigned value. Arrays are reference values, so aliases observe element and length mutation through `push(array, value)` and `pop(array)`.
 - Map element assignment: `map[key] = value` inserts or updates an entry and

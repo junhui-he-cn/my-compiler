@@ -1,4 +1,4 @@
-Runtime error at tests/golden/runtime_errors/array_assign_dynamic_non_array.cd:4:1: can only assign array elements or map entries
+Runtime error at tests/golden/runtime_errors/array_assign_dynamic_non_array.cd:4:1: can only assign array elements, map entries, or range elements
   id(1)[0] = 2;
   ^
 Call stack:

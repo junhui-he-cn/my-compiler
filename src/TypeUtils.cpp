@@ -111,6 +111,8 @@ std::string staticTypeName(StaticType type)
         return "array";
     case StaticType::Map:
         return "map";
+    case StaticType::Range:
+        return "range";
     case StaticType::Struct:
         return "struct";
     case StaticType::Nullable:

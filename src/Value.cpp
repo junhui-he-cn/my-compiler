@@ -57,6 +57,13 @@ Value Value::map(MapValue value)
     return result;
 }
 
+Value Value::range(RangeValue value)
+{
+    Value result(Type::Range);
+    result.range_ = std::make_shared<RangeValue>(std::move(value));
+    return result;
+}
+
 Value Value::structure(StructValue value)
 {
     Value result(Type::Struct);
@@ -117,6 +124,14 @@ const MapValue& Value::asMap() const
     return *map_;
 }
 
+const RangeValue& Value::asRange() const
+{
+    if (type_ != Type::Range || !range_) {
+        throw std::runtime_error("value is not a range");
+    }
+    return *range_;
+}
+
 const StructValue& Value::asStruct() const
 {
     if (type_ != Type::Struct || !struct_) {
@@ -157,6 +172,10 @@ bool valuesEqual(const Value& left, const Value& right)
         return left.asArray().identity == right.asArray().identity;
     case Value::Type::Map:
         return left.asMap().identity == right.asMap().identity;
+    case Value::Type::Range:
+        return left.asRange().start == right.asRange().start
+            && left.asRange().stop == right.asRange().stop
+            && left.asRange().step == right.asRange().step;
     case Value::Type::Struct:
         return left.asStruct().identity == right.asStruct().identity;
     }
@@ -205,6 +224,11 @@ std::string valueToString(const Value& value)
         }
         out << '}';
         return out.str();
+    }
+    case Value::Type::Range: {
+        const RangeValue& range = value.asRange();
+        return "range(" + std::to_string(range.start) + ", "
+            + std::to_string(range.stop) + ", " + std::to_string(range.step) + ")";
     }
     case Value::Type::Struct: {
         std::ostringstream out;

@@ -18,12 +18,16 @@ enum class NativeFunctionKind {
     Slice,
     Copy,
     Concat,
+    Range,
 };
 
 struct NativeFunctionSignature {
     const char* name;
     std::size_t arity;
     NativeFunctionKind kind;
+    // Zero means the function has exactly `arity` arguments. Otherwise this
+    // is the inclusive maximum arity.
+    std::size_t maxArity = 0;
 };
 
 const NativeFunctionSignature* findNativeStdlibFunction(const std::string& name);
