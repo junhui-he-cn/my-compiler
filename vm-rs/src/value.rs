@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::runtime::{ArrayValue, FunctionValue, StructValue};
+use crate::runtime::{ArrayValue, FunctionValue, MapValue, StructValue};
 use std::fmt;
 
 #[derive(Clone, Debug)]
@@ -11,6 +11,7 @@ pub enum Value {
     String(String),
     Function(FunctionValue),
     Array(ArrayValue),
+    Map(MapValue),
     Struct(StructValue),
 }
 
@@ -35,6 +36,10 @@ impl Value {
         Self::Array(value)
     }
 
+    pub fn map(value: MapValue) -> Self {
+        Self::Map(value)
+    }
+
     pub fn structure(value: StructValue) -> Self {
         Self::Struct(value)
     }
@@ -47,6 +52,7 @@ impl Value {
             Self::String(_) => "string",
             Self::Function(_) => "function",
             Self::Array(_) => "array",
+            Self::Map(_) => "map",
             Self::Struct(value) => value.type_name.as_deref().unwrap_or("struct"),
         }
     }
@@ -63,6 +69,7 @@ impl Value {
             (Self::String(left), Self::String(right)) => left == right,
             (Self::Function(left), Self::Function(right)) => left.identity == right.identity,
             (Self::Array(left), Self::Array(right)) => left.identity == right.identity,
+            (Self::Map(left), Self::Map(right)) => left.identity == right.identity,
             (Self::Struct(left), Self::Struct(right)) => left.identity == right.identity,
             _ => false,
         }
@@ -95,6 +102,17 @@ impl fmt::Display for Value {
                     write!(f, "{}", value)?;
                 }
                 write!(f, "]")
+            }
+            Self::Map(map) => {
+                write!(f, "map{{")?;
+                let entries = map.entries.borrow();
+                for (index, (key, value)) in entries.iter().enumerate() {
+                    if index != 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", key, value)?;
+                }
+                write!(f, "}}")
             }
             Self::Struct(value) => {
                 write!(f, "{{")?;

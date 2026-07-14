@@ -11,6 +11,7 @@
 
 struct Environment;
 struct ArrayValue;
+struct MapValue;
 struct StructValue;
 
 struct FunctionValue {
@@ -30,6 +31,7 @@ public:
         String,
         Function,
         Array,
+        Map,
         Struct,
     };
 
@@ -39,6 +41,7 @@ public:
     static Value string(std::string value);
     static Value function(FunctionValue value);
     static Value array(ArrayValue value);
+    static Value map(MapValue value);
     static Value structure(StructValue value);
 
     Type type() const;
@@ -47,6 +50,7 @@ public:
     const std::string& asString() const;
     const FunctionValue& asFunction() const;
     const ArrayValue& asArray() const;
+    const MapValue& asMap() const;
     const StructValue& asStruct() const;
 
 private:
@@ -58,12 +62,18 @@ private:
     std::string string_;
     FunctionValue function_;
     std::shared_ptr<ArrayValue> array_;
+    std::shared_ptr<MapValue> map_;
     std::shared_ptr<StructValue> struct_;
 };
 
 struct ArrayValue {
     std::size_t identity = 0;
     std::shared_ptr<std::vector<Value>> elements;
+};
+
+struct MapValue {
+    std::size_t identity = 0;
+    std::shared_ptr<std::vector<std::pair<Value, Value>>> entries;
 };
 
 struct StructValue {

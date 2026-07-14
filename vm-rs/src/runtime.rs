@@ -9,6 +9,7 @@ pub type Cell = Rc<RefCell<Value>>;
 pub type Environment = HashMap<String, Cell>;
 pub type SharedEnvironment = Rc<RefCell<Environment>>;
 pub type SharedArrayElements = Rc<RefCell<Vec<Value>>>;
+pub type SharedMapEntries = Rc<RefCell<Vec<(Value, Value)>>>;
 pub type SharedStructFields = Rc<RefCell<Vec<(String, Value)>>>;
 
 #[derive(Clone, Debug)]
@@ -24,6 +25,12 @@ pub struct FunctionValue {
 pub struct ArrayValue {
     pub identity: usize,
     pub elements: SharedArrayElements,
+}
+
+#[derive(Clone, Debug)]
+pub struct MapValue {
+    pub identity: usize,
+    pub entries: SharedMapEntries,
 }
 
 #[derive(Clone, Debug)]

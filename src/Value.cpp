@@ -50,6 +50,13 @@ Value Value::array(ArrayValue value)
     return result;
 }
 
+Value Value::map(MapValue value)
+{
+    Value result(Type::Map);
+    result.map_ = std::make_shared<MapValue>(std::move(value));
+    return result;
+}
+
 Value Value::structure(StructValue value)
 {
     Value result(Type::Struct);
@@ -102,6 +109,14 @@ const ArrayValue& Value::asArray() const
     return *array_;
 }
 
+const MapValue& Value::asMap() const
+{
+    if (type_ != Type::Map || !map_) {
+        throw std::runtime_error("value is not a map");
+    }
+    return *map_;
+}
+
 const StructValue& Value::asStruct() const
 {
     if (type_ != Type::Struct || !struct_) {
@@ -140,6 +155,8 @@ bool valuesEqual(const Value& left, const Value& right)
         return left.asFunction().identity == right.asFunction().identity;
     case Value::Type::Array:
         return left.asArray().identity == right.asArray().identity;
+    case Value::Type::Map:
+        return left.asMap().identity == right.asMap().identity;
     case Value::Type::Struct:
         return left.asStruct().identity == right.asStruct().identity;
     }
@@ -174,6 +191,19 @@ std::string valueToString(const Value& value)
             out << valueToString(elements[i]);
         }
         out << ']';
+        return out.str();
+    }
+    case Value::Type::Map: {
+        std::ostringstream out;
+        out << "map{";
+        const auto& entries = *value.asMap().entries;
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if (i != 0) {
+                out << ", ";
+            }
+            out << valueToString(entries[i].first) << ": " << valueToString(entries[i].second);
+        }
+        out << '}';
         return out.str();
     }
     case Value::Type::Struct: {

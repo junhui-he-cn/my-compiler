@@ -2,7 +2,8 @@
 
 use crate::bytecode::{Constant, DebugLocation, DebugSource, FunctionBody, Instruction, Program};
 use crate::runtime::{
-    new_cell, new_environment, ArrayValue, Cell, FunctionValue, SharedEnvironment, StructValue,
+    new_cell, new_environment, ArrayValue, Cell, FunctionValue, MapValue, SharedEnvironment,
+    StructValue,
 };
 use crate::value::Value;
 use std::cell::RefCell;
@@ -132,6 +133,61 @@ mod tests {
         let source_elements = array_elements(&source);
         let copied_elements = array_elements(&copied);
         assert!(source_elements[1].runtime_equals(&copied_elements[1]));
+    }
+
+    #[test]
+    fn map_lookup_update_length_and_contains() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(vec![(Value::string("a"), Value::number(1.0))]);
+        let alias = map.clone();
+
+        let updated = vm
+            .execute_assign_index(alias, Value::string("b"), Value::number(2.0))
+            .expect("map assignment succeeds");
+        assert!(matches!(updated, Value::Number(value) if value == 2.0));
+        assert!(matches!(
+            vm.execute_index(map.clone(), Value::string("b")).unwrap(),
+            Value::Number(value) if value == 2.0
+        ));
+        assert!(matches!(vm.execute_len(map.clone()).unwrap(), Value::Number(value) if value == 2.0));
+        assert!(matches!(
+            vm.execute_native_call("contains", vec![map.clone(), Value::string("a")]).unwrap(),
+            Value::Bool(true)
+        ));
+        assert!(vm.execute_index(map, Value::string("missing")).is_err());
+    }
+
+    #[test]
+    fn map_rejects_reference_keys() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(Vec::new());
+        let key = vm.make_array(vec![Value::number(1.0)]);
+
+        let error = vm
+            .execute_assign_index(map, key, Value::number(1.0))
+            .expect_err("array key should fail");
+        assert_eq!(error.message, "map key must be nil, number, bool, or string");
+    }
+
+    #[test]
+    fn map_preserves_order_and_identity_equality() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(vec![
+            (Value::string("a"), Value::number(1.0)),
+            (Value::string("b"), Value::number(2.0)),
+            (Value::string("a"), Value::number(3.0)),
+        ]);
+        let distinct = vm.make_map(vec![
+            (Value::string("a"), Value::number(3.0)),
+            (Value::string("b"), Value::number(2.0)),
+        ]);
+
+        assert_eq!(map.to_string(), "map{a: 3, b: 2}");
+        assert!(map.runtime_equals(&map));
+        assert!(!map.runtime_equals(&distinct));
     }
 
     #[test]
@@ -420,6 +476,7 @@ pub struct VM<'a> {
     output: String,
     next_function_identity: usize,
     next_array_identity: usize,
+    next_map_identity: usize,
     next_struct_identity: usize,
 }
 
@@ -431,6 +488,7 @@ impl<'a> VM<'a> {
             output: String::new(),
             next_function_identity: 1,
             next_array_identity: 1,
+            next_map_identity: 1,
             next_struct_identity: 1,
         }
     }
@@ -491,6 +549,17 @@ impl<'a> VM<'a> {
                         values.push(self.read_register(frame, *element)?);
                     }
                     let value = self.make_array(values);
+                    self.write_register(frame, *dest, value)?;
+                }
+                Instruction::Map { dest, entries } => {
+                    let mut values = Vec::with_capacity(entries.len());
+                    for (key_register, value_register) in entries {
+                        let key = self.read_register(frame, *key_register)?;
+                        self.validate_map_key(&key)?;
+                        let value = self.read_register(frame, *value_register)?;
+                        values.push((key, value));
+                    }
+                    let value = self.make_map(values);
                     self.write_register(frame, *dest, value)?;
                 }
                 Instruction::Struct {
@@ -839,6 +908,34 @@ impl<'a> VM<'a> {
         })
     }
 
+    fn make_map(&mut self, entries: Vec<(Value, Value)>) -> Value {
+        let identity = self.next_map_identity;
+        self.next_map_identity += 1;
+        let mut ordered: Vec<(Value, Value)> = Vec::with_capacity(entries.len());
+        for (key, value) in entries {
+            if let Some((_, existing)) = ordered
+                .iter_mut()
+                .find(|(existing_key, _)| existing_key.runtime_equals(&key))
+            {
+                *existing = value;
+            } else {
+                ordered.push((key, value));
+            }
+        }
+        Value::map(MapValue {
+            identity,
+            entries: Rc::new(RefCell::new(ordered)),
+        })
+    }
+
+    fn validate_map_key(&self, key: &Value) -> Result<(), RuntimeError> {
+        if matches!(key, Value::Nil | Value::Number(_) | Value::Bool(_) | Value::String(_)) {
+            Ok(())
+        } else {
+            Err(RuntimeError::new("map key must be nil, number, bool, or string"))
+        }
+    }
+
     fn make_struct(
         &mut self,
         frame: &Frame,
@@ -876,15 +973,26 @@ impl<'a> VM<'a> {
     }
 
     fn execute_index(&self, collection: Value, index: Value) -> Result<Value, RuntimeError> {
-        let Value::Array(array) = collection else {
-            return Err(RuntimeError::new("can only index arrays"));
-        };
-        let position = self.checked_array_index(index)?;
-        let elements = array.elements.borrow();
-        elements
-            .get(position)
-            .cloned()
-            .ok_or_else(|| RuntimeError::new("array index out of range"))
+        match collection {
+            Value::Array(array) => {
+                let position = self.checked_array_index(index)?;
+                let elements = array.elements.borrow();
+                elements
+                    .get(position)
+                    .cloned()
+                    .ok_or_else(|| RuntimeError::new("array index out of range"))
+            }
+            Value::Map(map) => {
+                self.validate_map_key(&index)?;
+                map.entries
+                    .borrow()
+                    .iter()
+                    .find(|(key, _)| key.runtime_equals(&index))
+                    .map(|(_, value)| value.clone())
+                    .ok_or_else(|| RuntimeError::new("map key not found"))
+            }
+            _ => Err(RuntimeError::new("can only index arrays or maps")),
+        }
     }
 
     fn execute_assign_index(
@@ -893,16 +1001,31 @@ impl<'a> VM<'a> {
         index: Value,
         value: Value,
     ) -> Result<Value, RuntimeError> {
-        let Value::Array(array) = collection else {
-            return Err(RuntimeError::new("can only assign array elements"));
-        };
-        let position = self.checked_array_index(index)?;
-        let mut elements = array.elements.borrow_mut();
-        if position >= elements.len() {
-            return Err(RuntimeError::new("array index out of range"));
+        match collection {
+            Value::Array(array) => {
+                let position = self.checked_array_index(index)?;
+                let mut elements = array.elements.borrow_mut();
+                if position >= elements.len() {
+                    return Err(RuntimeError::new("array index out of range"));
+                }
+                elements[position] = value.clone();
+                Ok(value)
+            }
+            Value::Map(map) => {
+                self.validate_map_key(&index)?;
+                let mut entries = map.entries.borrow_mut();
+                if let Some((_, existing)) = entries
+                    .iter_mut()
+                    .find(|(key, _)| key.runtime_equals(&index))
+                {
+                    *existing = value.clone();
+                } else {
+                    entries.push((index, value.clone()));
+                }
+                Ok(value)
+            }
+            _ => Err(RuntimeError::new("can only assign array elements or map entries")),
         }
-        elements[position] = value.clone();
-        Ok(value)
     }
 
     fn execute_field(&self, object: Value, name: &str) -> Result<Value, RuntimeError> {
@@ -939,8 +1062,9 @@ impl<'a> VM<'a> {
     fn execute_len(&self, value: Value) -> Result<Value, RuntimeError> {
         match value {
             Value::Array(array) => Ok(Value::number(array.elements.borrow().len() as f64)),
+            Value::Map(map) => Ok(Value::number(map.entries.borrow().len() as f64)),
             Value::String(value) => Ok(Value::number(value.chars().count() as f64)),
-            _ => Err(RuntimeError::new("len expects array or string")),
+            _ => Err(RuntimeError::new("len expects array, string, or map")),
         }
     }
 
@@ -1136,17 +1260,28 @@ impl<'a> VM<'a> {
         if arguments.len() != 2 {
             return Err(RuntimeError::new("contains expects 2 arguments"));
         }
-        let Value::Array(array) = &arguments[0] else {
-            return Err(RuntimeError::new(
-                "contains expects array as first argument",
-            ));
-        };
-        let found = array
-            .elements
-            .borrow()
-            .iter()
-            .any(|element| element.runtime_equals(&arguments[1]));
-        Ok(Value::boolean(found))
+        match &arguments[0] {
+            Value::Array(array) => {
+                let found = array
+                    .elements
+                    .borrow()
+                    .iter()
+                    .any(|element| element.runtime_equals(&arguments[1]));
+                Ok(Value::boolean(found))
+            }
+            Value::Map(map) => {
+                self.validate_map_key(&arguments[1])?;
+                let found = map
+                    .entries
+                    .borrow()
+                    .iter()
+                    .any(|(key, _)| key.runtime_equals(&arguments[1]));
+                Ok(Value::boolean(found))
+            }
+            _ => Err(RuntimeError::new(
+                "contains expects array or map as first argument",
+            )),
+        }
     }
 
     fn execute_native_slice(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

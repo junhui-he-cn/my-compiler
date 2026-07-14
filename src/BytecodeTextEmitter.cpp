@@ -59,6 +59,8 @@ std::string constantText(const Value& value)
         throw std::runtime_error("cannot emit function value as bytecode constant");
     case Value::Type::Array:
         throw std::runtime_error("cannot emit array value as bytecode constant");
+    case Value::Type::Map:
+        throw std::runtime_error("cannot emit map value as bytecode constant");
     case Value::Type::Struct:
         throw std::runtime_error("cannot emit struct value as bytecode constant");
     }
