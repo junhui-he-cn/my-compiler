@@ -60,6 +60,10 @@ pub enum Instruction {
         dest: usize,
         elements: Vec<usize>,
     },
+    Map {
+        dest: usize,
+        entries: Vec<(usize, usize)>,
+    },
     Struct {
         dest: usize,
         type_name: Option<usize>,

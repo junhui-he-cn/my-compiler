@@ -486,6 +486,13 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                 dest,
                 elements: parse_register_list(line, operands)?,
             }),
+            "map" => {
+                let entries = parse_map_entries(line, operands)?;
+                Ok(Instruction::Map {
+                    dest,
+                    entries,
+                })
+            }
             "struct" => {
                 let (type_name, field_text) = parse_optional_struct_type_name(line, operands)?;
                 Ok(Instruction::Struct {
@@ -659,6 +666,14 @@ fn format_instruction(instruction: &Instruction) -> String {
         }
         Instruction::Array { dest, elements } => {
             format!("r{} = array {}", dest, format_register_list(elements))
+        }
+        Instruction::Map { dest, entries } => {
+            let parts = entries
+                .iter()
+                .map(|(key, value)| format!("r{}: r{}", key, value))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("r{} = map [{}]", dest, parts)
         }
         Instruction::Struct {
             dest,
@@ -862,6 +877,25 @@ fn parse_register_list(line: usize, text: &str) -> Result<Vec<usize>, ParseError
         .split(", ")
         .map(|part| parse_register(line, part))
         .collect()
+}
+
+fn parse_map_entries(line: usize, text: &str) -> Result<Vec<(usize, usize)>, ParseError> {
+    if !text.starts_with('[') || !text.ends_with(']') {
+        return Err(ParseError {
+            line,
+            message: "expected map entry list".to_string(),
+        });
+    }
+    let inner = &text[1..text.len() - 1];
+    if inner.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut entries = Vec::new();
+    for part in split_comma_parts(inner) {
+        let (key, value) = split_once(line, part, ": ")?;
+        entries.push((parse_register(line, key)?, parse_register(line, value)?));
+    }
+    Ok(entries)
 }
 
 fn parse_struct_fields(line: usize, text: &str) -> Result<Vec<(usize, usize)>, ParseError> {
@@ -1102,7 +1136,7 @@ mod tests {
 
     #[test]
     fn parses_all_opcode_shapes() {
-        let source = "cdbc 0.1\n\nconstants:\n  c0 = nil\n  c1 = number 1.5\n  c2 = bool true\n  c3 = string \"hello\"\n\nnames:\n  n0 = \"x#0\"\n  n1 = \"Box\"\n\nmain registers=38:\n  r0 = constant c0\n  r1 = make_function f0\n  r2 = array [r0, r1]\n  r3 = struct {n0: r1}\n  r4 = struct n1 {n0: r1}\n  r5 = move r2\n  r6 = load_var n0\n  store_var n0, r6\n  assign_var n0, r6\n  r7 = call r1 [r0, r2]\n  r8 = index r2, r0\n  r9 = assign_index r2, r0, r1\n  r10 = len r2\n  print r10\n  return r10\n  r11 = negate r10\n  r12 = not r10\n  r13 = add r10, r11\n  r14 = subtract r10, r11\n  r15 = multiply r10, r11\n  r16 = divide r10, r11\n  r17 = equal r10, r11\n  r18 = not_equal r10, r11\n  r19 = greater r10, r11\n  r20 = greater_equal r10, r11\n  r21 = less r10, r11\n  r22 = less_equal r10, r11\n  jump 29\n  jump_if_false r22, 30\n  jump_if_true r22, 31\n\nfunction f0 name=\"id\" arity=1 registers=1:\n  param 0 = \"arg#0\"\n  return r0\n";
+        let source = "cdbc 0.1\n\nconstants:\n  c0 = nil\n  c1 = number 1.5\n  c2 = bool true\n  c3 = string \"hello\"\n\nnames:\n  n0 = \"x#0\"\n  n1 = \"Box\"\n\nmain registers=38:\n  r0 = constant c0\n  r1 = make_function f0\n  r2 = array [r0, r1]\n  r3 = map [r0: r1, r1: r2]\n  r4 = struct {n0: r1}\n  r5 = struct n1 {n0: r1}\n  r6 = move r2\n  r7 = load_var n0\n  store_var n0, r6\n  assign_var n0, r6\n  r8 = call r1 [r0, r2]\n  r9 = index r2, r0\n  r10 = assign_index r2, r0, r1\n  r11 = len r2\n  print r11\n  return r11\n  r12 = negate r11\n  r13 = not r11\n  r14 = add r11, r12\n  r15 = subtract r11, r12\n  r16 = multiply r11, r12\n  r17 = divide r11, r12\n  r18 = equal r11, r12\n  r19 = not_equal r11, r12\n  r20 = greater r11, r12\n  r21 = greater_equal r11, r12\n  r22 = less r11, r12\n  r23 = less_equal r11, r12\n  jump 30\n  jump_if_false r23, 31\n  jump_if_true r23, 32\n\nfunction f0 name=\"id\" arity=1 registers=1:\n  param 0 = \"arg#0\"\n  return r0\n";
         let program = parse_program(source).expect("parse all opcode shapes");
         assert_eq!(format_program(&program), source);
     }

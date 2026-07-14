@@ -123,6 +123,7 @@ The opcode names are stable snake-case names:
 constant
 make_function
 array
+map
 struct
 move
 load_var
@@ -153,6 +154,17 @@ jump
 jump_if_false
 jump_if_true
 ```
+
+Map construction preserves source order and uses explicit key/value register
+pairs:
+
+```text
+rD = map [rKey0: rValue0, rKey1: rValue1, ...]
+```
+
+The Rust parser rejects malformed entries that do not contain a `: ` pair
+separator. Map lookup and assignment reuse the existing `index` and
+`assign_index` instructions.
 
 Struct and field instructions use name-table references for field names:
 
