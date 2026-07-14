@@ -20,6 +20,7 @@ struct ModuleInterfaceMethod {
     std::string name;
     std::vector<TypeInfo> parameterTypes;
     TypeInfo returnType;
+    std::vector<std::string> genericParameters;
 };
 
 struct ModuleInterfaceStruct {

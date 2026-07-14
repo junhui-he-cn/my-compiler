@@ -73,8 +73,14 @@ void testValuesStructsFieldsMethodsAndTypes()
     point.name = "Point";
     point.fields.push_back(ModuleInterfaceField{"y", simpleType(StaticType::Number)});
     point.fields.push_back(ModuleInterfaceField{"x", nullableType(simpleType(StaticType::Number))});
-    point.methods.push_back(ModuleInterfaceMethod{"translate", {simpleType(StaticType::Number), simpleType(StaticType::Number)}, namedStructType("Point")});
-    point.methods.push_back(ModuleInterfaceMethod{"length", {}, simpleType(StaticType::Number)});
+    point.methods.push_back(ModuleInterfaceMethod{
+        "translate",
+        {simpleType(StaticType::Number), simpleType(StaticType::Number)},
+        namedStructType("Point"),
+        {}});
+    point.methods.push_back(ModuleInterfaceMethod{
+        "echo", {typeParameterType("T")}, typeParameterType("T"), {"T"}});
+    point.methods.push_back(ModuleInterfaceMethod{"length", {}, simpleType(StaticType::Number), {}});
 
     ModuleInterfaceStruct box;
     box.name = "Box";
@@ -102,6 +108,7 @@ void testValuesStructsFieldsMethodsAndTypes()
         "  export struct Point\n"
         "    field y: number\n"
         "    field x: number?\n"
+        "    method echo<T>(T): T\n"
         "    method length(): number\n"
         "    method translate(number, number): Point\n"
         "  export enum Result\n"

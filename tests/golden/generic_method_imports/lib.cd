@@ -1,0 +1,9 @@
+struct Box { value: number }
+
+impl Box {
+  fun echo<T>(value: T): T {
+    return value;
+  }
+}
+
+export Box;

@@ -121,6 +121,7 @@ private:
         std::vector<TypeInfo> parameterTypes;
         TypeInfo returnType;
         std::string resolvedName;
+        std::vector<std::string> genericParameters;
     };
 
     struct IndexTargetTypes {
@@ -192,7 +193,6 @@ private:
     void checkMethodNameAvailable(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method) const;
     void registerMethodSignature(const StructTypeDecl& structType, const ImplStmt& statement, const MethodDecl& method);
     void checkMethodBody(const std::string& structName, const MethodInfo& method);
-    void checkMethodArguments(const MemberCallExpr& expression, const MethodInfo& method);
     CheckedExpression checkStructMethodCall(const MemberCallExpr& expression, const TypeInfo& receiverType);
     const MethodInfo* findMethod(const std::string& structName, const std::string& methodName) const;
     MethodSignature methodSignatureFromInfo(const MethodInfo& method) const;

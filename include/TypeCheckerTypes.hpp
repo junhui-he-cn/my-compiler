@@ -41,4 +41,5 @@ struct MethodSignature {
     std::vector<TypeInfo> parameterTypes;
     TypeInfo returnType;
     std::string resolvedName;
+    std::vector<std::string> genericParameters;
 };

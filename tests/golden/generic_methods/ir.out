@@ -1,0 +1,59 @@
+IR
+0000  v0 = constant #0 nil
+0001  store_var @0 __method_Box_echo#0, v0
+0002  v1 = make_function $0 echo/2
+0003  assign_var @4 __method_Box_echo#0, v1
+0004  v2 = constant #2 nil
+0005  store_var @5 __method_Box_head#1, v2
+0006  v3 = make_function $1 head/2
+0007  assign_var @7 __method_Box_head#1, v3
+0008  v4 = constant #5 nil
+0009  store_var @8 __method_Box_make#2, v4
+0010  v5 = make_function $2 make/1
+0011  assign_var @9 __method_Box_make#2, v5
+0012  v6 = constant #8 0
+0013  v7 = struct Box {value: v6}
+0014  store_var @12 box#9, v7
+0015  v8 = load_var @13 __method_Box_echo#0
+0016  v9 = load_var @14 box#9
+0017  v10 = constant #9 42
+0018  v11 = call v8(v9, v10)
+0019  print v11
+0020  v12 = load_var @15 __method_Box_echo#0
+0021  v13 = load_var @16 box#9
+0022  v14 = constant #10 "hello"
+0023  v15 = call v12(v13, v14)
+0024  print v15
+0025  v16 = load_var @17 __method_Box_head#1
+0026  v17 = load_var @18 box#9
+0027  v18 = constant #11 3
+0028  v19 = constant #12 4
+0029  v20 = array [v18, v19]
+0030  v21 = call v16(v17, v20)
+0031  print v21
+0032  v22 = load_var @19 __method_Box_make#2
+0033  v23 = load_var @20 box#9
+0034  v24 = call v22(v23)
+0035  print v24
+
+function $0 echo(this#3, value#4)
+0000  v0 = load_var @1 value#4
+0001  store_var @2 copy#5, v0
+0002  v1 = load_var @3 copy#5
+0003  return v1
+0004  v2 = constant #1 nil
+0005  return v2
+
+function $1 head(this#6, values#7)
+0000  v0 = load_var @6 values#7
+0001  v1 = constant #3 0
+0002  v2 = index v0, v1
+0003  return v2
+0004  v3 = constant #4 nil
+0005  return v3
+
+function $2 make(this#8)
+0000  v0 = constant #6 nil
+0001  return v0
+0002  v1 = constant #7 nil
+0003  return v1

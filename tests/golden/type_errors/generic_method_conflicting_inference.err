@@ -1,0 +1,3 @@
+Type error at 6:16: type parameter T inferred as number and string
+  box.same(1, "x");
+                 ^

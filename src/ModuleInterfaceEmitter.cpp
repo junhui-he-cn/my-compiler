@@ -28,7 +28,18 @@ std::vector<ModuleInterface> sortedModules(std::vector<ModuleInterface> modules)
 
 void writeMethodSignature(std::ostream& out, const ModuleInterfaceMethod& method)
 {
-    out << method.name << '(';
+    out << method.name;
+    if (!method.genericParameters.empty()) {
+        out << '<';
+        for (std::size_t i = 0; i < method.genericParameters.size(); ++i) {
+            if (i != 0) {
+                out << ", ";
+            }
+            out << method.genericParameters[i];
+        }
+        out << '>';
+    }
+    out << '(';
     for (std::size_t i = 0; i < method.parameterTypes.size(); ++i) {
         if (i != 0) {
             out << ", ";

@@ -867,7 +867,8 @@ void TypeChecker::buildModuleInterfaces(const Program& program)
                             structInfo.methods.push_back(ModuleInterfaceMethod{
                                 methodEntry.first,
                                 methodEntry.second.parameterTypes,
-                                methodEntry.second.returnType});
+                                methodEntry.second.returnType,
+                                methodEntry.second.genericParameters});
                         }
                     }
                 }
@@ -1595,6 +1596,7 @@ MethodSignature TypeChecker::methodSignatureFromInfo(const MethodInfo& method) c
     signature.parameterTypes = method.parameterTypes;
     signature.returnType = method.returnType;
     signature.resolvedName = method.resolvedName;
+    signature.genericParameters = method.genericParameters;
     return signature;
 }
 
@@ -1605,6 +1607,7 @@ TypeChecker::MethodInfo TypeChecker::methodInfoFromSignature(const MethodSignatu
     info.parameterTypes = signature.parameterTypes;
     info.returnType = signature.returnType;
     info.resolvedName = signature.resolvedName;
+    info.genericParameters = signature.genericParameters;
     return info;
 }
 
@@ -1728,14 +1731,17 @@ void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, cons
     checkMethodNameAvailable(structType, statement, method);
 
     auto& structMethods = methods_[statement.typeName.lexeme];
+    beginTypeParameterScope(method.typeParameters);
     std::vector<TypeInfo> parameterTypes = resolveParameterTypes(method.parameters);
     std::optional<TypeInfo> expectedReturnType = resolveOptionalReturnType(method.returnTypeName);
+    endTypeParameterScope();
     MethodInfo info;
     info.declaration = &method;
     info.receiverType = namedStructType(statement.typeName.lexeme);
     info.parameterTypes = std::move(parameterTypes);
     info.returnType = expectedReturnType ? *expectedReturnType : unknownType();
     info.resolvedName = makeResolvedName("__method_" + statement.typeName.lexeme + "_" + method.name.lexeme);
+    info.genericParameters = typeParameterNames(method.typeParameters);
     resolvedNames_.recordMethod(method, info.resolvedName);
     structMethods.emplace(method.name.lexeme, std::move(info));
 }
@@ -1744,6 +1750,7 @@ void TypeChecker::checkMethodBody(const std::string& structName, const MethodInf
 {
     const MethodDecl& declaration = *method.declaration;
 
+    beginTypeParameterScope(declaration.typeParameters);
     beginScope();
     ++functionDepth_;
     const std::size_t enclosingLoopDepth = loopDepth_;
@@ -1778,6 +1785,7 @@ void TypeChecker::checkMethodBody(const std::string& structName, const MethodInf
 
     auto& stored = methods_[structName][declaration.name.lexeme];
     stored.returnType = returnType;
+    endTypeParameterScope();
 }
 
 void TypeChecker::checkImpl(const ImplStmt& statement)
@@ -2998,36 +3006,25 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     throw TypeError(variable->name, "unknown native stdlib function `" + variable->name.lexeme + "`");
 }
 
-void TypeChecker::checkMethodArguments(const MemberCallExpr& expression, const MethodInfo& method)
-{
-    if (expression.arguments.size() != method.parameterTypes.size()) {
-        throw TypeError(expression.paren,
-            "expected " + std::to_string(method.parameterTypes.size()) + " arguments but got " + std::to_string(expression.arguments.size()));
-    }
-    for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
-        const CheckedExpression argument = checkExpressionInfo(*expression.arguments[i], &method.parameterTypes[i]);
-        if (!compatible(method.parameterTypes[i], argument.type)) {
-            throw TypeError(expression.paren,
-                "argument " + std::to_string(i + 1) + " expects " + typeInfoName(method.parameterTypes[i])
-                    + ", got " + typeInfoName(argument.type));
-        }
-    }
-}
-
 TypeChecker::CheckedExpression TypeChecker::checkStructMethodCall(const MemberCallExpr& expression, const TypeInfo& receiverType)
 {
-    if (!expression.typeArguments.empty()) {
-        throw TypeError(expression.paren, "function is not generic");
-    }
     const std::string& name = expression.name.lexeme;
     const MethodInfo* method = findMethod(*receiverType.structName, name);
     if (!method) {
         throw TypeError(expression.paren, "struct `" + *receiverType.structName + "` has no method `" + name + "`");
     }
 
-    checkMethodArguments(expression, *method);
+    const TypeInfo signature = functionType(
+        method->parameterTypes,
+        method->returnType,
+        method->genericParameters);
+    const CheckedExpression result = checkFunctionCall(
+        expression.paren,
+        signature,
+        expression.typeArguments,
+        expression.arguments);
     resolvedNames_.recordMemberCallCallee(expression, method->resolvedName, true);
-    return CheckedExpression{method->returnType};
+    return result;
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr& expression)
@@ -3058,7 +3055,7 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
         }
     }
 
-    if (!expression.typeArguments.empty()) {
+    if (!expression.typeArguments.empty() && isBuiltinMemberName(name)) {
         throw TypeError(expression.paren, "function is not generic");
     }
 

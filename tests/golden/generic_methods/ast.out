@@ -1,0 +1,15 @@
+Program
+  Struct Box {value: number}
+  Impl Box
+    Method echo<T>(value: T): T
+      Let copy: T = value
+      Return copy
+    Method head<T>(values: [T]): T
+      Return (index values 0)
+    Method make<T>(): T?
+      Return nil
+  Let box: Box = (construct Box value: 0)
+  Print (member-call box echo<number> 42)
+  Print (member-call box echo "hello")
+  Print (member-call box head<number> (array 3 4))
+  Print (member-call box make<string>)

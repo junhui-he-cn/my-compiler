@@ -1,0 +1,6 @@
+module 0 "<repo>/tests/golden/generic_method_imports/lib.cd"
+  export struct Box
+    field value: number
+    method echo<T>(T): T
+
+module 1 entry "<repo>/tests/golden/generic_method_imports/input.cd"

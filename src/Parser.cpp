@@ -322,6 +322,7 @@ MethodDecl Parser::methodDeclaration()
 {
     consume(TokenType::Fun, "expected `fun` method declaration in impl block");
     Token name = consume(TokenType::Identifier, "expected method name after `fun`");
+    std::vector<Token> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftParen, "expected `(` after method name");
     std::vector<Parameter> parsedParameters = parameters();
     consume(TokenType::RightParen, "expected `)` after method parameters");
@@ -332,6 +333,7 @@ MethodDecl Parser::methodDeclaration()
     --blockDepth_;
     return MethodDecl(
         std::move(name),
+        std::move(parsedTypeParameters),
         std::move(parsedParameters),
         std::move(returnTypeName),
         std::move(body));

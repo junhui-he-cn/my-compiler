@@ -1,0 +1,161 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = nil
+  c2 = nil
+  c3 = number 0
+  c4 = nil
+  c5 = nil
+  c6 = nil
+  c7 = nil
+  c8 = number 0
+  c9 = number 42
+  c10 = string "hello"
+  c11 = number 3
+  c12 = number 4
+
+names:
+  n0 = "__method_Box_echo#0"
+  n1 = "value#4"
+  n2 = "copy#5"
+  n3 = "copy#5"
+  n4 = "__method_Box_echo#0"
+  n5 = "__method_Box_head#1"
+  n6 = "values#7"
+  n7 = "__method_Box_head#1"
+  n8 = "__method_Box_make#2"
+  n9 = "__method_Box_make#2"
+  n10 = "Box"
+  n11 = "value"
+  n12 = "box#9"
+  n13 = "__method_Box_echo#0"
+  n14 = "box#9"
+  n15 = "__method_Box_echo#0"
+  n16 = "box#9"
+  n17 = "__method_Box_head#1"
+  n18 = "box#9"
+  n19 = "__method_Box_make#2"
+  n20 = "box#9"
+
+main registers=25:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = make_function f0
+  assign_var n4, r1
+  r2 = constant c2
+  store_var n5, r2
+  r3 = make_function f1
+  assign_var n7, r3
+  r4 = constant c5
+  store_var n8, r4
+  r5 = make_function f2
+  assign_var n9, r5
+  r6 = constant c8
+  r7 = struct n10 {n11: r6}
+  store_var n12, r7
+  r8 = load_var n13
+  r9 = load_var n14
+  r10 = constant c9
+  r11 = call r8 [r9, r10]
+  print r11
+  r12 = load_var n15
+  r13 = load_var n16
+  r14 = constant c10
+  r15 = call r12 [r13, r14]
+  print r15
+  r16 = load_var n17
+  r17 = load_var n18
+  r18 = constant c11
+  r19 = constant c12
+  r20 = array [r18, r19]
+  r21 = call r16 [r17, r20]
+  print r21
+  r22 = load_var n19
+  r23 = load_var n20
+  r24 = call r22 [r23]
+  print r24
+
+function f0 name="echo" arity=2 registers=3:
+  param 0 = "this#3"
+  param 1 = "value#4"
+  r0 = load_var n1
+  store_var n2, r0
+  r1 = load_var n3
+  return r1
+  r2 = constant c1
+  return r2
+
+function f1 name="head" arity=2 registers=4:
+  param 0 = "this#6"
+  param 1 = "values#7"
+  r0 = load_var n6
+  r1 = constant c3
+  r2 = index r0, r1
+  return r2
+  r3 = constant c4
+  return r3
+
+function f2 name="make" arity=1 registers=2:
+  param 0 = "this#8"
+  r0 = constant c6
+  return r0
+  r1 = constant c7
+  return r1
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/generic_methods/input.cd" text="struct Box { value: number }\n\nimpl Box {\n  fun echo<T>(value: T): T {\n    let copy: T = value;\n    return copy;\n  }\n\n  fun head<T>(values: [T]): T {\n    return values[0];\n  }\n\n  fun make<T>(): T? {\n    return nil;\n  }\n}\n\nlet box: Box = Box { value: 0 };\nprint box.echo<number>(42);\nprint box.echo(\"hello\");\nprint box.head<number>([3, 4]);\nprint box.make<string>();\n"
+
+debug_locations:
+  main 0 = s0:3:1
+  main 1 = s0:3:1
+  main 2 = s0:3:1
+  main 3 = s0:3:1
+  main 4 = s0:3:1
+  main 5 = s0:3:1
+  main 6 = s0:3:1
+  main 7 = s0:3:1
+  main 8 = s0:3:1
+  main 9 = s0:3:1
+  main 10 = s0:3:1
+  main 11 = s0:3:1
+  main 12 = s0:18:29
+  main 13 = s0:18:16
+  main 14 = s0:18:1
+  main 15 = s0:19:7
+  main 16 = s0:19:7
+  main 17 = s0:19:24
+  main 18 = s0:19:7
+  main 19 = s0:19:1
+  main 20 = s0:20:7
+  main 21 = s0:20:7
+  main 22 = s0:20:16
+  main 23 = s0:20:7
+  main 24 = s0:20:1
+  main 25 = s0:21:7
+  main 26 = s0:21:7
+  main 27 = s0:21:25
+  main 28 = s0:21:28
+  main 29 = s0:21:24
+  main 30 = s0:21:7
+  main 31 = s0:21:1
+  main 32 = s0:22:7
+  main 33 = s0:22:7
+  main 34 = s0:22:7
+  main 35 = s0:22:1
+  function f0 0 = s0:5:19
+  function f0 1 = s0:5:5
+  function f0 2 = s0:6:12
+  function f0 3 = s0:6:5
+  function f0 4 = s0:3:1
+  function f0 5 = s0:3:1
+  function f1 0 = s0:10:12
+  function f1 1 = s0:10:19
+  function f1 2 = s0:10:12
+  function f1 3 = s0:10:5
+  function f1 4 = s0:3:1
+  function f1 5 = s0:3:1
+  function f2 0 = s0:14:12
+  function f2 1 = s0:14:5
+  function f2 2 = s0:3:1
+  function f2 3 = s0:3:1

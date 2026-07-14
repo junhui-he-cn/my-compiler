@@ -1,0 +1,6 @@
+struct Box { value: number }
+impl Box {
+  fun same<T>(left: T, right: T): T { return left; }
+}
+let box: Box = Box { value: 0 };
+box.same(1, "x");

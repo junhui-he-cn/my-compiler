@@ -58,9 +58,15 @@ struct Parameter {
 };
 
 struct MethodDecl {
-    MethodDecl(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
+    MethodDecl(
+        Token name,
+        std::vector<Token> typeParameters,
+        std::vector<Parameter> parameters,
+        std::optional<TypeAnnotation> returnTypeName,
+        std::vector<StmtPtr> body);
 
     Token name;
+    std::vector<Token> typeParameters;
     std::vector<Parameter> parameters;
     std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;

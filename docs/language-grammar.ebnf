@@ -45,7 +45,7 @@ enumVariant = identifier,
 implDecl    = "impl", identifier,
               "{", { methodDecl }, "}" ;
 
-methodDecl  = "fun", identifier,
+methodDecl  = "fun", identifier, [ typeParameters ],
               "(", [ parameters ], ")",
               [ ":", typeExpr ],
               block ;

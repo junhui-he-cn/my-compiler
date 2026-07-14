@@ -1,0 +1,13 @@
+Program
+  Module 0
+    Struct Box {value: number}
+    Impl Box
+      Method echo<T>(value: T): T
+        Return value
+    Export Box
+  Module 1
+    Export Box from "./shapes.cd"
+  Module 2 entry
+    Import "./api.cd" as lib
+    Let box: lib.Box = (construct lib.Box value: 0)
+    Print (member-call box echo<number> 9)

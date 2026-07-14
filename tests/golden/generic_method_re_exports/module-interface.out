@@ -1,0 +1,11 @@
+module 0 "<repo>/tests/golden/generic_method_re_exports/shapes.cd"
+  export struct Box
+    field value: number
+    method echo<T>(T): T
+
+module 1 "<repo>/tests/golden/generic_method_re_exports/api.cd"
+  export struct Box
+    field value: number
+    method echo<T>(T): T
+
+module 2 entry "<repo>/tests/golden/generic_method_re_exports/input.cd"

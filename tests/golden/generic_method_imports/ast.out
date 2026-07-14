@@ -1,0 +1,14 @@
+Program
+  Module 0
+    Struct Box {value: number}
+    Impl Box
+      Method echo<T>(value: T): T
+        Return value
+    Export Box
+  Module 1 entry
+    Import "lib.cd"
+    Import "lib.cd" as lib
+    Let direct: Box = (construct Box value: 0)
+    Let namespaced: lib.Box = (construct lib.Box value: 0)
+    Print (member-call direct echo<number> 7)
+    Print (member-call namespaced echo<string> "module")

@@ -1,0 +1,6 @@
+struct Box { value: number }
+impl Box {
+  fun getValue(): number { return this.value; }
+}
+let box: Box = Box { value: 1 };
+box.getValue<number>();

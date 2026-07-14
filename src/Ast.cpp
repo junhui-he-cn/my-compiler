@@ -82,6 +82,22 @@ void writeTypeArguments(std::ostream& out, const std::vector<TypeAnnotation>& ar
     out << '>';
 }
 
+void writeTypeParameterList(std::ostream& out, const std::vector<Token>& parameters)
+{
+    if (parameters.empty()) {
+        return;
+    }
+
+    out << '<';
+    for (std::size_t i = 0; i < parameters.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        out << parameters[i].lexeme;
+    }
+    out << '>';
+}
+
 void writeOptionalTypeAnnotation(std::ostream& out, const std::optional<TypeAnnotation>& annotation)
 {
     if (annotation) {
@@ -233,7 +249,9 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
     }
 
     if (const auto* functionStmt = dynamic_cast<const FunctionStmt*>(&stmt)) {
-        out << "(fun " << functionStmt->name.lexeme << ' ';
+        out << "(fun " << functionStmt->name.lexeme;
+        writeTypeParameterList(out, functionStmt->typeParameters);
+        out << ' ';
         writeParameterList(out, functionStmt->parameters);
         writeReturnAnnotation(out, functionStmt->returnTypeName);
         for (const auto& child : functionStmt->body) {
@@ -248,6 +266,7 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         out << "(impl " << implStmt->typeName.lexeme;
         for (const MethodDecl& method : implStmt->methods) {
             out << " (method " << method.name.lexeme;
+            writeTypeParameterList(out, method.typeParameters);
             writeParameterList(out, method.parameters);
             writeReturnAnnotation(out, method.returnTypeName);
             for (const auto& child : method.body) {
@@ -358,8 +377,14 @@ TypeAnnotation TypeAnnotation::nullable(Token token, TypeAnnotation innerType)
     return result;
 }
 
-MethodDecl::MethodDecl(Token name, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
+MethodDecl::MethodDecl(
+    Token name,
+    std::vector<Token> typeParameters,
+    std::vector<Parameter> parameters,
+    std::optional<TypeAnnotation> returnTypeName,
+    std::vector<StmtPtr> body)
     : name(std::move(name))
+    , typeParameters(std::move(typeParameters))
     , parameters(std::move(parameters))
     , returnTypeName(std::move(returnTypeName))
     , body(std::move(body))
@@ -838,6 +863,16 @@ void ImplStmt::print(std::ostream& out, int indent) const
     for (const MethodDecl& method : methods) {
         writeIndent(out, indent + 1);
         out << "Method " << method.name.lexeme;
+        if (!method.typeParameters.empty()) {
+            out << '<';
+            for (std::size_t i = 0; i < method.typeParameters.size(); ++i) {
+                if (i != 0) {
+                    out << ", ";
+                }
+                out << method.typeParameters[i].lexeme;
+            }
+            out << '>';
+        }
         writeParameterList(out, method.parameters);
         writeReturnAnnotation(out, method.returnTypeName);
         out << '\n';
