@@ -1,0 +1,9 @@
+Parse error at 3:20: expected `=>` after match pattern, found LeftBrace `{`
+    Result.Ok(value) { print value; }
+                     ^
+Parse error at 4:16: expected `;` after expression, found FatArrow `=>`
+    Result.Empty => { print 0; }
+                 ^
+Parse error at 5:1: expected expression
+  }
+  ^

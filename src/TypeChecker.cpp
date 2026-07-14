@@ -240,6 +240,52 @@ bool ResolvedNames::memberCallPassesReceiver(const MemberCallExpr& expression) c
     return found->second;
 }
 
+bool ResolvedNames::hasVariantConstructor(const MemberCallExpr& expression) const
+{
+    return variantConstructors_.find(&expression) != variantConstructors_.end();
+}
+
+const std::string& ResolvedNames::variantEnumName(const MemberCallExpr& expression) const
+{
+    const auto found = variantConstructors_.find(&expression);
+    if (found == variantConstructors_.end()) {
+        throw std::logic_error("missing resolved variant enum name");
+    }
+    return found->second.first;
+}
+
+const std::string& ResolvedNames::variantName(const MemberCallExpr& expression) const
+{
+    const auto found = variantConstructors_.find(&expression);
+    if (found == variantConstructors_.end()) {
+        throw std::logic_error("missing resolved variant name");
+    }
+    return found->second.second;
+}
+
+bool ResolvedNames::hasPatternVariable(const VariablePattern& pattern) const
+{
+    return patternVariableNames_.find(&pattern) != patternVariableNames_.end();
+}
+
+const std::string& ResolvedNames::patternVariableName(const VariablePattern& pattern) const
+{
+    const auto found = patternVariableNames_.find(&pattern);
+    if (found == patternVariableNames_.end()) {
+        throw std::logic_error("missing resolved pattern variable name");
+    }
+    return found->second;
+}
+
+const std::string& ResolvedNames::patternEnumName(const VariantPattern& pattern) const
+{
+    const auto found = patternEnumNames_.find(&pattern);
+    if (found == patternEnumNames_.end()) {
+        throw std::logic_error("missing resolved pattern enum name");
+    }
+    return found->second;
+}
+
 void ResolvedNames::clear()
 {
     letNames_.clear();
@@ -256,6 +302,9 @@ void ResolvedNames::clear()
     fieldAccessNames_.clear();
     memberCallCalleeNames_.clear();
     memberCallPassesReceiver_.clear();
+    variantConstructors_.clear();
+    patternVariableNames_.clear();
+    patternEnumNames_.clear();
 }
 
 void ResolvedNames::recordLet(const LetStmt& statement, std::string name)
@@ -324,6 +373,26 @@ void ResolvedNames::recordMemberCallCallee(const MemberCallExpr& expression, std
     memberCallPassesReceiver_.emplace(&expression, passesReceiver);
 }
 
+void ResolvedNames::recordVariantConstructor(
+    const MemberCallExpr& expression,
+    std::string enumName,
+    std::string variantName)
+{
+    variantConstructors_.emplace(
+        &expression,
+        std::make_pair(std::move(enumName), std::move(variantName)));
+}
+
+void ResolvedNames::recordPatternVariable(const VariablePattern& pattern, std::string name)
+{
+    patternVariableNames_.emplace(&pattern, std::move(name));
+}
+
+void ResolvedNames::recordPatternVariant(const VariantPattern& pattern, std::string enumName)
+{
+    patternEnumNames_.emplace(&pattern, std::move(enumName));
+}
+
 const ResolvedNames& TypeChecker::check(const Program& program)
 {
     scopes_.clear();
@@ -331,6 +400,9 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     structTypes_.clear();
     structDeclarations_.clear();
     structCheckStates_.clear();
+    enumTypes_.clear();
+    enumDeclarations_.clear();
+    enumCheckStates_.clear();
     methods_.clear();
     moduleSymbols_.clear();
     moduleInterfaces_.clear();
@@ -546,9 +618,28 @@ void TypeChecker::predeclareStructDeclarations(const std::vector<StmtPtr>& state
     }
 }
 
+void TypeChecker::predeclareEnumDeclarations(const std::vector<StmtPtr>& statements)
+{
+    for (const auto& statement : statements) {
+        if (const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(statement.get())) {
+            if (enumTypes_.find(enumDecl->name.lexeme) != enumTypes_.end()
+                || structTypes_.find(enumDecl->name.lexeme) != structTypes_.end()) {
+                throw TypeError(enumDecl->name, "duplicate type " + enumDecl->name.lexeme);
+            }
+            enumTypes_.emplace(enumDecl->name.lexeme, EnumTypeDecl{enumDecl->name, {}});
+            enumDeclarations_.emplace(enumDecl->name.lexeme, enumDecl);
+            enumCheckStates_.emplace(enumDecl->name.lexeme, EnumCheckState::Declared);
+            if (!moduleStack_.empty()) {
+                moduleSymbols_.markLocalEnum(moduleStack_.back(), enumDecl->name.lexeme);
+            }
+        }
+    }
+}
+
 void TypeChecker::checkStatementList(const std::vector<StmtPtr>& statements)
 {
     predeclareStructDeclarations(statements);
+    predeclareEnumDeclarations(statements);
     for (const auto& statement : statements) {
         checkStatement(*statement);
     }
@@ -573,6 +664,11 @@ void TypeChecker::checkStatement(const Stmt& statement)
 
     if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(&statement)) {
         checkStructDeclaration(*structDecl);
+        return;
+    }
+
+    if (const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(&statement)) {
+        checkEnumDeclaration(*enumDecl);
         return;
     }
 
@@ -637,6 +733,11 @@ void TypeChecker::checkStatement(const Stmt& statement)
                 checkStatement(*ifStmt->elseBranch);
             });
         }
+        return;
+    }
+
+    if (const auto* match = dynamic_cast<const MatchStmt*>(&statement)) {
+        checkMatch(*match);
         return;
     }
 
@@ -775,6 +876,19 @@ void TypeChecker::buildModuleInterfaces(const Program& program)
             }
         }
 
+        if (const ModuleEnumExports* enumExports = moduleSymbols_.enumExports(module->moduleId)) {
+            for (const auto& entry : *enumExports) {
+                ModuleInterfaceEnum enumInfo;
+                enumInfo.name = entry.first;
+                for (const EnumVariantType& variant : entry.second.variants) {
+                    enumInfo.variants.push_back(ModuleInterfaceVariant{
+                        variant.name.lexeme,
+                        variant.payloadTypes});
+                }
+                interfaceInfo.enums.push_back(std::move(enumInfo));
+            }
+        }
+
         moduleInterfaces_.push_back(std::move(interfaceInfo));
     }
 }
@@ -789,6 +903,9 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     std::unordered_map<std::string, StructTypeDecl> savedStructTypes = std::move(structTypes_);
     std::unordered_map<std::string, const StructDeclStmt*> savedStructDeclarations = std::move(structDeclarations_);
     std::unordered_map<std::string, StructCheckState> savedStructCheckStates = std::move(structCheckStates_);
+    std::unordered_map<std::string, EnumTypeDecl> savedEnumTypes = std::move(enumTypes_);
+    std::unordered_map<std::string, const EnumDeclStmt*> savedEnumDeclarations = std::move(enumDeclarations_);
+    std::unordered_map<std::string, EnumCheckState> savedEnumCheckStates = std::move(enumCheckStates_);
     MethodTable savedMethods = std::move(methods_);
     std::vector<std::unordered_map<std::string, TypeInfo>> savedTypeParameterScopes = std::move(typeParameterScopes_);
     const std::size_t savedFunctionDepth = functionDepth_;
@@ -799,6 +916,9 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     structTypes_.clear();
     structDeclarations_.clear();
     structCheckStates_.clear();
+    enumTypes_.clear();
+    enumDeclarations_.clear();
+    enumCheckStates_.clear();
     methods_.clear();
     typeParameterScopes_.clear();
     functionDepth_ = 0;
@@ -823,6 +943,9 @@ void TypeChecker::checkModule(const ModuleStmt& module)
     structTypes_ = std::move(savedStructTypes);
     structDeclarations_ = std::move(savedStructDeclarations);
     structCheckStates_ = std::move(savedStructCheckStates);
+    enumTypes_ = std::move(savedEnumTypes);
+    enumDeclarations_ = std::move(savedEnumDeclarations);
+    enumCheckStates_ = std::move(savedEnumCheckStates);
     methods_ = std::move(savedMethods);
     typeParameterScopes_ = std::move(savedTypeParameterScopes);
     functionDepth_ = savedFunctionDepth;
@@ -851,6 +974,27 @@ std::string TypeChecker::structConstructorTypeName(const StructConstructExpr& ex
     return expression.name.lexeme;
 }
 
+std::string TypeChecker::enumConstructorTypeName(const MemberCallExpr& expression) const
+{
+    const auto* receiver = dynamic_cast<const VariableExpr*>(expression.receiver.get());
+    if (receiver && findEnumType(receiver->name.lexeme)) {
+        return receiver->name.lexeme;
+    }
+
+    const auto* qualifiedReceiver = dynamic_cast<const FieldAccessExpr*>(expression.receiver.get());
+    const auto* namespaceVariable = qualifiedReceiver
+        ? dynamic_cast<const VariableExpr*>(qualifiedReceiver->object.get())
+        : nullptr;
+    if (namespaceVariable) {
+        const NamespaceImport* namespaceImport = findNamespace(namespaceVariable->name.lexeme);
+        if (namespaceImport
+            && namespaceImport->enums.find(qualifiedReceiver->name.lexeme) != namespaceImport->enums.end()) {
+            return namespaceVariable->name.lexeme + "." + qualifiedReceiver->name.lexeme;
+        }
+    }
+    return {};
+}
+
 void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceImport imported)
 {
     if (!statement.alias) {
@@ -865,7 +1009,8 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
     const std::size_t moduleId = moduleStack_.back();
     if (moduleSymbols_.hasNamespace(moduleId, alias.lexeme)
         || currentScope().find(alias.lexeme) != currentScope().end()
-        || structTypes_.find(alias.lexeme) != structTypes_.end()) {
+        || structTypes_.find(alias.lexeme) != structTypes_.end()
+        || enumTypes_.find(alias.lexeme) != enumTypes_.end()) {
         throw TypeError(alias, "namespace alias `" + alias.lexeme + "` conflicts with an existing declaration");
     }
 
@@ -873,16 +1018,27 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
         StructTypeDecl qualified = entry.second;
         qualified.name.lexeme = alias.lexeme + "." + entry.first;
         for (StructFieldType& field : qualified.fields) {
-            field.type = qualifyNamespaceType(field.type, alias.lexeme, imported.structs);
+            field.type = qualifyNamespaceType(field.type, alias.lexeme, imported.structs, imported.enums);
         }
         structTypes_.emplace(qualified.name.lexeme, std::move(qualified));
     }
 
-    for (auto& entry : imported.values) {
-        entry.second.type = qualifyNamespaceType(entry.second.type, alias.lexeme, imported.structs);
+    for (const auto& entry : imported.enums) {
+        EnumTypeDecl qualified = entry.second;
+        qualified.name.lexeme = alias.lexeme + "." + entry.first;
+        for (EnumVariantType& variant : qualified.variants) {
+            for (TypeInfo& payload : variant.payloadTypes) {
+                payload = qualifyNamespaceType(payload, alias.lexeme, imported.structs, imported.enums);
+            }
+        }
+        enumTypes_.emplace(qualified.name.lexeme, std::move(qualified));
     }
 
-    importMethodExports(alias, imported.methods, &alias.lexeme, &imported.structs);
+    for (auto& entry : imported.values) {
+        entry.second.type = qualifyNamespaceType(entry.second.type, alias.lexeme, imported.structs, imported.enums);
+    }
+
+    importMethodExports(alias, imported.methods, &alias.lexeme, &imported.structs, &imported.enums);
     moduleSymbols_.recordNamespace(moduleId, alias.lexeme, std::move(imported));
 }
 
@@ -914,6 +1070,9 @@ void TypeChecker::checkImport(const ImportStmt& statement)
         if (const ModuleStructExports* structExports = moduleSymbols_.structExports(imported->moduleId)) {
             namespaceImport.structs = *structExports;
         }
+        if (const ModuleEnumExports* enumExports = moduleSymbols_.enumExports(imported->moduleId)) {
+            namespaceImport.enums = *enumExports;
+        }
         if (const ModuleMethodExports* methodExports = moduleSymbols_.methodExports(imported->moduleId)) {
             namespaceImport.methods = *methodExports;
         }
@@ -935,6 +1094,17 @@ void TypeChecker::checkImport(const ImportStmt& statement)
                 throw TypeError(name, "duplicate struct `" + entry.first + "`");
             }
             structTypes_.emplace(entry.first, entry.second);
+        }
+    }
+
+    if (const ModuleEnumExports* enumExports = moduleSymbols_.enumExports(imported->moduleId)) {
+        for (const auto& entry : *enumExports) {
+            if (enumTypes_.find(entry.first) != enumTypes_.end()
+                || structTypes_.find(entry.first) != structTypes_.end()) {
+                Token name{TokenType::Identifier, entry.first, statement.keyword.line, statement.keyword.column};
+                throw TypeError(name, "duplicate type " + entry.first);
+            }
+            enumTypes_.emplace(entry.first, entry.second);
         }
     }
 
@@ -995,6 +1165,7 @@ void TypeChecker::checkReExport(const ExportStmt& statement)
 
     const ModuleValueExports* valueExports = moduleSymbols_.valueExports(target->moduleId);
     const ModuleStructExports* structExports = moduleSymbols_.structExports(target->moduleId);
+    const ModuleEnumExports* enumExports = moduleSymbols_.enumExports(target->moduleId);
 
     for (const Token& name : statement.names) {
         ensureExportNameAvailable(currentModuleId, name);
@@ -1013,6 +1184,14 @@ void TypeChecker::checkReExport(const ExportStmt& statement)
             if (found != structExports->end()) {
                 moduleSymbols_.recordStructExport(currentModuleId, name.lexeme, found->second);
                 forwardStructMethodExports(target->moduleId, currentModuleId, name.lexeme);
+                exported = true;
+            }
+        }
+
+        if (enumExports) {
+            const auto found = enumExports->find(name.lexeme);
+            if (found != enumExports->end()) {
+                moduleSymbols_.recordEnumExport(currentModuleId, name.lexeme, found->second);
                 exported = true;
             }
         }
@@ -1058,7 +1237,15 @@ void TypeChecker::checkExport(const ExportStmt& statement)
                     exported = true;
                 }
             }
+            if (moduleSymbols_.isLocalEnum(moduleId, name.lexeme)) {
+                if (const EnumTypeDecl* enumType = findEnumType(name.lexeme)) {
+                    moduleSymbols_.recordEnumExport(moduleId, name.lexeme, *enumType);
+                    exported = true;
+                }
+            }
         } else if (findStructType(name.lexeme)) {
+            exported = true;
+        } else if (findEnumType(name.lexeme)) {
             exported = true;
         }
 
@@ -1094,7 +1281,29 @@ void TypeChecker::recordReturn(const Token& keyword, TypeInfo type)
 
 bool TypeChecker::bodyMayFallThrough(const std::vector<StmtPtr>& body) const
 {
-    return body.empty() || dynamic_cast<const ReturnStmt*>(body.back().get()) == nullptr;
+    if (body.empty()) {
+        return true;
+    }
+    const Stmt& last = *body.back();
+    if (dynamic_cast<const ReturnStmt*>(&last)) {
+        return false;
+    }
+    if (const auto* block = dynamic_cast<const BlockStmt*>(&last)) {
+        return bodyMayFallThrough(block->statements);
+    }
+    if (const auto* match = dynamic_cast<const MatchStmt*>(&last)) {
+        if (match->arms.empty()) {
+            return true;
+        }
+        for (const MatchArm& arm : match->arms) {
+            const auto* armBlock = dynamic_cast<const BlockStmt*>(arm.body.get());
+            if (!armBlock || bodyMayFallThrough(armBlock->statements)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return true;
 }
 
 void TypeChecker::checkImplicitNilReturn(
@@ -1140,6 +1349,27 @@ const TypeChecker::StructTypeDecl* TypeChecker::findStructType(const std::string
         return nullptr;
     }
     return &found->second;
+}
+
+const TypeChecker::EnumTypeDecl* TypeChecker::findEnumType(const std::string& name) const
+{
+    const auto found = enumTypes_.find(name);
+    if (found == enumTypes_.end()) {
+        return nullptr;
+    }
+    return &found->second;
+}
+
+const TypeChecker::EnumVariantType* TypeChecker::findEnumVariant(
+    const EnumTypeDecl& enumType,
+    const std::string& name) const
+{
+    for (const EnumVariantType& variant : enumType.variants) {
+        if (variant.name.lexeme == name) {
+            return &variant;
+        }
+    }
+    return nullptr;
 }
 
 TypeInfo TypeChecker::resolveStructFieldAnnotation(const StructFieldDecl& field)
@@ -1215,6 +1445,9 @@ TypeInfo TypeChecker::resolveSimpleStructFieldAnnotation(const TypeAnnotation& t
     if (findStructType(typeName.token.lexeme)) {
         return namedStructType(typeName.token.lexeme);
     }
+    if (findEnumType(typeName.token.lexeme)) {
+        return namedEnumType(typeName.token.lexeme);
+    }
 
     throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
 }
@@ -1243,6 +1476,39 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
 
     structTypes_[statement.name.lexeme] = std::move(declaration);
     structCheckStates_[statement.name.lexeme] = StructCheckState::Checked;
+}
+
+void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
+{
+    const auto state = enumCheckStates_.find(statement.name.lexeme);
+    if (state != enumCheckStates_.end() && state->second == EnumCheckState::Checked) {
+        return;
+    }
+    if (state == enumCheckStates_.end()) {
+        enumTypes_.emplace(statement.name.lexeme, EnumTypeDecl{statement.name, {}});
+        enumDeclarations_.emplace(statement.name.lexeme, &statement);
+        enumCheckStates_.emplace(statement.name.lexeme, EnumCheckState::Declared);
+    }
+
+    enumCheckStates_[statement.name.lexeme] = EnumCheckState::Checking;
+    EnumTypeDecl declaration{statement.name, {}};
+    std::unordered_map<std::string, Token> variantNames;
+    for (const EnumVariantDecl& variant : statement.variants) {
+        if (variantNames.find(variant.name.lexeme) != variantNames.end()) {
+            throw TypeError(variant.name,
+                "duplicate enum variant " + variant.name.lexeme + " in enum " + statement.name.lexeme);
+        }
+        variantNames.emplace(variant.name.lexeme, variant.name);
+
+        EnumVariantType checkedVariant{variant.name, {}};
+        for (const TypeAnnotation& payloadType : variant.payloadTypes) {
+            checkedVariant.payloadTypes.push_back(resolveAnnotation(payloadType));
+        }
+        declaration.variants.push_back(std::move(checkedVariant));
+    }
+
+    enumTypes_[statement.name.lexeme] = std::move(declaration);
+    enumCheckStates_[statement.name.lexeme] = EnumCheckState::Checked;
 }
 
 bool TypeChecker::isBuiltinMemberName(const std::string& name) const
@@ -1345,35 +1611,45 @@ TypeChecker::MethodInfo TypeChecker::methodInfoFromSignature(const MethodSignatu
 TypeInfo TypeChecker::qualifyNamespaceType(
     const TypeInfo& type,
     const std::string& alias,
-    const ModuleStructExports& structs) const
+    const ModuleStructExports& structs,
+    const ModuleEnumExports& enums) const
 {
     TypeInfo result = type;
     if (result.kind == StaticType::Struct && result.structName && structs.find(*result.structName) != structs.end()) {
         result.structName = alias + "." + *result.structName;
         return result;
     }
+    if (result.kind == StaticType::Enum && result.enumName && enums.find(*result.enumName) != enums.end()) {
+        result.enumName = alias + "." + *result.enumName;
+        return result;
+    }
     if (result.kind == StaticType::Array && result.elementType) {
-        result.elementType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.elementType, alias, structs));
+        result.elementType = std::make_shared<TypeInfo>(
+            qualifyNamespaceType(*result.elementType, alias, structs, enums));
         return result;
     }
     if (result.kind == StaticType::Map) {
         if (result.keyType) {
-            result.keyType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.keyType, alias, structs));
+            result.keyType = std::make_shared<TypeInfo>(
+                qualifyNamespaceType(*result.keyType, alias, structs, enums));
         }
         if (result.valueType) {
-            result.valueType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.valueType, alias, structs));
+            result.valueType = std::make_shared<TypeInfo>(
+                qualifyNamespaceType(*result.valueType, alias, structs, enums));
         }
         return result;
     }
     if (isNullable(result) && result.nullableOf) {
-        result.nullableOf = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.nullableOf, alias, structs));
+        result.nullableOf = std::make_shared<TypeInfo>(
+            qualifyNamespaceType(*result.nullableOf, alias, structs, enums));
         return result;
     }
     if (result.kind == StaticType::Function && result.returnType) {
         for (TypeInfo& parameter : result.parameterTypes) {
-            parameter = qualifyNamespaceType(parameter, alias, structs);
+            parameter = qualifyNamespaceType(parameter, alias, structs, enums);
         }
-        result.returnType = std::make_shared<TypeInfo>(qualifyNamespaceType(*result.returnType, alias, structs));
+        result.returnType = std::make_shared<TypeInfo>(
+            qualifyNamespaceType(*result.returnType, alias, structs, enums));
     }
     return result;
 }
@@ -1381,14 +1657,15 @@ TypeInfo TypeChecker::qualifyNamespaceType(
 MethodSignature TypeChecker::qualifyNamespaceMethodSignature(
     const MethodSignature& signature,
     const std::string& alias,
-    const ModuleStructExports& structs) const
+    const ModuleStructExports& structs,
+    const ModuleEnumExports& enums) const
 {
     MethodSignature result = signature;
-    result.receiverType = qualifyNamespaceType(result.receiverType, alias, structs);
+    result.receiverType = qualifyNamespaceType(result.receiverType, alias, structs, enums);
     for (TypeInfo& parameter : result.parameterTypes) {
-        parameter = qualifyNamespaceType(parameter, alias, structs);
+        parameter = qualifyNamespaceType(parameter, alias, structs, enums);
     }
-    result.returnType = qualifyNamespaceType(result.returnType, alias, structs);
+    result.returnType = qualifyNamespaceType(result.returnType, alias, structs, enums);
     return result;
 }
 
@@ -1396,7 +1673,8 @@ void TypeChecker::importMethodExports(
     const Token& diagnosticToken,
     const ModuleMethodExports& methodExports,
     const std::string* namespaceAlias,
-    const ModuleStructExports* namespaceStructs)
+    const ModuleStructExports* namespaceStructs,
+    const ModuleEnumExports* namespaceEnums)
 {
     for (const auto& structEntry : methodExports) {
         std::string structName = structEntry.first;
@@ -1407,8 +1685,9 @@ void TypeChecker::importMethodExports(
         auto& table = methods_[structName];
         for (const auto& methodEntry : structEntry.second) {
             MethodSignature signature = methodEntry.second;
-            if (namespaceAlias && namespaceStructs) {
-                signature = qualifyNamespaceMethodSignature(signature, *namespaceAlias, *namespaceStructs);
+            if (namespaceAlias && namespaceStructs && namespaceEnums) {
+                signature = qualifyNamespaceMethodSignature(
+                    signature, *namespaceAlias, *namespaceStructs, *namespaceEnums);
             }
             if (table.find(methodEntry.first) != table.end()) {
                 throw TypeError(diagnosticToken,
@@ -1936,6 +2215,163 @@ TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(const StructC
         throw TypeError(expression.name, "unknown struct type `" + typeName + "`");
     }
     return checkNamedStructFields(expression.name, namedStructType(typeName), expression.fields);
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(const MemberCallExpr& expression)
+{
+    const std::string enumName = enumConstructorTypeName(expression);
+    const EnumTypeDecl* enumType = findEnumType(enumName);
+    if (!enumType) {
+        throw TypeError(expression.name, "unknown enum type " + enumName);
+    }
+
+    const EnumVariantType* variant = findEnumVariant(*enumType, expression.name.lexeme);
+    if (!variant) {
+        throw TypeError(expression.name,
+            "enum " + enumName + " has no variant " + expression.name.lexeme);
+    }
+    if (variant->payloadTypes.size() != expression.arguments.size()) {
+        throw TypeError(expression.paren,
+            "variant " + enumName + "." + expression.name.lexeme + " expects "
+                + std::to_string(variant->payloadTypes.size()) + " arguments but got "
+                + std::to_string(expression.arguments.size()));
+    }
+
+    for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
+        const CheckedExpression argument =
+            checkExpressionInfo(*expression.arguments[i], &variant->payloadTypes[i]);
+        if (!compatible(variant->payloadTypes[i], argument.type)) {
+            throw TypeError(expression.paren,
+                "variant argument " + std::to_string(i + 1) + " expects "
+                    + typeInfoName(variant->payloadTypes[i]) + ", got "
+                    + typeInfoName(argument.type));
+        }
+    }
+
+    std::string runtimeEnumName = enumName;
+    const std::size_t namespaceSeparator = enumName.find('.');
+    if (namespaceSeparator != std::string::npos) {
+        const std::string alias = enumName.substr(0, namespaceSeparator);
+        const std::string localName = enumName.substr(namespaceSeparator + 1);
+        if (const NamespaceImport* namespaceImport = findNamespace(alias)) {
+            const auto found = namespaceImport->enums.find(localName);
+            if (found != namespaceImport->enums.end()) {
+                runtimeEnumName = found->second.name.lexeme;
+            }
+        }
+    }
+    resolvedNames_.recordVariantConstructor(expression, runtimeEnumName, expression.name.lexeme);
+    return CheckedExpression{namedEnumType(enumName)};
+}
+
+bool TypeChecker::checkPattern(
+    const Pattern& pattern,
+    const TypeInfo& expectedType,
+    std::unordered_set<std::string>& coveredVariants)
+{
+    if (dynamic_cast<const WildcardPattern*>(&pattern)) {
+        return true;
+    }
+
+    if (const auto* variable = dynamic_cast<const VariablePattern*>(&pattern)) {
+        const Binding binding = declareVariable(variable->name, expectedType, false);
+        resolvedNames_.recordPatternVariable(*variable, binding.resolvedName);
+        return true;
+    }
+
+    if (const auto* literal = dynamic_cast<const LiteralPattern*>(&pattern)) {
+        throw TypeError(literal->value, "literal patterns are not valid for enum values");
+    }
+
+    const auto* variantPattern = dynamic_cast<const VariantPattern*>(&pattern);
+    if (!variantPattern) {
+        throw TypeError("unsupported pattern node");
+    }
+    if (expectedType.kind != StaticType::Enum || !expectedType.enumName) {
+        throw TypeError(variantPattern->name, "variant pattern expects enum value");
+    }
+    if (!variantPattern->qualifier
+        || variantPattern->qualifier->lexeme != *expectedType.enumName) {
+        throw TypeError(variantPattern->name,
+            "variant pattern belongs to enum "
+                + (variantPattern->qualifier ? variantPattern->qualifier->lexeme : std::string("<unknown>"))
+                + ", expected " + *expectedType.enumName);
+    }
+
+    const EnumTypeDecl* enumType = findEnumType(*expectedType.enumName);
+    const EnumVariantType* variant = enumType
+        ? findEnumVariant(*enumType, variantPattern->name.lexeme)
+        : nullptr;
+    if (!variant) {
+        throw TypeError(variantPattern->name,
+            "enum " + *expectedType.enumName + " has no variant "
+                + variantPattern->name.lexeme);
+    }
+    if (variant->payloadTypes.size() != variantPattern->arguments.size()) {
+        throw TypeError(variantPattern->name,
+            "variant pattern " + *expectedType.enumName + "." + variantPattern->name.lexeme
+                + " expects " + std::to_string(variant->payloadTypes.size())
+                + " patterns but got " + std::to_string(variantPattern->arguments.size()));
+    }
+    coveredVariants.insert(variantPattern->name.lexeme);
+
+    std::string runtimeEnumName = *expectedType.enumName;
+    const std::size_t namespaceSeparator = runtimeEnumName.find('.');
+    if (namespaceSeparator != std::string::npos) {
+        const std::string alias = runtimeEnumName.substr(0, namespaceSeparator);
+        const std::string localName = runtimeEnumName.substr(namespaceSeparator + 1);
+        if (const NamespaceImport* namespaceImport = findNamespace(alias)) {
+            const auto found = namespaceImport->enums.find(localName);
+            if (found != namespaceImport->enums.end()) {
+                runtimeEnumName = found->second.name.lexeme;
+            }
+        }
+    }
+    resolvedNames_.recordPatternVariant(*variantPattern, runtimeEnumName);
+
+    for (std::size_t i = 0; i < variantPattern->arguments.size(); ++i) {
+        std::unordered_set<std::string> nestedCoverage;
+        checkPattern(*variantPattern->arguments[i], variant->payloadTypes[i], nestedCoverage);
+    }
+    return false;
+}
+
+void TypeChecker::checkMatch(const MatchStmt& statement)
+{
+    const TypeInfo scrutineeType = checkExpression(*statement.value);
+    if (scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName) {
+        throw TypeError(statement.value && statement.value->span
+                ? Token{TokenType::Match, "match", statement.value->span->line, statement.value->span->column}
+                : Token{TokenType::Match, "match", 0, 0},
+            "match expects enum value, got " + typeInfoName(scrutineeType));
+    }
+
+    const EnumTypeDecl* enumType = findEnumType(*scrutineeType.enumName);
+    if (!enumType) {
+        throw TypeError("unknown enum type " + *scrutineeType.enumName);
+    }
+
+    std::unordered_set<std::string> coveredVariants;
+    bool coversAll = false;
+    for (const MatchArm& arm : statement.arms) {
+        beginScope();
+        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, coveredVariants);
+        coversAll = coversAll || armCoversAll;
+        checkStatement(*arm.body);
+        endScope();
+    }
+
+    if (!coversAll) {
+        for (const EnumVariantType& variant : enumType->variants) {
+            if (coveredVariants.find(variant.name.lexeme) == coveredVariants.end()) {
+                throw TypeError(
+                    Token{TokenType::Match, "match", statement.value->span ? statement.value->span->line : 0,
+                        statement.value->span ? statement.value->span->column : 0},
+                    "non-exhaustive match: missing " + *scrutineeType.enumName + "."
+                        + variant.name.lexeme);
+            }
+        }
+    }
 }
 
 TypeInfo TypeChecker::checkExpression(const Expr& expression)
@@ -2568,6 +3004,10 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
     const std::string& name = expression.name.lexeme;
     const std::size_t arity = expression.arguments.size();
 
+    if (!enumConstructorTypeName(expression).empty()) {
+        return checkVariantConstructor(expression);
+    }
+
     if (const auto* variable = dynamic_cast<const VariableExpr*>(expression.receiver.get())) {
         if (const NamespaceImport* namespaceImport = findNamespace(variable->name.lexeme)) {
             const auto found = namespaceImport->values.find(name);
@@ -2984,14 +3424,23 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
         if (!namespaceImport) {
             throw TypeError(typeName.qualifier, "unknown module namespace `" + typeName.qualifier.lexeme + "`");
         }
-        if (namespaceImport->structs.find(typeName.token.lexeme) == namespaceImport->structs.end()) {
-            throw TypeError(typeName.token,
-                "module namespace `" + typeName.qualifier.lexeme + "` has no exported type `" + typeName.token.lexeme + "`");
-        }
-        return namedStructType(qualifiedStructName(typeName.qualifier, typeName.token));
-    }
+       if (namespaceImport->structs.find(typeName.token.lexeme) == namespaceImport->structs.end()) {
+            if (namespaceImport->enums.find(typeName.token.lexeme) != namespaceImport->enums.end()) {
+                return namedEnumType(qualifiedStructName(typeName.qualifier, typeName.token));
+            }
+           throw TypeError(typeName.token,
+               "module namespace `" + typeName.qualifier.lexeme + "` has no exported type `" + typeName.token.lexeme + "`");
+       }
+       return namedStructType(qualifiedStructName(typeName.qualifier, typeName.token));
+   }
+   if (typeName.kind == TypeAnnotation::Kind::Qualified) {
+       const NamespaceImport* namespaceImport = findNamespace(typeName.qualifier.lexeme);
+       if (namespaceImport && namespaceImport->enums.find(typeName.token.lexeme) != namespaceImport->enums.end()) {
+           return namedEnumType(qualifiedStructName(typeName.qualifier, typeName.token));
+       }
+   }
 
-    if (const TypeInfo* typeParameter = findTypeParameter(typeName.token.lexeme)) {
+   if (const TypeInfo* typeParameter = findTypeParameter(typeName.token.lexeme)) {
         return *typeParameter;
     }
 
@@ -3010,7 +3459,10 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
     if (findStructType(typeName.token.lexeme)) {
         return namedStructType(typeName.token.lexeme);
     }
-    throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
+    if (findEnumType(typeName.token.lexeme)) {
+        return namedEnumType(typeName.token.lexeme);
+    }
+   throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
 }
 
 void TypeChecker::checkAssignable(const Token& token, const std::string& context, const TypeInfo& expected, const TypeInfo& actual) const

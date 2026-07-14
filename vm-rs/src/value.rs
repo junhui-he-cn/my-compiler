@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::runtime::{ArrayValue, FunctionValue, MapValue, RangeValue, StructValue};
+use crate::runtime::{ArrayValue, FunctionValue, MapValue, RangeValue, StructValue, VariantValue};
 use std::fmt;
 
 #[derive(Clone, Debug)]
@@ -14,6 +14,7 @@ pub enum Value {
     Map(MapValue),
     Range(RangeValue),
     Struct(StructValue),
+    Variant(VariantValue),
 }
 
 impl Value {
@@ -49,6 +50,10 @@ impl Value {
         Self::Struct(value)
     }
 
+    pub fn variant(value: VariantValue) -> Self {
+        Self::Variant(value)
+    }
+
     pub fn type_name(&self) -> &str {
         match self {
             Self::Nil => "nil",
@@ -60,6 +65,7 @@ impl Value {
             Self::Map(_) => "map",
             Self::Range(_) => "range",
             Self::Struct(value) => value.type_name.as_deref().unwrap_or("struct"),
+            Self::Variant(value) => &value.enum_name,
         }
     }
 
@@ -80,6 +86,16 @@ impl Value {
                 left.start == right.start && left.stop == right.stop && left.step == right.step
             }
             (Self::Struct(left), Self::Struct(right)) => left.identity == right.identity,
+            (Self::Variant(left), Self::Variant(right)) => {
+                left.enum_name == right.enum_name
+                    && left.variant_name == right.variant_name
+                    && left.fields.len() == right.fields.len()
+                    && left
+                        .fields
+                        .iter()
+                        .zip(right.fields.iter())
+                        .all(|(left, right)| left.runtime_equals(right))
+            }
             _ => false,
         }
     }
@@ -135,6 +151,20 @@ impl fmt::Display for Value {
                 }
                 write!(f, "}}")
             }
+            Self::Variant(value) => {
+                write!(f, "{}.{}", value.enum_name, value.variant_name)?;
+                if !value.fields.is_empty() {
+                    write!(f, "(")?;
+                    for (index, field) in value.fields.iter().enumerate() {
+                        if index != 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{}", field)?;
+                    }
+                    write!(f, ")")?;
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -142,6 +172,7 @@ impl fmt::Display for Value {
 #[cfg(test)]
 mod tests {
     use super::Value;
+    use crate::runtime::VariantValue;
 
     #[test]
     fn formats_primitives_like_cpp_runtime() {
@@ -170,5 +201,29 @@ mod tests {
         assert!(Value::boolean(true).runtime_equals(&Value::boolean(true)));
         assert!(Value::string("x").runtime_equals(&Value::string("x")));
         assert!(!Value::string("x").runtime_equals(&Value::number(0.0)));
+    }
+
+    #[test]
+    fn enum_variants_format_and_compare_structurally() {
+        let left = Value::variant(VariantValue {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            fields: vec![Value::number(7.0)],
+        });
+        let right = Value::variant(VariantValue {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            fields: vec![Value::number(7.0)],
+        });
+        let other = Value::variant(VariantValue {
+            enum_name: "Result".to_string(),
+            variant_name: "Err".to_string(),
+            fields: vec![Value::string("bad")],
+        });
+
+        assert_eq!(left.type_name(), "Result");
+        assert_eq!(left.to_string(), "Result.Ok(7)");
+        assert!(left.runtime_equals(&right));
+        assert!(!left.runtime_equals(&other));
     }
 }

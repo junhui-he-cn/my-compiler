@@ -1,0 +1,10 @@
+import "./lib.cd" as lib;
+
+fun render(value: lib.Outcome): string {
+  match value {
+    lib.Outcome.Good(number) => { return "good:" + str(number); }
+    lib.Outcome.Bad(message) => { return "bad:" + message; }
+  }
+}
+
+print render(lib.make());

@@ -28,10 +28,21 @@ struct ModuleInterfaceStruct {
     std::vector<ModuleInterfaceMethod> methods;
 };
 
+struct ModuleInterfaceVariant {
+    std::string name;
+    std::vector<TypeInfo> payloadTypes;
+};
+
+struct ModuleInterfaceEnum {
+    std::string name;
+    std::vector<ModuleInterfaceVariant> variants;
+};
+
 struct ModuleInterface {
     std::size_t moduleId = 0;
     std::string path;
     bool isEntry = false;
     std::vector<ModuleInterfaceValue> values;
     std::vector<ModuleInterfaceStruct> structs;
+    std::vector<ModuleInterfaceEnum> enums;
 };

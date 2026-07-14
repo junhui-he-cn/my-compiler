@@ -42,6 +42,12 @@ public:
     bool hasMemberCallCallee(const MemberCallExpr& expression) const;
     const std::string& memberCallCalleeName(const MemberCallExpr& expression) const;
     bool memberCallPassesReceiver(const MemberCallExpr& expression) const;
+    bool hasVariantConstructor(const MemberCallExpr& expression) const;
+    const std::string& variantEnumName(const MemberCallExpr& expression) const;
+    const std::string& variantName(const MemberCallExpr& expression) const;
+    bool hasPatternVariable(const VariablePattern& pattern) const;
+    const std::string& patternVariableName(const VariablePattern& pattern) const;
+    const std::string& patternEnumName(const VariantPattern& pattern) const;
 
 private:
     friend class TypeChecker;
@@ -60,6 +66,12 @@ private:
     void recordForInVariable(const ForInStmt& statement, std::string name);
     void recordFieldAccess(const FieldAccessExpr& expression, std::string name);
     void recordMemberCallCallee(const MemberCallExpr& expression, std::string name, bool passesReceiver);
+    void recordVariantConstructor(
+        const MemberCallExpr& expression,
+        std::string enumName,
+        std::string variantName);
+    void recordPatternVariable(const VariablePattern& pattern, std::string name);
+    void recordPatternVariant(const VariantPattern& pattern, std::string enumName);
 
     std::unordered_map<const LetStmt*, std::string> letNames_;
     std::unordered_map<const FunctionStmt*, std::string> functionNames_;
@@ -75,6 +87,9 @@ private:
     std::unordered_map<const FieldAccessExpr*, std::string> fieldAccessNames_;
     std::unordered_map<const MemberCallExpr*, std::string> memberCallCalleeNames_;
     std::unordered_map<const MemberCallExpr*, bool> memberCallPassesReceiver_;
+    std::unordered_map<const MemberCallExpr*, std::pair<std::string, std::string>> variantConstructors_;
+    std::unordered_map<const VariablePattern*, std::string> patternVariableNames_;
+    std::unordered_map<const VariantPattern*, std::string> patternEnumNames_;
 };
 
 class TypeChecker {
@@ -90,6 +105,8 @@ private:
     using Binding = TypeBinding;
     using StructFieldType = ::StructFieldType;
     using StructTypeDecl = ::StructTypeDecl;
+    using EnumVariantType = ::EnumVariantType;
+    using EnumTypeDecl = ::EnumTypeDecl;
     using TypeSubstitutions = std::unordered_map<std::string, TypeInfo>;
 
     struct FunctionReturnContext {
@@ -120,6 +137,12 @@ private:
         Checked,
     };
 
+    enum class EnumCheckState {
+        Declared,
+        Checking,
+        Checked,
+    };
+
     void beginScope();
     void endScope();
     void beginTypeParameterScope(const std::vector<Token>& parameters);
@@ -144,9 +167,13 @@ private:
     void declareNamespaceAlias(const ImportStmt& statement, NamespaceImport imported);
     std::string qualifiedStructName(const Token& qualifier, const Token& name) const;
     std::string structConstructorTypeName(const StructConstructExpr& expression) const;
+    std::string enumConstructorTypeName(const MemberCallExpr& expression) const;
+    const EnumTypeDecl* findEnumType(const std::string& name) const;
+    const EnumVariantType* findEnumVariant(const EnumTypeDecl& enumType, const std::string& name) const;
 
     void checkStatement(const Stmt& statement);
     void predeclareStructDeclarations(const std::vector<StmtPtr>& statements);
+    void predeclareEnumDeclarations(const std::vector<StmtPtr>& statements);
     void checkStatementList(const std::vector<StmtPtr>& statements);
     void checkModule(const ModuleStmt& module);
     void checkImport(const ImportStmt& statement);
@@ -158,6 +185,7 @@ private:
     const ModuleStmt* findModule(const Program& program, std::size_t moduleId) const;
     void buildModuleInterfaces(const Program& program);
     void checkStructDeclaration(const StructDeclStmt& statement);
+    void checkEnumDeclaration(const EnumDeclStmt& statement);
     void checkImpl(const ImplStmt& statement);
     std::vector<TypeInfo> resolveParameterTypes(const std::vector<Parameter>& parameters);
     std::optional<TypeInfo> resolveOptionalReturnType(const std::optional<TypeAnnotation>& returnTypeName);
@@ -169,13 +197,22 @@ private:
     const MethodInfo* findMethod(const std::string& structName, const std::string& methodName) const;
     MethodSignature methodSignatureFromInfo(const MethodInfo& method) const;
     MethodInfo methodInfoFromSignature(const MethodSignature& signature) const;
-    TypeInfo qualifyNamespaceType(const TypeInfo& type, const std::string& alias, const ModuleStructExports& structs) const;
-    MethodSignature qualifyNamespaceMethodSignature(const MethodSignature& signature, const std::string& alias, const ModuleStructExports& structs) const;
+    TypeInfo qualifyNamespaceType(
+        const TypeInfo& type,
+        const std::string& alias,
+        const ModuleStructExports& structs,
+        const ModuleEnumExports& enums) const;
+    MethodSignature qualifyNamespaceMethodSignature(
+        const MethodSignature& signature,
+        const std::string& alias,
+        const ModuleStructExports& structs,
+        const ModuleEnumExports& enums) const;
     void importMethodExports(
         const Token& diagnosticToken,
         const ModuleMethodExports& methodExports,
         const std::string* namespaceAlias = nullptr,
-        const ModuleStructExports* namespaceStructs = nullptr);
+        const ModuleStructExports* namespaceStructs = nullptr,
+        const ModuleEnumExports* namespaceEnums = nullptr);
     void recordStructMethodExports(std::size_t moduleId, const std::string& structName);
     bool isBuiltinMemberName(const std::string& name) const;
     const StructTypeDecl* findStructType(const std::string& name) const;
@@ -247,6 +284,12 @@ private:
         const TypeInfo& declared,
         const std::vector<StructField>& fields);
     CheckedExpression checkStructConstructor(const StructConstructExpr& expression);
+    CheckedExpression checkVariantConstructor(const MemberCallExpr& expression);
+    void checkMatch(const MatchStmt& statement);
+    bool checkPattern(
+        const Pattern& pattern,
+        const TypeInfo& expectedType,
+        std::unordered_set<std::string>& coveredVariants);
     const StructFieldType* findStructField(const StructTypeDecl& structType, const std::string& name) const;
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     TypeInfo resolveAnnotation(const TypeAnnotation& typeName) const;
@@ -261,6 +304,9 @@ private:
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
     std::unordered_map<std::string, const StructDeclStmt*> structDeclarations_;
     std::unordered_map<std::string, StructCheckState> structCheckStates_;
+    std::unordered_map<std::string, EnumTypeDecl> enumTypes_;
+    std::unordered_map<std::string, const EnumDeclStmt*> enumDeclarations_;
+    std::unordered_map<std::string, EnumCheckState> enumCheckStates_;
     MethodTable methods_;
     ModuleSymbols moduleSymbols_;
     std::vector<ModuleInterface> moduleInterfaces_;

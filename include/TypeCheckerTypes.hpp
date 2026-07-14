@@ -26,6 +26,16 @@ struct StructTypeDecl {
     std::vector<StructFieldType> fields;
 };
 
+struct EnumVariantType {
+    Token name;
+    std::vector<TypeInfo> payloadTypes;
+};
+
+struct EnumTypeDecl {
+    Token name;
+    std::vector<EnumVariantType> variants;
+};
+
 struct MethodSignature {
     TypeInfo receiverType;
     std::vector<TypeInfo> parameterTypes;

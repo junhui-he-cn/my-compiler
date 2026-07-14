@@ -114,6 +114,10 @@ void IRCompiler::compileStatement(const Stmt& statement)
         return;
     }
 
+    if (dynamic_cast<const EnumDeclStmt*>(&statement)) {
+        return;
+    }
+
     if (const auto* impl = dynamic_cast<const ImplStmt*>(&statement)) {
         compileImpl(*impl);
         return;
@@ -160,6 +164,11 @@ void IRCompiler::compileStatement(const Stmt& statement)
         } else {
             ir_.patchJump(jumpIfFalse);
         }
+        return;
+    }
+
+    if (const auto* match = dynamic_cast<const MatchStmt*>(&statement)) {
+        compileMatch(*match);
         return;
     }
 
@@ -392,6 +401,66 @@ void IRCompiler::compileForIn(const ForInStmt& statement)
     }
 }
 
+void IRCompiler::compileMatch(const MatchStmt& statement)
+{
+    const IRRegister value = compileExpression(*statement.value);
+    std::vector<std::size_t> endJumps;
+
+    for (const MatchArm& arm : statement.arms) {
+        std::vector<std::size_t> failJumps;
+        std::vector<std::pair<std::string, IRRegister>> bindings;
+        compilePattern(*arm.pattern, value, failJumps, bindings);
+        for (const auto& binding : bindings) {
+            ir_.emitStoreVar(binding.first, binding.second);
+        }
+        compileStatement(*arm.body);
+        endJumps.push_back(ir_.emitJump());
+        for (const std::size_t jump : failJumps) {
+            ir_.patchJump(jump);
+        }
+    }
+
+    for (const std::size_t jump : endJumps) {
+        ir_.patchJump(jump);
+    }
+}
+
+void IRCompiler::compilePattern(
+    const Pattern& pattern,
+    IRRegister value,
+    std::vector<std::size_t>& failJumps,
+    std::vector<std::pair<std::string, IRRegister>>& bindings)
+{
+    if (dynamic_cast<const WildcardPattern*>(&pattern)) {
+        return;
+    }
+
+    if (const auto* variable = dynamic_cast<const VariablePattern*>(&pattern)) {
+        bindings.emplace_back(resolvedNames_->patternVariableName(*variable), value);
+        return;
+    }
+
+    if (const auto* literal = dynamic_cast<const LiteralPattern*>(&pattern)) {
+        const IRRegister expected = ir_.emitConstant(literalValue(literal->value.lexeme));
+        const IRRegister equal = ir_.emitBinary(IROp::Equal, value, expected);
+        failJumps.push_back(ir_.emitJumpIfFalse(equal));
+        return;
+    }
+
+    const auto* variant = dynamic_cast<const VariantPattern*>(&pattern);
+    if (!variant || !variant->qualifier) {
+        throw IRCompileError("unsupported pattern node");
+    }
+
+    const IRRegister tag = ir_.emitVariantTag(
+        value, resolvedNames_->patternEnumName(*variant), variant->name.lexeme);
+    failJumps.push_back(ir_.emitJumpIfFalse(tag));
+    for (std::size_t i = 0; i < variant->arguments.size(); ++i) {
+        const IRRegister field = ir_.emitVariantField(value, i);
+        compilePattern(*variant->arguments[i], field, failJumps, bindings);
+    }
+}
+
 IRRegister IRCompiler::compileExpression(const Expr& expression)
 {
     SpanScope scope(*this, expression.span);
@@ -538,6 +607,10 @@ IRRegister IRCompiler::emitNativeStdlibCall(const CallExpr& expression)
 
 IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
 {
+    if (resolvedNames_->hasVariantConstructor(expression)) {
+        return emitVariantConstructor(expression);
+    }
+
     if (resolvedNames_->hasMemberCallCallee(expression)) {
         const IRRegister callee = ir_.emitLoadVar(resolvedNames_->memberCallCalleeName(expression));
         std::vector<IRRegister> arguments;
@@ -576,6 +649,19 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
     }
 
     throw IRCompileError("unknown member call `" + expression.name.lexeme + "`");
+}
+
+IRRegister IRCompiler::emitVariantConstructor(const MemberCallExpr& expression)
+{
+    std::vector<IRRegister> payload;
+    payload.reserve(expression.arguments.size());
+    for (const auto& argument : expression.arguments) {
+        payload.push_back(compileExpression(*argument));
+    }
+    return ir_.emitVariant(
+        resolvedNames_->variantEnumName(expression),
+        resolvedNames_->variantName(expression),
+        std::move(payload));
 }
 
 IRRegister IRCompiler::emitCall(const CallExpr& expression)

@@ -4,6 +4,7 @@ program     = { declaration } ;
 
 declaration = importDecl
             | exportDecl
+            | enumDecl
             | structDecl
             | implDecl
             | funDecl
@@ -12,6 +13,7 @@ declaration = importDecl
 
 statement   = printStmt
             | ifStmt
+            | matchStmt
             | whileStmt
             | forStmt
             | breakStmt
@@ -30,6 +32,15 @@ typeParameters = "<", identifier,
 
 structDecl  = "struct", identifier,
               "{", [ structFields ], "}" ;
+
+enumDecl    = "enum", identifier,
+              "{", [ enumVariants ], "}" ;
+
+enumVariants = enumVariant,
+               { ",", enumVariant }, [ "," ] ;
+
+enumVariant = identifier,
+              [ "(", [ typeArguments ], ")" ] ;
 
 implDecl    = "impl", identifier,
               "{", { methodDecl }, "}" ;
@@ -63,6 +74,26 @@ exportDecl  = "export", identifier,
 
 ifStmt      = "if", expression, block,
               [ "else", block ] ;
+
+matchStmt   = "match", expression, "{", { matchArm }, "}" ;
+
+matchArm    = pattern, "=>", block ;
+
+pattern     = "_"
+            | identifier
+            | literalPattern
+            | variantPattern ;
+
+literalPattern = "nil"
+                | "true"
+                | "false"
+                | number
+                | string ;
+
+variantPattern = identifier, ".", identifier,
+                 [ "(", [ pattern, { ",", pattern } ], ")" ]
+               | identifier, ".", identifier, ".", identifier,
+                 [ "(", [ pattern, { ",", pattern } ], ")" ] ;
 
 whileStmt   = "while", expression, block ;
 
@@ -150,7 +181,9 @@ mapEntries  = mapEntry,
 mapEntry    = expression, ":", expression ;
 
 (* A brace in expression position is a map literal; statement-level braces
-   remain blocks. Anonymous struct literals are not a separate form. *)
+   remain blocks. Anonymous struct literals are not a separate form. A
+   qualified member call such as Result.Ok(value) is a variant constructor
+   when Result is an enum type. *)
 
 
 structConstructor = [ identifier, "." ], identifier, "{", [ fields ], "}" ;

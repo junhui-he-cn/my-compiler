@@ -5,7 +5,8 @@ project. The repository contains the language implementation, a C++17 compiler
 pipeline, bytecode artifact emission, and a standalone Rust bytecode VM.
 
 The language currently supports variables, lexical blocks, `if`/`else`,
-`while`, `break`, `continue`, functions, closures, arrays, maps, indexing, array
+`while`, `break`, `continue`, functions, closures, arrays, maps, ranges, enums,
+and exhaustive pattern matching, indexing, array
 and map element assignment, numeric compound assignment for variables, array elements, and struct fields, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
@@ -33,6 +34,8 @@ let name: type = expression;
 import "path" [as alias];
 export name[, name...];
 struct Name { field: type, ... }
+enum Name { Variant(type, ...), Other }
+match expression { Pattern => { declaration* } }
 print expression;
 if expression { declaration* } [else { declaration* }]
 while expression { declaration* }
@@ -129,6 +132,10 @@ renaming re-exports, wildcard exports, package manifests, import maps, separate
 compilation, or imports from stdin. `import` inside strings or `//` comments is
 ignored by the loader.
 
+Exported enums are available through direct imports and namespace aliases,
+including qualified annotations, constructors, and patterns such as
+lib.Outcome.Good(value).
+
 Functions are values. Named functions use `fun name[<T, U>](parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun (parameter[: type]*) [: type] { declaration* }`. Generic named functions infer type parameters at each call, including direct and namespace imports; an unannotated alias preserves the generic signature. Anonymous function expressions and methods are not generic in this slice. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated or contextually typed, and inferred, annotated, or contextually checked return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
 Struct values are created with named constructor expressions such as `Person { name: "Ada", age: 36 }` after a matching `struct Person { ... }` declaration. Constructors preserve declared field behavior, require exact field names, and allow fields in any order. Field reads use `value.field`. Existing fields can be reassigned with `value.field = expression`; the assignment evaluates to the assigned value. Structs are reference values with identity equality, so aliases observe field mutation. Assigning a missing field is a runtime error when the target type is not statically known, and a type error when it is known.
@@ -144,7 +151,31 @@ p.age = 37;
 
 Named constructor expressions infer the named static type and attach the named runtime type used by `typeOf`; all structs keep the same field-only print format. Annotated bindings must still use an explicit constructor, for example `let p: Person = Person { name: "Ada", age: 36 };`. Field annotations may refer to non-recursive struct names declared later in the same scope, but recursive struct field types such as `struct Node { next: Node? }` are explicitly rejected for now. Field access/assignment on known named struct values is statically checked. Anonymous source struct literals are not a separate form: bare braces such as `{ name: "Ada" }` are map literals, while named constructors such as `Person { name: "Ada" }` remain structs. Constructor functions such as `Person(...)` are not implemented.
 
-Local named structs may define first-slice methods in top-level `impl` blocks. Methods are statically resolved on known named struct receiver types, and method calls lower to ordinary function calls with the receiver passed as implicit `this`:
+Enums define explicit alternatives with positional payloads. Recursive enum
+references are allowed:
+
+```cd
+enum Result { Ok(number), Err(string), Empty }
+let result = Result.Ok(7);
+
+match result {
+  Result.Ok(value) => { print value; }
+  Result.Err(message) => { print message; }
+  Result.Empty => { print 0; }
+}
+```
+
+Enum constructors use `Enum.Variant(...)`; unit variants use an empty call.
+Match is a statement with arm-local bindings and must cover every variant, or
+use `_` or a binding pattern. Nested patterns are supported. Enum values use
+structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
+`typeOf` reports the enum name. Match expressions, guards, named payload
+fields, generic enums, and nullable enum patterns are not implemented.
+
+Local named structs may define first-slice methods in top-level `impl` blocks.
+Methods are statically resolved on known named struct receiver types, and
+method calls lower to ordinary function calls with the receiver passed as
+implicit `this`:
 
 ```cd
 struct Person { name: string }
@@ -216,7 +247,7 @@ to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
 `substr`, or `charAt` do not shadow member-call sugar.
 
-The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
+The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
 
 Supported expressions:
 
@@ -227,6 +258,9 @@ Supported expressions:
 - Maps: `{ key: value, ... }` and `{}`; keys are `nil`, `number`, `bool`, or
   `string`, and entries preserve insertion order.
 - Structs: named constructors such as `Name { field: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
+- Enums and patterns: `enum Name { Variant(type, ...) }`, qualified
+  constructors such as `Name.Variant(value)`, and exhaustive statement-level
+  `match` with wildcard, binding, and nested variant patterns.
 - Function expressions: `fun (parameter[: type]*) [: type] { declaration* }`, including direct expression statements such as `fun () { return nil; };`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
@@ -324,6 +358,8 @@ Multiple input files may be provided. They are read in command-line order and co
 ```
 
 `--bytecode` remains a debug-print mode for inspecting compiler output. `--module-interface` prints the type-checked public API metadata for every loaded module, including exported values, named structs, struct fields, and exported struct method signatures. It is a debug/introspection mode only; it does not emit a separate-compilation artifact or run a linker. Program execution is handled by the Rust VM via `.cdbc` artifacts:
+
+The interface output also reports exported enum variants and their payload types.
 
 ```sh
 ./build/compiler_design --emit-bytecode program.cdbc examples/hello.cd

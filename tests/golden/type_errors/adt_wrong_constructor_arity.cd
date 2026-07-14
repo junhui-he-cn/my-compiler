@@ -1,0 +1,2 @@
+enum Result { Ok(number), Empty }
+let result = Result.Ok();

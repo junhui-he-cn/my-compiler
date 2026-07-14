@@ -501,6 +501,34 @@ fn parse_instruction(line: usize, text: &str) -> Result<Instruction, ParseError>
                     fields: parse_struct_fields(line, field_text)?,
                 })
             }
+            "variant" => {
+                let (variant_text, payload_text) = split_once(line, operands, " ")?;
+                let (enum_name, variant_name) = split_once(line, variant_text, ".")?;
+                Ok(Instruction::Variant {
+                    dest,
+                    enum_name: parse_name_ref(line, enum_name)?,
+                    variant_name: parse_name_ref(line, variant_name)?,
+                    payload: parse_register_list(line, payload_text)?,
+                })
+            }
+            "variant_tag" => {
+                let (value, variant_text) = split_once(line, operands, " ")?;
+                let (enum_name, variant_name) = split_once(line, variant_text, ".")?;
+                Ok(Instruction::VariantTag {
+                    dest,
+                    value: parse_register(line, value)?,
+                    enum_name: parse_name_ref(line, enum_name)?,
+                    variant_name: parse_name_ref(line, variant_name)?,
+                })
+            }
+            "variant_field" => {
+                let (value, index) = split_once(line, operands, " ")?;
+                Ok(Instruction::VariantField {
+                    dest,
+                    value: parse_register(line, value)?,
+                    index: parse_usize(line, index, "variant field index")?,
+                })
+            }
             "move" => Ok(Instruction::Move {
                 dest,
                 source: parse_register(line, operands)?,
@@ -689,6 +717,30 @@ fn format_instruction(instruction: &Instruction) -> String {
                 Some(type_name) => format!("r{} = struct n{} {{{}}}", dest, type_name, parts),
                 None => format!("r{} = struct {{{}}}", dest, parts),
             }
+        }
+        Instruction::Variant {
+            dest,
+            enum_name,
+            variant_name,
+            payload,
+        } => format!(
+            "r{} = variant n{}.n{} {}",
+            dest,
+            enum_name,
+            variant_name,
+            format_register_list(payload)
+        ),
+        Instruction::VariantTag {
+            dest,
+            value,
+            enum_name,
+            variant_name,
+        } => format!(
+            "r{} = variant_tag r{} n{}.n{}",
+            dest, value, enum_name, variant_name
+        ),
+        Instruction::VariantField { dest, value, index } => {
+            format!("r{} = variant_field r{} {}", dest, value, index)
         }
         Instruction::Move { dest, source } => format!("r{} = move r{}", dest, source),
         Instruction::LoadVar { dest, name } => format!("r{} = load_var n{}", dest, name),

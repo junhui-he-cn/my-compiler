@@ -686,6 +686,57 @@ impl<'a> VM<'a> {
                     let value = self.make_struct(frame, type_name, fields)?;
                     self.write_register(frame, *dest, value)?;
                 }
+                Instruction::Variant {
+                    dest,
+                    enum_name,
+                    variant_name,
+                    payload,
+                } => {
+                    let enum_name = self.read_name(*enum_name)?;
+                    let variant_name = self.read_name(*variant_name)?;
+                    let mut fields = Vec::with_capacity(payload.len());
+                    for register in payload {
+                        fields.push(self.read_register(frame, *register)?);
+                    }
+                    self.write_register(
+                        frame,
+                        *dest,
+                        Value::variant(crate::runtime::VariantValue {
+                            enum_name,
+                            variant_name,
+                            fields,
+                        }),
+                    )?;
+                }
+                Instruction::VariantTag {
+                    dest,
+                    value,
+                    enum_name,
+                    variant_name,
+                } => {
+                    let input = self.read_register(frame, *value)?;
+                    let enum_name = self.read_name(*enum_name)?;
+                    let variant_name = self.read_name(*variant_name)?;
+                    let matched = matches!(
+                        input,
+                        Value::Variant(ref variant)
+                            if variant.enum_name == enum_name
+                                && variant.variant_name == variant_name
+                    );
+                    self.write_register(frame, *dest, Value::boolean(matched))?;
+                }
+                Instruction::VariantField { dest, value, index } => {
+                    let input = self.read_register(frame, *value)?;
+                    let Value::Variant(variant) = input else {
+                        return Err(RuntimeError::new("can only access fields on enum variants"));
+                    };
+                    let field = variant
+                        .fields
+                        .get(*index)
+                        .cloned()
+                        .ok_or_else(|| RuntimeError::new("enum variant field index out of bounds"))?;
+                    self.write_register(frame, *dest, field)?;
+                }
                 Instruction::Move { dest, source } => {
                     let value = self.read_register(frame, *source)?;
                     self.write_register(frame, *dest, value)?;

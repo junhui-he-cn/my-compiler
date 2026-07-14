@@ -1,0 +1,7 @@
+module 0 "<repo>/tests/golden/adt_module_import/lib.cd"
+  export value make: fun(): Outcome
+  export enum Outcome
+    variant Good(number)
+    variant Bad(string)
+
+module 1 entry "<repo>/tests/golden/adt_module_import/input.cd"

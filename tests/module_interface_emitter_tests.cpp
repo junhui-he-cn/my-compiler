@@ -83,6 +83,12 @@ void testValuesStructsFieldsMethodsAndTypes()
     module.structs.push_back(point);
     module.structs.push_back(box);
 
+    ModuleInterfaceEnum result;
+    result.name = "Result";
+    result.variants.push_back(ModuleInterfaceVariant{"Ok", {simpleType(StaticType::Number)}});
+    result.variants.push_back(ModuleInterfaceVariant{"Empty", {}});
+    module.enums.push_back(result);
+
     expectEqual(
         "exports sorted and fields preserved",
         emit(std::vector<ModuleInterface>{module}),
@@ -97,7 +103,10 @@ void testValuesStructsFieldsMethodsAndTypes()
         "    field y: number\n"
         "    field x: number?\n"
         "    method length(): number\n"
-        "    method translate(number, number): Point\n");
+        "    method translate(number, number): Point\n"
+        "  export enum Result\n"
+        "    variant Ok(number)\n"
+        "    variant Empty\n");
 }
 
 } // namespace

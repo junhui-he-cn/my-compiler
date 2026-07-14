@@ -19,6 +19,9 @@ enum class BytecodeOp {
     Array,
     Map,
     Struct,
+    Variant,
+    VariantTag,
+    VariantField,
     Move,
     LoadVar,
     StoreVar,
@@ -60,6 +63,7 @@ struct BytecodeInstruction {
     std::uint32_t operand = 0;
     std::vector<std::uint32_t> operands{};
     std::optional<std::uint32_t> typeNameOperand = std::nullopt;
+    std::optional<std::uint32_t> variantNameOperand = std::nullopt;
     std::optional<SourceSpan> span = std::nullopt;
 };
 

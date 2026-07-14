@@ -29,6 +29,9 @@ bool isBinary(IROp op)
     case IROp::MakeFunction:
     case IROp::Array:
     case IROp::Struct:
+    case IROp::Variant:
+    case IROp::VariantTag:
+    case IROp::VariantField:
     case IROp::Map:
     case IROp::Copy:
     case IROp::LoadVar:
@@ -193,6 +196,35 @@ void printInstruction(std::ostream& out, const IRProgram& program, const IRInstr
             out << ": " << instruction.arguments[arg];
         }
         out << "}";
+    } else if (instruction.op == IROp::Variant) {
+        if (instruction.typeNameOperand && *instruction.typeNameOperand < program.names().size()) {
+            out << " " << program.names()[*instruction.typeNameOperand];
+        }
+        if (instruction.variantNameOperand && *instruction.variantNameOperand < program.names().size()) {
+            out << "." << program.names()[*instruction.variantNameOperand];
+        }
+        out << " (";
+        for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            out << instruction.arguments[arg];
+        }
+        out << ")";
+    } else if (instruction.op == IROp::VariantTag) {
+        if (instruction.left) {
+            out << " " << *instruction.left;
+        }
+        if (instruction.typeNameOperand && *instruction.typeNameOperand < program.names().size()) {
+            out << " " << program.names()[*instruction.typeNameOperand];
+        }
+        if (instruction.variantNameOperand && *instruction.variantNameOperand < program.names().size()) {
+            out << "." << program.names()[*instruction.variantNameOperand];
+        }
+    } else if (instruction.op == IROp::VariantField) {
+        if (instruction.left) {
+            out << " " << *instruction.left << "[" << instruction.operand << "]";
+        }
     } else if (instruction.op == IROp::Copy) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -392,6 +424,36 @@ IRRegister IRProgram::emitStruct(
     instruction.operands = std::move(fieldNames);
     instruction.typeNameOperand = typeNameOperand;
     emit(std::move(instruction));
+    return dest;
+}
+
+IRRegister IRProgram::emitVariant(
+    std::string enumName,
+    std::string variantName,
+    std::vector<IRRegister> payload)
+{
+    IRRegister dest = makeRegister();
+    IRInstruction instruction{IROp::Variant, dest, std::nullopt, std::nullopt, std::move(payload), 0};
+    instruction.typeNameOperand = addName(std::move(enumName));
+    instruction.variantNameOperand = addName(std::move(variantName));
+    emit(std::move(instruction));
+    return dest;
+}
+
+IRRegister IRProgram::emitVariantTag(IRRegister value, std::string enumName, std::string variantName)
+{
+    IRRegister dest = makeRegister();
+    IRInstruction instruction{IROp::VariantTag, dest, value, std::nullopt, {}, 0};
+    instruction.typeNameOperand = addName(std::move(enumName));
+    instruction.variantNameOperand = addName(std::move(variantName));
+    emit(std::move(instruction));
+    return dest;
+}
+
+IRRegister IRProgram::emitVariantField(IRRegister value, std::size_t index)
+{
+    IRRegister dest = makeRegister();
+    emit(IRInstruction{IROp::VariantField, dest, value, std::nullopt, {}, index});
     return dest;
 }
 
@@ -634,6 +696,12 @@ std::string irOpName(IROp op)
         return "map";
     case IROp::Struct:
         return "struct";
+    case IROp::Variant:
+        return "variant";
+    case IROp::VariantTag:
+        return "variant_tag";
+    case IROp::VariantField:
+        return "variant_field";
     case IROp::Copy:
         return "copy";
     case IROp::LoadVar:

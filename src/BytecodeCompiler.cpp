@@ -69,6 +69,12 @@ BytecodeOp lowerOp(IROp op)
         return BytecodeOp::Map;
     case IROp::Struct:
         return BytecodeOp::Struct;
+    case IROp::Variant:
+        return BytecodeOp::Variant;
+    case IROp::VariantTag:
+        return BytecodeOp::VariantTag;
+    case IROp::VariantField:
+        return BytecodeOp::VariantField;
     case IROp::Copy:
         return BytecodeOp::Move;
     case IROp::LoadVar:
@@ -181,6 +187,7 @@ BytecodeInstruction BytecodeCompiler::lowerInstruction(const IRInstruction& inst
         checkedU32(instruction.operand, "operand out of range"),
         lowerOperands(instruction.operands),
         lowerOperand(instruction.typeNameOperand),
+        lowerOperand(instruction.variantNameOperand),
         instruction.span};
 }
 

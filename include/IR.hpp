@@ -19,6 +19,9 @@ enum class IROp {
     Array,
     Map,
     Struct,
+    Variant,
+    VariantTag,
+    VariantField,
     Copy,
     LoadVar,
     StoreVar,
@@ -60,6 +63,7 @@ struct IRInstruction {
     std::size_t operand = 0;
     std::vector<std::size_t> operands{};
     std::optional<std::size_t> typeNameOperand = std::nullopt;
+    std::optional<std::size_t> variantNameOperand = std::nullopt;
     std::optional<SourceSpan> span = std::nullopt;
 };
 
@@ -90,6 +94,12 @@ public:
         std::vector<std::size_t> fieldNames,
         std::vector<IRRegister> fieldValues,
         std::optional<std::size_t> typeNameOperand = std::nullopt);
+    IRRegister emitVariant(
+        std::string enumName,
+        std::string variantName,
+        std::vector<IRRegister> payload);
+    IRRegister emitVariantTag(IRRegister value, std::string enumName, std::string variantName);
+    IRRegister emitVariantField(IRRegister value, std::size_t index);
     IRRegister emitCopy(IRRegister value);
     void emitCopyTo(IRRegister dest, IRRegister value);
     IRRegister emitLoadVar(std::string name);

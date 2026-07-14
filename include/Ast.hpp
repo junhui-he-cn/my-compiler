@@ -211,6 +211,11 @@ struct StructFieldDecl {
     TypeAnnotation typeName;
 };
 
+struct EnumVariantDecl {
+    Token name;
+    std::vector<TypeAnnotation> payloadTypes;
+};
+
 struct IndexExpr final : Expr {
     IndexExpr(ExprPtr collection, Token bracket, ExprPtr index);
     void print(std::ostream& out) const override;
@@ -262,6 +267,66 @@ struct Stmt {
     virtual void print(std::ostream& out, int indent) const = 0;
 
     std::optional<SourceSpan> span;
+};
+
+struct Pattern {
+    virtual ~Pattern() = default;
+    virtual void print(std::ostream& out) const = 0;
+
+    std::optional<SourceSpan> span;
+};
+
+using PatternPtr = std::unique_ptr<Pattern>;
+
+struct WildcardPattern final : Pattern {
+    explicit WildcardPattern(Token name);
+    void print(std::ostream& out) const override;
+
+    Token name;
+};
+
+struct VariablePattern final : Pattern {
+    explicit VariablePattern(Token name);
+    void print(std::ostream& out) const override;
+
+    Token name;
+};
+
+struct LiteralPattern final : Pattern {
+    explicit LiteralPattern(Token value);
+    void print(std::ostream& out) const override;
+
+    Token value;
+};
+
+struct VariantPattern final : Pattern {
+    VariantPattern(std::optional<Token> qualifier, Token name, std::vector<PatternPtr> arguments);
+    void print(std::ostream& out) const override;
+
+    std::optional<Token> qualifier;
+    Token name;
+    std::vector<PatternPtr> arguments;
+};
+
+struct EnumDeclStmt final : Stmt {
+    EnumDeclStmt(Token name, std::vector<EnumVariantDecl> variants);
+    void print(std::ostream& out, int indent) const override;
+
+    Token name;
+    std::vector<EnumVariantDecl> variants;
+};
+
+struct MatchArm {
+    PatternPtr pattern;
+    StmtPtr body;
+};
+
+struct MatchStmt final : Stmt {
+    MatchStmt(ExprPtr value, std::vector<MatchArm> arms);
+    void print(std::ostream& out, int indent) const override;
+
+    ExprPtr value;
+    std::vector<MatchArm> arms;
 };
 
 struct StructDeclStmt final : Stmt {

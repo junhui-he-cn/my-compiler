@@ -48,6 +48,13 @@ pub struct StructValue {
     pub fields: SharedStructFields,
 }
 
+#[derive(Clone, Debug)]
+pub struct VariantValue {
+    pub enum_name: String,
+    pub variant_name: String,
+    pub fields: Vec<Value>,
+}
+
 pub fn new_environment() -> SharedEnvironment {
     Rc::new(RefCell::new(HashMap::new()))
 }

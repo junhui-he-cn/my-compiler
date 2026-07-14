@@ -52,17 +52,18 @@ separate-compilation work remain deferred.
    collection APIs.
 4. Ranges are implemented on top of the generic collection type foundation;
    the first map slice is complete in Phase 17.
-5. Consider algebraic data types and pattern matching as the next data-modeling
-   layer, including the decision on recursive data.
+5. Algebraic data types and pattern matching are implemented as the first
+   named-enum slice. Recursive enum payloads are supported; match expressions,
+   guards, generic enums, and nullable enum patterns remain deferred.
 
-The completed dependency order now reaches ranges:
+The completed dependency order now reaches enums:
 
 ```text
 runtime diagnostics
 -> Unicode strings
 -> generics
 -> ranges (implemented)
--> enums and pattern matching
+-> enums and pattern matching (implemented)
 ```
 
 Each behavior-changing slice should start with a focused design spec and
@@ -219,11 +220,14 @@ Future work:
 Goal: support values with explicit alternatives, such as success/failure or
 tree-shaped data, without prematurely expanding the struct object model.
 
+Status: implemented for named enums with positional payloads, recursive enum
+references, qualified constructors, nested patterns, exhaustive statement-level
+matching, C++ IR, .cdbc, and the Rust VM.
+
 Future work:
 
-- Design named variants/enums and exhaustive pattern matching together.
-- Decide recursive type representation as part of this phase rather than
-  enabling recursive struct fields in isolation.
+- Match expressions, guards, named payload fields, generic enums, and nullable
+  enum patterns remain out of scope.
 - Defer inheritance, dynamic dispatch, and protocol/trait systems unless this
   phase identifies a concrete need for one.
 

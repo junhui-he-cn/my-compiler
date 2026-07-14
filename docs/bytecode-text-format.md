@@ -125,6 +125,9 @@ make_function
 array
 map
 struct
+variant
+variant_tag
+variant_field
 move
 load_var
 store_var
@@ -178,6 +181,18 @@ rD = assign_field rObject, nName, rValue
 The optional `nType` name-table reference records a named struct runtime type name for `typeOf`. Anonymous bytecode struct instructions omit it and continue to report `"struct"` when executed by the VM.
 
 `assign_field` mutates an existing struct field and stores the assigned value in `rD`; assigning to a missing field is a runtime error.
+
+Enum variants use two name-table references and an ordered payload register list:
+
+```text
+rD = variant nEnum.nVariant [rPayload0, rPayload1, ...]
+rD = variant_tag rValue nEnum.nVariant
+rD = variant_field rValue payloadIndex
+```
+
+`variant_tag` returns a boolean and is false for non-matching values.
+`variant_field` reads a positional payload and raises a runtime error for
+non-variant values or an out-of-range payload index.
 
 Native stdlib calls use a name-table reference for the function name:
 

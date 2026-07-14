@@ -6,8 +6,10 @@ void ModuleSymbols::clear()
 {
     valueExports_.clear();
     structExports_.clear();
+    enumExports_.clear();
     methodExports_.clear();
     localStructNames_.clear();
+    localEnumNames_.clear();
     namespaces_.clear();
     directImports_.clear();
 }
@@ -39,6 +41,17 @@ bool ModuleSymbols::isLocalStruct(std::size_t moduleId, const std::string& name)
     return found != localStructNames_.end() && found->second.find(name) != found->second.end();
 }
 
+void ModuleSymbols::markLocalEnum(std::size_t moduleId, const std::string& name)
+{
+    localEnumNames_[moduleId].insert(name);
+}
+
+bool ModuleSymbols::isLocalEnum(std::size_t moduleId, const std::string& name) const
+{
+    const auto found = localEnumNames_.find(moduleId);
+    return found != localEnumNames_.end() && found->second.find(name) != found->second.end();
+}
+
 void ModuleSymbols::recordStructExport(std::size_t moduleId, std::string name, StructTypeDecl declaration)
 {
     structExports_[moduleId].emplace(std::move(name), std::move(declaration));
@@ -48,6 +61,17 @@ const ModuleStructExports* ModuleSymbols::structExports(std::size_t moduleId) co
 {
     const auto found = structExports_.find(moduleId);
     return found == structExports_.end() ? nullptr : &found->second;
+}
+
+void ModuleSymbols::recordEnumExport(std::size_t moduleId, std::string name, EnumTypeDecl declaration)
+{
+    enumExports_[moduleId].emplace(std::move(name), std::move(declaration));
+}
+
+const ModuleEnumExports* ModuleSymbols::enumExports(std::size_t moduleId) const
+{
+    const auto found = enumExports_.find(moduleId);
+    return found == enumExports_.end() ? nullptr : &found->second;
 }
 
 void ModuleSymbols::recordMethodExport(
@@ -77,9 +101,15 @@ bool ModuleSymbols::hasStructExport(std::size_t moduleId, const std::string& nam
     return exports && exports->find(name) != exports->end();
 }
 
+bool ModuleSymbols::hasEnumExport(std::size_t moduleId, const std::string& name) const
+{
+    const ModuleEnumExports* exports = enumExports(moduleId);
+    return exports && exports->find(name) != exports->end();
+}
+
 bool ModuleSymbols::hasAnyExport(std::size_t moduleId, const std::string& name) const
 {
-    return hasValueExport(moduleId, name) || hasStructExport(moduleId, name);
+    return hasValueExport(moduleId, name) || hasStructExport(moduleId, name) || hasEnumExport(moduleId, name);
 }
 
 void ModuleSymbols::recordMethodExports(std::size_t moduleId, std::string structName, const StructMethodTable& methods)

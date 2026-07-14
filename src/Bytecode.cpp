@@ -29,6 +29,9 @@ bool isBinary(BytecodeOp op)
     case BytecodeOp::Array:
     case BytecodeOp::Map:
     case BytecodeOp::Struct:
+    case BytecodeOp::Variant:
+    case BytecodeOp::VariantTag:
+    case BytecodeOp::VariantField:
     case BytecodeOp::Move:
     case BytecodeOp::LoadVar:
     case BytecodeOp::StoreVar:
@@ -167,6 +170,38 @@ void printInstruction(
             out << ": " << instruction.arguments[arg];
         }
         out << "}";
+    } else if (instruction.op == BytecodeOp::Variant) {
+        if (instruction.typeNameOperand) {
+            printNameOperand(out, program, *instruction.typeNameOperand);
+        }
+        if (instruction.variantNameOperand) {
+            out << ".";
+            printNameOperand(out, program, *instruction.variantNameOperand);
+        }
+        out << " (";
+        for (std::size_t arg = 0; arg < instruction.arguments.size(); ++arg) {
+            if (arg != 0) {
+                out << ", ";
+            }
+            out << instruction.arguments[arg];
+        }
+        out << ")";
+    } else if (instruction.op == BytecodeOp::VariantTag) {
+        if (instruction.left) {
+            out << " " << *instruction.left;
+        }
+        if (instruction.typeNameOperand) {
+            out << " ";
+            printNameOperand(out, program, *instruction.typeNameOperand);
+        }
+        if (instruction.variantNameOperand) {
+            out << ".";
+            printNameOperand(out, program, *instruction.variantNameOperand);
+        }
+    } else if (instruction.op == BytecodeOp::VariantField) {
+        if (instruction.left) {
+            out << " " << *instruction.left << "[" << instruction.operand << "]";
+        }
     } else if (instruction.op == BytecodeOp::Move) {
         if (instruction.left) {
             out << " " << *instruction.left;
@@ -359,6 +394,12 @@ std::string bytecodeOpName(BytecodeOp op)
         return "map";
     case BytecodeOp::Struct:
         return "struct";
+    case BytecodeOp::Variant:
+        return "variant";
+    case BytecodeOp::VariantTag:
+        return "variant_tag";
+    case BytecodeOp::VariantField:
+        return "variant_field";
     case BytecodeOp::Move:
         return "move";
     case BytecodeOp::LoadVar:

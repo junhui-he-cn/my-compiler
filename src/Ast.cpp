@@ -92,6 +92,11 @@ void writeReturnAnnotation(std::ostream& out, const std::optional<TypeAnnotation
     writeOptionalTypeAnnotation(out, returnTypeName);
 }
 
+void writePattern(std::ostream& out, const Pattern& pattern)
+{
+    pattern.print(out);
+}
+
 void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 {
     if (const auto* module = dynamic_cast<const ModuleStmt*>(&stmt)) {
@@ -244,6 +249,34 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         for (const StructFieldDecl& field : structDecl->fields) {
             out << ' ' << field.name.lexeme << ": ";
             writeTypeAnnotation(out, field.typeName);
+        }
+        out << ')';
+        return;
+    }
+
+    if (const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(&stmt)) {
+        out << "(enum " << enumDecl->name.lexeme;
+        for (const EnumVariantDecl& variant : enumDecl->variants) {
+            out << " (variant " << variant.name.lexeme;
+            for (const TypeAnnotation& payload : variant.payloadTypes) {
+                out << ' ';
+                writeTypeAnnotation(out, payload);
+            }
+            out << ')';
+        }
+        out << ')';
+        return;
+    }
+
+    if (const auto* match = dynamic_cast<const MatchStmt*>(&stmt)) {
+        out << "(match ";
+        writeExpr(out, match->value);
+        for (const MatchArm& arm : match->arms) {
+            out << " (arm ";
+            writePattern(out, *arm.pattern);
+            out << ' ';
+            writeInlineStmt(out, *arm.body);
+            out << ')';
         }
         out << ')';
         return;
@@ -634,6 +667,113 @@ void FunctionExpr::print(std::ostream& out) const
         writeInlineStmt(out, *statement);
     }
     out << ')';
+}
+
+WildcardPattern::WildcardPattern(Token name)
+    : name(std::move(name))
+{
+}
+
+void WildcardPattern::print(std::ostream& out) const
+{
+    out << '_';
+}
+
+VariablePattern::VariablePattern(Token name)
+    : name(std::move(name))
+{
+}
+
+void VariablePattern::print(std::ostream& out) const
+{
+    out << name.lexeme;
+}
+
+LiteralPattern::LiteralPattern(Token value)
+    : value(std::move(value))
+{
+}
+
+void LiteralPattern::print(std::ostream& out) const
+{
+    out << value.lexeme;
+}
+
+VariantPattern::VariantPattern(std::optional<Token> qualifier, Token name, std::vector<PatternPtr> arguments)
+    : qualifier(std::move(qualifier))
+    , name(std::move(name))
+    , arguments(std::move(arguments))
+{
+}
+
+void VariantPattern::print(std::ostream& out) const
+{
+    if (qualifier) {
+        out << qualifier->lexeme << '.';
+    }
+    out << name.lexeme;
+    if (!arguments.empty()) {
+        out << '(';
+        for (std::size_t i = 0; i < arguments.size(); ++i) {
+            if (i != 0) {
+                out << ", ";
+            }
+            writePattern(out, *arguments[i]);
+        }
+        out << ')';
+    }
+}
+
+EnumDeclStmt::EnumDeclStmt(Token name, std::vector<EnumVariantDecl> variants)
+    : name(std::move(name))
+    , variants(std::move(variants))
+{
+}
+
+void EnumDeclStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Enum " << name.lexeme << " {";
+    for (std::size_t i = 0; i < variants.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        out << variants[i].name.lexeme;
+        if (!variants[i].payloadTypes.empty()) {
+            out << '(';
+            for (std::size_t j = 0; j < variants[i].payloadTypes.size(); ++j) {
+                if (j != 0) {
+                    out << ", ";
+                }
+                writeTypeAnnotation(out, variants[i].payloadTypes[j]);
+            }
+            out << ')';
+        }
+    }
+    out << "}\n";
+}
+
+MatchStmt::MatchStmt(ExprPtr value, std::vector<MatchArm> arms)
+    : value(std::move(value))
+    , arms(std::move(arms))
+{
+}
+
+void MatchStmt::print(std::ostream& out, int indent) const
+{
+    writeIndent(out, indent);
+    out << "Match ";
+    writeExpr(out, value);
+    out << '\n';
+    for (const MatchArm& arm : arms) {
+        writeIndent(out, indent + 1);
+        out << "Arm ";
+        writePattern(out, *arm.pattern);
+        out << "\n";
+        if (arm.body) {
+            arm.body->print(out, indent + 2);
+        }
+    }
 }
 
 StructDeclStmt::StructDeclStmt(Token name, std::vector<StructFieldDecl> fields)

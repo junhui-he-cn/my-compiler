@@ -1,0 +1,42 @@
+enum Result {
+  Ok(number),
+  Err(string),
+  Empty,
+}
+
+enum List {
+  Nil,
+  Cons(number, List),
+}
+
+fun describe(result: Result): string {
+  match result {
+    Result.Ok(value) => { return "ok:" + str(value); }
+    Result.Err(message) => { return "err:" + message; }
+    Result.Empty => { return "empty"; }
+  }
+}
+
+fun sum(list: List): number {
+  match list {
+    List.Nil => { return 0; }
+    List.Cons(head, List.Cons(next, tail)) => { return head + next + sum(tail); }
+    List.Cons(head, List.Nil) => { return head; }
+  }
+}
+
+fun coarse(result: Result): string {
+  match result {
+    Result.Ok(_) => { return "ok"; }
+    _ => { return "other"; }
+  }
+}
+
+print describe(Result.Ok(7));
+print describe(Result.Err("bad"));
+print describe(Result.Empty());
+print sum(List.Cons(1, List.Cons(2, List.Nil())));
+print Result.Ok(7);
+print typeOf(Result.Empty());
+print Result.Ok(7) == Result.Ok(7);
+print coarse(Result.Empty());

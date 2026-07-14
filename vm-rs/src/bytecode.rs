@@ -69,6 +69,23 @@ pub enum Instruction {
         type_name: Option<usize>,
         fields: Vec<(usize, usize)>,
     },
+    Variant {
+        dest: usize,
+        enum_name: usize,
+        variant_name: usize,
+        payload: Vec<usize>,
+    },
+    VariantTag {
+        dest: usize,
+        value: usize,
+        enum_name: usize,
+        variant_name: usize,
+    },
+    VariantField {
+        dest: usize,
+        value: usize,
+        index: usize,
+    },
     Move {
         dest: usize,
         source: usize,

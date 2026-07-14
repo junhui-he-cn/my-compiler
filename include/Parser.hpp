@@ -39,6 +39,9 @@ private:
 
     StmtPtr declaration();
     StmtPtr exportDeclaration();
+    StmtPtr enumDeclaration();
+    std::vector<EnumVariantDecl> enumVariants();
+    EnumVariantDecl enumVariant();
     StmtPtr structDeclaration();
     StmtPtr implDeclaration();
     MethodDecl methodDeclaration();
@@ -55,6 +58,7 @@ private:
     std::optional<TypeAnnotation> optionalReturnType();
     StmtPtr statement();
     StmtPtr ifStatement();
+    StmtPtr matchStatement();
     StmtPtr forStatement();
     StmtPtr forInStatement(Token keyword, Token variable);
     StmtPtr forInitializer();
@@ -93,6 +97,8 @@ private:
     bool isQualifiedStructConstructorStart() const;
     ExprPtr functionExpression();
     ExprPtr primary();
+    PatternPtr pattern();
+    PatternPtr variantPattern(Token qualifier, Token name);
 
     bool match(TokenType type);
     bool matchContextualIdentifier(const std::string& lexeme);

@@ -71,6 +71,13 @@ Value Value::structure(StructValue value)
     return result;
 }
 
+Value Value::variant(VariantValue value)
+{
+    Value result(Type::Variant);
+    result.variant_ = std::make_shared<VariantValue>(std::move(value));
+    return result;
+}
+
 Value::Type Value::type() const
 {
     return type_;
@@ -140,6 +147,14 @@ const StructValue& Value::asStruct() const
     return *struct_;
 }
 
+const VariantValue& Value::asVariant() const
+{
+    if (type_ != Type::Variant || !variant_) {
+        throw std::runtime_error("value is not an enum variant");
+    }
+    return *variant_;
+}
+
 bool isTruthy(const Value& value)
 {
     if (value.type() == Value::Type::Nil) {
@@ -178,6 +193,21 @@ bool valuesEqual(const Value& left, const Value& right)
             && left.asRange().step == right.asRange().step;
     case Value::Type::Struct:
         return left.asStruct().identity == right.asStruct().identity;
+    case Value::Type::Variant: {
+        const VariantValue& leftVariant = left.asVariant();
+        const VariantValue& rightVariant = right.asVariant();
+        if (leftVariant.enumName != rightVariant.enumName
+            || leftVariant.variantName != rightVariant.variantName
+            || leftVariant.fields->size() != rightVariant.fields->size()) {
+            return false;
+        }
+        for (std::size_t i = 0; i < leftVariant.fields->size(); ++i) {
+            if (!valuesEqual((*leftVariant.fields)[i], (*rightVariant.fields)[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
     }
 
     return false;
@@ -241,6 +271,22 @@ std::string valueToString(const Value& value)
             out << fields[i].first << ": " << valueToString(fields[i].second);
         }
         out << '}';
+        return out.str();
+    }
+    case Value::Type::Variant: {
+        const VariantValue& variant = value.asVariant();
+        std::ostringstream out;
+        out << variant.enumName << '.' << variant.variantName;
+        if (!variant.fields->empty()) {
+            out << '(';
+            for (std::size_t i = 0; i < variant.fields->size(); ++i) {
+                if (i != 0) {
+                    out << ", ";
+                }
+                out << valueToString((*variant.fields)[i]);
+            }
+            out << ')';
+        }
         return out.str();
     }
     }

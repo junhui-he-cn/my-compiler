@@ -1,0 +1,41 @@
+Program
+  Enum Result {Ok(number), Err(string), Empty}
+  Enum List {Nil, Cons(number, List)}
+  Fun describe(result: Result): string
+    Match result
+      Arm Result.Ok(value)
+        Block
+          Return (+ "ok:" (call str value))
+      Arm Result.Err(message)
+        Block
+          Return (+ "err:" message)
+      Arm Result.Empty
+        Block
+          Return "empty"
+  Fun sum(list: List): number
+    Match list
+      Arm List.Nil
+        Block
+          Return 0
+      Arm List.Cons(head, List.Cons(next, tail))
+        Block
+          Return (+ (+ head next) (call sum tail))
+      Arm List.Cons(head, List.Nil)
+        Block
+          Return head
+  Fun coarse(result: Result): string
+    Match result
+      Arm Result.Ok(_)
+        Block
+          Return "ok"
+      Arm _
+        Block
+          Return "other"
+  Print (call describe (member-call Result Ok 7))
+  Print (call describe (member-call Result Err "bad"))
+  Print (call describe (member-call Result Empty))
+  Print (call sum (member-call List Cons 1 (member-call List Cons 2 (member-call List Nil))))
+  Print (member-call Result Ok 7)
+  Print (call typeOf (member-call Result Empty))
+  Print (== (member-call Result Ok 7) (member-call Result Ok 7))
+  Print (call coarse (member-call Result Empty))

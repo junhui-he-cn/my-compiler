@@ -155,7 +155,13 @@ void Lexer::scanToken()
         addToken(match('=') ? TokenType::BangEqual : TokenType::Bang);
         break;
     case '=':
-        addToken(match('=') ? TokenType::EqualEqual : TokenType::Equal);
+        if (match('=')) {
+            addToken(TokenType::EqualEqual);
+        } else if (match('>')) {
+            addToken(TokenType::FatArrow);
+        } else {
+            addToken(TokenType::Equal);
+        }
         break;
     case '<':
         addToken(match('=') ? TokenType::LessEqual : TokenType::Less);
@@ -258,8 +264,10 @@ void Lexer::identifier()
         {"as", TokenType::As},
         {"export", TokenType::Export},
         {"else", TokenType::Else},
+        {"enum", TokenType::Enum},
         {"fun", TokenType::Fun},
         {"let", TokenType::Let},
+        {"match", TokenType::Match},
         {"print", TokenType::Print},
         {"return", TokenType::Return},
         {"struct", TokenType::Struct},
@@ -325,6 +333,8 @@ std::string tokenTypeName(TokenType type)
         return "BangEqual";
     case TokenType::Equal:
         return "Equal";
+    case TokenType::FatArrow:
+        return "FatArrow";
     case TokenType::EqualEqual:
         return "EqualEqual";
     case TokenType::Less:
@@ -365,10 +375,14 @@ std::string tokenTypeName(TokenType type)
         return "Export";
     case TokenType::Else:
         return "Else";
+    case TokenType::Enum:
+        return "Enum";
     case TokenType::Fun:
         return "Fun";
     case TokenType::Let:
         return "Let";
+    case TokenType::Match:
+        return "Match";
     case TokenType::Print:
         return "Print";
     case TokenType::Return:

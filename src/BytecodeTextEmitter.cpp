@@ -65,6 +65,8 @@ std::string constantText(const Value& value)
         throw std::runtime_error("cannot emit range value as bytecode constant");
     case Value::Type::Struct:
         throw std::runtime_error("cannot emit struct value as bytecode constant");
+    case Value::Type::Variant:
+        throw std::runtime_error("cannot emit enum variant as bytecode constant");
     }
     throw std::runtime_error("unsupported bytecode constant");
 }
@@ -168,6 +170,26 @@ void writeInstruction(std::ostream& out, const BytecodeInstruction& instruction)
             out << nameRef(instruction.operands[i]) << ": " << reg(instruction.arguments[i]);
         }
         out << "}";
+        break;
+    case BytecodeOp::Variant:
+        out << reg(requireDest(instruction)) << " = variant ";
+        if (!instruction.typeNameOperand || !instruction.variantNameOperand) {
+            throw std::runtime_error("variant missing enum or variant name");
+        }
+        out << nameRef(*instruction.typeNameOperand) << "." << nameRef(*instruction.variantNameOperand) << " ";
+        writeRegisterList(out, instruction.arguments);
+        break;
+    case BytecodeOp::VariantTag:
+        out << reg(requireDest(instruction)) << " = variant_tag "
+            << reg(requireLeft(instruction)) << " ";
+        if (!instruction.typeNameOperand || !instruction.variantNameOperand) {
+            throw std::runtime_error("variant_tag missing enum or variant name");
+        }
+        out << nameRef(*instruction.typeNameOperand) << "." << nameRef(*instruction.variantNameOperand);
+        break;
+    case BytecodeOp::VariantField:
+        out << reg(requireDest(instruction)) << " = variant_field "
+            << reg(requireLeft(instruction)) << " " << instruction.operand;
         break;
     case BytecodeOp::Move:
         out << reg(requireDest(instruction)) << " = move " << reg(requireLeft(instruction));

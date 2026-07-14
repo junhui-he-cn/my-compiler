@@ -148,12 +148,14 @@ void Parser::synchronize(bool stopAtRightBrace)
         switch (peek().type) {
         case TokenType::Let:
         case TokenType::Fun:
+        case TokenType::Enum:
         case TokenType::Struct:
         case TokenType::Impl:
         case TokenType::Import:
         case TokenType::Export:
         case TokenType::Print:
         case TokenType::If:
+        case TokenType::Match:
         case TokenType::While:
         case TokenType::For:
         case TokenType::Break:
@@ -184,6 +186,9 @@ StmtPtr Parser::declaration()
     }
     if (match(TokenType::Struct)) {
         return structDeclaration();
+    }
+    if (match(TokenType::Enum)) {
+        return enumDeclaration();
     }
     if (match(TokenType::Impl)) {
         if (blockDepth_ != 0) {
@@ -238,6 +243,46 @@ StmtPtr Parser::structDeclaration()
     consume(TokenType::RightBrace, "expected `}` after struct fields");
     const std::optional<SourceSpan> span = spanForToken(keyword);
     return withSpan(std::make_unique<StructDeclStmt>(std::move(name), std::move(fields)), span);
+}
+
+StmtPtr Parser::enumDeclaration()
+{
+    Token keyword = previous();
+    Token name = consume(TokenType::Identifier, "expected enum name after `enum`");
+    consume(TokenType::LeftBrace, "expected `{` after enum name");
+    std::vector<EnumVariantDecl> variants = enumVariants();
+    consume(TokenType::RightBrace, "expected `}` after enum variants");
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<EnumDeclStmt>(std::move(name), std::move(variants)), span);
+}
+
+std::vector<EnumVariantDecl> Parser::enumVariants()
+{
+    std::vector<EnumVariantDecl> variants;
+    if (!check(TokenType::RightBrace)) {
+        while (true) {
+            variants.push_back(enumVariant());
+            if (!match(TokenType::Comma) || check(TokenType::RightBrace)) {
+                break;
+            }
+        }
+    }
+    return variants;
+}
+
+EnumVariantDecl Parser::enumVariant()
+{
+    Token name = consume(TokenType::Identifier, "expected enum variant name");
+    std::vector<TypeAnnotation> payloadTypes;
+    if (match(TokenType::LeftParen)) {
+        if (!check(TokenType::RightParen)) {
+            do {
+                payloadTypes.push_back(typeAnnotation("expected enum variant payload type"));
+            } while (match(TokenType::Comma));
+        }
+        consume(TokenType::RightParen, "expected `)` after enum variant payload types");
+    }
+    return EnumVariantDecl{std::move(name), std::move(payloadTypes)};
 }
 
 std::vector<StructFieldDecl> Parser::structFields()
@@ -474,6 +519,9 @@ StmtPtr Parser::statement()
     if (match(TokenType::If)) {
         return ifStatement();
     }
+    if (match(TokenType::Match)) {
+        return matchStatement();
+    }
     if (match(TokenType::For)) {
         return forStatement();
     }
@@ -512,6 +560,26 @@ StmtPtr Parser::ifStatement()
     return withSpan(
         std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch)),
         span);
+}
+
+StmtPtr Parser::matchStatement()
+{
+    Token keyword = previous();
+    ExprPtr value = conditionExpression();
+    consume(TokenType::LeftBrace, "expected `{` after match value");
+
+    std::vector<MatchArm> arms;
+    while (!check(TokenType::RightBrace) && !isAtEnd()) {
+        PatternPtr armPattern = pattern();
+        consume(TokenType::FatArrow, "expected `=>` after match pattern");
+        consume(TokenType::LeftBrace, "expected `{` after match arm");
+        StmtPtr body = blockStatement();
+        arms.push_back(MatchArm{std::move(armPattern), std::move(body)});
+    }
+    consume(TokenType::RightBrace, "expected `}` after match arms");
+
+    const std::optional<SourceSpan> span = spanForToken(keyword);
+    return withSpan(std::make_unique<MatchStmt>(std::move(value), std::move(arms)), span);
 }
 
 StmtPtr Parser::forInitializer()
@@ -1035,6 +1103,48 @@ ExprPtr Parser::primary()
     }
 
     throw ParseError(peek(), "expected expression");
+}
+
+PatternPtr Parser::pattern()
+{
+    if (match(TokenType::Nil) || match(TokenType::True) || match(TokenType::False)
+        || match(TokenType::Number) || match(TokenType::String)) {
+        Token value = previous();
+        return withSpan(std::make_unique<LiteralPattern>(value), value);
+    }
+
+    Token qualifierOrName = consume(TokenType::Identifier, "expected match pattern");
+    if (match(TokenType::Dot)) {
+        Token name = consume(TokenType::Identifier, "expected variant name after `.`");
+        if (match(TokenType::Dot)) {
+            Token variant = consume(TokenType::Identifier, "expected variant name after enum type");
+            qualifierOrName.lexeme += "." + name.lexeme;
+            return variantPattern(std::move(qualifierOrName), std::move(variant));
+        }
+        return variantPattern(std::move(qualifierOrName), std::move(name));
+    }
+
+    if (qualifierOrName.lexeme == "_") {
+        return withSpan(std::make_unique<WildcardPattern>(qualifierOrName), qualifierOrName);
+    }
+    return withSpan(std::make_unique<VariablePattern>(qualifierOrName), qualifierOrName);
+}
+
+PatternPtr Parser::variantPattern(Token qualifier, Token name)
+{
+    const std::optional<SourceSpan> span = spanForToken(qualifier);
+    std::vector<PatternPtr> arguments;
+    if (match(TokenType::LeftParen)) {
+        if (!check(TokenType::RightParen)) {
+            do {
+                arguments.push_back(pattern());
+            } while (match(TokenType::Comma));
+        }
+        consume(TokenType::RightParen, "expected `)` after variant pattern");
+    }
+    return withSpan(
+        std::make_unique<VariantPattern>(std::move(qualifier), std::move(name), std::move(arguments)),
+        span);
 }
 
 bool Parser::match(TokenType type)

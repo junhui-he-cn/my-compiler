@@ -24,6 +24,14 @@ TypeInfo namedStructType(std::string name)
     return result;
 }
 
+TypeInfo namedEnumType(std::string name)
+{
+    TypeInfo result;
+    result.kind = StaticType::Enum;
+    result.enumName = std::move(name);
+    return result;
+}
+
 TypeInfo arrayType(TypeInfo elementType)
 {
     TypeInfo result;
@@ -115,6 +123,8 @@ std::string staticTypeName(StaticType type)
         return "range";
     case StaticType::Struct:
         return "struct";
+    case StaticType::Enum:
+        return "enum";
     case StaticType::Nullable:
         return "nullable";
     case StaticType::TypeParameter:
@@ -132,6 +142,10 @@ std::string typeInfoName(const TypeInfo& type)
 
     if (type.kind == StaticType::Struct && type.structName) {
         return *type.structName;
+    }
+
+    if (type.kind == StaticType::Enum && type.enumName) {
+        return *type.enumName;
     }
 
     if (type.kind == StaticType::Array && type.elementType) {
@@ -201,6 +215,12 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
     if (expected.kind == StaticType::Struct) {
         if (expected.structName || actual.structName) {
             return expected.structName == actual.structName;
+        }
+        return true;
+    }
+    if (expected.kind == StaticType::Enum) {
+        if (expected.enumName || actual.enumName) {
+            return expected.enumName == actual.enumName;
         }
         return true;
     }

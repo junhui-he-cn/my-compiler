@@ -80,5 +80,26 @@ void writeModuleInterfaceText(std::ostream& out, const std::vector<ModuleInterfa
                 out << "\n";
             }
         }
+
+        std::vector<ModuleInterfaceEnum> enums = sortedByName(module.enums, [](const ModuleInterfaceEnum& enumInfo) {
+            return enumInfo.name;
+        });
+        for (ModuleInterfaceEnum enumInfo : enums) {
+            out << "  export enum " << enumInfo.name << "\n";
+            for (const ModuleInterfaceVariant& variant : enumInfo.variants) {
+                out << "    variant " << variant.name;
+                if (!variant.payloadTypes.empty()) {
+                    out << '(';
+                    for (std::size_t i = 0; i < variant.payloadTypes.size(); ++i) {
+                        if (i != 0) {
+                            out << ", ";
+                        }
+                        out << typeInfoName(variant.payloadTypes[i]);
+                    }
+                    out << ')';
+                }
+                out << "\n";
+            }
+        }
     }
 }

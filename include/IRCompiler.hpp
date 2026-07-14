@@ -49,6 +49,7 @@ private:
     void compileContinue(const ContinueStmt& statement);
     void compileFor(const ForStmt& statement);
     void compileForIn(const ForInStmt& statement);
+    void compileMatch(const MatchStmt& statement);
     std::string makeSyntheticName(const std::string& prefix);
     IRRegister emitLenCall(const CallExpr& expression);
     IRRegister emitNativeStdlibCall(const CallExpr& expression);
@@ -57,6 +58,12 @@ private:
     IRRegister emitMap(const MapExpr& expression);
     IRRegister emitStructFields(const std::vector<StructField>& fields, std::optional<std::string> typeName = std::nullopt);
     IRRegister emitStructConstructor(const StructConstructExpr& expression);
+    IRRegister emitVariantConstructor(const MemberCallExpr& expression);
+    void compilePattern(
+        const Pattern& pattern,
+        IRRegister value,
+        std::vector<std::size_t>& failJumps,
+        std::vector<std::pair<std::string, IRRegister>>& bindings);
     IRRegister emitIndex(const IndexExpr& expression);
     IRRegister emitCompoundAssign(const CompoundAssignExpr& expression);
     IRRegister emitCompoundAssignmentResult(

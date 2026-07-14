@@ -15,6 +15,7 @@ struct ArrayValue;
 struct MapValue;
 struct RangeValue;
 struct StructValue;
+struct VariantValue;
 
 struct FunctionValue {
     std::string name;
@@ -36,6 +37,7 @@ public:
         Map,
         Range,
         Struct,
+        Variant,
     };
 
     static Value nil();
@@ -47,6 +49,7 @@ public:
     static Value map(MapValue value);
     static Value range(RangeValue value);
     static Value structure(StructValue value);
+    static Value variant(VariantValue value);
 
     Type type() const;
     double asNumber() const;
@@ -57,6 +60,7 @@ public:
     const MapValue& asMap() const;
     const RangeValue& asRange() const;
     const StructValue& asStruct() const;
+    const VariantValue& asVariant() const;
 
 private:
     explicit Value(Type type);
@@ -70,6 +74,7 @@ private:
     std::shared_ptr<MapValue> map_;
     std::shared_ptr<RangeValue> range_;
     std::shared_ptr<StructValue> struct_;
+    std::shared_ptr<VariantValue> variant_;
 };
 
 struct ArrayValue {
@@ -93,6 +98,12 @@ struct StructValue {
     std::size_t identity = 0;
     std::optional<std::string> typeName;
     std::shared_ptr<std::vector<std::pair<std::string, Value>>> fields;
+};
+
+struct VariantValue {
+    std::string enumName;
+    std::string variantName;
+    std::shared_ptr<std::vector<Value>> fields;
 };
 
 struct Cell {
