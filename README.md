@@ -10,8 +10,8 @@ and exhaustive pattern matching, indexing, array
 and map element assignment, numeric compound assignment for variables, array elements, and struct fields, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
-`sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`, and
-`typeOf`.
+`sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`,
+`map`, `filter`, and `typeOf`.
 
 The compiler pipeline includes:
 
@@ -222,6 +222,16 @@ result array's element type; unknown arrays or callback signatures remain
 dynamic. Generic callback values are not accepted directly at this monomorphic
 call site. Callback errors propagate with the normal Rust VM call stack.
 
+The callback-based array helper `filter(array, predicate)` invokes its
+one-argument predicate from left to right over a snapshot and keeps the
+original elements for which the predicate returns `true`. It returns a fresh
+shallow array and preserves a known source element type. A known predicate must
+return `bool`; unknown predicate values are validated at runtime. The member
+form `array.filter(predicate)` is unshadowed builtin sugar, while the
+function-style `filter` name is shadowable. Generic predicates are not accepted
+directly at this monomorphic call site, and callback errors propagate with the
+normal Rust VM call stack.
+
 Maps support `map[key]` lookup and `map[key] = value` upsert assignment. A
 missing lookup is a runtime error (`map key not found`), while assigning an
 existing key replaces its value and assigning a new key appends it. The
@@ -230,8 +240,8 @@ existing key replaces its value and assigning a new key appends it. The
 `len(map)`. Equality between maps is identity-based, so aliases compare equal
 but separately constructed maps do not. Map values print as
 `map{key: value, ...}` in insertion order.
-Map deletion, map `for-in`, custom iterators, and higher-order `filter` and
-`reduce` helpers are not implemented.
+Map deletion, map `for-in`, custom iterators, and the higher-order `reduce`
+helper are not implemented.
 
 The native `range` helper constructs immutable finite integer ranges:
 `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are
@@ -248,12 +258,13 @@ The string native stdlib includes `str(value)`, `substr(string, start, length)`,
 Builtin member-call sugar is available for selected array, map, and string
 helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
-`array.concat(right)`, `map.len()`, `map.contains(key)`, `string.len()`,
+`array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
+`map.len()`, `map.contains(key)`, `string.len()`,
 `string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`substr`, or `charAt` do not shadow member-call sugar.
+`map`, `filter`, `substr`, or `charAt` do not shadow member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
 

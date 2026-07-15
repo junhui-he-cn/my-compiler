@@ -1,0 +1,4 @@
+fun apply(value) {
+  return filter(value, fun (item) { return true; });
+}
+apply(1);

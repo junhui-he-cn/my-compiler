@@ -1,0 +1,32 @@
+IR
+0000  v0 = make_function $0 <lambda>/2
+0001  store_var @0 filter#2, v0
+0002  v1 = load_var @1 filter#2
+0003  v2 = constant #2 1
+0004  v3 = array [v2]
+0005  v4 = make_function $1 <lambda>/1
+0006  v5 = call v1(v3, v4)
+0007  print v5
+0008  v6 = constant #5 1
+0009  v7 = array [v6]
+0010  v8 = make_function $2 <lambda>/1
+0011  v9 = native_call @2 filter(v7, v8)
+0012  print v9
+
+function $0 <lambda>(array#0, predicate#1)
+0000  v0 = constant #0 "shadowed"
+0001  return v0
+0002  v1 = constant #1 nil
+0003  return v1
+
+function $1 <lambda>(value#3)
+0000  v0 = constant #3 true
+0001  return v0
+0002  v1 = constant #4 nil
+0003  return v1
+
+function $2 <lambda>(value#4)
+0000  v0 = constant #6 true
+0001  return v0
+0002  v1 = constant #7 nil
+0003  return v1

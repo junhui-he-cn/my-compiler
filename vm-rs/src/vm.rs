@@ -181,6 +181,141 @@ mod tests {
     }
 
     #[test]
+    fn native_filter_invokes_predicate_and_returns_matching_fresh_array() {
+        let program = Program {
+            constants: vec![Constant::Number("1".to_string())],
+            names: vec!["item".to_string()],
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            },
+            functions: vec![Function {
+                index: 0,
+                name: "greater_than_one".to_string(),
+                arity: 1,
+                registers: 3,
+                params: vec!["item".to_string()],
+                instructions: vec![
+                    Instruction::LoadVar { dest: 0, name: 0 },
+                    Instruction::Constant { dest: 1, constant: 0 },
+                    Instruction::Greater {
+                        dest: 2,
+                        left: 0,
+                        right: 1,
+                    },
+                    Instruction::Return { value: 2 },
+                ],
+                locations: vec![None, None, None, None],
+            }],
+            debug_sources: Vec::new(),
+        };
+        let mut vm = VM::new(&program);
+        let source = vm.make_array(vec![Value::number(1.0), Value::number(2.0), Value::number(3.0)]);
+        let predicate = Value::function(FunctionValue {
+            name: "greater_than_one".to_string(),
+            function_index: 0,
+            arity: 1,
+            identity: 1,
+            closure: new_environment(),
+        });
+
+        let filtered = vm
+            .execute_native_call("filter", vec![source.clone(), predicate])
+            .expect("filter succeeds");
+
+        let elements = array_elements(&filtered);
+        assert_eq!(elements.len(), 2);
+        assert!(matches!(elements[0], Value::Number(value) if value == 2.0));
+        assert!(matches!(elements[1], Value::Number(value) if value == 3.0));
+        assert!(!source.runtime_equals(&filtered));
+    }
+
+    #[test]
+    fn native_filter_validates_operands_and_boolean_predicate_results() {
+        let program = Program {
+            constants: vec![Constant::Nil],
+            names: Vec::new(),
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            },
+            functions: vec![
+                Function {
+                    index: 0,
+                    name: "no_args".to_string(),
+                    arity: 0,
+                    registers: 0,
+                    params: Vec::new(),
+                    instructions: Vec::new(),
+                    locations: Vec::new(),
+                },
+                Function {
+                    index: 1,
+                    name: "returns_nil".to_string(),
+                    arity: 1,
+                    registers: 1,
+                    params: vec!["item".to_string()],
+                    instructions: vec![
+                        Instruction::Constant { dest: 0, constant: 0 },
+                        Instruction::Return { value: 0 },
+                    ],
+                    locations: vec![None, None],
+                },
+            ],
+            debug_sources: Vec::new(),
+        };
+        let mut vm = VM::new(&program);
+        let array = vm.make_array(vec![Value::number(1.0)]);
+        let no_args = Value::function(FunctionValue {
+            name: "no_args".to_string(),
+            function_index: 0,
+            arity: 0,
+            identity: 1,
+            closure: new_environment(),
+        });
+        let returns_nil = Value::function(FunctionValue {
+            name: "returns_nil".to_string(),
+            function_index: 1,
+            arity: 1,
+            identity: 2,
+            closure: new_environment(),
+        });
+
+        assert_eq!(
+            vm.execute_native_call("filter", Vec::new())
+                .unwrap_err()
+                .message,
+            "filter expects 2 arguments"
+        );
+        assert_eq!(
+            vm.execute_native_call("filter", vec![Value::number(1.0), no_args.clone()])
+                .unwrap_err()
+                .message,
+            "filter expects array as first argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("filter", vec![array.clone(), Value::number(1.0)])
+                .unwrap_err()
+                .message,
+            "filter expects function as second argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("filter", vec![array.clone(), no_args])
+                .unwrap_err()
+                .message,
+            "filter expects callback with 1 argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("filter", vec![array, returns_nil])
+                .unwrap_err()
+                .message,
+            "filter expects callback to return bool"
+        );
+    }
+
+    #[test]
     fn map_lookup_update_length_and_contains() {
         let program = empty_program();
         let mut vm = VM::new(&program);
@@ -1406,6 +1541,7 @@ impl<'a> VM<'a> {
             "copy" => self.execute_native_copy(arguments),
             "concat" => self.execute_native_concat(arguments),
             "map" => self.execute_native_map(arguments, caller, call_site),
+            "filter" => self.execute_native_filter(arguments, caller, call_site),
             "range" => self.execute_native_range(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
@@ -1444,6 +1580,43 @@ impl<'a> VM<'a> {
             )?);
         }
         Ok(self.make_array(mapped))
+    }
+
+    fn execute_native_filter(
+        &mut self,
+        arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
+    ) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("filter expects 2 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("filter expects array as first argument"));
+        };
+        let Value::Function(predicate) = &arguments[1] else {
+            return Err(RuntimeError::new("filter expects function as second argument"));
+        };
+        if predicate.arity != 1 {
+            return Err(RuntimeError::new("filter expects callback with 1 argument"));
+        }
+
+        let elements = array.elements.borrow().clone();
+        let mut filtered = Vec::with_capacity(elements.len());
+        for element in elements {
+            let keep = self.call_function(
+                predicate.clone(),
+                vec![element.clone()],
+                caller.clone(),
+                call_site.clone(),
+            )?;
+            match keep {
+                Value::Bool(true) => filtered.push(element),
+                Value::Bool(false) => {}
+                _ => return Err(RuntimeError::new("filter expects callback to return bool")),
+            }
+        }
+        Ok(self.make_array(filtered))
     }
 
     fn execute_native_push(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

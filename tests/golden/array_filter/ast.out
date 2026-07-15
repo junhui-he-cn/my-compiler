@@ -1,0 +1,11 @@
+Program
+  Let values: [number] = (array 1 2 3 4)
+  Let threshold: number = 2
+  Let selected: [number] = (call filter values (fun (value) (return (> value threshold))))
+  Let evens: [number] = (member-call values filter (fun (value: number): bool (return (|| (== value 2) (== value 4)))))
+  Let snapshot: [number] = (array 1 2)
+  Let kept: [number] = (member-call snapshot filter (fun (value) (expr (call push snapshot 9)) (return true)))
+  Print selected
+  Print evens
+  Print kept
+  Print snapshot

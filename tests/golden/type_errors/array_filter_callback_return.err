@@ -1,0 +1,3 @@
+Type error at 4:23: filter expects callback to return bool, got number
+  filter([1], isPositive);
+                        ^

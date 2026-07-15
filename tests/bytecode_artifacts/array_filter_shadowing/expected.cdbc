@@ -1,0 +1,83 @@
+cdbc 0.1
+
+constants:
+  c0 = string "shadowed"
+  c1 = nil
+  c2 = number 1
+  c3 = bool true
+  c4 = nil
+  c5 = number 1
+  c6 = bool true
+  c7 = nil
+
+names:
+  n0 = "filter#2"
+  n1 = "filter#2"
+  n2 = "filter"
+
+main registers=10:
+  r0 = make_function f0
+  store_var n0, r0
+  r1 = load_var n1
+  r2 = constant c2
+  r3 = array [r2]
+  r4 = make_function f1
+  r5 = call r1 [r3, r4]
+  print r5
+  r6 = constant c5
+  r7 = array [r6]
+  r8 = make_function f2
+  r9 = native_call n2 [r7, r8]
+  print r9
+
+function f0 name="<lambda>" arity=2 registers=2:
+  param 0 = "array#0"
+  param 1 = "predicate#1"
+  r0 = constant c0
+  return r0
+  r1 = constant c1
+  return r1
+
+function f1 name="<lambda>" arity=1 registers=2:
+  param 0 = "value#3"
+  r0 = constant c3
+  return r0
+  r1 = constant c4
+  return r1
+
+function f2 name="<lambda>" arity=1 registers=2:
+  param 0 = "value#4"
+  r0 = constant c6
+  return r0
+  r1 = constant c7
+  return r1
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/array_filter_shadowing/input.cd" text="let filter = fun (array, predicate) {\n  return \"shadowed\";\n};\n\nprint filter([1], fun (value) { return true; });\nprint [1].filter(fun (value) { return true; });\n"
+
+debug_locations:
+  main 0 = s0:1:14
+  main 1 = s0:1:1
+  main 2 = s0:5:7
+  main 3 = s0:5:15
+  main 4 = s0:5:14
+  main 5 = s0:5:19
+  main 6 = s0:5:7
+  main 7 = s0:5:1
+  main 8 = s0:6:8
+  main 9 = s0:6:7
+  main 10 = s0:6:18
+  main 11 = s0:6:7
+  main 12 = s0:6:1
+  function f0 0 = s0:2:10
+  function f0 1 = s0:2:3
+  function f0 2 = s0:1:14
+  function f0 3 = s0:1:14
+  function f1 0 = s0:5:40
+  function f1 1 = s0:5:33
+  function f1 2 = s0:5:19
+  function f1 3 = s0:5:19
+  function f2 0 = s0:6:39
+  function f2 1 = s0:6:32
+  function f2 2 = s0:6:18
+  function f2 3 = s0:6:18

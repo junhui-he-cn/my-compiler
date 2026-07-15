@@ -1517,7 +1517,7 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
     return name == "push" || name == "pop" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
-        || name == "map";
+        || name == "map" || name == "filter";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -2875,6 +2875,52 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayMap(
     return CheckedExpression{simpleType(StaticType::Array)};
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkArrayFilter(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& predicateExpression)
+{
+    if (arrayTypeInfo.kind != StaticType::Unknown && arrayTypeInfo.kind != StaticType::Array) {
+        throw TypeError(callToken, "filter expects array as first argument, got " + typeInfoName(arrayTypeInfo));
+    }
+
+    TypeInfo elementType = unknownType();
+    if (arrayTypeInfo.kind == StaticType::Array && arrayTypeInfo.elementType) {
+        elementType = *arrayTypeInfo.elementType;
+    }
+    const TypeInfo expectedPredicate = functionType({elementType}, simpleType(StaticType::Bool));
+    const CheckedExpression predicate = checkExpressionInfo(predicateExpression, &expectedPredicate);
+    if (predicate.type.kind != StaticType::Unknown && predicate.type.kind != StaticType::Function) {
+        throw TypeError(callToken,
+            "filter expects function as second argument, got " + typeInfoName(predicate.type));
+    }
+    if (predicate.type.kind == StaticType::Function && hasFunctionSignature(predicate.type)) {
+        if (!predicate.type.genericParameters.empty()) {
+            throw TypeError(callToken, "filter expects a non-generic callback");
+        }
+        if (predicate.type.parameterTypes.size() != 1) {
+            throw TypeError(callToken, "filter expects callback with 1 argument");
+        }
+        if (elementType.kind != StaticType::Unknown
+            && !compatible(elementType, predicate.type.parameterTypes.front())) {
+            throw TypeError(callToken,
+                "filter callback expects " + typeInfoName(elementType)
+                    + ", got " + typeInfoName(predicate.type.parameterTypes.front()));
+        }
+        if (predicate.type.returnType
+            && isKnown(*predicate.type.returnType)
+            && !compatible(simpleType(StaticType::Bool), *predicate.type.returnType)) {
+            throw TypeError(callToken,
+                "filter expects callback to return bool, got " + typeInfoName(*predicate.type.returnType));
+        }
+    }
+
+    if (arrayTypeInfo.kind == StaticType::Array && arrayTypeInfo.elementType) {
+        return CheckedExpression{arrayType(*arrayTypeInfo.elementType)};
+    }
+    return CheckedExpression{simpleType(StaticType::Array)};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr& expression)
 {
     if (!expression.typeArguments.empty()) {
@@ -3063,6 +3109,10 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     case NativeFunctionKind::Map: {
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
         return checkArrayMap(expression.paren, arrayArgument.type, *expression.arguments[1]);
+    }
+    case NativeFunctionKind::Filter: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        return checkArrayFilter(expression.paren, arrayArgument.type, *expression.arguments[1]);
     }
     case NativeFunctionKind::Range: {
         for (std::size_t index = 0; index < expression.arguments.size(); ++index) {
@@ -3261,6 +3311,12 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
         expectArity(1);
         const CheckedExpression receiver = checkReceiver();
         return checkArrayMap(expression.paren, receiver.type, *expression.arguments[0]);
+    }
+
+    if (name == "filter") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        return checkArrayFilter(expression.paren, receiver.type, *expression.arguments[0]);
     }
 
     if (name == "len") {

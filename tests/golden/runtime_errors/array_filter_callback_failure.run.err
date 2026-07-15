@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_filter_callback_failure.cd:1:35: division by zero
+  filter([1], fun (value) { return (1 / 0) == 0; });
+                                    ^
+Call stack:
+  at <lambda> (tests/golden/runtime_errors/array_filter_callback_failure.cd:1:35)
+  at main (tests/golden/runtime_errors/array_filter_callback_failure.cd:1:1)

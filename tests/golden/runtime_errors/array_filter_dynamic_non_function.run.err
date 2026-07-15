@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_filter_dynamic_non_function.cd:2:10: filter expects function as second argument
+    return filter([1], callback);
+           ^
+Call stack:
+  at apply (tests/golden/runtime_errors/array_filter_dynamic_non_function.cd:2:10)
+  at main (tests/golden/runtime_errors/array_filter_dynamic_non_function.cd:4:1)

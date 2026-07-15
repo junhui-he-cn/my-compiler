@@ -1,0 +1,3 @@
+Type error at 4:17: filter expects a non-generic callback
+  filter([1], keep);
+                  ^

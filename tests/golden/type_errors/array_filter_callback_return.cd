@@ -1,0 +1,4 @@
+fun isPositive(value: number): number {
+  return value;
+}
+filter([1], isPositive);

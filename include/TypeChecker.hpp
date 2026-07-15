@@ -268,6 +268,10 @@ private:
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,
         const Expr& callbackExpression);
+    CheckedExpression checkArrayFilter(
+        const Token& callToken,
+        const TypeInfo& arrayTypeInfo,
+        const Expr& predicateExpression);
     CheckedExpression checkNativeStdlibCall(const CallExpr& expression);
     IndexTargetTypes checkIndexTarget(
         const Expr& collection,

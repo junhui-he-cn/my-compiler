@@ -1,0 +1,3 @@
+Type error at 1:18: parameter `value` expects number, got string
+  filter([1], fun (value: string): bool { return true; });
+                   ^

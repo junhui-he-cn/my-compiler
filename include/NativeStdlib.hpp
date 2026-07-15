@@ -19,6 +19,7 @@ enum class NativeFunctionKind {
     Copy,
     Concat,
     Map,
+    Filter,
     Range,
 };
 

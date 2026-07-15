@@ -1,0 +1,4 @@
+fun keep<T>(value: T): bool {
+  return true;
+}
+filter([1], keep);

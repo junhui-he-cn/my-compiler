@@ -1,0 +1,18 @@
+let values: [number] = [1, 2, 3, 4];
+let threshold: number = 2;
+let selected: [number] = filter(values, fun (value) {
+  return value > threshold;
+});
+let evens: [number] = values.filter(fun (value: number): bool {
+  return value == 2 || value == 4;
+});
+let snapshot: [number] = [1, 2];
+let kept: [number] = snapshot.filter(fun (value) {
+  push(snapshot, 9);
+  return true;
+});
+
+print selected;
+print evens;
+print kept;
+print snapshot;

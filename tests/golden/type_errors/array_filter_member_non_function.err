@@ -1,0 +1,3 @@
+Type error at 1:14: filter expects function as second argument, got number
+  [1].filter(42);
+               ^

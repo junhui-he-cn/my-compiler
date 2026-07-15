@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_filter_member_dynamic_non_array.cd:2:10: filter expects array as first argument
+    return value.filter(fun (item) { return true; });
+           ^
+Call stack:
+  at apply (tests/golden/runtime_errors/array_filter_member_dynamic_non_array.cd:2:10)
+  at main (tests/golden/runtime_errors/array_filter_member_dynamic_non_array.cd:4:1)

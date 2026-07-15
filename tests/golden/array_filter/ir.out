@@ -1,0 +1,64 @@
+IR
+0000  v0 = constant #0 1
+0001  v1 = constant #1 2
+0002  v2 = constant #2 3
+0003  v3 = constant #3 4
+0004  v4 = array [v0, v1, v2, v3]
+0005  store_var @0 values#0, v4
+0006  v5 = constant #4 2
+0007  store_var @1 threshold#1, v5
+0008  v6 = load_var @2 values#0
+0009  v7 = make_function $0 <lambda>/1
+0010  v8 = native_call @5 filter(v6, v7)
+0011  store_var @6 selected#3, v8
+0012  v9 = load_var @7 values#0
+0013  v10 = make_function $1 <lambda>/1
+0014  v11 = native_call @10 filter(v9, v10)
+0015  store_var @11 evens#5, v11
+0016  v12 = constant #9 1
+0017  v13 = constant #10 2
+0018  v14 = array [v12, v13]
+0019  store_var @12 snapshot#6, v14
+0020  v15 = load_var @13 snapshot#6
+0021  v16 = make_function $2 <lambda>/1
+0022  v17 = native_call @16 filter(v15, v16)
+0023  store_var @17 kept#8, v17
+0024  v18 = load_var @18 selected#3
+0025  print v18
+0026  v19 = load_var @19 evens#5
+0027  print v19
+0028  v20 = load_var @20 kept#8
+0029  print v20
+0030  v21 = load_var @21 snapshot#6
+0031  print v21
+
+function $0 <lambda>(value#2)
+0000  v0 = load_var @3 value#2
+0001  v1 = load_var @4 threshold#1
+0002  v2 = greater v0, v1
+0003  return v2
+0004  v3 = constant #5 nil
+0005  return v3
+
+function $1 <lambda>(value#4)
+0000  v0 = load_var @8 value#4
+0001  v1 = constant #6 2
+0002  v2 = equal v0, v1
+0003  v3 = copy v2
+0004  jump_if_true v3, 0009
+0005  v4 = load_var @9 value#4
+0006  v5 = constant #7 4
+0007  v6 = equal v4, v5
+0008  v3 = copy v6
+0009  return v3
+0010  v7 = constant #8 nil
+0011  return v7
+
+function $2 <lambda>(value#7)
+0000  v0 = load_var @14 snapshot#6
+0001  v1 = constant #11 9
+0002  v2 = native_call @15 push(v0, v1)
+0003  v3 = constant #12 true
+0004  return v3
+0005  v4 = constant #13 nil
+0006  return v4

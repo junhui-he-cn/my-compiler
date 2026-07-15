@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_filter_dynamic_non_bool.cd:2:10: filter expects callback to return bool
+    return filter([1], callback);
+           ^
+Call stack:
+  at apply (tests/golden/runtime_errors/array_filter_dynamic_non_bool.cd:2:10)
+  at main (tests/golden/runtime_errors/array_filter_dynamic_non_bool.cd:4:1)

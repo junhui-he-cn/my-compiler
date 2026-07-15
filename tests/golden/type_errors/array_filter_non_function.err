@@ -1,0 +1,3 @@
+Type error at 1:15: filter expects function as second argument, got number
+  filter([1], 42);
+                ^
