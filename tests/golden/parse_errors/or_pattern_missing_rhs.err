@@ -1,0 +1,6 @@
+Parse error at 2:10: expected match pattern, found FatArrow `=>`
+    true | => "bad",
+           ^
+Parse error at 4:2: expected expression
+  };
+   ^

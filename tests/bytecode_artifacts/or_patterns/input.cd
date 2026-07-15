@@ -1,0 +1,34 @@
+enum Shape {
+  Point(x: number),
+  Line(x: number, y: number),
+  Empty,
+}
+
+fun numberLabel(value: number): string {
+  return match value {
+    0 | 1 => "small",
+    _ => "other",
+  };
+}
+
+fun shapeLabel(value: Shape): string {
+  return match value {
+    Shape.Point(x) | Shape.Line(x, _) if x > 3 => "large:" + str(x),
+    Shape.Point(_) | Shape.Line(_, _) => "small",
+    Shape.Empty => "empty",
+  };
+}
+
+let maybe: bool? = false;
+print numberLabel(1);
+print numberLabel(8);
+print shapeLabel(Shape.Point(3));
+print shapeLabel(Shape.Line(4, 10));
+print shapeLabel(Shape.Empty());
+print match maybe {
+  nil | false => "off",
+  true => "on",
+};
+print match true {
+  true | false => "bool",
+};

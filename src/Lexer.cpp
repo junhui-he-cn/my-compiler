@@ -181,8 +181,7 @@ void Lexer::scanToken()
         if (match('|')) {
             addToken(TokenType::PipePipe);
         } else {
-            throw DiagnosticError(DiagnosticKind::Lex, SourceLocation{line_, tokenColumn_},
-                "unexpected character `|`");
+            addToken(TokenType::Pipe);
         }
         break;
     case '"':
@@ -347,6 +346,8 @@ std::string tokenTypeName(TokenType type)
         return "GreaterEqual";
     case TokenType::AmpersandAmpersand:
         return "AmpersandAmpersand";
+    case TokenType::Pipe:
+        return "Pipe";
     case TokenType::PipePipe:
         return "PipePipe";
     case TokenType::Identifier:

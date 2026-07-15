@@ -37,6 +37,7 @@ enum class TokenType {
     Greater,
     GreaterEqual,
     AmpersandAmpersand,
+    Pipe,
     PipePipe,
 
     Identifier,

@@ -1,0 +1,4 @@
+print match true {
+  true | => "bad",
+  false => "false",
+};

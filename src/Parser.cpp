@@ -1232,6 +1232,26 @@ ExprPtr Parser::matchExpression()
 
 PatternPtr Parser::pattern()
 {
+    PatternPtr first = patternAtom();
+    if (!match(TokenType::Pipe)) {
+        return first;
+    }
+
+    Token pipe = previous();
+    const std::optional<SourceSpan> span = first ? first->span : spanForToken(pipe);
+    std::vector<PatternPtr> alternatives;
+    alternatives.push_back(std::move(first));
+    do {
+        alternatives.push_back(patternAtom());
+    } while (match(TokenType::Pipe));
+
+    return withSpan(
+        std::make_unique<OrPattern>(std::move(pipe), std::move(alternatives)),
+        span);
+}
+
+PatternPtr Parser::patternAtom()
+{
     if (match(TokenType::Nil) || match(TokenType::True) || match(TokenType::False)
         || match(TokenType::Number) || match(TokenType::String)) {
         Token value = previous();

@@ -101,6 +101,7 @@ private:
     ExprPtr matchExpression();
     ExprPtr primary();
     PatternPtr pattern();
+    PatternPtr patternAtom();
     PatternPtr variantPattern(Token qualifier, Token name);
 
     bool match(TokenType type);

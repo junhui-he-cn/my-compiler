@@ -202,7 +202,9 @@ structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
 `typeOf` reports the enum name. Named payload patterns may be reordered by field
 name, while constructors remain positional. Generic enum types are nominal and
 invariant in their type arguments. Generic constraints and generic structs are
-not implemented.
+not implemented. Existing patterns may be combined with `|`; alternatives are
+tried left to right and must bind the same names with compatible types. The
+bindings remain available once in the arm-local scope.
 
 Local named structs may define first-slice methods in top-level `impl` blocks.
 Methods are statically resolved on known named struct receiver types, and
@@ -321,8 +323,8 @@ Supported expressions:
 - Enums and patterns: `enum Name[<T, U>] { Variant(type, ...) }`, generic type
   annotations such as `Name<number>`, qualified constructors such as
   `Name.Variant(value)`, and exhaustive statement-level
-  `match` with wildcard, binding, primitive literal patterns, `nil` for
-  nullable values, named payload, and nested variant patterns. Match expressions use
+  `match` with wildcard, binding, primitive literal patterns, OR patterns,
+  `nil` for nullable values, named payload, and nested variant patterns. Match expressions use
   `match value { pattern [if condition] => expression, ... }` and return the
   selected arm expression. Guards use existing truthiness and must be followed
   by unguarded exhaustive coverage.

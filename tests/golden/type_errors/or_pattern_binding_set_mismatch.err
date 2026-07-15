@@ -1,0 +1,3 @@
+Type error at 4:22: OR pattern alternatives must bind the same names
+    Option.Some(value) | Option.None => "some",
+                       ^

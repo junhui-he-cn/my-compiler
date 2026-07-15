@@ -3,6 +3,7 @@
 #include "NativeStdlib.hpp"
 
 #include <cstdlib>
+#include <unordered_map>
 #include <utility>
 
 namespace {
@@ -472,6 +473,54 @@ void IRCompiler::compilePattern(
 
     if (const auto* variable = dynamic_cast<const VariablePattern*>(&pattern)) {
         bindings.emplace_back(resolvedNames_->patternVariableName(*variable), value);
+        return;
+    }
+
+    if (const auto* orPattern = dynamic_cast<const OrPattern*>(&pattern)) {
+        std::vector<std::size_t> successJumps;
+        std::vector<std::size_t> pendingFailJumps;
+        std::unordered_map<std::string, IRRegister> sharedBindings;
+        std::vector<std::pair<std::string, IRRegister>> mergedBindings;
+
+        for (std::size_t i = 0; i < orPattern->alternatives.size(); ++i) {
+            for (const std::size_t jump : pendingFailJumps) {
+                ir_.patchJump(jump);
+            }
+            pendingFailJumps.clear();
+
+            std::vector<std::size_t> alternativeFailJumps;
+            std::vector<std::pair<std::string, IRRegister>> alternativeBindings;
+            compilePattern(
+                *orPattern->alternatives[i],
+                value,
+                alternativeFailJumps,
+                alternativeBindings);
+
+            for (const auto& binding : alternativeBindings) {
+                auto shared = sharedBindings.find(binding.first);
+                if (shared == sharedBindings.end()) {
+                    const IRRegister registerForBinding = ir_.makeRegister();
+                    shared = sharedBindings.emplace(binding.first, registerForBinding).first;
+                    mergedBindings.emplace_back(binding.first, registerForBinding);
+                }
+                ir_.emitCopyTo(shared->second, binding.second);
+            }
+
+            if (i + 1 < orPattern->alternatives.size()) {
+                successJumps.push_back(ir_.emitJump());
+                pendingFailJumps = std::move(alternativeFailJumps);
+            } else {
+                failJumps.insert(
+                    failJumps.end(),
+                    alternativeFailJumps.begin(),
+                    alternativeFailJumps.end());
+            }
+        }
+
+        for (const std::size_t jump : successJumps) {
+            ir_.patchJump(jump);
+        }
+        bindings.insert(bindings.end(), mergedBindings.begin(), mergedBindings.end());
         return;
     }
 

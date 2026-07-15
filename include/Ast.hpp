@@ -324,6 +324,14 @@ struct LiteralPattern final : Pattern {
     Token value;
 };
 
+struct OrPattern final : Pattern {
+    OrPattern(Token pipe, std::vector<PatternPtr> alternatives);
+    void print(std::ostream& out) const override;
+
+    Token pipe;
+    std::vector<PatternPtr> alternatives;
+};
+
 struct VariantPattern final : Pattern {
     VariantPattern(
         std::optional<Token> qualifier,

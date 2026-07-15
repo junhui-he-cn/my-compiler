@@ -165,7 +165,9 @@ expressions, including unguarded `nil` coverage and guarded-arm behavior.
 Generic enum declarations, instantiations, recursive payloads, and constructor
 inference are now implemented with erased runtime metadata. Primitive literal
 patterns are now implemented for direct primitive and nullable primitive matches
-as well as nested enum payloads, reusing equality lowering.
+as well as nested enum payloads, reusing equality lowering. OR patterns are now
+implemented with left-to-right alternatives, unified arm-local bindings, and
+union coverage.
 
 Future work:
 

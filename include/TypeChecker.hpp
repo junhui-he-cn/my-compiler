@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -106,6 +107,14 @@ private:
     struct CheckedExpression {
         TypeInfo type;
     };
+
+    struct PatternBindingInfo {
+        Token token;
+        TypeInfo type;
+        std::vector<const VariablePattern*> occurrences;
+    };
+
+    using PatternBindings = std::map<std::string, PatternBindingInfo>;
 
     using Binding = TypeBinding;
     using StructFieldType = ::StructFieldType;
@@ -319,7 +328,8 @@ private:
         const TypeInfo& expectedType,
         std::unordered_set<std::string>& coveredVariants,
         std::unordered_set<std::string>& coveredLiterals,
-        bool& coversNil);
+        bool& coversNil,
+        PatternBindings* deferredBindings = nullptr);
     const StructFieldType* findStructField(const StructTypeDecl& structType, const std::string& name) const;
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     TypeInfo resolveAnnotation(const TypeAnnotation& typeName) const;

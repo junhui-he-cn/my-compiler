@@ -797,6 +797,22 @@ void LiteralPattern::print(std::ostream& out) const
     out << value.lexeme;
 }
 
+OrPattern::OrPattern(Token pipe, std::vector<PatternPtr> alternatives)
+    : pipe(std::move(pipe))
+    , alternatives(std::move(alternatives))
+{
+}
+
+void OrPattern::print(std::ostream& out) const
+{
+    out << "(or";
+    for (const PatternPtr& alternative : alternatives) {
+        out << ' ';
+        writePattern(out, *alternative);
+    }
+    out << ')';
+}
+
 VariantPattern::VariantPattern(
     std::optional<Token> qualifier,
     Token name,

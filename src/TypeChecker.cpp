@@ -2563,16 +2563,113 @@ bool TypeChecker::checkPattern(
     const TypeInfo& expectedType,
     std::unordered_set<std::string>& coveredVariants,
     std::unordered_set<std::string>& coveredLiterals,
-    bool& coversNil)
+    bool& coversNil,
+    PatternBindings* deferredBindings)
 {
     if (dynamic_cast<const WildcardPattern*>(&pattern)) {
         return true;
     }
 
     if (const auto* variable = dynamic_cast<const VariablePattern*>(&pattern)) {
+        if (deferredBindings) {
+            if (deferredBindings->find(variable->name.lexeme) != deferredBindings->end()) {
+                throw TypeError(variable->name,
+                    "duplicate pattern binding `" + variable->name.lexeme + "` in OR pattern");
+            }
+            deferredBindings->emplace(
+                variable->name.lexeme,
+                PatternBindingInfo{variable->name, expectedType, {variable}});
+            return true;
+        }
         const Binding binding = declareVariable(variable->name, expectedType, false);
         resolvedNames_.recordPatternVariable(*variable, binding.resolvedName);
         return true;
+    }
+
+    if (const auto* orPattern = dynamic_cast<const OrPattern*>(&pattern)) {
+        if (orPattern->alternatives.size() < 2) {
+            throw TypeError(orPattern->pipe, "OR pattern requires at least two alternatives");
+        }
+
+        PatternBindings mergedBindings;
+        std::unordered_set<std::string> bindingNames;
+        bool firstAlternative = true;
+        bool mergedCoversNil = false;
+        bool mergedCoversAll = false;
+        for (const PatternPtr& alternative : orPattern->alternatives) {
+            std::unordered_set<std::string> alternativeVariants;
+            std::unordered_set<std::string> alternativeLiterals;
+            bool alternativeCoversNil = false;
+            PatternBindings alternativeBindings;
+            const bool alternativeCoversAll = checkPattern(
+                *alternative,
+                expectedType,
+                alternativeVariants,
+                alternativeLiterals,
+                alternativeCoversNil,
+                &alternativeBindings);
+
+            coveredVariants.insert(alternativeVariants.begin(), alternativeVariants.end());
+            coveredLiterals.insert(alternativeLiterals.begin(), alternativeLiterals.end());
+            mergedCoversNil = mergedCoversNil || alternativeCoversNil;
+            mergedCoversAll = mergedCoversAll || alternativeCoversAll;
+
+            if (firstAlternative) {
+                firstAlternative = false;
+                for (auto& entry : alternativeBindings) {
+                    bindingNames.insert(entry.first);
+                    mergedBindings.emplace(entry.first, std::move(entry.second));
+                }
+                continue;
+            }
+
+            if (alternativeBindings.size() != bindingNames.size()) {
+                throw TypeError(orPattern->pipe,
+                    "OR pattern alternatives must bind the same names");
+            }
+            for (const std::string& name : bindingNames) {
+                const auto alternativeBinding = alternativeBindings.find(name);
+                if (alternativeBinding == alternativeBindings.end()) {
+                    throw TypeError(orPattern->pipe,
+                        "OR pattern alternatives must bind the same names");
+                }
+                PatternBindingInfo& merged = mergedBindings.at(name);
+                if (!compatible(merged.type, alternativeBinding->second.type)
+                    || !compatible(alternativeBinding->second.type, merged.type)) {
+                    throw TypeError(orPattern->pipe,
+                        "OR pattern binding `" + name + "` has incompatible types: "
+                            + typeInfoName(merged.type) + " and "
+                            + typeInfoName(alternativeBinding->second.type));
+                }
+                merged.occurrences.insert(
+                    merged.occurrences.end(),
+                    alternativeBinding->second.occurrences.begin(),
+                    alternativeBinding->second.occurrences.end());
+            }
+        }
+
+        if (deferredBindings) {
+            for (auto& entry : mergedBindings) {
+                if (deferredBindings->find(entry.first) != deferredBindings->end()) {
+                    throw TypeError(orPattern->pipe,
+                        "duplicate pattern binding `" + entry.first + "` in OR pattern");
+                }
+                deferredBindings->emplace(entry.first, std::move(entry.second));
+            }
+        } else {
+            for (auto& entry : mergedBindings) {
+                const Binding binding = declareVariable(
+                    entry.second.token,
+                    entry.second.type,
+                    false);
+                for (const VariablePattern* occurrence : entry.second.occurrences) {
+                    resolvedNames_.recordPatternVariable(*occurrence, binding.resolvedName);
+                }
+            }
+        }
+
+        coversNil = coversNil || mergedCoversNil;
+        return mergedCoversAll;
     }
 
     if (const auto* literal = dynamic_cast<const LiteralPattern*>(&pattern)) {
@@ -2733,7 +2830,8 @@ bool TypeChecker::checkPattern(
             payloadType,
             nestedCoverage,
             nestedLiterals,
-            nestedCoversNil);
+            nestedCoversNil,
+            deferredBindings);
     }
     return false;
 }
