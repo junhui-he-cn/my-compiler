@@ -251,11 +251,15 @@ StmtPtr Parser::enumDeclaration()
 {
     Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected enum name after `enum`");
+    std::vector<Token> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftBrace, "expected `{` after enum name");
     std::vector<EnumVariantDecl> variants = enumVariants();
     consume(TokenType::RightBrace, "expected `}` after enum variants");
     const std::optional<SourceSpan> span = spanForToken(keyword);
-    return withSpan(std::make_unique<EnumDeclStmt>(std::move(name), std::move(variants)), span);
+    return withSpan(
+        std::make_unique<EnumDeclStmt>(
+            std::move(name), std::move(parsedTypeParameters), std::move(variants)),
+        span);
 }
 
 std::vector<EnumVariantDecl> Parser::enumVariants()
@@ -504,6 +508,15 @@ TypeAnnotation Parser::typeAnnotation(const std::string& simpleTypeMessage)
         annotation = TypeAnnotation::qualified(std::move(name), std::move(member));
     } else {
         annotation = TypeAnnotation::simple(std::move(name));
+    }
+    if (match(TokenType::Less)) {
+        if (check(TokenType::Greater)) {
+            throw ParseError(peek(), "expected type argument after `<`");
+        }
+        do {
+            annotation.typeArguments.push_back(typeAnnotation("expected type argument after `<`"));
+        } while (match(TokenType::Comma));
+        consume(TokenType::Greater, "expected `>` after type arguments");
     }
     if (match(TokenType::Question)) {
         annotation = TypeAnnotation::nullable(previous(), std::move(annotation));

@@ -1,0 +1,11 @@
+Program
+  Module 0
+    Enum Result<T, E> {Ok(value: T), Err(message: E)}
+    Fun make(): Result<number, string>
+      Return (member-call Result Ok 9)
+    Export Result make
+  Module 1 entry
+    Import "./lib.cd" as lib
+    Fun render(value: lib.Result<number, string>): string
+      Return (match value (arm lib.Result.Ok(value) (+ "ok:" (call str value))) (arm lib.Result.Err(message) (+ "err:" message)))
+    Print (call render (member-call lib make))

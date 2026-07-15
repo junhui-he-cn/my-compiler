@@ -640,7 +640,9 @@ void TypeChecker::predeclareEnumDeclarations(const std::vector<StmtPtr>& stateme
                 || structTypes_.find(enumDecl->name.lexeme) != structTypes_.end()) {
                 throw TypeError(enumDecl->name, "duplicate type " + enumDecl->name.lexeme);
             }
-            enumTypes_.emplace(enumDecl->name.lexeme, EnumTypeDecl{enumDecl->name, {}});
+            enumTypes_.emplace(
+                enumDecl->name.lexeme,
+                EnumTypeDecl{enumDecl->name, typeParameterNames(enumDecl->typeParameters), {}});
             enumDeclarations_.emplace(enumDecl->name.lexeme, enumDecl);
             enumCheckStates_.emplace(enumDecl->name.lexeme, EnumCheckState::Declared);
             if (!moduleStack_.empty()) {
@@ -895,6 +897,7 @@ void TypeChecker::buildModuleInterfaces(const Program& program)
             for (const auto& entry : *enumExports) {
                 ModuleInterfaceEnum enumInfo;
                 enumInfo.name = entry.first;
+                enumInfo.genericParameters = entry.second.genericParameters;
                 for (const EnumVariantType& variant : entry.second.variants) {
                     std::vector<std::optional<std::string>> payloadNames;
                     payloadNames.reserve(variant.payloadNames.size());
@@ -1399,6 +1402,34 @@ const TypeChecker::EnumVariantType* TypeChecker::findEnumVariant(
     return nullptr;
 }
 
+TypeInfo TypeChecker::resolveNamedEnumAnnotation(
+    const TypeAnnotation& typeName,
+    std::string enumName,
+    const EnumTypeDecl& enumType) const
+{
+    if (enumType.genericParameters.empty()) {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "enum `" + enumName + "` is not generic");
+        }
+        return namedEnumType(std::move(enumName));
+    }
+
+    if (typeName.typeArguments.size() != enumType.genericParameters.size()) {
+        throw TypeError(typeName.token,
+            "enum `" + enumName + "` expects "
+                + std::to_string(enumType.genericParameters.size())
+                + " type arguments but got "
+                + std::to_string(typeName.typeArguments.size()));
+    }
+
+    std::vector<TypeInfo> arguments;
+    arguments.reserve(typeName.typeArguments.size());
+    for (const TypeAnnotation& argument : typeName.typeArguments) {
+        arguments.push_back(resolveAnnotation(argument));
+    }
+    return namedEnumType(std::move(enumName), std::move(arguments));
+}
+
 TypeInfo TypeChecker::resolveStructFieldAnnotation(const StructFieldDecl& field)
 {
     return resolveStructFieldAnnotation(field.typeName, field.name);
@@ -1441,15 +1472,27 @@ TypeInfo TypeChecker::resolveSimpleStructFieldAnnotation(const TypeAnnotation& t
     }
 
     if (typeName.token.lexeme == "number") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `number` is not generic");
+        }
         return simpleType(StaticType::Number);
     }
     if (typeName.token.lexeme == "bool") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `bool` is not generic");
+        }
         return simpleType(StaticType::Bool);
     }
     if (typeName.token.lexeme == "string") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `string` is not generic");
+        }
         return simpleType(StaticType::String);
     }
     if (typeName.token.lexeme == "nil") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `nil` is not generic");
+        }
         return simpleType(StaticType::Nil);
     }
 
@@ -1466,14 +1509,20 @@ TypeInfo TypeChecker::resolveSimpleStructFieldAnnotation(const TypeAnnotation& t
             }
             checkStructDeclaration(*declaration->second);
         }
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "struct `" + typeName.token.lexeme + "` is not generic");
+        }
         return namedStructType(typeName.token.lexeme);
     }
 
     if (findStructType(typeName.token.lexeme)) {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "struct `" + typeName.token.lexeme + "` is not generic");
+        }
         return namedStructType(typeName.token.lexeme);
     }
-    if (findEnumType(typeName.token.lexeme)) {
-        return namedEnumType(typeName.token.lexeme);
+    if (const EnumTypeDecl* enumType = findEnumType(typeName.token.lexeme)) {
+        return resolveNamedEnumAnnotation(typeName, typeName.token.lexeme, *enumType);
     }
 
     throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
@@ -1512,13 +1561,16 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
         return;
     }
     if (state == enumCheckStates_.end()) {
-        enumTypes_.emplace(statement.name.lexeme, EnumTypeDecl{statement.name, {}});
+        enumTypes_.emplace(
+            statement.name.lexeme,
+            EnumTypeDecl{statement.name, typeParameterNames(statement.typeParameters), {}});
         enumDeclarations_.emplace(statement.name.lexeme, &statement);
         enumCheckStates_.emplace(statement.name.lexeme, EnumCheckState::Declared);
     }
 
     enumCheckStates_[statement.name.lexeme] = EnumCheckState::Checking;
-    EnumTypeDecl declaration{statement.name, {}};
+    beginTypeParameterScope(statement.typeParameters);
+    EnumTypeDecl declaration{statement.name, typeParameterNames(statement.typeParameters), {}};
     std::unordered_map<std::string, Token> variantNames;
     for (const EnumVariantDecl& variant : statement.variants) {
         if (variantNames.find(variant.name.lexeme) != variantNames.end()) {
@@ -1558,6 +1610,7 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
     }
 
     enumTypes_[statement.name.lexeme] = std::move(declaration);
+    endTypeParameterScope();
     enumCheckStates_[statement.name.lexeme] = EnumCheckState::Checked;
 }
 
@@ -1626,6 +1679,11 @@ bool TypeChecker::hasEscapingTypeParameter(
             return true;
         }
     }
+    for (const TypeInfo& argument : type.typeArguments) {
+        if (hasEscapingTypeParameter(argument, allowed)) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -1674,6 +1732,9 @@ TypeInfo TypeChecker::qualifyNamespaceType(
     }
     if (result.kind == StaticType::Enum && result.enumName && enums.find(*result.enumName) != enums.end()) {
         result.enumName = alias + "." + *result.enumName;
+        for (TypeInfo& argument : result.typeArguments) {
+            argument = qualifyNamespaceType(argument, alias, structs, enums);
+        }
         return result;
     }
     if (result.kind == StaticType::Array && result.elementType) {
@@ -1986,6 +2047,16 @@ void TypeChecker::inferTypeArguments(
         return;
     }
 
+    if (expected.kind == StaticType::Enum && actual.kind == StaticType::Enum
+        && expected.enumName && actual.enumName
+        && expected.enumName == actual.enumName
+        && expected.typeArguments.size() == actual.typeArguments.size()) {
+        for (std::size_t i = 0; i < expected.typeArguments.size(); ++i) {
+            inferTypeArguments(expected.typeArguments[i], actual.typeArguments[i], substitutions, callToken);
+        }
+        return;
+    }
+
     if (expected.kind == StaticType::Function && actual.kind == StaticType::Function
         && hasFunctionSignature(expected) && hasFunctionSignature(actual)
         && expected.parameterTypes.size() == actual.parameterTypes.size()) {
@@ -2030,6 +2101,9 @@ TypeInfo TypeChecker::substituteTypeParameters(
     }
     for (TypeInfo& parameter : result.parameterTypes) {
         parameter = substituteTypeParameters(parameter, substitutions);
+    }
+    for (TypeInfo& argument : result.typeArguments) {
+        argument = substituteTypeParameters(argument, substitutions);
     }
     return result;
 }
@@ -2327,7 +2401,9 @@ TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(const StructC
     return checkNamedStructFields(expression.name, namedStructType(typeName), expression.fields);
 }
 
-TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(const MemberCallExpr& expression)
+TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(
+    const MemberCallExpr& expression,
+    const TypeInfo* expectedType)
 {
     const std::string enumName = enumConstructorTypeName(expression);
     const EnumTypeDecl* enumType = findEnumType(enumName);
@@ -2347,14 +2423,88 @@ TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(const Member
                 + std::to_string(expression.arguments.size()));
     }
 
+    const bool generic = !enumType->genericParameters.empty();
+    if (!generic && !expression.typeArguments.empty()) {
+        throw TypeError(expression.paren, "function is not generic");
+    }
+
+    TypeSubstitutions substitutions;
+    if (generic && !expression.typeArguments.empty()) {
+        if (expression.typeArguments.size() != enumType->genericParameters.size()) {
+            throw TypeError(expression.paren,
+                "enum `" + enumName + "` expects "
+                    + std::to_string(enumType->genericParameters.size())
+                    + " type arguments but got "
+                    + std::to_string(expression.typeArguments.size()));
+        }
+        for (std::size_t i = 0; i < enumType->genericParameters.size(); ++i) {
+            substitutions.emplace(
+                enumType->genericParameters[i],
+                resolveAnnotation(expression.typeArguments[i]));
+        }
+    }
+
+    const TypeInfo* expectedEnumType = expectedType;
+    if (expectedEnumType && isNullable(*expectedEnumType)) {
+        expectedEnumType = expectedEnumType->nullableOf.get();
+    }
+    const bool expectedMatches = generic
+        && expectedEnumType
+        && expectedEnumType->kind == StaticType::Enum
+        && expectedEnumType->enumName
+        && *expectedEnumType->enumName == enumName;
+    if (expectedMatches && expression.typeArguments.empty()) {
+        if (expectedEnumType->typeArguments.size() != enumType->genericParameters.size()) {
+            throw TypeError(expression.paren,
+                "enum `" + enumName + "` expects "
+                    + std::to_string(enumType->genericParameters.size())
+                    + " type arguments but got "
+                    + std::to_string(expectedEnumType->typeArguments.size()));
+        }
+        for (std::size_t i = 0; i < enumType->genericParameters.size(); ++i) {
+            substitutions.emplace(
+                enumType->genericParameters[i], expectedEnumType->typeArguments[i]);
+        }
+    }
+
+    std::vector<CheckedExpression> arguments;
+    arguments.reserve(expression.arguments.size());
     for (std::size_t i = 0; i < expression.arguments.size(); ++i) {
-        const CheckedExpression argument =
-            checkExpressionInfo(*expression.arguments[i], &variant->payloadTypes[i]);
-        if (!compatible(variant->payloadTypes[i], argument.type)) {
+        const TypeInfo payloadType = substituteTypeParameters(
+            variant->payloadTypes[i], substitutions);
+        const CheckedExpression argument = checkExpressionInfo(
+            *expression.arguments[i],
+            (!generic || !substitutions.empty()) ? &payloadType : nullptr);
+        arguments.push_back(argument);
+        if (generic && expression.typeArguments.empty() && !expectedMatches) {
+            inferTypeArguments(
+                variant->payloadTypes[i], argument.type, substitutions, expression.paren);
+        }
+    }
+
+    if (generic) {
+        for (const std::string& parameter : enumType->genericParameters) {
+            if (substitutions.find(parameter) == substitutions.end()) {
+                throw TypeError(expression.paren,
+                    "cannot infer type parameter " + parameter + " for enum " + enumName);
+            }
+        }
+    }
+
+    std::vector<TypeInfo> typeArguments;
+    typeArguments.reserve(enumType->genericParameters.size());
+    for (const std::string& parameter : enumType->genericParameters) {
+        typeArguments.push_back(substitutions.at(parameter));
+    }
+
+    for (std::size_t i = 0; i < arguments.size(); ++i) {
+        const TypeInfo payloadType = substituteTypeParameters(
+            variant->payloadTypes[i], substitutions);
+        if (!compatible(payloadType, arguments[i].type)) {
             throw TypeError(expression.paren,
                 "variant argument " + std::to_string(i + 1) + " expects "
-                    + typeInfoName(variant->payloadTypes[i]) + ", got "
-                    + typeInfoName(argument.type));
+                    + typeInfoName(payloadType) + ", got "
+                    + typeInfoName(arguments[i].type));
         }
     }
 
@@ -2371,7 +2521,7 @@ TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(const Member
         }
     }
     resolvedNames_.recordVariantConstructor(expression, runtimeEnumName, expression.name.lexeme);
-    return CheckedExpression{namedEnumType(enumName)};
+    return CheckedExpression{namedEnumType(enumName, std::move(typeArguments))};
 }
 
 bool TypeChecker::checkPattern(
@@ -2432,6 +2582,20 @@ bool TypeChecker::checkPattern(
             "enum " + *enumExpectedType->enumName + " has no variant "
                 + variantPattern->name.lexeme);
     }
+    TypeSubstitutions substitutions;
+    if (!enumType->genericParameters.empty()) {
+        if (enumExpectedType->typeArguments.size() != enumType->genericParameters.size()) {
+            throw TypeError(variantPattern->name,
+                "enum `" + *enumExpectedType->enumName + "` expects "
+                    + std::to_string(enumType->genericParameters.size())
+                    + " type arguments but got "
+                    + std::to_string(enumExpectedType->typeArguments.size()));
+        }
+        for (std::size_t i = 0; i < enumType->genericParameters.size(); ++i) {
+            substitutions.emplace(
+                enumType->genericParameters[i], enumExpectedType->typeArguments[i]);
+        }
+    }
     if (variant->payloadTypes.size() != variantPattern->arguments.size()) {
         throw TypeError(variantPattern->name,
             "variant pattern " + *enumExpectedType->enumName + "." + variantPattern->name.lexeme
@@ -2452,7 +2616,7 @@ bool TypeChecker::checkPattern(
     }
     if (hasNamedPattern && hasPositionalPattern) {
         throw TypeError(variantPattern->name,
-            "variant pattern " + *expectedType.enumName + "." + variantPattern->name.lexeme
+            "variant pattern " + *enumExpectedType->enumName + "." + variantPattern->name.lexeme
                 + " must use either all named or all positional payloads");
     }
 
@@ -2508,9 +2672,11 @@ bool TypeChecker::checkPattern(
     for (std::size_t i = 0; i < variantPattern->arguments.size(); ++i) {
         std::unordered_set<std::string> nestedCoverage;
         bool nestedCoversNil = false;
+        const TypeInfo payloadType = substituteTypeParameters(
+            variant->payloadTypes[payloadIndices[i]], substitutions);
         checkPattern(
             *variantPattern->arguments[i],
-            variant->payloadTypes[payloadIndices[i]],
+            payloadType,
             nestedCoverage,
             nestedCoversNil);
     }
@@ -2883,7 +3049,7 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(&expression)) {
-        return checkMemberCall(*memberCall);
+        return checkMemberCall(*memberCall, expectedType);
     }
 
     if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
@@ -3437,16 +3603,15 @@ TypeChecker::CheckedExpression TypeChecker::checkStructMethodCall(const MemberCa
     return result;
 }
 
-TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr& expression)
+TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
+    const MemberCallExpr& expression,
+    const TypeInfo* expectedType)
 {
     const std::string& name = expression.name.lexeme;
     const std::size_t arity = expression.arguments.size();
 
     if (!enumConstructorTypeName(expression).empty()) {
-        if (!expression.typeArguments.empty()) {
-            throw TypeError(expression.paren, "function is not generic");
-        }
-        return checkVariantConstructor(expression);
+        return checkVariantConstructor(expression, expectedType);
     }
 
     if (const auto* variable = dynamic_cast<const VariableExpr*>(expression.receiver.get())) {
@@ -3899,43 +4064,65 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
         if (!namespaceImport) {
             throw TypeError(typeName.qualifier, "unknown module namespace `" + typeName.qualifier.lexeme + "`");
         }
-       if (namespaceImport->structs.find(typeName.token.lexeme) == namespaceImport->structs.end()) {
-            if (namespaceImport->enums.find(typeName.token.lexeme) != namespaceImport->enums.end()) {
-                return namedEnumType(qualifiedStructName(typeName.qualifier, typeName.token));
+        if (namespaceImport->structs.find(typeName.token.lexeme) != namespaceImport->structs.end()) {
+            if (!typeName.typeArguments.empty()) {
+                throw TypeError(typeName.token,
+                    "struct `" + qualifiedStructName(typeName.qualifier, typeName.token)
+                        + "` is not generic");
             }
-           throw TypeError(typeName.token,
-               "module namespace `" + typeName.qualifier.lexeme + "` has no exported type `" + typeName.token.lexeme + "`");
-       }
-       return namedStructType(qualifiedStructName(typeName.qualifier, typeName.token));
-   }
-   if (typeName.kind == TypeAnnotation::Kind::Qualified) {
-       const NamespaceImport* namespaceImport = findNamespace(typeName.qualifier.lexeme);
-       if (namespaceImport && namespaceImport->enums.find(typeName.token.lexeme) != namespaceImport->enums.end()) {
-           return namedEnumType(qualifiedStructName(typeName.qualifier, typeName.token));
-       }
-   }
+            return namedStructType(qualifiedStructName(typeName.qualifier, typeName.token));
+        }
+        const auto enumFound = namespaceImport->enums.find(typeName.token.lexeme);
+        if (enumFound != namespaceImport->enums.end()) {
+            return resolveNamedEnumAnnotation(
+                typeName,
+                qualifiedStructName(typeName.qualifier, typeName.token),
+                enumFound->second);
+        }
+        throw TypeError(typeName.token,
+            "module namespace `" + typeName.qualifier.lexeme + "` has no exported type `"
+                + typeName.token.lexeme + "`");
+    }
 
    if (const TypeInfo* typeParameter = findTypeParameter(typeName.token.lexeme)) {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type parameter `" + typeName.token.lexeme + "` is not generic");
+        }
         return *typeParameter;
     }
 
     if (typeName.token.lexeme == "number") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `number` is not generic");
+        }
         return simpleType(StaticType::Number);
     }
     if (typeName.token.lexeme == "bool") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `bool` is not generic");
+        }
         return simpleType(StaticType::Bool);
     }
     if (typeName.token.lexeme == "string") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `string` is not generic");
+        }
         return simpleType(StaticType::String);
     }
     if (typeName.token.lexeme == "nil") {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "type `nil` is not generic");
+        }
         return simpleType(StaticType::Nil);
     }
     if (findStructType(typeName.token.lexeme)) {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "struct `" + typeName.token.lexeme + "` is not generic");
+        }
         return namedStructType(typeName.token.lexeme);
     }
-    if (findEnumType(typeName.token.lexeme)) {
-        return namedEnumType(typeName.token.lexeme);
+    if (const EnumTypeDecl* enumType = findEnumType(typeName.token.lexeme)) {
+        return resolveNamedEnumAnnotation(typeName, typeName.token.lexeme, *enumType);
     }
    throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
 }

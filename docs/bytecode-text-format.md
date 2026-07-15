@@ -194,6 +194,10 @@ rD = variant_field rValue payloadIndex
 `variant_field` reads a positional payload and raises a runtime error for
 non-variant values or an out-of-range payload index.
 
+Generic enum type arguments are compile-time metadata and are erased from
+these runtime instructions; the emitted enum name and payload layout remain
+the same as for non-generic enums.
+
 Native stdlib calls use a name-table reference for the function name:
 
 ```text

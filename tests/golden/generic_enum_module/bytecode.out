@@ -1,0 +1,46 @@
+main registers=8
+0000  b0 = constant #0 nil
+0001  store_var @0 make#0, b0
+0002  b1 = make_function $0 make/0
+0003  assign_var @3 make#0, b1
+0004  b2 = constant #3 nil
+0005  store_var @4 render#1, b2
+0006  b3 = make_function $1 render/1
+0007  assign_var @15 render#1, b3
+0008  b4 = load_var @16 render#1
+0009  b5 = load_var @17 make#0
+0010  b6 = call b5()
+0011  b7 = call b4(b6)
+0012  print b7
+
+function $0 make/0 registers=3
+0000  b0 = constant #1 9
+0001  b1 = variant @1 Result. @2 Ok (b0)
+0002  return b1
+0003  b2 = constant #2 nil
+0004  return b2
+
+function $1 render/1 registers=14
+0000  b0 = load_var @5 value#2
+0001  b2 = variant_tag b0  @6 Result. @7 Ok
+0002  jump_if_false b2, 0011
+0003  b3 = variant_field b0[0]
+0004  store_var @8 value#3, b3
+0005  b4 = constant #4 "ok:"
+0006  b5 = load_var @9 value#3
+0007  b6 = native_call @10 str [b5]
+0008  b7 = add b4, b6
+0009  b1 = move b7
+0010  jump 0020
+0011  b8 = variant_tag b0  @11 Result. @12 Err
+0012  jump_if_false b8, 0020
+0013  b9 = variant_field b0[0]
+0014  store_var @13 message#4, b9
+0015  b10 = constant #5 "err:"
+0016  b11 = load_var @14 message#4
+0017  b12 = add b10, b11
+0018  b1 = move b12
+0019  jump 0020
+0020  return b1
+0021  b13 = constant #6 nil
+0022  return b13

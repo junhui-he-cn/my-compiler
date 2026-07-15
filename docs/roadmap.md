@@ -162,10 +162,11 @@ model. Match expressions are now implemented as the first slice of this phase,
 reusing the existing patterns, exhaustive checking, and variant IR operations.
 Nullable enum patterns are now implemented for both match statements and match
 expressions, including unguarded `nil` coverage and guarded-arm behavior.
+Generic enum declarations, instantiations, recursive payloads, and constructor
+inference are now implemented with erased runtime metadata.
 
 Future work:
 
-- Generic enums remain out of scope for the current pattern-matching slice.
 - Consider further pattern syntax only as focused slices with explicit
   binding, coverage, and runtime semantics.
 - Defer inheritance, dynamic dispatch, and protocol/trait systems unless this

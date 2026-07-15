@@ -27,6 +27,7 @@ struct TypeInfo {
     std::shared_ptr<TypeInfo> returnType;
     std::optional<std::string> structName;
     std::optional<std::string> enumName;
+    std::vector<TypeInfo> typeArguments;
     std::shared_ptr<TypeInfo> elementType;
     std::shared_ptr<TypeInfo> keyType;
     std::shared_ptr<TypeInfo> valueType;
@@ -38,7 +39,7 @@ struct TypeInfo {
 TypeInfo unknownType();
 TypeInfo simpleType(StaticType kind);
 TypeInfo namedStructType(std::string name);
-TypeInfo namedEnumType(std::string name);
+TypeInfo namedEnumType(std::string name, std::vector<TypeInfo> typeArguments = {});
 TypeInfo arrayType(TypeInfo elementType);
 TypeInfo mapType(TypeInfo keyType, TypeInfo valueType);
 TypeInfo typeParameterType(std::string name);

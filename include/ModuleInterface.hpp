@@ -38,6 +38,7 @@ struct ModuleInterfaceVariant {
 
 struct ModuleInterfaceEnum {
     std::string name;
+    std::vector<std::string> genericParameters;
     std::vector<ModuleInterfaceVariant> variants;
 };
 

@@ -5,6 +5,8 @@
 
 namespace {
 
+void writeTypeArguments(std::ostream& out, const std::vector<TypeAnnotation>& arguments);
+
 void writeIndent(std::ostream& out, int indent)
 {
     for (int i = 0; i < indent; ++i) {
@@ -25,11 +27,13 @@ void writeTypeAnnotation(std::ostream& out, const TypeAnnotation& annotation)
 {
     if (annotation.kind == TypeAnnotation::Kind::Simple) {
         out << annotation.token.lexeme;
+        writeTypeArguments(out, annotation.typeArguments);
         return;
     }
 
     if (annotation.kind == TypeAnnotation::Kind::Qualified) {
         out << annotation.qualifier.lexeme << '.' << annotation.token.lexeme;
+        writeTypeArguments(out, annotation.typeArguments);
         return;
     }
 
@@ -291,6 +295,7 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 
     if (const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(&stmt)) {
         out << "(enum " << enumDecl->name.lexeme;
+        writeTypeParameterList(out, enumDecl->typeParameters);
         for (const EnumVariantDecl& variant : enumDecl->variants) {
             out << " (variant " << variant.name.lexeme;
             for (std::size_t i = 0; i < variant.payloadTypes.size(); ++i) {
@@ -825,8 +830,9 @@ void VariantPattern::print(std::ostream& out) const
     }
 }
 
-EnumDeclStmt::EnumDeclStmt(Token name, std::vector<EnumVariantDecl> variants)
+EnumDeclStmt::EnumDeclStmt(Token name, std::vector<Token> typeParameters, std::vector<EnumVariantDecl> variants)
     : name(std::move(name))
+    , typeParameters(std::move(typeParameters))
     , variants(std::move(variants))
 {
 }
@@ -834,7 +840,9 @@ EnumDeclStmt::EnumDeclStmt(Token name, std::vector<EnumVariantDecl> variants)
 void EnumDeclStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
-    out << "Enum " << name.lexeme << " {";
+    out << "Enum " << name.lexeme;
+    writeTypeParameterList(out, typeParameters);
+    out << " {";
     for (std::size_t i = 0; i < variants.size(); ++i) {
         if (i != 0) {
             out << ", ";

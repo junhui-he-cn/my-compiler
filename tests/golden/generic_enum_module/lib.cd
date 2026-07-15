@@ -1,0 +1,10 @@
+enum Result<T, E> {
+  Ok(value: T),
+  Err(message: E),
+}
+
+fun make(): Result<number, string> {
+  return Result.Ok(9);
+}
+
+export Result, make;

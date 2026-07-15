@@ -176,6 +176,10 @@ private:
     std::string enumConstructorTypeName(const MemberCallExpr& expression) const;
     const EnumTypeDecl* findEnumType(const std::string& name) const;
     const EnumVariantType* findEnumVariant(const EnumTypeDecl& enumType, const std::string& name) const;
+    TypeInfo resolveNamedEnumAnnotation(
+        const TypeAnnotation& typeName,
+        std::string enumName,
+        const EnumTypeDecl& enumType) const;
 
     void checkStatement(const Stmt& statement);
     void predeclareStructDeclarations(const std::vector<StmtPtr>& statements);
@@ -265,7 +269,9 @@ private:
     const TypeInfo* contextualFunctionType(const TypeInfo* expectedType) const;
     CheckedExpression checkFunctionExpression(const FunctionExpr& expression, const TypeInfo* expectedType);
     CheckedExpression checkCall(const CallExpr& expression);
-    CheckedExpression checkMemberCall(const MemberCallExpr& expression);
+    CheckedExpression checkMemberCall(
+        const MemberCallExpr& expression,
+        const TypeInfo* expectedType = nullptr);
     bool isBuiltinLenCall(const CallExpr& expression) const;
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
     bool isNativeStdlibCall(const CallExpr& expression) const;
@@ -303,7 +309,9 @@ private:
         const TypeInfo& declared,
         const std::vector<StructField>& fields);
     CheckedExpression checkStructConstructor(const StructConstructExpr& expression);
-    CheckedExpression checkVariantConstructor(const MemberCallExpr& expression);
+    CheckedExpression checkVariantConstructor(
+        const MemberCallExpr& expression,
+        const TypeInfo* expectedType);
     CheckedExpression checkMatchExpression(const MatchExpr& expression, const TypeInfo* expectedType);
     void checkMatch(const MatchStmt& statement);
     bool checkPattern(

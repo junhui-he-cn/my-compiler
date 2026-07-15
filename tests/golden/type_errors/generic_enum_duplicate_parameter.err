@@ -1,0 +1,3 @@
+Type error at 1:14: duplicate type parameter `T`
+  enum Pair<T, T> { Value(T) }
+               ^

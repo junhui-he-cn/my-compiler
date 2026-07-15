@@ -1,0 +1,2 @@
+enum Box<T> { Value(T), Empty }
+let value: Box<number> = Box.Value("text");

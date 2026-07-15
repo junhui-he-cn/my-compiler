@@ -24,11 +24,12 @@ TypeInfo namedStructType(std::string name)
     return result;
 }
 
-TypeInfo namedEnumType(std::string name)
+TypeInfo namedEnumType(std::string name, std::vector<TypeInfo> typeArguments)
 {
     TypeInfo result;
     result.kind = StaticType::Enum;
     result.enumName = std::move(name);
+    result.typeArguments = std::move(typeArguments);
     return result;
 }
 
@@ -145,7 +146,18 @@ std::string typeInfoName(const TypeInfo& type)
     }
 
     if (type.kind == StaticType::Enum && type.enumName) {
-        return *type.enumName;
+        std::string result = *type.enumName;
+        if (!type.typeArguments.empty()) {
+            result += '<';
+            for (std::size_t i = 0; i < type.typeArguments.size(); ++i) {
+                if (i != 0) {
+                    result += ", ";
+                }
+                result += typeInfoName(type.typeArguments[i]);
+            }
+            result += '>';
+        }
+        return result;
     }
 
     if (type.kind == StaticType::Array && type.elementType) {
@@ -220,7 +232,17 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
     }
     if (expected.kind == StaticType::Enum) {
         if (expected.enumName || actual.enumName) {
-            return expected.enumName == actual.enumName;
+            if (expected.enumName != actual.enumName
+                || expected.typeArguments.size() != actual.typeArguments.size()) {
+                return false;
+            }
+            for (std::size_t i = 0; i < expected.typeArguments.size(); ++i) {
+                if (!compatible(expected.typeArguments[i], actual.typeArguments[i])
+                    || !compatible(actual.typeArguments[i], expected.typeArguments[i])) {
+                    return false;
+                }
+            }
+            return true;
         }
         return true;
     }

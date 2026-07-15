@@ -152,7 +152,7 @@ p.age = 37;
 Named constructor expressions infer the named static type and attach the named runtime type used by `typeOf`; all structs keep the same field-only print format. Annotated bindings must still use an explicit constructor, for example `let p: Person = Person { name: "Ada", age: 36 };`. Field annotations may refer to non-recursive struct names declared later in the same scope, but recursive struct field types such as `struct Node { next: Node? }` are explicitly rejected for now. Field access/assignment on known named struct values is statically checked. Anonymous source struct literals are not a separate form: bare braces such as `{ name: "Ada" }` are map literals, while named constructors such as `Person { name: "Ada" }` remain structs. Constructor functions such as `Person(...)` are not implemented.
 
 Enums define explicit alternatives with positional or named payloads. Recursive
-enum references are allowed:
+enum references are allowed, and enum declarations may be generic:
 
 ```cd
 enum Result { Ok(number), Err(string), Empty }
@@ -176,9 +176,16 @@ print match named {
   NamedResult.Ok(value: numberValue) => numberValue,
   NamedResult.Err(message: text) => 0,
 };
+
+enum Box<T> { Value(T), Empty }
+let boxed: Box<number> = Box.Value(7);
+let emptyBox: Box<number> = Box.Empty<number>();
 ```
 
-Enum constructors use `Enum.Variant(...)`; unit variants use an empty call.
+Enum constructors use `Enum.Variant(...)`; generic arguments are inferred from
+payloads or the expected type, and unit variants can provide explicit arguments
+on the variant call such as `Box.Empty<number>()`. Unit variants without
+payloads require an expected generic type or explicit arguments.
 Match statements and expressions have arm-local bindings and must cover every
 variant, or use `_` or a binding pattern. A nullable enum such as `Result?`
 must also cover `nil`; an unguarded `nil` pattern covers that case. Statement
@@ -190,7 +197,8 @@ including `nil if condition`. Nested patterns are supported, and `nil` may be
 used for nullable nested payloads. Enum values use structural equality and
 print as `Enum.Variant` or `Enum.Variant(value, ...)`. `typeOf` reports the enum
 name. Named payload patterns may be reordered by field name, while constructors
-remain positional. Generic enums are not implemented.
+remain positional. Generic enum types are nominal and invariant in their type
+arguments. Generic constraints and generic structs are not implemented.
 
 Local named structs may define first-slice methods in top-level `impl` blocks.
 Methods are statically resolved on known named struct receiver types, and
@@ -306,8 +314,9 @@ Supported expressions:
 - Maps: `{ key: value, ... }` and `{}`; keys are `nil`, `number`, `bool`, or
   `string`, and entries preserve insertion order.
 - Structs: named constructors such as `Name { field: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
-- Enums and patterns: `enum Name { Variant(type, ...) }`, qualified
-  constructors such as `Name.Variant(value)`, and exhaustive statement-level
+- Enums and patterns: `enum Name[<T, U>] { Variant(type, ...) }`, generic type
+  annotations such as `Name<number>`, qualified constructors such as
+  `Name.Variant(value)`, and exhaustive statement-level
   `match` with wildcard, binding, `nil` for nullable enums, named payload, and
   nested variant patterns. Match expressions use
   `match value { pattern [if condition] => expression, ... }` and return the

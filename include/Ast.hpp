@@ -45,6 +45,7 @@ struct TypeAnnotation {
     Token token{TokenType::Identifier, "", 0, 0};
     Token qualifier{TokenType::Identifier, "", 0, 0};
     std::vector<TypeAnnotation> parameterTypes;
+    std::vector<TypeAnnotation> typeArguments;
     std::shared_ptr<TypeAnnotation> returnType;
     std::shared_ptr<TypeAnnotation> elementType;
     std::shared_ptr<TypeAnnotation> keyType;
@@ -354,10 +355,11 @@ struct MatchExpr final : Expr {
 };
 
 struct EnumDeclStmt final : Stmt {
-    EnumDeclStmt(Token name, std::vector<EnumVariantDecl> variants);
+    EnumDeclStmt(Token name, std::vector<Token> typeParameters, std::vector<EnumVariantDecl> variants);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
+    std::vector<Token> typeParameters;
     std::vector<EnumVariantDecl> variants;
 };
 

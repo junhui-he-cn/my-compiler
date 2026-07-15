@@ -1,0 +1,1 @@
+enum Pair<T, T> { Value(T) }

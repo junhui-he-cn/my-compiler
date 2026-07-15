@@ -35,6 +35,7 @@ struct EnumVariantType {
 
 struct EnumTypeDecl {
     Token name;
+    std::vector<std::string> genericParameters;
     std::vector<EnumVariantType> variants;
 };
 

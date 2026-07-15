@@ -1,0 +1,40 @@
+enum Option<T> {
+  Some(value: T),
+  None,
+}
+
+enum List<T> {
+  Nil,
+  Cons(head: T, tail: List<T>),
+}
+
+fun describe(value: Option<number>): string {
+  return match value {
+    Option.Some(value: numberValue) => "some:" + str(numberValue),
+    Option.None => "none",
+  };
+}
+
+fun sum(list: List<number>): number {
+  return match list {
+    List.Nil => 0,
+    List.Cons(head: first, tail: rest) => first + sum(rest),
+  };
+}
+
+let some: Option<number> = Option.Some(7);
+let none: Option<number> = Option.None<number>();
+let maybe: Option<number>? = nil;
+let inferred = Option.Some("hello");
+print describe(some);
+print describe(none);
+print sum(List.Cons(1, List.Cons(2, List.Nil<number>())));
+print match maybe {
+  nil => "nil",
+  Option.Some(value) => "some",
+  Option.None => "none",
+};
+print match inferred {
+  Option.Some(value) => value,
+  Option.None => "none",
+};

@@ -96,7 +96,18 @@ void writeModuleInterfaceText(std::ostream& out, const std::vector<ModuleInterfa
             return enumInfo.name;
         });
         for (ModuleInterfaceEnum enumInfo : enums) {
-            out << "  export enum " << enumInfo.name << "\n";
+            out << "  export enum " << enumInfo.name;
+            if (!enumInfo.genericParameters.empty()) {
+                out << '<';
+                for (std::size_t i = 0; i < enumInfo.genericParameters.size(); ++i) {
+                    if (i != 0) {
+                        out << ", ";
+                    }
+                    out << enumInfo.genericParameters[i];
+                }
+                out << '>';
+            }
+            out << "\n";
             for (const ModuleInterfaceVariant& variant : enumInfo.variants) {
                 out << "    variant " << variant.name;
                 if (!variant.payloadTypes.empty()) {
