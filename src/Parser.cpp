@@ -1252,6 +1252,17 @@ PatternPtr Parser::pattern()
 
 PatternPtr Parser::patternAtom()
 {
+    if (check(TokenType::Identifier) && checkNext(TokenType::LeftBrace)) {
+        Token name = advance();
+        return recordPattern(std::nullopt, std::move(name));
+    }
+    if (isQualifiedRecordPatternStart()) {
+        Token qualifier = advance();
+        consume(TokenType::Dot, "expected `.` after record pattern qualifier");
+        Token name = consume(TokenType::Identifier, "expected record pattern name after `.`");
+        return recordPattern(std::move(qualifier), std::move(name));
+    }
+
     if (match(TokenType::Nil) || match(TokenType::True) || match(TokenType::False)
         || match(TokenType::Number) || match(TokenType::String)) {
         Token value = previous();
@@ -1273,6 +1284,35 @@ PatternPtr Parser::patternAtom()
         return withSpan(std::make_unique<WildcardPattern>(qualifierOrName), qualifierOrName);
     }
     return withSpan(std::make_unique<VariablePattern>(qualifierOrName), qualifierOrName);
+}
+
+PatternPtr Parser::recordPattern(std::optional<Token> qualifier, Token name)
+{
+    const Token spanToken = qualifier ? *qualifier : name;
+    const std::optional<SourceSpan> span = spanForToken(spanToken);
+    consume(TokenType::LeftBrace, "expected `{` after record pattern name");
+
+    std::vector<RecordPatternField> fields;
+    if (!check(TokenType::RightBrace)) {
+        do {
+            Token fieldName = consume(TokenType::Identifier, "expected record pattern field name");
+            consume(TokenType::Colon, "expected `:` after record pattern field name");
+            fields.push_back(RecordPatternField{std::move(fieldName), pattern()});
+        } while (match(TokenType::Comma));
+    }
+    consume(TokenType::RightBrace, "expected `}` after record pattern fields");
+    return withSpan(
+        std::make_unique<RecordPattern>(std::move(qualifier), std::move(name), std::move(fields)),
+        span);
+}
+
+bool Parser::isQualifiedRecordPatternStart() const
+{
+    return check(TokenType::Identifier)
+        && current_ + 3 < tokens_.size()
+        && tokens_[current_ + 1].type == TokenType::Dot
+        && tokens_[current_ + 2].type == TokenType::Identifier
+        && tokens_[current_ + 3].type == TokenType::LeftBrace;
 }
 
 PatternPtr Parser::variantPattern(Token qualifier, Token name)

@@ -329,6 +329,7 @@ private:
         std::unordered_set<std::string>& coveredVariants,
         std::unordered_set<std::string>& coveredLiterals,
         bool& coversNil,
+        bool& coversStruct,
         PatternBindings* deferredBindings = nullptr);
     const StructFieldType* findStructField(const StructTypeDecl& structType, const std::string& name) const;
     CheckedExpression checkLetInitializer(const LetStmt& statement);

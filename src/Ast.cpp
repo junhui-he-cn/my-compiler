@@ -813,6 +813,32 @@ void OrPattern::print(std::ostream& out) const
     out << ')';
 }
 
+RecordPattern::RecordPattern(
+    std::optional<Token> qualifier,
+    Token name,
+    std::vector<RecordPatternField> fields)
+    : qualifier(std::move(qualifier))
+    , name(std::move(name))
+    , fields(std::move(fields))
+{
+}
+
+void RecordPattern::print(std::ostream& out) const
+{
+    if (qualifier) {
+        out << qualifier->lexeme << '.';
+    }
+    out << name.lexeme << " {";
+    for (std::size_t i = 0; i < fields.size(); ++i) {
+        if (i != 0) {
+            out << ", ";
+        }
+        out << fields[i].name.lexeme << ": ";
+        writePattern(out, *fields[i].pattern);
+    }
+    out << '}';
+}
+
 VariantPattern::VariantPattern(
     std::optional<Token> qualifier,
     Token name,

@@ -476,6 +476,14 @@ void IRCompiler::compilePattern(
         return;
     }
 
+    if (const auto* recordPattern = dynamic_cast<const RecordPattern*>(&pattern)) {
+        for (const RecordPatternField& field : recordPattern->fields) {
+            const IRRegister fieldValue = ir_.emitField(value, field.name.lexeme);
+            compilePattern(*field.pattern, fieldValue, failJumps, bindings);
+        }
+        return;
+    }
+
     if (const auto* orPattern = dynamic_cast<const OrPattern*>(&pattern)) {
         std::vector<std::size_t> successJumps;
         std::vector<std::size_t> pendingFailJumps;

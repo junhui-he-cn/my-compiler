@@ -102,6 +102,8 @@ private:
     ExprPtr primary();
     PatternPtr pattern();
     PatternPtr patternAtom();
+    PatternPtr recordPattern(std::optional<Token> qualifier, Token name);
+    bool isQualifiedRecordPatternStart() const;
     PatternPtr variantPattern(Token qualifier, Token name);
 
     bool match(TokenType type);

@@ -106,6 +106,14 @@ TypeInfo literalPatternType(const Token& token)
     }
 }
 
+std::string recordPatternTypeName(const RecordPattern& pattern)
+{
+    if (pattern.qualifier) {
+        return pattern.qualifier->lexeme + "." + pattern.name.lexeme;
+    }
+    return pattern.name.lexeme;
+}
+
 std::string binaryTypesMessage(const BinaryExpr& expression, const TypeInfo& left, const TypeInfo& right)
 {
     return "binary `" + expression.op.lexeme + "` expects numbers, got "
@@ -2564,9 +2572,11 @@ bool TypeChecker::checkPattern(
     std::unordered_set<std::string>& coveredVariants,
     std::unordered_set<std::string>& coveredLiterals,
     bool& coversNil,
+    bool& coversStruct,
     PatternBindings* deferredBindings)
 {
     if (dynamic_cast<const WildcardPattern*>(&pattern)) {
+        coversStruct = true;
         return true;
     }
 
@@ -2579,11 +2589,69 @@ bool TypeChecker::checkPattern(
             deferredBindings->emplace(
                 variable->name.lexeme,
                 PatternBindingInfo{variable->name, expectedType, {variable}});
+            coversStruct = true;
             return true;
         }
         const Binding binding = declareVariable(variable->name, expectedType, false);
         resolvedNames_.recordPatternVariable(*variable, binding.resolvedName);
+        coversStruct = true;
         return true;
+    }
+
+    if (const auto* recordPattern = dynamic_cast<const RecordPattern*>(&pattern)) {
+        const TypeInfo* structExpectedType = isNullable(expectedType)
+            ? expectedType.nullableOf.get()
+            : &expectedType;
+        if (!structExpectedType
+            || structExpectedType->kind != StaticType::Struct
+            || !structExpectedType->structName) {
+            throw TypeError(recordPattern->name, "record pattern expects struct value");
+        }
+
+        const std::string patternTypeName = recordPatternTypeName(*recordPattern);
+        if (patternTypeName != *structExpectedType->structName) {
+            throw TypeError(recordPattern->name,
+                "record pattern belongs to struct " + patternTypeName
+                    + ", expected " + *structExpectedType->structName);
+        }
+
+        const StructTypeDecl* structType = findStructType(patternTypeName);
+        if (!structType) {
+            throw TypeError(recordPattern->name, "unknown struct type " + patternTypeName);
+        }
+
+        std::unordered_set<std::string> usedFields;
+        bool universal = true;
+        for (const RecordPatternField& field : recordPattern->fields) {
+            if (!usedFields.insert(field.name.lexeme).second) {
+                throw TypeError(field.name,
+                    "duplicate field `" + field.name.lexeme
+                        + "` in record pattern for struct `" + patternTypeName + "`");
+            }
+            const StructFieldType* structField = findStructField(*structType, field.name.lexeme);
+            if (!structField) {
+                throw TypeError(field.name,
+                    "struct `" + patternTypeName + "` has no field `"
+                        + field.name.lexeme + "` in record pattern");
+            }
+
+            std::unordered_set<std::string> nestedCoverage;
+            std::unordered_set<std::string> nestedLiterals;
+            bool nestedCoversNil = false;
+            bool nestedCoversStruct = false;
+            const bool fieldUniversal = checkPattern(
+                *field.pattern,
+                structField->type,
+                nestedCoverage,
+                nestedLiterals,
+                nestedCoversNil,
+                nestedCoversStruct,
+                deferredBindings);
+            universal = universal && fieldUniversal;
+        }
+
+        coversStruct = universal;
+        return isNullable(expectedType) ? false : universal;
     }
 
     if (const auto* orPattern = dynamic_cast<const OrPattern*>(&pattern)) {
@@ -2595,23 +2663,27 @@ bool TypeChecker::checkPattern(
         std::unordered_set<std::string> bindingNames;
         bool firstAlternative = true;
         bool mergedCoversNil = false;
+        bool mergedCoversStruct = false;
         bool mergedCoversAll = false;
         for (const PatternPtr& alternative : orPattern->alternatives) {
             std::unordered_set<std::string> alternativeVariants;
             std::unordered_set<std::string> alternativeLiterals;
             bool alternativeCoversNil = false;
             PatternBindings alternativeBindings;
+            bool alternativeCoversStruct = false;
             const bool alternativeCoversAll = checkPattern(
                 *alternative,
                 expectedType,
                 alternativeVariants,
                 alternativeLiterals,
                 alternativeCoversNil,
+                alternativeCoversStruct,
                 &alternativeBindings);
 
             coveredVariants.insert(alternativeVariants.begin(), alternativeVariants.end());
             coveredLiterals.insert(alternativeLiterals.begin(), alternativeLiterals.end());
             mergedCoversNil = mergedCoversNil || alternativeCoversNil;
+            mergedCoversStruct = mergedCoversStruct || alternativeCoversStruct;
             mergedCoversAll = mergedCoversAll || alternativeCoversAll;
 
             if (firstAlternative) {
@@ -2669,6 +2741,13 @@ bool TypeChecker::checkPattern(
         }
 
         coversNil = coversNil || mergedCoversNil;
+        coversStruct = coversStruct || mergedCoversStruct;
+        if (isNullable(expectedType)
+            && expectedType.nullableOf
+            && expectedType.nullableOf->kind == StaticType::Struct
+            && mergedCoversNil && mergedCoversStruct) {
+            mergedCoversAll = true;
+        }
         return mergedCoversAll;
     }
 
@@ -2823,6 +2902,7 @@ bool TypeChecker::checkPattern(
         std::unordered_set<std::string> nestedCoverage;
         std::unordered_set<std::string> nestedLiterals;
         bool nestedCoversNil = false;
+        bool nestedCoversStruct = false;
         const TypeInfo payloadType = substituteTypeParameters(
             variant->payloadTypes[payloadIndices[i]], substitutions);
         checkPattern(
@@ -2831,6 +2911,7 @@ bool TypeChecker::checkPattern(
             nestedCoverage,
             nestedLiterals,
             nestedCoversNil,
+            nestedCoversStruct,
             deferredBindings);
     }
     return false;
@@ -2842,13 +2923,18 @@ void TypeChecker::checkMatch(const MatchStmt& statement)
     const bool nullableEnum = isNullable(scrutineeType)
         && scrutineeType.nullableOf->kind == StaticType::Enum
         && scrutineeType.nullableOf->enumName;
+    const bool nullableStruct = isNullable(scrutineeType)
+        && scrutineeType.nullableOf->kind == StaticType::Struct
+        && scrutineeType.nullableOf->structName;
+    const bool structValue = scrutineeType.kind == StaticType::Struct
+        && scrutineeType.structName;
     const TypeInfo* primitiveType = primitiveMatchBaseType(scrutineeType);
     if ((scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName)
-        && !nullableEnum && !primitiveType) {
+        && !nullableEnum && !structValue && !nullableStruct && !primitiveType) {
         throw TypeError(statement.value && statement.value->span
                 ? Token{TokenType::Match, "match", statement.value->span->line, statement.value->span->column}
                 : Token{TokenType::Match, "match", 0, 0},
-            "match expects enum, bool, number, string, or nil value, got "
+            "match expects enum, struct, bool, number, string, or nil value, got "
                 + typeInfoName(scrutineeType));
     }
 
@@ -2863,22 +2949,41 @@ void TypeChecker::checkMatch(const MatchStmt& statement)
             throw TypeError("unknown enum type " + enumName);
         }
     }
+    std::string structName;
+    const StructTypeDecl* structType = nullptr;
+    if (structValue || nullableStruct) {
+        structName = nullableStruct
+            ? *scrutineeType.nullableOf->structName
+            : *scrutineeType.structName;
+        structType = findStructType(structName);
+        if (!structType) {
+            throw TypeError("unknown struct type " + structName);
+        }
+    }
 
     std::unordered_set<std::string> coveredVariants;
     std::unordered_set<std::string> coveredLiterals;
     bool coveredNil = false;
+    bool coveredStruct = false;
     bool coversAll = false;
     for (const MatchArm& arm : statement.arms) {
         beginScope();
         std::unordered_set<std::string> armCoveredVariants;
         std::unordered_set<std::string> armCoveredLiterals;
         bool armCoversNil = false;
+        bool armCoversStruct = false;
         const bool armCoversAll = checkPattern(
-            *arm.pattern, scrutineeType, armCoveredVariants, armCoveredLiterals, armCoversNil);
+            *arm.pattern,
+            scrutineeType,
+            armCoveredVariants,
+            armCoveredLiterals,
+            armCoversNil,
+            armCoversStruct);
         if (!arm.guard) {
             coveredVariants.insert(armCoveredVariants.begin(), armCoveredVariants.end());
             coveredLiterals.insert(armCoveredLiterals.begin(), armCoveredLiterals.end());
             coveredNil = coveredNil || armCoversNil;
+            coveredStruct = coveredStruct || armCoversStruct;
             coversAll = coversAll || armCoversAll;
         }
         if (arm.guard) {
@@ -2905,7 +3010,7 @@ void TypeChecker::checkMatch(const MatchStmt& statement)
                             + variant.name.lexeme);
                 }
             }
-        } else if (primitiveType->kind == StaticType::Bool) {
+        } else if (primitiveType && primitiveType->kind == StaticType::Bool) {
             if (coveredLiterals.find("true") == coveredLiterals.end()) {
                 throw TypeError(
                     Token{TokenType::Match, "match", statement.value->span ? statement.value->span->line : 0,
@@ -2918,17 +3023,23 @@ void TypeChecker::checkMatch(const MatchStmt& statement)
                         statement.value->span ? statement.value->span->column : 0},
                     "non-exhaustive match: missing false");
             }
-        } else if (primitiveType->kind == StaticType::Nil && !coveredNil) {
+        } else if (primitiveType && primitiveType->kind == StaticType::Nil && !coveredNil) {
             throw TypeError(
                 Token{TokenType::Match, "match", statement.value->span ? statement.value->span->line : 0,
                     statement.value->span ? statement.value->span->column : 0},
                 "non-exhaustive match: missing nil");
-        } else if (primitiveType->kind == StaticType::Number
-            || primitiveType->kind == StaticType::String) {
+        } else if (primitiveType
+            && (primitiveType->kind == StaticType::Number
+            || primitiveType->kind == StaticType::String)) {
             throw TypeError(
                 Token{TokenType::Match, "match", statement.value->span ? statement.value->span->line : 0,
                     statement.value->span ? statement.value->span->column : 0},
                 "non-exhaustive match: missing wildcard or binding pattern");
+        } else if (structType && !coveredStruct) {
+            throw TypeError(
+                Token{TokenType::Match, "match", statement.value->span ? statement.value->span->line : 0,
+                    statement.value->span ? statement.value->span->column : 0},
+                "non-exhaustive match: missing wildcard, binding, or complete record pattern");
         }
     }
 }
@@ -3312,11 +3423,16 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
     const bool nullableEnum = isNullable(scrutineeType)
         && scrutineeType.nullableOf->kind == StaticType::Enum
         && scrutineeType.nullableOf->enumName;
+    const bool nullableStruct = isNullable(scrutineeType)
+        && scrutineeType.nullableOf->kind == StaticType::Struct
+        && scrutineeType.nullableOf->structName;
+    const bool structValue = scrutineeType.kind == StaticType::Struct
+        && scrutineeType.structName;
     const TypeInfo* primitiveType = primitiveMatchBaseType(scrutineeType);
     if ((scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName)
-        && !nullableEnum && !primitiveType) {
+        && !nullableEnum && !structValue && !nullableStruct && !primitiveType) {
         throw TypeError(expression.keyword,
-            "match expects enum, bool, number, string, or nil value, got "
+            "match expects enum, struct, bool, number, string, or nil value, got "
                 + typeInfoName(scrutineeType));
     }
 
@@ -3331,10 +3447,22 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
             throw TypeError(expression.keyword, "unknown enum type " + enumName);
         }
     }
+    std::string structName;
+    const StructTypeDecl* structType = nullptr;
+    if (structValue || nullableStruct) {
+        structName = nullableStruct
+            ? *scrutineeType.nullableOf->structName
+            : *scrutineeType.structName;
+        structType = findStructType(structName);
+        if (!structType) {
+            throw TypeError(expression.keyword, "unknown struct type " + structName);
+        }
+    }
 
     std::unordered_set<std::string> coveredVariants;
     std::unordered_set<std::string> coveredLiterals;
     bool coveredNil = false;
+    bool coveredStruct = false;
     bool coversAll = false;
     std::optional<TypeInfo> resultType;
     for (const MatchExprArm& arm : expression.arms) {
@@ -3342,12 +3470,19 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
         std::unordered_set<std::string> armCoveredVariants;
         std::unordered_set<std::string> armCoveredLiterals;
         bool armCoversNil = false;
+        bool armCoversStruct = false;
         const bool armCoversAll = checkPattern(
-            *arm.pattern, scrutineeType, armCoveredVariants, armCoveredLiterals, armCoversNil);
+            *arm.pattern,
+            scrutineeType,
+            armCoveredVariants,
+            armCoveredLiterals,
+            armCoversNil,
+            armCoversStruct);
         if (!arm.guard) {
             coveredVariants.insert(armCoveredVariants.begin(), armCoveredVariants.end());
             coveredLiterals.insert(armCoveredLiterals.begin(), armCoveredLiterals.end());
             coveredNil = coveredNil || armCoversNil;
+            coveredStruct = coveredStruct || armCoversStruct;
             coversAll = coversAll || armCoversAll;
         }
         if (arm.guard) {
@@ -3385,7 +3520,7 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
                             + "." + variant.name.lexeme);
                 }
             }
-        } else if (primitiveType->kind == StaticType::Bool) {
+        } else if (primitiveType && primitiveType->kind == StaticType::Bool) {
             if (coveredLiterals.find("true") == coveredLiterals.end()) {
                 throw TypeError(expression.keyword,
                     "non-exhaustive match: missing true");
@@ -3394,13 +3529,18 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
                 throw TypeError(expression.keyword,
                     "non-exhaustive match: missing false");
             }
-        } else if (primitiveType->kind == StaticType::Nil && !coveredNil) {
+        } else if (primitiveType && primitiveType->kind == StaticType::Nil && !coveredNil) {
             throw TypeError(expression.keyword, "non-exhaustive match: missing nil");
-        } else if (primitiveType->kind == StaticType::Number
-            || primitiveType->kind == StaticType::String) {
+        } else if (primitiveType
+            && (primitiveType->kind == StaticType::Number
+            || primitiveType->kind == StaticType::String)) {
             throw TypeError(
                 expression.keyword,
                 "non-exhaustive match: missing wildcard or binding pattern");
+        } else if (structType && !coveredStruct) {
+            throw TypeError(
+                expression.keyword,
+                "non-exhaustive match: missing wildcard, binding, or complete record pattern");
         }
     }
 

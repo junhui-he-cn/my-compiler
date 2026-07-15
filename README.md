@@ -6,7 +6,8 @@ pipeline, bytecode artifact emission, and a standalone Rust bytecode VM.
 
 The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, maps, ranges, enums,
-and exhaustive pattern matching (including primitive literal patterns), indexing, array
+and exhaustive pattern matching (including primitive literal and named-struct
+record patterns), indexing, array
 and map element assignment, numeric compound assignment for variables, array elements, and struct fields, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
@@ -140,6 +141,16 @@ Functions are values. Named functions use `fun name[<T, U>](parameter[: type]*) 
 
 Struct values are created with named constructor expressions such as `Person { name: "Ada", age: 36 }` after a matching `struct Person { ... }` declaration. Constructors preserve declared field behavior, require exact field names, and allow fields in any order. Field reads use `value.field`. Existing fields can be reassigned with `value.field = expression`; the assignment evaluates to the assigned value. Structs are reference values with identity equality, so aliases observe field mutation. Assigning a missing field is a runtime error when the target type is not statically known, and a type error when it is known.
 
+Named struct values also support record patterns in `match`, such as
+`Person { name: "Ada" }`. Record patterns are nominal, may omit or reorder
+fields, and may nest inside other record patterns. `Person {}` matches any
+`Person`; a record pattern with literal or nested constraints matches only
+values satisfying those constraints. Qualified patterns such as
+`geo.Point { x: 1 }` work for namespace-imported structs. A non-nullable
+struct match must be exhaustive through a wildcard, binding, or unconstrained
+record pattern; a nullable struct match must also cover `nil` unless one arm
+covers both cases.
+
 Named struct declarations define static field shapes:
 
 ```cd
@@ -202,7 +213,8 @@ structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
 `typeOf` reports the enum name. Named payload patterns may be reordered by field
 name, while constructors remain positional. Generic enum types are nominal and
 invariant in their type arguments. Generic constraints and generic structs are
-not implemented. Existing patterns may be combined with `|`; alternatives are
+not implemented. Named struct record patterns use the same left-to-right and
+nested matching model. Existing patterns may be combined with `|`; alternatives are
 tried left to right and must bind the same names with compatible types. The
 bindings remain available once in the arm-local scope.
 
@@ -323,8 +335,9 @@ Supported expressions:
 - Enums and patterns: `enum Name[<T, U>] { Variant(type, ...) }`, generic type
   annotations such as `Name<number>`, qualified constructors such as
   `Name.Variant(value)`, and exhaustive statement-level
-  `match` with wildcard, binding, primitive literal patterns, OR patterns,
-  `nil` for nullable values, named payload, and nested variant patterns. Match expressions use
+  `match` with wildcard, binding, primitive literal patterns, named struct
+  record patterns, OR patterns, `nil` for nullable values, named payload, and
+  nested record/variant patterns. Match expressions use
   `match value { pattern [if condition] => expression, ... }` and return the
   selected arm expression. Guards use existing truthiness and must be followed
   by unguarded exhaustive coverage.

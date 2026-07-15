@@ -167,7 +167,10 @@ inference are now implemented with erased runtime metadata. Primitive literal
 patterns are now implemented for direct primitive and nullable primitive matches
 as well as nested enum payloads, reusing equality lowering. OR patterns are now
 implemented with left-to-right alternatives, unified arm-local bindings, and
-union coverage.
+union coverage. Named struct record patterns are now implemented for statement
+and expression matches, including partial and reordered fields, nested and
+namespace-qualified patterns, OR alternatives, nullable struct `nil` coverage,
+and exhaustive coverage through unconstrained record patterns.
 
 Future work:
 

@@ -1,0 +1,6 @@
+module 0 "<repo>/tests/golden/record_pattern_module/lib.cd"
+  export struct Point
+    field x: number
+    field y: number
+
+module 1 entry "<repo>/tests/golden/record_pattern_module/input.cd"

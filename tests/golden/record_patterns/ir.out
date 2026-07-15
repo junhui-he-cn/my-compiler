@@ -1,0 +1,93 @@
+IR
+0000  v0 = constant #0 nil
+0001  store_var @0 describe#0, v0
+0002  v1 = make_function $0 describe/1
+0003  assign_var @15 describe#0, v1
+0004  v2 = constant #9 "Ada"
+0005  v3 = constant #10 36
+0006  v4 = constant #11 "Cambridge"
+0007  v5 = constant #12 1
+0008  v6 = struct Address {city: v4, zip: v5}
+0009  v7 = struct Person {name: v2, age: v3, address: v6}
+0010  store_var @23 ada#5, v7
+0011  v8 = constant #13 "Grace"
+0012  v9 = constant #14 40
+0013  v10 = constant #15 "Hong Kong"
+0014  v11 = constant #16 2
+0015  v12 = struct Address {city: v10, zip: v11}
+0016  v13 = struct Person {name: v8, age: v9, address: v12}
+0017  store_var @31 hongKong#6, v13
+0018  v14 = constant #17 nil
+0019  store_var @32 nilPerson#7, v14
+0020  v15 = load_var @33 describe#0
+0021  v16 = load_var @34 ada#5
+0022  v17 = call v15(v16)
+0023  print v17
+0024  v18 = load_var @35 describe#0
+0025  v19 = load_var @36 hongKong#6
+0026  v20 = call v18(v19)
+0027  print v20
+0028  v21 = load_var @37 describe#0
+0029  v22 = load_var @38 nilPerson#7
+0030  v23 = call v21(v22)
+0031  print v23
+0032  v24 = load_var @39 ada#5
+0033  v26 = field v24.name
+0034  v27 = constant #18 "Ada"
+0035  v28 = equal v26, v27
+0036  jump_if_false v28, 0038
+0037  jump 0042
+0038  v29 = field v24.age
+0039  v30 = constant #19 0
+0040  v31 = equal v29, v30
+0041  jump_if_false v31, 0045
+0042  v32 = constant #20 "or"
+0043  v25 = copy v32
+0044  jump 0048
+0045  v33 = constant #21 "fallback"
+0046  v25 = copy v33
+0047  jump 0048
+0048  print v25
+
+function $0 describe(value#1)
+0000  v0 = load_var @1 value#1
+0001  v2 = constant #1 nil
+0002  v3 = equal v0, v2
+0003  jump_if_false v3, 0007
+0004  v4 = constant #2 "nil"
+0005  v1 = copy v4
+0006  jump 0038
+0007  v5 = field v0.name
+0008  v6 = constant #3 "Ada"
+0009  v7 = equal v5, v6
+0010  jump_if_false v7, 0014
+0011  v8 = constant #4 "ada"
+0012  v1 = copy v8
+0013  jump 0038
+0014  v9 = field v0.address
+0015  v10 = field v9.city
+0016  v11 = constant #5 "Hong Kong"
+0017  v12 = equal v10, v11
+0018  jump_if_false v12, 0026
+0019  v13 = field v0.name
+0020  store_var @6 name#2, v13
+0021  v14 = constant #6 "city:"
+0022  v15 = load_var @7 name#2
+0023  v16 = add v14, v15
+0024  v1 = copy v16
+0025  jump 0038
+0026  v17 = field v0.age
+0027  v18 = field v0.name
+0028  store_var @10 age#3, v17
+0029  store_var @11 name#4, v18
+0030  v19 = load_var @12 name#4
+0031  v20 = constant #7 ":"
+0032  v21 = add v19, v20
+0033  v22 = load_var @13 age#3
+0034  v23 = native_call @14 str(v22)
+0035  v24 = add v21, v23
+0036  v1 = copy v24
+0037  jump 0038
+0038  return v1
+0039  v25 = constant #8 nil
+0040  return v25

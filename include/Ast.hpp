@@ -332,6 +332,23 @@ struct OrPattern final : Pattern {
     std::vector<PatternPtr> alternatives;
 };
 
+struct RecordPatternField {
+    Token name;
+    PatternPtr pattern;
+};
+
+struct RecordPattern final : Pattern {
+    RecordPattern(
+        std::optional<Token> qualifier,
+        Token name,
+        std::vector<RecordPatternField> fields);
+    void print(std::ostream& out) const override;
+
+    std::optional<Token> qualifier;
+    Token name;
+    std::vector<RecordPatternField> fields;
+};
+
 struct VariantPattern final : Pattern {
     VariantPattern(
         std::optional<Token> qualifier,

@@ -97,6 +97,7 @@ pattern     = patternAtom,
 patternAtom = "_"
             | identifier
             | literalPattern
+            | recordPattern
             | variantPattern ;
 
 literalPattern = "nil"
@@ -114,6 +115,14 @@ patternArguments = patternArgument,
                    { ",", patternArgument } ;
 
 patternArgument = [ identifier, ":" ], pattern ;
+
+recordPattern = identifier, "{", [ recordPatternFields ], "}"
+              | identifier, ".", identifier, "{", [ recordPatternFields ], "}" ;
+
+recordPatternFields = recordPatternField,
+                      { ",", recordPatternField } ;
+
+recordPatternField = identifier, ":", pattern ;
 
 whileStmt   = "while", expression, block ;
 
@@ -270,9 +279,12 @@ functionType = "fun", "(", [ typeArguments ], ")", ":", typeExpr ;
    expression operator. `T?` means `T` or `nil`. Generic enum declarations use `enum Box<T>`, and
    generic enum values use `Box<number>` type annotations. Literal patterns
    match primitive values directly or nested inside enum payloads; nullable
-   primitive and enum matches may use `nil`. OR-pattern alternatives must bind
-   the same names. This slice supports nullable function parameter and return
-   types, but not nullable function values such as `(fun(number): string)?`. *)
+   primitive and enum matches may use `nil`. Named struct values may use
+   partial or nested record patterns such as `Person { name: "Ada" }` and
+   `geo.Point { x: 1 }`; fields may be omitted or reordered. OR-pattern
+   alternatives must bind the same names. This slice supports nullable
+   function parameter and return types, but not nullable function values such
+   as `(fun(number): string)?`. *)
 
 typeArguments = typeExpr,
                 { ",", typeExpr } ;
