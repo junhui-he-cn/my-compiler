@@ -20,6 +20,7 @@ enum class NativeFunctionKind {
     Concat,
     Map,
     Filter,
+    Reduce,
     Range,
 };
 

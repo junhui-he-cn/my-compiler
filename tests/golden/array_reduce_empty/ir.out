@@ -1,0 +1,23 @@
+IR
+0000  v0 = array []
+0001  store_var @0 calls#0, v0
+0002  v1 = array []
+0003  v2 = constant #0 42
+0004  v3 = make_function $0 <lambda>/2
+0005  v4 = native_call @5 reduce(v1, v2, v3)
+0006  store_var @6 result#3, v4
+0007  v5 = load_var @7 result#3
+0008  print v5
+0009  v6 = load_var @8 calls#0
+0010  print v6
+
+function $0 <lambda>(acc#1, value#2)
+0000  v0 = load_var @1 calls#0
+0001  v1 = load_var @2 value#2
+0002  v2 = native_call @3 push(v0, v1)
+0003  v3 = load_var @4 acc#1
+0004  v4 = constant #1 1
+0005  v5 = add v3, v4
+0006  return v5
+0007  v6 = constant #2 nil
+0008  return v6

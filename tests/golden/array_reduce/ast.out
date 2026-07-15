@@ -1,0 +1,16 @@
+Program
+  Let values: [number] = (array 1 2 3)
+  Let offset: number = 10
+  Let total: number = (call reduce values 0 (fun (acc, value) (return (+ (+ acc value) offset))))
+  Let product: number = (member-call values reduce 1 (fun (acc: number, value: number): number (return (* acc value))))
+  Let snapshot: [number] = (array 1 2)
+  Let snapshotTotal: number = (call reduce snapshot 0 (fun (acc, value) (expr (call push snapshot 9)) (return (+ acc value))))
+  Let empty: string = (member-call (array) reduce "seed" (fun (acc: string, value): string (return acc)))
+  Let initial: [number] = (array)
+  Let collected: [number] = (call reduce values initial (fun (acc, value) (expr (call push acc value)) (return acc)))
+  Print total
+  Print product
+  Print snapshotTotal
+  Print snapshot
+  Print empty
+  Print collected

@@ -1,0 +1,4 @@
+fun keep<T>(acc: T, value: number): T {
+  return acc;
+}
+reduce([1], 0, keep);

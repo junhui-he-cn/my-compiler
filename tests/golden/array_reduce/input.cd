@@ -1,0 +1,28 @@
+let values: [number] = [1, 2, 3];
+let offset: number = 10;
+let total: number = reduce(values, 0, fun (acc, value) {
+  return acc + value + offset;
+});
+let product: number = values.reduce(1, fun (acc: number, value: number): number {
+  return acc * value;
+});
+let snapshot: [number] = [1, 2];
+let snapshotTotal: number = reduce(snapshot, 0, fun (acc, value) {
+  push(snapshot, 9);
+  return acc + value;
+});
+let empty: string = [].reduce("seed", fun (acc: string, value): string {
+  return acc;
+});
+let initial: [number] = [];
+let collected: [number] = reduce(values, initial, fun (acc, value) {
+  push(acc, value);
+  return acc;
+});
+
+print total;
+print product;
+print snapshotTotal;
+print snapshot;
+print empty;
+print collected;

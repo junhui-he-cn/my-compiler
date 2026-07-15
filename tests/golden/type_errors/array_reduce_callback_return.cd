@@ -1,0 +1,4 @@
+fun bad(acc: number, value: number): string {
+  return "bad";
+}
+reduce([1], 0, bad);

@@ -11,7 +11,7 @@ and map element assignment, numeric compound assignment for variables, array ele
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, and `typeOf`.
+`map`, `filter`, `reduce`, and `typeOf`.
 
 The compiler pipeline includes:
 
@@ -232,6 +232,16 @@ function-style `filter` name is shadowable. Generic predicates are not accepted
 directly at this monomorphic call site, and callback errors propagate with the
 normal Rust VM call stack.
 
+The callback-based array helper `reduce(array, initial, callback)` invokes its
+two-argument callback as `(accumulator, element)` from left to right. The return
+value becomes the next accumulator, and an empty array returns the explicit
+initial value without invoking the callback. The operation snapshots source
+elements, preserves accumulator identity, and returns the final accumulator.
+The member form `array.reduce(initial, callback)` is unshadowed builtin sugar,
+while the function-style `reduce` name is shadowable. Known initial,
+element, and callback types are checked statically; callback errors propagate
+with the normal Rust VM call stack.
+
 Maps support `map[key]` lookup and `map[key] = value` upsert assignment. A
 missing lookup is a runtime error (`map key not found`), while assigning an
 existing key replaces its value and assigning a new key appends it. The
@@ -240,8 +250,7 @@ existing key replaces its value and assigning a new key appends it. The
 `len(map)`. Equality between maps is identity-based, so aliases compare equal
 but separately constructed maps do not. Map values print as
 `map{key: value, ...}` in insertion order.
-Map deletion, map `for-in`, custom iterators, and the higher-order `reduce`
-helper are not implemented.
+Map deletion, map `for-in`, and custom iterators are not implemented.
 
 The native `range` helper constructs immutable finite integer ranges:
 `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are
@@ -259,12 +268,12 @@ Builtin member-call sugar is available for selected array, map, and string
 helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
 `array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
-`map.len()`, `map.contains(key)`, `string.len()`,
+`array.reduce(initial, callback)`, `map.len()`, `map.contains(key)`, `string.len()`,
 `string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `substr`, or `charAt` do not shadow member-call sugar.
+`map`, `filter`, `reduce`, `substr`, or `charAt` do not shadow member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
 

@@ -1,0 +1,3 @@
+Type error at 4:19: reduce callback accumulator expects number, got string
+  reduce([1], 0, bad);
+                    ^

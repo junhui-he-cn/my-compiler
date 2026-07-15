@@ -272,6 +272,11 @@ private:
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,
         const Expr& predicateExpression);
+    CheckedExpression checkArrayReduce(
+        const Token& callToken,
+        const TypeInfo& arrayTypeInfo,
+        const Expr& initialExpression,
+        const Expr& callbackExpression);
     CheckedExpression checkNativeStdlibCall(const CallExpr& expression);
     IndexTargetTypes checkIndexTarget(
         const Expr& collection,

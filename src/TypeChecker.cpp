@@ -1517,7 +1517,7 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
     return name == "push" || name == "pop" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
-        || name == "map" || name == "filter";
+        || name == "map" || name == "filter" || name == "reduce";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -2921,6 +2921,59 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayFilter(
     return CheckedExpression{simpleType(StaticType::Array)};
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkArrayReduce(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& initialExpression,
+    const Expr& callbackExpression)
+{
+    if (arrayTypeInfo.kind != StaticType::Unknown && arrayTypeInfo.kind != StaticType::Array) {
+        throw TypeError(callToken, "reduce expects array as first argument, got " + typeInfoName(arrayTypeInfo));
+    }
+
+    TypeInfo elementType = unknownType();
+    if (arrayTypeInfo.kind == StaticType::Array && arrayTypeInfo.elementType) {
+        elementType = *arrayTypeInfo.elementType;
+    }
+    const CheckedExpression initial = checkExpressionInfo(initialExpression);
+    const TypeInfo expectedCallback = functionType(
+        {initial.type, elementType}, initial.type);
+    const CheckedExpression callback = checkExpressionInfo(callbackExpression, &expectedCallback);
+    if (callback.type.kind != StaticType::Unknown && callback.type.kind != StaticType::Function) {
+        throw TypeError(callToken,
+            "reduce expects function as third argument, got " + typeInfoName(callback.type));
+    }
+    if (callback.type.kind == StaticType::Function && hasFunctionSignature(callback.type)) {
+        if (!callback.type.genericParameters.empty()) {
+            throw TypeError(callToken, "reduce expects a non-generic callback");
+        }
+        if (callback.type.parameterTypes.size() != 2) {
+            throw TypeError(callToken, "reduce expects callback with 2 arguments");
+        }
+        if (initial.type.kind != StaticType::Unknown
+            && !compatible(initial.type, callback.type.parameterTypes.front())) {
+            throw TypeError(callToken,
+                "reduce callback accumulator expects " + typeInfoName(initial.type)
+                    + ", got " + typeInfoName(callback.type.parameterTypes.front()));
+        }
+        if (elementType.kind != StaticType::Unknown
+            && !compatible(elementType, callback.type.parameterTypes[1])) {
+            throw TypeError(callToken,
+                "reduce callback element expects " + typeInfoName(elementType)
+                    + ", got " + typeInfoName(callback.type.parameterTypes[1]));
+        }
+        if (callback.type.returnType
+            && isKnown(*callback.type.returnType)
+            && !compatible(initial.type, *callback.type.returnType)) {
+            throw TypeError(callToken,
+                "reduce expects callback to return " + typeInfoName(initial.type)
+                    + ", got " + typeInfoName(*callback.type.returnType));
+        }
+    }
+
+    return CheckedExpression{initial.type};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr& expression)
 {
     if (!expression.typeArguments.empty()) {
@@ -3113,6 +3166,14 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     case NativeFunctionKind::Filter: {
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
         return checkArrayFilter(expression.paren, arrayArgument.type, *expression.arguments[1]);
+    }
+    case NativeFunctionKind::Reduce: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        return checkArrayReduce(
+            expression.paren,
+            arrayArgument.type,
+            *expression.arguments[1],
+            *expression.arguments[2]);
     }
     case NativeFunctionKind::Range: {
         for (std::size_t index = 0; index < expression.arguments.size(); ++index) {
@@ -3317,6 +3378,16 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
         expectArity(1);
         const CheckedExpression receiver = checkReceiver();
         return checkArrayFilter(expression.paren, receiver.type, *expression.arguments[0]);
+    }
+
+    if (name == "reduce") {
+        expectArity(2);
+        const CheckedExpression receiver = checkReceiver();
+        return checkArrayReduce(
+            expression.paren,
+            receiver.type,
+            *expression.arguments[0],
+            *expression.arguments[1]);
     }
 
     if (name == "len") {

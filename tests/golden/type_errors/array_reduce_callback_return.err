@@ -1,0 +1,3 @@
+Type error at 4:19: reduce expects callback to return number, got string
+  reduce([1], 0, bad);
+                    ^

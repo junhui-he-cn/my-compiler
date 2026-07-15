@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_reduce_callback_failure.cd:1:42: division by zero
+  reduce([1], 0, fun (acc, value) { return 1 / 0; });
+                                           ^
+Call stack:
+  at <lambda> (tests/golden/runtime_errors/array_reduce_callback_failure.cd:1:42)
+  at main (tests/golden/runtime_errors/array_reduce_callback_failure.cd:1:1)

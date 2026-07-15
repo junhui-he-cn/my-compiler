@@ -641,7 +641,8 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
         || expression.name.lexeme == "copy"
         || expression.name.lexeme == "concat"
         || expression.name.lexeme == "map"
-        || expression.name.lexeme == "filter") {
+        || expression.name.lexeme == "filter"
+        || expression.name.lexeme == "reduce") {
         std::vector<IRRegister> arguments;
         arguments.push_back(receiver);
         for (const auto& argument : expression.arguments) {

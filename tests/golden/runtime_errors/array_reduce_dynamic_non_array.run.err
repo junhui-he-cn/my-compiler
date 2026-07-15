@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_reduce_dynamic_non_array.cd:2:10: reduce expects array as first argument
+    return reduce(value, 0, fun (acc, item) { return acc; });
+           ^
+Call stack:
+  at apply (tests/golden/runtime_errors/array_reduce_dynamic_non_array.cd:2:10)
+  at main (tests/golden/runtime_errors/array_reduce_dynamic_non_array.cd:4:1)

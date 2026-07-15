@@ -1,0 +1,97 @@
+cdbc 0.1
+
+constants:
+  c0 = string "shadowed"
+  c1 = nil
+  c2 = number 1
+  c3 = number 0
+  c4 = nil
+  c5 = number 1
+  c6 = number 0
+  c7 = nil
+
+names:
+  n0 = "reduce#3"
+  n1 = "reduce#3"
+  n2 = "acc#4"
+  n3 = "acc#6"
+  n4 = "value#7"
+  n5 = "reduce"
+
+main registers=12:
+  r0 = make_function f0
+  store_var n0, r0
+  r1 = load_var n1
+  r2 = constant c2
+  r3 = array [r2]
+  r4 = constant c3
+  r5 = make_function f1
+  r6 = call r1 [r3, r4, r5]
+  print r6
+  r7 = constant c5
+  r8 = array [r7]
+  r9 = constant c6
+  r10 = make_function f2
+  r11 = native_call n5 [r8, r9, r10]
+  print r11
+
+function f0 name="<lambda>" arity=3 registers=2:
+  param 0 = "array#0"
+  param 1 = "initial#1"
+  param 2 = "callback#2"
+  r0 = constant c0
+  return r0
+  r1 = constant c1
+  return r1
+
+function f1 name="<lambda>" arity=2 registers=2:
+  param 0 = "acc#4"
+  param 1 = "value#5"
+  r0 = load_var n2
+  return r0
+  r1 = constant c4
+  return r1
+
+function f2 name="<lambda>" arity=2 registers=4:
+  param 0 = "acc#6"
+  param 1 = "value#7"
+  r0 = load_var n3
+  r1 = load_var n4
+  r2 = add r0, r1
+  return r2
+  r3 = constant c7
+  return r3
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/array_reduce_shadowing/input.cd" text="let reduce = fun (array, initial, callback) {\n  return \"shadowed\";\n};\n\nprint reduce([1], 0, fun (acc, value) { return acc; });\nprint [1].reduce(0, fun (acc, value) { return acc + value; });\n"
+
+debug_locations:
+  main 0 = s0:1:14
+  main 1 = s0:1:1
+  main 2 = s0:5:7
+  main 3 = s0:5:15
+  main 4 = s0:5:14
+  main 5 = s0:5:19
+  main 6 = s0:5:22
+  main 7 = s0:5:7
+  main 8 = s0:5:1
+  main 9 = s0:6:8
+  main 10 = s0:6:7
+  main 11 = s0:6:18
+  main 12 = s0:6:21
+  main 13 = s0:6:7
+  main 14 = s0:6:1
+  function f0 0 = s0:2:10
+  function f0 1 = s0:2:3
+  function f0 2 = s0:1:14
+  function f0 3 = s0:1:14
+  function f1 0 = s0:5:48
+  function f1 1 = s0:5:41
+  function f1 2 = s0:5:22
+  function f1 3 = s0:5:22
+  function f2 0 = s0:6:47
+  function f2 1 = s0:6:53
+  function f2 2 = s0:6:47
+  function f2 3 = s0:6:40
+  function f2 4 = s0:6:21
+  function f2 5 = s0:6:21

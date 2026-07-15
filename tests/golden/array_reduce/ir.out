@@ -1,0 +1,95 @@
+IR
+0000  v0 = constant #0 1
+0001  v1 = constant #1 2
+0002  v2 = constant #2 3
+0003  v3 = array [v0, v1, v2]
+0004  store_var @0 values#0, v3
+0005  v4 = constant #3 10
+0006  store_var @1 offset#1, v4
+0007  v5 = load_var @2 values#0
+0008  v6 = constant #4 0
+0009  v7 = make_function $0 <lambda>/2
+0010  v8 = native_call @6 reduce(v5, v6, v7)
+0011  store_var @7 total#4, v8
+0012  v9 = load_var @8 values#0
+0013  v10 = constant #6 1
+0014  v11 = make_function $1 <lambda>/2
+0015  v12 = native_call @11 reduce(v9, v10, v11)
+0016  store_var @12 product#7, v12
+0017  v13 = constant #8 1
+0018  v14 = constant #9 2
+0019  v15 = array [v13, v14]
+0020  store_var @13 snapshot#8, v15
+0021  v16 = load_var @14 snapshot#8
+0022  v17 = constant #10 0
+0023  v18 = make_function $2 <lambda>/2
+0024  v19 = native_call @19 reduce(v16, v17, v18)
+0025  store_var @20 snapshotTotal#11, v19
+0026  v20 = array []
+0027  v21 = constant #13 "seed"
+0028  v22 = make_function $3 <lambda>/2
+0029  v23 = native_call @22 reduce(v20, v21, v22)
+0030  store_var @23 empty#14, v23
+0031  v24 = array []
+0032  store_var @24 initial#15, v24
+0033  v25 = load_var @25 values#0
+0034  v26 = load_var @26 initial#15
+0035  v27 = make_function $4 <lambda>/2
+0036  v28 = native_call @31 reduce(v25, v26, v27)
+0037  store_var @32 collected#18, v28
+0038  v29 = load_var @33 total#4
+0039  print v29
+0040  v30 = load_var @34 product#7
+0041  print v30
+0042  v31 = load_var @35 snapshotTotal#11
+0043  print v31
+0044  v32 = load_var @36 snapshot#8
+0045  print v32
+0046  v33 = load_var @37 empty#14
+0047  print v33
+0048  v34 = load_var @38 collected#18
+0049  print v34
+
+function $0 <lambda>(acc#2, value#3)
+0000  v0 = load_var @3 acc#2
+0001  v1 = load_var @4 value#3
+0002  v2 = add v0, v1
+0003  v3 = load_var @5 offset#1
+0004  v4 = add v2, v3
+0005  return v4
+0006  v5 = constant #5 nil
+0007  return v5
+
+function $1 <lambda>(acc#5, value#6)
+0000  v0 = load_var @9 acc#5
+0001  v1 = load_var @10 value#6
+0002  v2 = multiply v0, v1
+0003  return v2
+0004  v3 = constant #7 nil
+0005  return v3
+
+function $2 <lambda>(acc#9, value#10)
+0000  v0 = load_var @15 snapshot#8
+0001  v1 = constant #11 9
+0002  v2 = native_call @16 push(v0, v1)
+0003  v3 = load_var @17 acc#9
+0004  v4 = load_var @18 value#10
+0005  v5 = add v3, v4
+0006  return v5
+0007  v6 = constant #12 nil
+0008  return v6
+
+function $3 <lambda>(acc#12, value#13)
+0000  v0 = load_var @21 acc#12
+0001  return v0
+0002  v1 = constant #14 nil
+0003  return v1
+
+function $4 <lambda>(acc#16, value#17)
+0000  v0 = load_var @27 acc#16
+0001  v1 = load_var @28 value#17
+0002  v2 = native_call @29 push(v0, v1)
+0003  v3 = load_var @30 acc#16
+0004  return v3
+0005  v4 = constant #15 nil
+0006  return v4

@@ -316,6 +316,125 @@ mod tests {
     }
 
     #[test]
+    fn native_reduce_threads_accumulator_and_returns_initial_for_empty_arrays() {
+        let program = Program {
+            constants: Vec::new(),
+            names: vec!["acc".to_string(), "item".to_string()],
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            },
+            functions: vec![Function {
+                index: 0,
+                name: "add".to_string(),
+                arity: 2,
+                registers: 3,
+                params: vec!["acc".to_string(), "item".to_string()],
+                instructions: vec![
+                    Instruction::LoadVar { dest: 0, name: 0 },
+                    Instruction::LoadVar { dest: 1, name: 1 },
+                    Instruction::Add {
+                        dest: 2,
+                        left: 0,
+                        right: 1,
+                    },
+                    Instruction::Return { value: 2 },
+                ],
+                locations: vec![None, None, None, None],
+            }],
+            debug_sources: Vec::new(),
+        };
+        let mut vm = VM::new(&program);
+        let source = vm.make_array(vec![Value::number(1.0), Value::number(2.0), Value::number(3.0)]);
+        let empty = vm.make_array(Vec::new());
+        let callback = Value::function(FunctionValue {
+            name: "add".to_string(),
+            function_index: 0,
+            arity: 2,
+            identity: 1,
+            closure: new_environment(),
+        });
+
+        let total = vm
+            .execute_native_call(
+                "reduce",
+                vec![source, Value::number(0.0), callback.clone()],
+            )
+            .expect("reduce succeeds");
+        assert!(matches!(total, Value::Number(value) if value == 6.0));
+
+        let initial = Value::string("seed");
+        let returned = vm
+            .execute_native_call("reduce", vec![empty, initial.clone(), callback])
+            .expect("empty reduce succeeds");
+        assert!(returned.runtime_equals(&initial));
+    }
+
+    #[test]
+    fn native_reduce_validates_operands_and_callback_arity() {
+        let program = Program {
+            constants: Vec::new(),
+            names: Vec::new(),
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            },
+            functions: vec![Function {
+                index: 0,
+                name: "one_arg".to_string(),
+                arity: 1,
+                registers: 0,
+                params: vec!["item".to_string()],
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            }],
+            debug_sources: Vec::new(),
+        };
+        let mut vm = VM::new(&program);
+        let array = vm.make_array(vec![Value::number(1.0)]);
+        let callback = Value::function(FunctionValue {
+            name: "one_arg".to_string(),
+            function_index: 0,
+            arity: 1,
+            identity: 1,
+            closure: new_environment(),
+        });
+
+        assert_eq!(
+            vm.execute_native_call("reduce", Vec::new())
+                .unwrap_err()
+                .message,
+            "reduce expects 3 arguments"
+        );
+        assert_eq!(
+            vm.execute_native_call(
+                "reduce",
+                vec![Value::number(1.0), Value::number(0.0), callback.clone()],
+            )
+            .unwrap_err()
+            .message,
+            "reduce expects array as first argument"
+        );
+        assert_eq!(
+            vm.execute_native_call(
+                "reduce",
+                vec![array.clone(), Value::number(0.0), Value::number(1.0)],
+            )
+            .unwrap_err()
+            .message,
+            "reduce expects function as third argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("reduce", vec![array, Value::number(0.0), callback])
+                .unwrap_err()
+                .message,
+            "reduce expects callback with 2 arguments"
+        );
+    }
+
+    #[test]
     fn map_lookup_update_length_and_contains() {
         let program = empty_program();
         let mut vm = VM::new(&program);
@@ -1542,6 +1661,7 @@ impl<'a> VM<'a> {
             "concat" => self.execute_native_concat(arguments),
             "map" => self.execute_native_map(arguments, caller, call_site),
             "filter" => self.execute_native_filter(arguments, caller, call_site),
+            "reduce" => self.execute_native_reduce(arguments, caller, call_site),
             "range" => self.execute_native_range(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
@@ -1617,6 +1737,38 @@ impl<'a> VM<'a> {
             }
         }
         Ok(self.make_array(filtered))
+    }
+
+    fn execute_native_reduce(
+        &mut self,
+        arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
+    ) -> Result<Value, RuntimeError> {
+        if arguments.len() != 3 {
+            return Err(RuntimeError::new("reduce expects 3 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("reduce expects array as first argument"));
+        };
+        let Value::Function(callback) = &arguments[2] else {
+            return Err(RuntimeError::new("reduce expects function as third argument"));
+        };
+        if callback.arity != 2 {
+            return Err(RuntimeError::new("reduce expects callback with 2 arguments"));
+        }
+
+        let elements = array.elements.borrow().clone();
+        let mut accumulator = arguments[1].clone();
+        for element in elements {
+            accumulator = self.call_function(
+                callback.clone(),
+                vec![accumulator, element],
+                caller.clone(),
+                call_site.clone(),
+            )?;
+        }
+        Ok(accumulator)
     }
 
     fn execute_native_push(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

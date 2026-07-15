@@ -1,0 +1,255 @@
+cdbc 0.1
+
+constants:
+  c0 = number 1
+  c1 = number 2
+  c2 = number 3
+  c3 = number 10
+  c4 = number 0
+  c5 = nil
+  c6 = number 1
+  c7 = nil
+  c8 = number 1
+  c9 = number 2
+  c10 = number 0
+  c11 = number 9
+  c12 = nil
+  c13 = string "seed"
+  c14 = nil
+  c15 = nil
+
+names:
+  n0 = "values#0"
+  n1 = "offset#1"
+  n2 = "values#0"
+  n3 = "acc#2"
+  n4 = "value#3"
+  n5 = "offset#1"
+  n6 = "reduce"
+  n7 = "total#4"
+  n8 = "values#0"
+  n9 = "acc#5"
+  n10 = "value#6"
+  n11 = "reduce"
+  n12 = "product#7"
+  n13 = "snapshot#8"
+  n14 = "snapshot#8"
+  n15 = "snapshot#8"
+  n16 = "push"
+  n17 = "acc#9"
+  n18 = "value#10"
+  n19 = "reduce"
+  n20 = "snapshotTotal#11"
+  n21 = "acc#12"
+  n22 = "reduce"
+  n23 = "empty#14"
+  n24 = "initial#15"
+  n25 = "values#0"
+  n26 = "initial#15"
+  n27 = "acc#16"
+  n28 = "value#17"
+  n29 = "push"
+  n30 = "acc#16"
+  n31 = "reduce"
+  n32 = "collected#18"
+  n33 = "total#4"
+  n34 = "product#7"
+  n35 = "snapshotTotal#11"
+  n36 = "snapshot#8"
+  n37 = "empty#14"
+  n38 = "collected#18"
+
+main registers=35:
+  r0 = constant c0
+  r1 = constant c1
+  r2 = constant c2
+  r3 = array [r0, r1, r2]
+  store_var n0, r3
+  r4 = constant c3
+  store_var n1, r4
+  r5 = load_var n2
+  r6 = constant c4
+  r7 = make_function f0
+  r8 = native_call n6 [r5, r6, r7]
+  store_var n7, r8
+  r9 = load_var n8
+  r10 = constant c6
+  r11 = make_function f1
+  r12 = native_call n11 [r9, r10, r11]
+  store_var n12, r12
+  r13 = constant c8
+  r14 = constant c9
+  r15 = array [r13, r14]
+  store_var n13, r15
+  r16 = load_var n14
+  r17 = constant c10
+  r18 = make_function f2
+  r19 = native_call n19 [r16, r17, r18]
+  store_var n20, r19
+  r20 = array []
+  r21 = constant c13
+  r22 = make_function f3
+  r23 = native_call n22 [r20, r21, r22]
+  store_var n23, r23
+  r24 = array []
+  store_var n24, r24
+  r25 = load_var n25
+  r26 = load_var n26
+  r27 = make_function f4
+  r28 = native_call n31 [r25, r26, r27]
+  store_var n32, r28
+  r29 = load_var n33
+  print r29
+  r30 = load_var n34
+  print r30
+  r31 = load_var n35
+  print r31
+  r32 = load_var n36
+  print r32
+  r33 = load_var n37
+  print r33
+  r34 = load_var n38
+  print r34
+
+function f0 name="<lambda>" arity=2 registers=6:
+  param 0 = "acc#2"
+  param 1 = "value#3"
+  r0 = load_var n3
+  r1 = load_var n4
+  r2 = add r0, r1
+  r3 = load_var n5
+  r4 = add r2, r3
+  return r4
+  r5 = constant c5
+  return r5
+
+function f1 name="<lambda>" arity=2 registers=4:
+  param 0 = "acc#5"
+  param 1 = "value#6"
+  r0 = load_var n9
+  r1 = load_var n10
+  r2 = multiply r0, r1
+  return r2
+  r3 = constant c7
+  return r3
+
+function f2 name="<lambda>" arity=2 registers=7:
+  param 0 = "acc#9"
+  param 1 = "value#10"
+  r0 = load_var n15
+  r1 = constant c11
+  r2 = native_call n16 [r0, r1]
+  r3 = load_var n17
+  r4 = load_var n18
+  r5 = add r3, r4
+  return r5
+  r6 = constant c12
+  return r6
+
+function f3 name="<lambda>" arity=2 registers=2:
+  param 0 = "acc#12"
+  param 1 = "value#13"
+  r0 = load_var n21
+  return r0
+  r1 = constant c14
+  return r1
+
+function f4 name="<lambda>" arity=2 registers=5:
+  param 0 = "acc#16"
+  param 1 = "value#17"
+  r0 = load_var n27
+  r1 = load_var n28
+  r2 = native_call n29 [r0, r1]
+  r3 = load_var n30
+  return r3
+  r4 = constant c15
+  return r4
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/array_reduce/input.cd" text="let values: [number] = [1, 2, 3];\nlet offset: number = 10;\nlet total: number = reduce(values, 0, fun (acc, value) {\n  return acc + value + offset;\n});\nlet product: number = values.reduce(1, fun (acc: number, value: number): number {\n  return acc * value;\n});\nlet snapshot: [number] = [1, 2];\nlet snapshotTotal: number = reduce(snapshot, 0, fun (acc, value) {\n  push(snapshot, 9);\n  return acc + value;\n});\nlet empty: string = [].reduce(\"seed\", fun (acc: string, value): string {\n  return acc;\n});\nlet initial: [number] = [];\nlet collected: [number] = reduce(values, initial, fun (acc, value) {\n  push(acc, value);\n  return acc;\n});\n\nprint total;\nprint product;\nprint snapshotTotal;\nprint snapshot;\nprint empty;\nprint collected;\n"
+
+debug_locations:
+  main 0 = s0:1:25
+  main 1 = s0:1:28
+  main 2 = s0:1:31
+  main 3 = s0:1:24
+  main 4 = s0:1:1
+  main 5 = s0:2:22
+  main 6 = s0:2:1
+  main 7 = s0:3:28
+  main 8 = s0:3:36
+  main 9 = s0:3:39
+  main 10 = s0:3:21
+  main 11 = s0:3:1
+  main 12 = s0:6:23
+  main 13 = s0:6:37
+  main 14 = s0:6:40
+  main 15 = s0:6:23
+  main 16 = s0:6:1
+  main 17 = s0:9:27
+  main 18 = s0:9:30
+  main 19 = s0:9:26
+  main 20 = s0:9:1
+  main 21 = s0:10:36
+  main 22 = s0:10:46
+  main 23 = s0:10:49
+  main 24 = s0:10:29
+  main 25 = s0:10:1
+  main 26 = s0:14:21
+  main 27 = s0:14:31
+  main 28 = s0:14:39
+  main 29 = s0:14:21
+  main 30 = s0:14:1
+  main 31 = s0:17:25
+  main 32 = s0:17:1
+  main 33 = s0:18:34
+  main 34 = s0:18:42
+  main 35 = s0:18:51
+  main 36 = s0:18:27
+  main 37 = s0:18:1
+  main 38 = s0:23:7
+  main 39 = s0:23:1
+  main 40 = s0:24:7
+  main 41 = s0:24:1
+  main 42 = s0:25:7
+  main 43 = s0:25:1
+  main 44 = s0:26:7
+  main 45 = s0:26:1
+  main 46 = s0:27:7
+  main 47 = s0:27:1
+  main 48 = s0:28:7
+  main 49 = s0:28:1
+  function f0 0 = s0:4:10
+  function f0 1 = s0:4:16
+  function f0 2 = s0:4:10
+  function f0 3 = s0:4:24
+  function f0 4 = s0:4:10
+  function f0 5 = s0:4:3
+  function f0 6 = s0:3:39
+  function f0 7 = s0:3:39
+  function f1 0 = s0:7:10
+  function f1 1 = s0:7:16
+  function f1 2 = s0:7:10
+  function f1 3 = s0:7:3
+  function f1 4 = s0:6:40
+  function f1 5 = s0:6:40
+  function f2 0 = s0:11:8
+  function f2 1 = s0:11:18
+  function f2 2 = s0:11:3
+  function f2 3 = s0:12:10
+  function f2 4 = s0:12:16
+  function f2 5 = s0:12:10
+  function f2 6 = s0:12:3
+  function f2 7 = s0:10:49
+  function f2 8 = s0:10:49
+  function f3 0 = s0:15:10
+  function f3 1 = s0:15:3
+  function f3 2 = s0:14:39
+  function f3 3 = s0:14:39
+  function f4 0 = s0:19:8
+  function f4 1 = s0:19:13
+  function f4 2 = s0:19:3
+  function f4 3 = s0:20:10
+  function f4 4 = s0:20:3
+  function f4 5 = s0:18:51
+  function f4 6 = s0:18:51

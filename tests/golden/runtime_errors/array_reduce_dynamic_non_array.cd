@@ -1,0 +1,4 @@
+fun apply(value) {
+  return reduce(value, 0, fun (acc, item) { return acc; });
+}
+apply(1);

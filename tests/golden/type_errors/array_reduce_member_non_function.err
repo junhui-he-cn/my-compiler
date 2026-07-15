@@ -1,0 +1,3 @@
+Type error at 1:17: reduce expects function as third argument, got number
+  [1].reduce(0, 42);
+                  ^

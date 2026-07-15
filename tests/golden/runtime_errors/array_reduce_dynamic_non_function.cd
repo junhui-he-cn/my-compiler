@@ -1,0 +1,4 @@
+fun apply(callback) {
+  return reduce([1], 0, callback);
+}
+apply(1);
