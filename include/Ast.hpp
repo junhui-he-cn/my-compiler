@@ -270,10 +270,16 @@ struct FieldCompoundAssignExpr final : Expr {
 };
 
 struct FunctionExpr final : Expr {
-    FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
+    FunctionExpr(
+        Token keyword,
+        std::vector<Token> typeParameters,
+        std::vector<Parameter> parameters,
+        std::optional<TypeAnnotation> returnTypeName,
+        std::vector<StmtPtr> body);
     void print(std::ostream& out) const override;
 
     Token keyword;
+    std::vector<Token> typeParameters;
     std::vector<Parameter> parameters;
     std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;

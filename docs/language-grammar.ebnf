@@ -204,7 +204,7 @@ fields      = field,
 
 field       = identifier, ":", expression ;
 
-functionExpr = "fun", "(", [ parameters ], ")",
+functionExpr = "fun", [ typeParameters ], "(", [ parameters ], ")",
                [ ":", typeExpr ],
                block ;
 

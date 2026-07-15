@@ -200,7 +200,9 @@ StmtPtr Parser::declaration()
         advance();
         return functionDeclaration();
     }
-    if (check(TokenType::Fun) && !checkNext(TokenType::LeftParen)) {
+    if (check(TokenType::Fun)
+        && !checkNext(TokenType::LeftParen)
+        && !checkNext(TokenType::Less)) {
         advance();
         throw ParseError(peek(), expectedFunStartMessage(peek()));
     }
@@ -1105,6 +1107,7 @@ ExprPtr Parser::qualifiedStructConstructor()
 ExprPtr Parser::functionExpression()
 {
     Token keyword = previous();
+    std::vector<Token> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftParen, "expected `(` after `fun`");
 
     std::vector<Parameter> parsedParameters = parameters();
@@ -1118,6 +1121,7 @@ ExprPtr Parser::functionExpression()
     return withSpan(
         std::make_unique<FunctionExpr>(
             std::move(keyword),
+            std::move(parsedTypeParameters),
             std::move(parsedParameters),
             std::move(returnTypeName),
             std::move(body)),

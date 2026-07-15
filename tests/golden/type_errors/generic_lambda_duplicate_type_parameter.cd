@@ -1,0 +1,1 @@
+let duplicate = fun<T, T>(value: T): T { return value; };

@@ -1,0 +1,127 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = nil
+  c2 = number 0
+  c3 = nil
+  c4 = nil
+  c5 = nil
+  c6 = number 41
+  c7 = string "generic"
+  c8 = number 7
+  c9 = number 8
+
+names:
+  n0 = "value#0"
+  n1 = "value#1"
+  n2 = "identity#2"
+  n3 = "values#3"
+  n4 = "head#4"
+  n5 = "maybe#5"
+  n6 = "identity#2"
+  n7 = "identity#2"
+  n8 = "head#4"
+  n9 = "maybe#5"
+
+main registers=17:
+  r0 = make_function f0
+  r1 = make_function f1
+  store_var n2, r1
+  r2 = make_function f2
+  store_var n4, r2
+  r3 = make_function f3
+  store_var n5, r3
+  r4 = load_var n6
+  r5 = constant c6
+  r6 = call r4 [r5]
+  print r6
+  r7 = load_var n7
+  r8 = constant c7
+  r9 = call r7 [r8]
+  print r9
+  r10 = load_var n8
+  r11 = constant c8
+  r12 = constant c9
+  r13 = array [r11, r12]
+  r14 = call r10 [r13]
+  print r14
+  r15 = load_var n9
+  r16 = call r15 []
+  print r16
+
+function f0 name="<lambda>" arity=1 registers=2:
+  param 0 = "value#0"
+  r0 = load_var n0
+  return r0
+  r1 = constant c0
+  return r1
+
+function f1 name="<lambda>" arity=1 registers=2:
+  param 0 = "value#1"
+  r0 = load_var n1
+  return r0
+  r1 = constant c1
+  return r1
+
+function f2 name="<lambda>" arity=1 registers=4:
+  param 0 = "values#3"
+  r0 = load_var n3
+  r1 = constant c2
+  r2 = index r0, r1
+  return r2
+  r3 = constant c3
+  return r3
+
+function f3 name="<lambda>" arity=0 registers=2:
+  r0 = constant c4
+  return r0
+  r1 = constant c5
+  return r1
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/generic_lambdas/input.cd" text="fun<T>(value: T): T { return value; };\n\nlet identity = fun<T>(value: T): T {\n  return value;\n};\nlet head = fun<T>(values: [T]): T {\n  return values[0];\n};\nlet maybe = fun<T>(): T? {\n  return nil;\n};\n\nprint identity<number>(41);\nprint identity(\"generic\");\nprint head([7, 8]);\nprint maybe<string>();\n"
+
+debug_locations:
+  main 0 = s0:1:1
+  main 1 = s0:3:16
+  main 2 = s0:3:1
+  main 3 = s0:6:12
+  main 4 = s0:6:1
+  main 5 = s0:9:13
+  main 6 = s0:9:1
+  main 7 = s0:13:7
+  main 8 = s0:13:24
+  main 9 = s0:13:7
+  main 10 = s0:13:1
+  main 11 = s0:14:7
+  main 12 = s0:14:16
+  main 13 = s0:14:7
+  main 14 = s0:14:1
+  main 15 = s0:15:7
+  main 16 = s0:15:13
+  main 17 = s0:15:16
+  main 18 = s0:15:12
+  main 19 = s0:15:7
+  main 20 = s0:15:1
+  main 21 = s0:16:7
+  main 22 = s0:16:7
+  main 23 = s0:16:1
+  function f0 0 = s0:1:30
+  function f0 1 = s0:1:23
+  function f0 2 = s0:1:1
+  function f0 3 = s0:1:1
+  function f1 0 = s0:4:10
+  function f1 1 = s0:4:3
+  function f1 2 = s0:3:16
+  function f1 3 = s0:3:16
+  function f2 0 = s0:7:10
+  function f2 1 = s0:7:17
+  function f2 2 = s0:7:10
+  function f2 3 = s0:7:3
+  function f2 4 = s0:6:12
+  function f2 5 = s0:6:12
+  function f3 0 = s0:10:10
+  function f3 1 = s0:10:3
+  function f3 2 = s0:9:13
+  function f3 3 = s0:9:13

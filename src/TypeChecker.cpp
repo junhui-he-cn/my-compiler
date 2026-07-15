@@ -2078,6 +2078,9 @@ const TypeInfo* TypeChecker::contextualFunctionType(const TypeInfo* expectedType
 
 TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const FunctionExpr& expression, const TypeInfo* expectedType)
 {
+    const bool nestedFunction = functionDepth_ > 0;
+    beginTypeParameterScope(expression.typeParameters);
+
     const TypeInfo* context = contextualFunctionType(expectedType);
     if (context && context->parameterTypes.size() != expression.parameters.size()) {
         throw TypeError(expression.keyword,
@@ -2141,11 +2144,38 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
         expression.keyword,
         "<lambda>");
 
+    std::unordered_set<std::string> allowedTypeParameters;
+    for (const Token& parameter : expression.typeParameters) {
+        allowedTypeParameters.insert(parameter.lexeme);
+    }
+    if (nestedFunction) {
+        for (const TypeInfo& parameterType : declaredParameterTypes) {
+            if (hasEscapingTypeParameter(parameterType, allowedTypeParameters)) {
+                throw TypeError(expression.keyword,
+                    "type parameter escapes nested function");
+            }
+        }
+        if (hasEscapingTypeParameter(returnType, allowedTypeParameters)) {
+            throw TypeError(expression.keyword,
+                "type parameter escapes nested function");
+        }
+        if (expectedReturnType
+            && hasEscapingTypeParameter(*expectedReturnType, allowedTypeParameters)) {
+            throw TypeError(expression.keyword,
+                "type parameter escapes nested function");
+        }
+    }
+
     loopDepth_ = enclosingLoopDepth;
     --functionDepth_;
     endScope();
 
-    return CheckedExpression{functionType(std::move(declaredParameterTypes), returnType)};
+    const TypeInfo result = functionType(
+        std::move(declaredParameterTypes),
+        returnType,
+        typeParameterNames(expression.typeParameters));
+    endTypeParameterScope();
+    return CheckedExpression{result};
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkLetInitializer(const LetStmt& statement)

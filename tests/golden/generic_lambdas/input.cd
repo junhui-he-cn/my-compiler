@@ -1,0 +1,16 @@
+fun<T>(value: T): T { return value; };
+
+let identity = fun<T>(value: T): T {
+  return value;
+};
+let head = fun<T>(values: [T]): T {
+  return values[0];
+};
+let maybe = fun<T>(): T? {
+  return nil;
+};
+
+print identity<number>(41);
+print identity("generic");
+print head([7, 8]);
+print maybe<string>();

@@ -1,0 +1,2 @@
+let same = fun<T>(left: T, right: T): T { return left; };
+same(1, "x");

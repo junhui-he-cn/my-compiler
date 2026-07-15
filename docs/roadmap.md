@@ -43,11 +43,15 @@ slices.
 Goal: evolve the current annotation checker into a more useful static type
 layer.
 
+The first generic-function slice now includes named functions, named-struct
+methods, and anonymous function expressions. All three forms support inferred
+and explicit call type arguments, while generic parameters are erased before
+IR lowering.
+
 Future work:
 
-- Add generic lambdas, constraints, generic container syntax beyond the
-  built-in `map` form, and the inference rules needed by higher-order
-  collection APIs.
+- Add constraints, generic container syntax beyond the built-in `map` form,
+  and the inference rules needed by higher-order collection APIs.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 

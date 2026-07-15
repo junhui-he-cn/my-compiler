@@ -703,8 +703,14 @@ void FieldCompoundAssignExpr::print(std::ostream& out) const
     out << ')';
 }
 
-FunctionExpr::FunctionExpr(Token keyword, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
+FunctionExpr::FunctionExpr(
+    Token keyword,
+    std::vector<Token> typeParameters,
+    std::vector<Parameter> parameters,
+    std::optional<TypeAnnotation> returnTypeName,
+    std::vector<StmtPtr> body)
     : keyword(std::move(keyword))
+    , typeParameters(std::move(typeParameters))
     , parameters(std::move(parameters))
     , returnTypeName(std::move(returnTypeName))
     , body(std::move(body))
@@ -714,6 +720,7 @@ FunctionExpr::FunctionExpr(Token keyword, std::vector<Parameter> parameters, std
 void FunctionExpr::print(std::ostream& out) const
 {
     out << "(fun ";
+    writeTypeParameterList(out, typeParameters);
     writeParameterList(out, parameters);
     writeReturnAnnotation(out, returnTypeName);
     for (const auto& statement : body) {

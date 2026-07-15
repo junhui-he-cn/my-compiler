@@ -1,0 +1,3 @@
+Type error at 2:15: type parameter escapes nested function
+    let inner = fun<U>(copy: T): T { return copy; };
+                ^
