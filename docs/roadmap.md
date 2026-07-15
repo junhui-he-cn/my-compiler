@@ -163,7 +163,9 @@ reusing the existing patterns, exhaustive checking, and variant IR operations.
 Nullable enum patterns are now implemented for both match statements and match
 expressions, including unguarded `nil` coverage and guarded-arm behavior.
 Generic enum declarations, instantiations, recursive payloads, and constructor
-inference are now implemented with erased runtime metadata.
+inference are now implemented with erased runtime metadata. Primitive literal
+patterns are now implemented for direct primitive and nullable primitive matches
+as well as nested enum payloads, reusing equality lowering.
 
 Future work:
 

@@ -1,0 +1,495 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = number 0
+  c2 = string "zero"
+  c3 = number 1
+  c4 = string "one"
+  c5 = string "many"
+  c6 = nil
+  c7 = nil
+  c8 = bool true
+  c9 = string "true"
+  c10 = bool false
+  c11 = string "false"
+  c12 = nil
+  c13 = nil
+  c14 = nil
+  c15 = string "nil"
+  c16 = number 0
+  c17 = string "zero"
+  c18 = string "number:"
+  c19 = string ""
+  c20 = string "empty-text"
+  c21 = string "text:"
+  c22 = string "empty"
+  c23 = nil
+  c24 = nil
+  c25 = number 0
+  c26 = number 8
+  c27 = bool false
+  c28 = number 7
+  c29 = string ""
+  c30 = nil
+  c31 = number 1
+  c32 = number 0
+  c33 = string "zero"
+  c34 = number 1
+  c35 = string "one"
+  c36 = string "many"
+  c37 = bool true
+  c38 = bool false
+  c39 = string "no"
+  c40 = bool true
+  c41 = string "yes"
+  c42 = string "ok"
+  c43 = string ""
+  c44 = string "empty"
+  c45 = string "ok"
+  c46 = string "ok"
+  c47 = string "other"
+  c48 = nil
+  c49 = string "nil"
+  c50 = bool true
+  c51 = string "true"
+  c52 = bool false
+  c53 = string "false"
+
+names:
+  n0 = "describeNumber#0"
+  n1 = "value#1"
+  n2 = "describeNumber#0"
+  n3 = "describeBool#2"
+  n4 = "value#3"
+  n5 = "describeBool#2"
+  n6 = "describeResult#4"
+  n7 = "value#5"
+  n8 = "Result"
+  n9 = "Number"
+  n10 = "Result"
+  n11 = "Number"
+  n12 = "value#6"
+  n13 = "value#6"
+  n14 = "str"
+  n15 = "Result"
+  n16 = "Text"
+  n17 = "Result"
+  n18 = "Text"
+  n19 = "value#7"
+  n20 = "value#7"
+  n21 = "Result"
+  n22 = "Empty"
+  n23 = "describeResult#4"
+  n24 = "maybe#8"
+  n25 = "describeNumber#0"
+  n26 = "describeNumber#0"
+  n27 = "describeBool#2"
+  n28 = "describeResult#4"
+  n29 = "Result"
+  n30 = "Number"
+  n31 = "describeResult#4"
+  n32 = "Result"
+  n33 = "Text"
+  n34 = "describeResult#4"
+  n35 = "maybe#8"
+
+main registers=64:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = make_function f0
+  assign_var n2, r1
+  r2 = constant c7
+  store_var n3, r2
+  r3 = make_function f1
+  assign_var n5, r3
+  r4 = constant c13
+  store_var n6, r4
+  r5 = make_function f2
+  assign_var n23, r5
+  r6 = constant c24
+  store_var n24, r6
+  r7 = load_var n25
+  r8 = constant c25
+  r9 = call r7 [r8]
+  print r9
+  r10 = load_var n26
+  r11 = constant c26
+  r12 = call r10 [r11]
+  print r12
+  r13 = load_var n27
+  r14 = constant c27
+  r15 = call r13 [r14]
+  print r15
+  r16 = load_var n28
+  r17 = constant c28
+  r18 = variant n29.n30 [r17]
+  r19 = call r16 [r18]
+  print r19
+  r20 = load_var n31
+  r21 = constant c29
+  r22 = variant n32.n33 [r21]
+  r23 = call r20 [r22]
+  print r23
+  r24 = load_var n34
+  r25 = constant c30
+  r26 = call r24 [r25]
+  print r26
+  r27 = constant c31
+  r29 = constant c32
+  r30 = equal r27, r29
+  jump_if_false r30, 47
+  r31 = constant c33
+  r28 = move r31
+  jump 56
+  r32 = constant c34
+  r33 = equal r27, r32
+  jump_if_false r33, 53
+  r34 = constant c35
+  r28 = move r34
+  jump 56
+  r35 = constant c36
+  r28 = move r35
+  jump 56
+  print r28
+  r36 = constant c37
+  r38 = constant c38
+  r39 = equal r36, r38
+  jump_if_false r39, 64
+  r40 = constant c39
+  r37 = move r40
+  jump 70
+  r41 = constant c40
+  r42 = equal r36, r41
+  jump_if_false r42, 70
+  r43 = constant c41
+  r37 = move r43
+  jump 70
+  print r37
+  r44 = constant c42
+  r46 = constant c43
+  r47 = equal r44, r46
+  jump_if_false r47, 78
+  r48 = constant c44
+  r45 = move r48
+  jump 87
+  r49 = constant c45
+  r50 = equal r44, r49
+  jump_if_false r50, 84
+  r51 = constant c46
+  r45 = move r51
+  jump 87
+  r52 = constant c47
+  r45 = move r52
+  jump 87
+  print r45
+  r53 = load_var n35
+  r55 = constant c48
+  r56 = equal r53, r55
+  jump_if_false r56, 95
+  r57 = constant c49
+  r54 = move r57
+  jump 107
+  r58 = constant c50
+  r59 = equal r53, r58
+  jump_if_false r59, 101
+  r60 = constant c51
+  r54 = move r60
+  jump 107
+  r61 = constant c52
+  r62 = equal r53, r61
+  jump_if_false r62, 107
+  r63 = constant c53
+  r54 = move r63
+  jump 107
+  print r54
+
+function f0 name="describeNumber" arity=1 registers=9:
+  param 0 = "value#1"
+  r0 = load_var n1
+  r1 = constant c1
+  r2 = equal r0, r1
+  jump_if_false r2, 7
+  r3 = constant c2
+  return r3
+  jump 16
+  r4 = constant c3
+  r5 = equal r0, r4
+  jump_if_false r5, 13
+  r6 = constant c4
+  return r6
+  jump 16
+  r7 = constant c5
+  return r7
+  jump 16
+  r8 = constant c6
+  return r8
+
+function f1 name="describeBool" arity=1 registers=8:
+  param 0 = "value#3"
+  r0 = load_var n4
+  r1 = constant c8
+  r2 = equal r0, r1
+  jump_if_false r2, 7
+  r3 = constant c9
+  return r3
+  jump 13
+  r4 = constant c10
+  r5 = equal r0, r4
+  jump_if_false r5, 13
+  r6 = constant c11
+  return r6
+  jump 13
+  r7 = constant c12
+  return r7
+
+function f2 name="describeResult" arity=1 registers=28:
+  param 0 = "value#5"
+  r0 = load_var n7
+  r1 = constant c14
+  r2 = equal r0, r1
+  jump_if_false r2, 7
+  r3 = constant c15
+  return r3
+  jump 49
+  r4 = variant_tag r0 n8.n9
+  jump_if_false r4, 16
+  r5 = variant_field r0 0
+  r6 = constant c16
+  r7 = equal r5, r6
+  jump_if_false r7, 16
+  r8 = constant c17
+  return r8
+  jump 49
+  r9 = variant_tag r0 n10.n11
+  jump_if_false r9, 26
+  r10 = variant_field r0 0
+  store_var n12, r10
+  r11 = constant c18
+  r12 = load_var n13
+  r13 = native_call n14 [r12]
+  r14 = add r11, r13
+  return r14
+  jump 49
+  r15 = variant_tag r0 n15.n16
+  jump_if_false r15, 35
+  r16 = variant_field r0 0
+  r17 = constant c19
+  r18 = equal r16, r17
+  jump_if_false r18, 35
+  r19 = constant c20
+  return r19
+  jump 49
+  r20 = variant_tag r0 n17.n18
+  jump_if_false r20, 44
+  r21 = variant_field r0 0
+  store_var n19, r21
+  r22 = constant c21
+  r23 = load_var n20
+  r24 = add r22, r23
+  return r24
+  jump 49
+  r25 = variant_tag r0 n21.n22
+  jump_if_false r25, 49
+  r26 = constant c22
+  return r26
+  jump 49
+  r27 = constant c23
+  return r27
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/literal_patterns/input.cd" text="enum Result {\n  Number(value: number),\n  Text(value: string),\n  Empty,\n}\n\nfun describeNumber(value: number): string {\n  match value {\n    0 => { return \"zero\"; }\n    1 => { return \"one\"; }\n    _ => { return \"many\"; }\n  }\n}\n\nfun describeBool(value: bool): string {\n  match value {\n    true => { return \"true\"; }\n    false => { return \"false\"; }\n  }\n}\n\nfun describeResult(value: Result?): string {\n  match value {\n    nil => { return \"nil\"; }\n    Result.Number(0) => { return \"zero\"; }\n    Result.Number(value) => { return \"number:\" + str(value); }\n    Result.Text(\"\") => { return \"empty-text\"; }\n    Result.Text(value) => { return \"text:\" + value; }\n    Result.Empty => { return \"empty\"; }\n  }\n}\n\nlet maybe: bool? = nil;\nprint describeNumber(0);\nprint describeNumber(8);\nprint describeBool(false);\nprint describeResult(Result.Number(7));\nprint describeResult(Result.Text(\"\"));\nprint describeResult(nil);\nprint match 1 {\n  0 => \"zero\",\n  1 => \"one\",\n  _ => \"many\",\n};\nprint match true {\n  false => \"no\",\n  true => \"yes\",\n};\nprint match \"ok\" {\n  \"\" => \"empty\",\n  \"ok\" => \"ok\",\n  _ => \"other\",\n};\nprint match maybe {\n  nil => \"nil\",\n  true => \"true\",\n  false => \"false\",\n};\n"
+
+debug_locations:
+  main 0 = s0:7:1
+  main 1 = s0:7:1
+  main 2 = s0:7:1
+  main 3 = s0:7:1
+  main 4 = s0:15:1
+  main 5 = s0:15:1
+  main 6 = s0:15:1
+  main 7 = s0:15:1
+  main 8 = s0:22:1
+  main 9 = s0:22:1
+  main 10 = s0:22:1
+  main 11 = s0:22:1
+  main 12 = s0:33:20
+  main 13 = s0:33:1
+  main 14 = s0:34:7
+  main 15 = s0:34:22
+  main 16 = s0:34:7
+  main 17 = s0:34:1
+  main 18 = s0:35:7
+  main 19 = s0:35:22
+  main 20 = s0:35:7
+  main 21 = s0:35:1
+  main 22 = s0:36:7
+  main 23 = s0:36:20
+  main 24 = s0:36:7
+  main 25 = s0:36:1
+  main 26 = s0:37:7
+  main 27 = s0:37:36
+  main 28 = s0:37:22
+  main 29 = s0:37:7
+  main 30 = s0:37:1
+  main 31 = s0:38:7
+  main 32 = s0:38:34
+  main 33 = s0:38:22
+  main 34 = s0:38:7
+  main 35 = s0:38:1
+  main 36 = s0:39:7
+  main 37 = s0:39:22
+  main 38 = s0:39:7
+  main 39 = s0:39:1
+  main 40 = s0:40:13
+  main 41 = s0:40:7
+  main 42 = s0:40:7
+  main 43 = s0:40:7
+  main 44 = s0:41:8
+  main 45 = s0:40:7
+  main 46 = s0:40:7
+  main 47 = s0:40:7
+  main 48 = s0:40:7
+  main 49 = s0:40:7
+  main 50 = s0:42:8
+  main 51 = s0:40:7
+  main 52 = s0:40:7
+  main 53 = s0:43:8
+  main 54 = s0:40:7
+  main 55 = s0:40:7
+  main 56 = s0:40:1
+  main 57 = s0:45:13
+  main 58 = s0:45:7
+  main 59 = s0:45:7
+  main 60 = s0:45:7
+  main 61 = s0:46:12
+  main 62 = s0:45:7
+  main 63 = s0:45:7
+  main 64 = s0:45:7
+  main 65 = s0:45:7
+  main 66 = s0:45:7
+  main 67 = s0:47:11
+  main 68 = s0:45:7
+  main 69 = s0:45:7
+  main 70 = s0:45:1
+  main 71 = s0:49:13
+  main 72 = s0:49:7
+  main 73 = s0:49:7
+  main 74 = s0:49:7
+  main 75 = s0:50:9
+  main 76 = s0:49:7
+  main 77 = s0:49:7
+  main 78 = s0:49:7
+  main 79 = s0:49:7
+  main 80 = s0:49:7
+  main 81 = s0:51:11
+  main 82 = s0:49:7
+  main 83 = s0:49:7
+  main 84 = s0:52:8
+  main 85 = s0:49:7
+  main 86 = s0:49:7
+  main 87 = s0:49:1
+  main 88 = s0:54:13
+  main 89 = s0:54:7
+  main 90 = s0:54:7
+  main 91 = s0:54:7
+  main 92 = s0:55:10
+  main 93 = s0:54:7
+  main 94 = s0:54:7
+  main 95 = s0:54:7
+  main 96 = s0:54:7
+  main 97 = s0:54:7
+  main 98 = s0:56:11
+  main 99 = s0:54:7
+  main 100 = s0:54:7
+  main 101 = s0:54:7
+  main 102 = s0:54:7
+  main 103 = s0:54:7
+  main 104 = s0:57:12
+  main 105 = s0:54:7
+  main 106 = s0:54:7
+  main 107 = s0:54:1
+  function f0 0 = s0:8:9
+  function f0 1 = s0:8:3
+  function f0 2 = s0:8:3
+  function f0 3 = s0:8:3
+  function f0 4 = s0:9:19
+  function f0 5 = s0:9:12
+  function f0 6 = s0:8:3
+  function f0 7 = s0:8:3
+  function f0 8 = s0:8:3
+  function f0 9 = s0:8:3
+  function f0 10 = s0:10:19
+  function f0 11 = s0:10:12
+  function f0 12 = s0:8:3
+  function f0 13 = s0:11:19
+  function f0 14 = s0:11:12
+  function f0 15 = s0:8:3
+  function f0 16 = s0:7:1
+  function f0 17 = s0:7:1
+  function f1 0 = s0:16:9
+  function f1 1 = s0:16:3
+  function f1 2 = s0:16:3
+  function f1 3 = s0:16:3
+  function f1 4 = s0:17:22
+  function f1 5 = s0:17:15
+  function f1 6 = s0:16:3
+  function f1 7 = s0:16:3
+  function f1 8 = s0:16:3
+  function f1 9 = s0:16:3
+  function f1 10 = s0:18:23
+  function f1 11 = s0:18:16
+  function f1 12 = s0:16:3
+  function f1 13 = s0:15:1
+  function f1 14 = s0:15:1
+  function f2 0 = s0:23:9
+  function f2 1 = s0:23:3
+  function f2 2 = s0:23:3
+  function f2 3 = s0:23:3
+  function f2 4 = s0:24:21
+  function f2 5 = s0:24:14
+  function f2 6 = s0:23:3
+  function f2 7 = s0:23:3
+  function f2 8 = s0:23:3
+  function f2 9 = s0:23:3
+  function f2 10 = s0:23:3
+  function f2 11 = s0:23:3
+  function f2 12 = s0:23:3
+  function f2 13 = s0:25:34
+  function f2 14 = s0:25:27
+  function f2 15 = s0:23:3
+  function f2 16 = s0:23:3
+  function f2 17 = s0:23:3
+  function f2 18 = s0:23:3
+  function f2 19 = s0:23:3
+  function f2 20 = s0:26:38
+  function f2 21 = s0:26:54
+  function f2 22 = s0:26:50
+  function f2 23 = s0:26:38
+  function f2 24 = s0:26:31
+  function f2 25 = s0:23:3
+  function f2 26 = s0:23:3
+  function f2 27 = s0:23:3
+  function f2 28 = s0:23:3
+  function f2 29 = s0:23:3
+  function f2 30 = s0:23:3
+  function f2 31 = s0:23:3
+  function f2 32 = s0:27:33
+  function f2 33 = s0:27:26
+  function f2 34 = s0:23:3
+  function f2 35 = s0:23:3
+  function f2 36 = s0:23:3
+  function f2 37 = s0:23:3
+  function f2 38 = s0:23:3
+  function f2 39 = s0:28:36
+  function f2 40 = s0:28:46
+  function f2 41 = s0:28:36
+  function f2 42 = s0:28:29
+  function f2 43 = s0:23:3
+  function f2 44 = s0:23:3
+  function f2 45 = s0:23:3
+  function f2 46 = s0:29:30
+  function f2 47 = s0:29:23
+  function f2 48 = s0:23:3
+  function f2 49 = s0:22:1
+  function f2 50 = s0:22:1

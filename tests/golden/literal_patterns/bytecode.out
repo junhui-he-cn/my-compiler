@@ -1,0 +1,199 @@
+main registers=64
+0000  b0 = constant #0 nil
+0001  store_var @0 describeNumber#0, b0
+0002  b1 = make_function $0 describeNumber/1
+0003  assign_var @2 describeNumber#0, b1
+0004  b2 = constant #7 nil
+0005  store_var @3 describeBool#2, b2
+0006  b3 = make_function $1 describeBool/1
+0007  assign_var @5 describeBool#2, b3
+0008  b4 = constant #13 nil
+0009  store_var @6 describeResult#4, b4
+0010  b5 = make_function $2 describeResult/1
+0011  assign_var @23 describeResult#4, b5
+0012  b6 = constant #24 nil
+0013  store_var @24 maybe#8, b6
+0014  b7 = load_var @25 describeNumber#0
+0015  b8 = constant #25 0
+0016  b9 = call b7(b8)
+0017  print b9
+0018  b10 = load_var @26 describeNumber#0
+0019  b11 = constant #26 8
+0020  b12 = call b10(b11)
+0021  print b12
+0022  b13 = load_var @27 describeBool#2
+0023  b14 = constant #27 false
+0024  b15 = call b13(b14)
+0025  print b15
+0026  b16 = load_var @28 describeResult#4
+0027  b17 = constant #28 7
+0028  b18 = variant @29 Result. @30 Number (b17)
+0029  b19 = call b16(b18)
+0030  print b19
+0031  b20 = load_var @31 describeResult#4
+0032  b21 = constant #29 ""
+0033  b22 = variant @32 Result. @33 Text (b21)
+0034  b23 = call b20(b22)
+0035  print b23
+0036  b24 = load_var @34 describeResult#4
+0037  b25 = constant #30 nil
+0038  b26 = call b24(b25)
+0039  print b26
+0040  b27 = constant #31 1
+0041  b29 = constant #32 0
+0042  b30 = equal b27, b29
+0043  jump_if_false b30, 0047
+0044  b31 = constant #33 "zero"
+0045  b28 = move b31
+0046  jump 0056
+0047  b32 = constant #34 1
+0048  b33 = equal b27, b32
+0049  jump_if_false b33, 0053
+0050  b34 = constant #35 "one"
+0051  b28 = move b34
+0052  jump 0056
+0053  b35 = constant #36 "many"
+0054  b28 = move b35
+0055  jump 0056
+0056  print b28
+0057  b36 = constant #37 true
+0058  b38 = constant #38 false
+0059  b39 = equal b36, b38
+0060  jump_if_false b39, 0064
+0061  b40 = constant #39 "no"
+0062  b37 = move b40
+0063  jump 0070
+0064  b41 = constant #40 true
+0065  b42 = equal b36, b41
+0066  jump_if_false b42, 0070
+0067  b43 = constant #41 "yes"
+0068  b37 = move b43
+0069  jump 0070
+0070  print b37
+0071  b44 = constant #42 "ok"
+0072  b46 = constant #43 ""
+0073  b47 = equal b44, b46
+0074  jump_if_false b47, 0078
+0075  b48 = constant #44 "empty"
+0076  b45 = move b48
+0077  jump 0087
+0078  b49 = constant #45 "ok"
+0079  b50 = equal b44, b49
+0080  jump_if_false b50, 0084
+0081  b51 = constant #46 "ok"
+0082  b45 = move b51
+0083  jump 0087
+0084  b52 = constant #47 "other"
+0085  b45 = move b52
+0086  jump 0087
+0087  print b45
+0088  b53 = load_var @35 maybe#8
+0089  b55 = constant #48 nil
+0090  b56 = equal b53, b55
+0091  jump_if_false b56, 0095
+0092  b57 = constant #49 "nil"
+0093  b54 = move b57
+0094  jump 0107
+0095  b58 = constant #50 true
+0096  b59 = equal b53, b58
+0097  jump_if_false b59, 0101
+0098  b60 = constant #51 "true"
+0099  b54 = move b60
+0100  jump 0107
+0101  b61 = constant #52 false
+0102  b62 = equal b53, b61
+0103  jump_if_false b62, 0107
+0104  b63 = constant #53 "false"
+0105  b54 = move b63
+0106  jump 0107
+0107  print b54
+
+function $0 describeNumber/1 registers=9
+0000  b0 = load_var @1 value#1
+0001  b1 = constant #1 0
+0002  b2 = equal b0, b1
+0003  jump_if_false b2, 0007
+0004  b3 = constant #2 "zero"
+0005  return b3
+0006  jump 0016
+0007  b4 = constant #3 1
+0008  b5 = equal b0, b4
+0009  jump_if_false b5, 0013
+0010  b6 = constant #4 "one"
+0011  return b6
+0012  jump 0016
+0013  b7 = constant #5 "many"
+0014  return b7
+0015  jump 0016
+0016  b8 = constant #6 nil
+0017  return b8
+
+function $1 describeBool/1 registers=8
+0000  b0 = load_var @4 value#3
+0001  b1 = constant #8 true
+0002  b2 = equal b0, b1
+0003  jump_if_false b2, 0007
+0004  b3 = constant #9 "true"
+0005  return b3
+0006  jump 0013
+0007  b4 = constant #10 false
+0008  b5 = equal b0, b4
+0009  jump_if_false b5, 0013
+0010  b6 = constant #11 "false"
+0011  return b6
+0012  jump 0013
+0013  b7 = constant #12 nil
+0014  return b7
+
+function $2 describeResult/1 registers=28
+0000  b0 = load_var @7 value#5
+0001  b1 = constant #14 nil
+0002  b2 = equal b0, b1
+0003  jump_if_false b2, 0007
+0004  b3 = constant #15 "nil"
+0005  return b3
+0006  jump 0049
+0007  b4 = variant_tag b0  @8 Result. @9 Number
+0008  jump_if_false b4, 0016
+0009  b5 = variant_field b0[0]
+0010  b6 = constant #16 0
+0011  b7 = equal b5, b6
+0012  jump_if_false b7, 0016
+0013  b8 = constant #17 "zero"
+0014  return b8
+0015  jump 0049
+0016  b9 = variant_tag b0  @10 Result. @11 Number
+0017  jump_if_false b9, 0026
+0018  b10 = variant_field b0[0]
+0019  store_var @12 value#6, b10
+0020  b11 = constant #18 "number:"
+0021  b12 = load_var @13 value#6
+0022  b13 = native_call @14 str [b12]
+0023  b14 = add b11, b13
+0024  return b14
+0025  jump 0049
+0026  b15 = variant_tag b0  @15 Result. @16 Text
+0027  jump_if_false b15, 0035
+0028  b16 = variant_field b0[0]
+0029  b17 = constant #19 ""
+0030  b18 = equal b16, b17
+0031  jump_if_false b18, 0035
+0032  b19 = constant #20 "empty-text"
+0033  return b19
+0034  jump 0049
+0035  b20 = variant_tag b0  @17 Result. @18 Text
+0036  jump_if_false b20, 0044
+0037  b21 = variant_field b0[0]
+0038  store_var @19 value#7, b21
+0039  b22 = constant #21 "text:"
+0040  b23 = load_var @20 value#7
+0041  b24 = add b22, b23
+0042  return b24
+0043  jump 0049
+0044  b25 = variant_tag b0  @21 Result. @22 Empty
+0045  jump_if_false b25, 0049
+0046  b26 = constant #22 "empty"
+0047  return b26
+0048  jump 0049
+0049  b27 = constant #23 nil
+0050  return b27

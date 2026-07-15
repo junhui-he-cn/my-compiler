@@ -1,0 +1,58 @@
+enum Result {
+  Number(value: number),
+  Text(value: string),
+  Empty,
+}
+
+fun describeNumber(value: number): string {
+  match value {
+    0 => { return "zero"; }
+    1 => { return "one"; }
+    _ => { return "many"; }
+  }
+}
+
+fun describeBool(value: bool): string {
+  match value {
+    true => { return "true"; }
+    false => { return "false"; }
+  }
+}
+
+fun describeResult(value: Result?): string {
+  match value {
+    nil => { return "nil"; }
+    Result.Number(0) => { return "zero"; }
+    Result.Number(value) => { return "number:" + str(value); }
+    Result.Text("") => { return "empty-text"; }
+    Result.Text(value) => { return "text:" + value; }
+    Result.Empty => { return "empty"; }
+  }
+}
+
+let maybe: bool? = nil;
+print describeNumber(0);
+print describeNumber(8);
+print describeBool(false);
+print describeResult(Result.Number(7));
+print describeResult(Result.Text(""));
+print describeResult(nil);
+print match 1 {
+  0 => "zero",
+  1 => "one",
+  _ => "many",
+};
+print match true {
+  false => "no",
+  true => "yes",
+};
+print match "ok" {
+  "" => "empty",
+  "ok" => "ok",
+  _ => "other",
+};
+print match maybe {
+  nil => "nil",
+  true => "true",
+  false => "false",
+};

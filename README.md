@@ -6,7 +6,7 @@ pipeline, bytecode artifact emission, and a standalone Rust bytecode VM.
 
 The language currently supports variables, lexical blocks, `if`/`else`,
 `while`, `break`, `continue`, functions, closures, arrays, maps, ranges, enums,
-and exhaustive pattern matching, indexing, array
+and exhaustive pattern matching (including primitive literal patterns), indexing, array
 and map element assignment, numeric compound assignment for variables, array elements, and struct fields, structs, field access and assignment, short-circuit logical
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
@@ -194,11 +194,15 @@ comma-separated, with an optional trailing comma. Either form may add a guard
 between the pattern and `=>`, such as `Result.Ok(value) if value > 0 => ...`;
 guards use existing truthiness and do not count toward exhaustive coverage,
 including `nil if condition`. Nested patterns are supported, and `nil` may be
-used for nullable nested payloads. Enum values use structural equality and
-print as `Enum.Variant` or `Enum.Variant(value, ...)`. `typeOf` reports the enum
-name. Named payload patterns may be reordered by field name, while constructors
-remain positional. Generic enum types are nominal and invariant in their type
-arguments. Generic constraints and generic structs are not implemented.
+used for nullable nested payloads. Literal patterns also match `true`, `false`,
+numbers, and strings against primitive scrutinees or enum payloads. Boolean
+matches are exhaustive after both literals are covered; number and string
+matches require `_` or a binding because their domains are open. Enum values use
+structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
+`typeOf` reports the enum name. Named payload patterns may be reordered by field
+name, while constructors remain positional. Generic enum types are nominal and
+invariant in their type arguments. Generic constraints and generic structs are
+not implemented.
 
 Local named structs may define first-slice methods in top-level `impl` blocks.
 Methods are statically resolved on known named struct receiver types, and
@@ -317,8 +321,8 @@ Supported expressions:
 - Enums and patterns: `enum Name[<T, U>] { Variant(type, ...) }`, generic type
   annotations such as `Name<number>`, qualified constructors such as
   `Name.Variant(value)`, and exhaustive statement-level
-  `match` with wildcard, binding, `nil` for nullable enums, named payload, and
-  nested variant patterns. Match expressions use
+  `match` with wildcard, binding, primitive literal patterns, `nil` for
+  nullable values, named payload, and nested variant patterns. Match expressions use
   `match value { pattern [if condition] => expression, ... }` and return the
   selected arm expression. Guards use existing truthiness and must be followed
   by unguarded exhaustive coverage.

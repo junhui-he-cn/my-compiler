@@ -96,7 +96,11 @@ pattern     = "_"
             | literalPattern
             | variantPattern ;
 
-literalPattern = "nil" ;
+literalPattern = "nil"
+               | "true"
+               | "false"
+               | number
+               | string ;
 
 variantPattern = identifier, ".", identifier,
                  [ "(", [ patternArguments ], ")" ]
@@ -260,10 +264,11 @@ genericTypeArguments = "<", typeExpr,
 functionType = "fun", "(", [ typeArguments ], ")", ":", typeExpr ;
 
 (* `T?` means `T` or `nil`. Generic enum declarations use `enum Box<T>`, and
-   generic enum values use `Box<number>` type annotations. Nullable enum match
-   patterns may use `nil` along with the enum variants. This slice supports
-   nullable function parameter and return types, but not nullable function
-   values such as `(fun(number): string)?`. *)
+   generic enum values use `Box<number>` type annotations. Literal patterns
+   match primitive values directly or nested inside enum payloads; nullable
+   primitive and enum matches may use `nil`. This slice supports nullable
+   function parameter and return types, but not nullable function values such
+   as `(fun(number): string)?`. *)
 
 typeArguments = typeExpr,
                 { ",", typeExpr } ;

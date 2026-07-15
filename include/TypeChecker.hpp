@@ -318,6 +318,7 @@ private:
         const Pattern& pattern,
         const TypeInfo& expectedType,
         std::unordered_set<std::string>& coveredVariants,
+        std::unordered_set<std::string>& coveredLiterals,
         bool& coversNil);
     const StructFieldType* findStructField(const StructTypeDecl& structType, const std::string& name) const;
     CheckedExpression checkLetInitializer(const LetStmt& statement);

@@ -1,0 +1,3 @@
+Type error at 4:13: literal pattern expects number, got string
+    Box.Value("wrong") => { print 1; }
+              ^

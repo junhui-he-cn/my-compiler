@@ -1,0 +1,52 @@
+Program
+  Enum Result {Number(value: number), Text(value: string), Empty}
+  Fun describeNumber(value: number): string
+    Match value
+      Arm 0
+        Block
+          Return "zero"
+      Arm 1
+        Block
+          Return "one"
+      Arm _
+        Block
+          Return "many"
+  Fun describeBool(value: bool): string
+    Match value
+      Arm true
+        Block
+          Return "true"
+      Arm false
+        Block
+          Return "false"
+  Fun describeResult(value: Result?): string
+    Match value
+      Arm nil
+        Block
+          Return "nil"
+      Arm Result.Number(0)
+        Block
+          Return "zero"
+      Arm Result.Number(value)
+        Block
+          Return (+ "number:" (call str value))
+      Arm Result.Text("")
+        Block
+          Return "empty-text"
+      Arm Result.Text(value)
+        Block
+          Return (+ "text:" value)
+      Arm Result.Empty
+        Block
+          Return "empty"
+  Let maybe: bool? = nil
+  Print (call describeNumber 0)
+  Print (call describeNumber 8)
+  Print (call describeBool false)
+  Print (call describeResult (member-call Result Number 7))
+  Print (call describeResult (member-call Result Text ""))
+  Print (call describeResult nil)
+  Print (match 1 (arm 0 "zero") (arm 1 "one") (arm _ "many"))
+  Print (match true (arm false "no") (arm true "yes"))
+  Print (match "ok" (arm "" "empty") (arm "ok" "ok") (arm _ "other"))
+  Print (match maybe (arm nil "nil") (arm true "true") (arm false "false"))
