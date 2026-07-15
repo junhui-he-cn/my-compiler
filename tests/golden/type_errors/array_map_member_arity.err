@@ -1,0 +1,3 @@
+Type error at 1:9: expected 1 arguments but got 0
+  [1].map();
+          ^

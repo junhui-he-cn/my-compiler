@@ -136,6 +136,51 @@ mod tests {
     }
 
     #[test]
+    fn native_map_invokes_callback_and_returns_fresh_array() {
+        let program = Program {
+            constants: Vec::new(),
+            names: vec!["item".to_string()],
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            },
+            functions: vec![Function {
+                index: 0,
+                name: "identity".to_string(),
+                arity: 1,
+                registers: 1,
+                params: vec!["item".to_string()],
+                instructions: vec![
+                    Instruction::LoadVar { dest: 0, name: 0 },
+                    Instruction::Return { value: 0 },
+                ],
+                locations: vec![None, None],
+            }],
+            debug_sources: Vec::new(),
+        };
+        let mut vm = VM::new(&program);
+        let source = vm.make_array(vec![Value::number(1.0), Value::number(2.0)]);
+        let callback = Value::function(FunctionValue {
+            name: "identity".to_string(),
+            function_index: 0,
+            arity: 1,
+            identity: 1,
+            closure: new_environment(),
+        });
+
+        let mapped = vm
+            .execute_native_call("map", vec![source.clone(), callback])
+            .expect("map succeeds");
+
+        let elements = array_elements(&mapped);
+        assert_eq!(elements.len(), 2);
+        assert!(matches!(elements[0], Value::Number(value) if value == 1.0));
+        assert!(matches!(elements[1], Value::Number(value) if value == 2.0));
+        assert!(!source.runtime_equals(&mapped));
+    }
+
+    #[test]
     fn map_lookup_update_length_and_contains() {
         let program = empty_program();
         let mut vm = VM::new(&program);
@@ -788,7 +833,13 @@ impl<'a> VM<'a> {
                     for argument in arguments {
                         values.push(self.read_register(frame, *argument)?);
                     }
-                    let result = self.execute_native_call(&name, values)?;
+                    let call_site = body.locations.get(frame.ip).cloned().flatten();
+                    let result = self.execute_native_call_at(
+                        &name,
+                        values,
+                        frame.function.clone(),
+                        call_site,
+                    )?;
                     self.write_register(frame, *dest, result)?;
                 }
                 Instruction::Negate { dest, value } => {
@@ -1330,6 +1381,16 @@ impl<'a> VM<'a> {
         name: &str,
         arguments: Vec<Value>,
     ) -> Result<Value, RuntimeError> {
+        self.execute_native_call_at(name, arguments, "<native>".to_string(), None)
+    }
+
+    fn execute_native_call_at(
+        &mut self,
+        name: &str,
+        arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
+    ) -> Result<Value, RuntimeError> {
         match name {
             "push" => self.execute_native_push(arguments),
             "pop" => self.execute_native_pop(arguments),
@@ -1344,12 +1405,45 @@ impl<'a> VM<'a> {
             "slice" => self.execute_native_slice(arguments),
             "copy" => self.execute_native_copy(arguments),
             "concat" => self.execute_native_concat(arguments),
+            "map" => self.execute_native_map(arguments, caller, call_site),
             "range" => self.execute_native_range(arguments),
             _ => Err(RuntimeError::new(format!(
                 "unknown native stdlib function `{}`",
                 name
             ))),
         }
+    }
+
+    fn execute_native_map(
+        &mut self,
+        arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
+    ) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("map expects 2 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("map expects array as first argument"));
+        };
+        let Value::Function(callback) = &arguments[1] else {
+            return Err(RuntimeError::new("map expects function as second argument"));
+        };
+        if callback.arity != 1 {
+            return Err(RuntimeError::new("map expects callback with 1 argument"));
+        }
+
+        let elements = array.elements.borrow().clone();
+        let mut mapped = Vec::with_capacity(elements.len());
+        for element in elements {
+            mapped.push(self.call_function(
+                callback.clone(),
+                vec![element],
+                caller.clone(),
+                call_site.clone(),
+            )?);
+        }
+        Ok(self.make_array(mapped))
     }
 
     fn execute_native_push(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

@@ -1,0 +1,2 @@
+let identity = fun<T>(value: T): T { return value; };
+map([1], identity);

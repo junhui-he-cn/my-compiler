@@ -1516,7 +1516,8 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
 {
     return name == "push" || name == "pop" || name == "len"
         || name == "substr" || name == "charAt"
-        || name == "contains" || name == "slice" || name == "copy" || name == "concat";
+        || name == "contains" || name == "slice" || name == "copy" || name == "concat"
+        || name == "map";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -2834,6 +2835,46 @@ bool TypeChecker::isNativeStdlibCall(const CallExpr& expression) const
     return variable && isNativeStdlibName(variable->name.lexeme) && findVariable(variable->name.lexeme) == nullptr;
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkArrayMap(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& callbackExpression)
+{
+    if (arrayTypeInfo.kind != StaticType::Unknown && arrayTypeInfo.kind != StaticType::Array) {
+        throw TypeError(callToken, "map expects array as first argument, got " + typeInfoName(arrayTypeInfo));
+    }
+
+    TypeInfo elementType = unknownType();
+    if (arrayTypeInfo.kind == StaticType::Array && arrayTypeInfo.elementType) {
+        elementType = *arrayTypeInfo.elementType;
+    }
+    const TypeInfo expectedCallback = functionType({elementType}, unknownType());
+    const CheckedExpression callback = checkExpressionInfo(callbackExpression, &expectedCallback);
+    if (callback.type.kind != StaticType::Unknown && callback.type.kind != StaticType::Function) {
+        throw TypeError(callToken,
+            "map expects function as second argument, got " + typeInfoName(callback.type));
+    }
+    if (callback.type.kind != StaticType::Function || !hasFunctionSignature(callback.type)) {
+        return CheckedExpression{simpleType(StaticType::Array)};
+    }
+    if (!callback.type.genericParameters.empty()) {
+        throw TypeError(callToken, "map expects a non-generic callback");
+    }
+    if (callback.type.parameterTypes.size() != 1) {
+        throw TypeError(callToken, "map expects callback with 1 argument");
+    }
+    if (elementType.kind != StaticType::Unknown
+        && !compatible(elementType, callback.type.parameterTypes.front())) {
+        throw TypeError(callToken,
+            "map callback expects " + typeInfoName(elementType)
+                + ", got " + typeInfoName(callback.type.parameterTypes.front()));
+    }
+    if (callback.type.returnType && isKnown(*callback.type.returnType)) {
+        return CheckedExpression{arrayType(*callback.type.returnType)};
+    }
+    return CheckedExpression{simpleType(StaticType::Array)};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr& expression)
 {
     if (!expression.typeArguments.empty()) {
@@ -3018,6 +3059,10 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
                 "concat expects array as second argument, got " + typeInfoName(rightArgument.type));
         }
         return CheckedExpression{concatenatedArrayType(leftArgument.type, rightArgument.type)};
+    }
+    case NativeFunctionKind::Map: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        return checkArrayMap(expression.paren, arrayArgument.type, *expression.arguments[1]);
     }
     case NativeFunctionKind::Range: {
         for (std::size_t index = 0; index < expression.arguments.size(); ++index) {
@@ -3210,6 +3255,12 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(const MemberCallExpr
                 "concat expects array as first argument, got " + typeInfoName(right.type));
         }
         return CheckedExpression{concatenatedArrayType(receiver.type, right.type)};
+    }
+
+    if (name == "map") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        return checkArrayMap(expression.paren, receiver.type, *expression.arguments[0]);
     }
 
     if (name == "len") {

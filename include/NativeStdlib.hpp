@@ -18,6 +18,7 @@ enum class NativeFunctionKind {
     Slice,
     Copy,
     Concat,
+    Map,
     Range,
 };
 

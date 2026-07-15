@@ -214,6 +214,14 @@ the corresponding member forms `array.contains(value)`,
 `array.slice(start, length)`, `array.copy()`, and `array.concat(right)` are
 builtin member sugar and are not shadowed by lexical bindings.
 
+The callback-based array helper `map(array, callback)` invokes its one-argument
+callback from left to right over a snapshot of the input elements and returns a
+fresh array of callback results. The member form `array.map(callback)` is
+unshadowed builtin sugar. A known callback return type is preserved as the
+result array's element type; unknown arrays or callback signatures remain
+dynamic. Generic callback values are not accepted directly at this monomorphic
+call site. Callback errors propagate with the normal Rust VM call stack.
+
 Maps support `map[key]` lookup and `map[key] = value` upsert assignment. A
 missing lookup is a runtime error (`map key not found`), while assigning an
 existing key replaces its value and assigning a new key appends it. The
@@ -222,8 +230,8 @@ existing key replaces its value and assigning a new key appends it. The
 `len(map)`. Equality between maps is identity-based, so aliases compare equal
 but separately constructed maps do not. Map values print as
 `map{key: value, ...}` in insertion order.
-Map deletion, map `for-in`, custom iterators, and higher-order map helpers are
-not implemented.
+Map deletion, map `for-in`, custom iterators, and higher-order `filter` and
+`reduce` helpers are not implemented.
 
 The native `range` helper constructs immutable finite integer ranges:
 `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are

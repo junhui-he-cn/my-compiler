@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_map_dynamic_non_array.cd:2:10: map expects array as first argument
+    return map(value, fun (item) { return item; });
+           ^
+Call stack:
+  at apply (tests/golden/runtime_errors/array_map_dynamic_non_array.cd:2:10)
+  at main (tests/golden/runtime_errors/array_map_dynamic_non_array.cd:4:1)

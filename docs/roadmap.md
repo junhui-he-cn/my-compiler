@@ -92,12 +92,17 @@ Likely touch points:
 Goal: provide a small standard environment while keeping builtins shadowable
 where practical and preserving bytecode/Rust VM parity.
 
+The first callback-based collection helper, array `map`, is implemented through
+the existing generic `native_call` path. It supports shadowable function syntax
+and unshadowed member-call sugar, with static callback/result element checking
+and Rust VM callback execution.
+
 Future work:
 
 - Add further non-higher-order helpers only as focused slices with explicit
   mutation, shadowing, runtime-validation, static-checking, and error conventions.
-- Defer callback-based helpers such as `map`, `filter`, and `reduce` until
-  generic function and collection types have a focused design.
+- Defer callback-based helpers such as `filter` and `reduce` until their
+  mutation, callback, and accumulator conventions have focused designs.
 - Consider migrating legacy `len` lowering onto the generic native-call path if
   it simplifies the backend without changing user behavior.
 - Define conventions for future standard-library functions: shadowing behavior,
@@ -139,8 +144,8 @@ large general-purpose collection protocol.
 
 Future work:
 
-- Add generic collection syntax and higher-order collection APIs once the
-  remaining type-system inference boundaries are defined.
+- Extend the first array `map` slice with generic collection syntax and further
+  higher-order APIs once their remaining inference boundaries are defined.
 - Add further map operations, such as deletion, only as focused slices with
   explicit mutation and missing-key conventions.
 - Add further range/collection operations only as focused slices with explicit

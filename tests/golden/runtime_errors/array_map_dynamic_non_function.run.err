@@ -1,0 +1,6 @@
+Runtime error at tests/golden/runtime_errors/array_map_dynamic_non_function.cd:2:10: map expects function as second argument
+    return map([1], callback);
+           ^
+Call stack:
+  at apply (tests/golden/runtime_errors/array_map_dynamic_non_function.cd:2:10)
+  at main (tests/golden/runtime_errors/array_map_dynamic_non_function.cd:4:1)

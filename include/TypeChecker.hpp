@@ -264,6 +264,10 @@ private:
     bool isBuiltinLenCall(const CallExpr& expression) const;
     CheckedExpression checkBuiltinLenCall(const CallExpr& expression);
     bool isNativeStdlibCall(const CallExpr& expression) const;
+    CheckedExpression checkArrayMap(
+        const Token& callToken,
+        const TypeInfo& arrayTypeInfo,
+        const Expr& callbackExpression);
     CheckedExpression checkNativeStdlibCall(const CallExpr& expression);
     IndexTargetTypes checkIndexTarget(
         const Expr& collection,

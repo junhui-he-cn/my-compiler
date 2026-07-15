@@ -1,0 +1,4 @@
+fun apply(value) {
+  return map(value, fun (item) { return item; });
+}
+apply(1);

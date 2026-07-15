@@ -1,0 +1,4 @@
+fun apply(callback) {
+  return map([1], callback);
+}
+apply(fun (left, right) { return left; });

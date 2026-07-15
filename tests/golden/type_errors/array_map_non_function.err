@@ -1,0 +1,3 @@
+Type error at 1:12: map expects function as second argument, got number
+  map([1], 42);
+             ^

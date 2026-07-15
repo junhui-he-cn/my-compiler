@@ -1,0 +1,3 @@
+Type error at 2:18: map expects a non-generic callback
+  map([1], identity);
+                   ^
