@@ -175,10 +175,12 @@ Enum constructors use `Enum.Variant(...)`; unit variants use an empty call.
 Match statements and expressions have arm-local bindings and must cover every
 variant, or use `_` or a binding pattern. Statement arms contain blocks;
 expression arms contain one expression and are comma-separated, with an
-optional trailing comma. Nested patterns are supported. Enum values use
-structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
-`typeOf` reports the enum name. Guards, named payload fields, generic enums,
-and nullable enum patterns are not implemented.
+optional trailing comma. Either form may add a guard between the pattern and
+`=>`, such as `Result.Ok(value) if value > 0 => ...`; guards use existing
+truthiness and do not count toward exhaustive coverage. Nested patterns are
+supported. Enum values use structural equality and print as `Enum.Variant` or
+`Enum.Variant(value, ...)`. `typeOf` reports the enum name. Named payload
+fields, generic enums, and nullable enum patterns are not implemented.
 
 Local named structs may define first-slice methods in top-level `impl` blocks.
 Methods are statically resolved on known named struct receiver types, and
@@ -297,8 +299,9 @@ Supported expressions:
 - Enums and patterns: `enum Name { Variant(type, ...) }`, qualified
   constructors such as `Name.Variant(value)`, and exhaustive statement-level
   `match` with wildcard, binding, and nested variant patterns. Match
-  expressions use `match value { pattern => expression, ... }` and return the
-  selected arm expression.
+  expressions use `match value { pattern [if condition] => expression, ... }`
+  and return the selected arm expression. Guards use existing truthiness and
+  must be followed by an unguarded exhaustive fallback.
 - Function expressions: `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`, including direct expression statements such as `fun () { return nil; };`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.

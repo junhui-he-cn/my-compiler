@@ -1296,13 +1296,23 @@ bool TypeChecker::bodyMayFallThrough(const std::vector<StmtPtr>& body) const
         if (match->arms.empty()) {
             return true;
         }
+        bool hasGuard = false;
+        bool hasUnconditionalCatchAll = false;
         for (const MatchArm& arm : match->arms) {
+            if (arm.guard) {
+                hasGuard = true;
+            }
             const auto* armBlock = dynamic_cast<const BlockStmt*>(arm.body.get());
             if (!armBlock || bodyMayFallThrough(armBlock->statements)) {
                 return true;
             }
+            if (!arm.guard
+                && (dynamic_cast<const WildcardPattern*>(arm.pattern.get())
+                    || dynamic_cast<const VariablePattern*>(arm.pattern.get()))) {
+                hasUnconditionalCatchAll = true;
+            }
         }
-        return false;
+        return hasGuard && !hasUnconditionalCatchAll;
     }
     return true;
 }
@@ -2416,8 +2426,15 @@ void TypeChecker::checkMatch(const MatchStmt& statement)
     bool coversAll = false;
     for (const MatchArm& arm : statement.arms) {
         beginScope();
-        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, coveredVariants);
-        coversAll = coversAll || armCoversAll;
+        std::unordered_set<std::string> armCoveredVariants;
+        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, armCoveredVariants);
+        if (!arm.guard) {
+            coveredVariants.insert(armCoveredVariants.begin(), armCoveredVariants.end());
+            coversAll = coversAll || armCoversAll;
+        }
+        if (arm.guard) {
+            checkExpression(*arm.guard);
+        }
         checkStatement(*arm.body);
         endScope();
     }
@@ -2826,8 +2843,15 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
     std::optional<TypeInfo> resultType;
     for (const MatchExprArm& arm : expression.arms) {
         beginScope();
-        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, coveredVariants);
-        coversAll = coversAll || armCoversAll;
+        std::unordered_set<std::string> armCoveredVariants;
+        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, armCoveredVariants);
+        if (!arm.guard) {
+            coveredVariants.insert(armCoveredVariants.begin(), armCoveredVariants.end());
+            coversAll = coversAll || armCoversAll;
+        }
+        if (arm.guard) {
+            checkExpression(*arm.guard);
+        }
 
         const CheckedExpression result = checkExpressionInfo(*arm.value, expectedType);
         if (expectedType && !compatible(*expectedType, result.type)) {

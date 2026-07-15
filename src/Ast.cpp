@@ -309,6 +309,10 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         for (const MatchArm& arm : match->arms) {
             out << " (arm ";
             writePattern(out, *arm.pattern);
+            if (arm.guard) {
+                out << " if ";
+                writeExpr(out, arm.guard);
+            }
             out << ' ';
             writeInlineStmt(out, *arm.body);
             out << ')';
@@ -744,6 +748,10 @@ void MatchExpr::print(std::ostream& out) const
     for (const MatchExprArm& arm : arms) {
         out << " (arm ";
         writePattern(out, *arm.pattern);
+        if (arm.guard) {
+            out << " if ";
+            writeExpr(out, arm.guard);
+        }
         out << ' ';
         writeExpr(out, arm.value);
         out << ')';
@@ -851,6 +859,10 @@ void MatchStmt::print(std::ostream& out, int indent) const
         writeIndent(out, indent + 1);
         out << "Arm ";
         writePattern(out, *arm.pattern);
+        if (arm.guard) {
+            out << " if ";
+            writeExpr(out, arm.guard);
+        }
         out << "\n";
         if (arm.body) {
             arm.body->print(out, indent + 2);

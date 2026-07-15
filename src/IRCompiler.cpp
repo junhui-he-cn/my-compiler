@@ -413,6 +413,10 @@ void IRCompiler::compileMatch(const MatchStmt& statement)
         for (const auto& binding : bindings) {
             ir_.emitStoreVar(binding.first, binding.second);
         }
+        if (arm.guard) {
+            const IRRegister guard = compileExpression(*arm.guard);
+            failJumps.push_back(ir_.emitJumpIfFalse(guard));
+        }
         compileStatement(*arm.body);
         endJumps.push_back(ir_.emitJump());
         for (const std::size_t jump : failJumps) {
@@ -437,6 +441,10 @@ IRRegister IRCompiler::compileMatchExpression(const MatchExpr& expression)
         compilePattern(*arm.pattern, value, failJumps, bindings);
         for (const auto& binding : bindings) {
             ir_.emitStoreVar(binding.first, binding.second);
+        }
+        if (arm.guard) {
+            const IRRegister guard = compileExpression(*arm.guard);
+            failJumps.push_back(ir_.emitJumpIfFalse(guard));
         }
         const IRRegister armValue = compileExpression(*arm.value);
         ir_.emitCopyTo(result, armValue);

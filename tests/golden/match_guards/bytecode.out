@@ -1,0 +1,97 @@
+main registers=41
+0000  b0 = constant #0 nil
+0001  store_var @0 describe#0, b0
+0002  b1 = make_function $0 describe/1
+0003  assign_var @8 describe#0, b1
+0004  b2 = constant #6 3
+0005  b3 = variant @9 Result. @10 Ok (b2)
+0006  store_var @11 positive#3, b3
+0007  b4 = constant #7 0
+0008  b5 = variant @12 Result. @13 Ok (b4)
+0009  store_var @14 zero#4, b5
+0010  b6 = variant @15 Result. @16 Empty ()
+0011  store_var @17 empty#5, b6
+0012  b7 = load_var @18 describe#0
+0013  b8 = load_var @19 positive#3
+0014  b9 = call b7(b8)
+0015  print b9
+0016  b10 = load_var @20 describe#0
+0017  b11 = load_var @21 zero#4
+0018  b12 = call b10(b11)
+0019  print b12
+0020  b13 = load_var @22 describe#0
+0021  b14 = load_var @23 empty#5
+0022  b15 = call b13(b14)
+0023  print b15
+0024  b16 = load_var @24 positive#3
+0025  b18 = variant_tag b16  @25 Result. @26 Ok
+0026  jump_if_false b18, 0036
+0027  b19 = variant_field b16[0]
+0028  store_var @27 value#6, b19
+0029  b20 = load_var @28 value#6
+0030  b21 = constant #8 10
+0031  b22 = greater b20, b21
+0032  jump_if_false b22, 0036
+0033  b23 = constant #9 "large"
+0034  b17 = move b23
+0035  jump 0058
+0036  b24 = variant_tag b16  @29 Result. @30 Ok
+0037  jump_if_false b24, 0047
+0038  b25 = variant_field b16[0]
+0039  store_var @31 value#7, b25
+0040  b26 = load_var @32 value#7
+0041  b27 = constant #10 0
+0042  b28 = greater b26, b27
+0043  jump_if_false b28, 0047
+0044  b29 = constant #11 "positive"
+0045  b17 = move b29
+0046  jump 0058
+0047  b30 = variant_tag b16  @33 Result. @34 Ok
+0048  jump_if_false b30, 0053
+0049  b31 = variant_field b16[0]
+0050  b32 = constant #12 "zero"
+0051  b17 = move b32
+0052  jump 0058
+0053  b33 = variant_tag b16  @35 Result. @36 Empty
+0054  jump_if_false b33, 0058
+0055  b34 = constant #13 "empty"
+0056  b17 = move b34
+0057  jump 0058
+0058  print b17
+0059  b35 = load_var @37 empty#5
+0060  b37 = variant_tag b35  @38 Result. @39 Empty
+0061  jump_if_false b37, 0067
+0062  b38 = constant #14 1
+0063  jump_if_false b38, 0067
+0064  b39 = constant #15 "truthy"
+0065  b36 = move b39
+0066  jump 0070
+0067  b40 = constant #16 "fallback"
+0068  b36 = move b40
+0069  jump 0070
+0070  print b36
+
+function $0 describe/1 registers=12
+0000  b0 = load_var @1 result#1
+0001  b1 = variant_tag b0  @2 Result. @3 Ok
+0002  jump_if_false b1, 0012
+0003  b2 = variant_field b0[0]
+0004  store_var @4 value#2, b2
+0005  b3 = load_var @5 value#2
+0006  b4 = constant #1 0
+0007  b5 = greater b3, b4
+0008  jump_if_false b5, 0012
+0009  b6 = constant #2 "positive"
+0010  return b6
+0011  jump 0021
+0012  b7 = variant_tag b0  @6 Result. @7 Ok
+0013  jump_if_false b7, 0018
+0014  b8 = variant_field b0[0]
+0015  b9 = constant #3 "zero"
+0016  return b9
+0017  jump 0021
+0018  b10 = constant #4 "empty"
+0019  return b10
+0020  jump 0021
+0021  b11 = constant #5 nil
+0022  return b11

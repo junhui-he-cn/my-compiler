@@ -575,10 +575,14 @@ StmtPtr Parser::matchStatement()
     std::vector<MatchArm> arms;
     while (!check(TokenType::RightBrace) && !isAtEnd()) {
         PatternPtr armPattern = pattern();
+        ExprPtr guard;
+        if (match(TokenType::If)) {
+            guard = conditionExpression();
+        }
         consume(TokenType::FatArrow, "expected `=>` after match pattern");
         consume(TokenType::LeftBrace, "expected `{` after match arm");
         StmtPtr body = blockStatement();
-        arms.push_back(MatchArm{std::move(armPattern), std::move(body)});
+        arms.push_back(MatchArm{std::move(armPattern), std::move(guard), std::move(body)});
     }
     consume(TokenType::RightBrace, "expected `}` after match arms");
 
@@ -1186,9 +1190,13 @@ ExprPtr Parser::matchExpression()
     std::vector<MatchExprArm> arms;
     while (!check(TokenType::RightBrace) && !isAtEnd()) {
         PatternPtr armPattern = pattern();
-        Token arrow = consume(TokenType::FatArrow, "expected `=>` after match pattern");
+        ExprPtr guard;
+        if (match(TokenType::If)) {
+            guard = conditionExpression();
+        }
+        Token arrow = consume(TokenType::FatArrow, "expected `=>` after match pattern or guard");
         ExprPtr armValue = expression();
-        arms.push_back(MatchExprArm{std::move(arrow), std::move(armPattern), std::move(armValue)});
+        arms.push_back(MatchExprArm{std::move(arrow), std::move(armPattern), std::move(guard), std::move(armValue)});
 
         if (!match(TokenType::Comma) && !check(TokenType::RightBrace)) {
             throw ParseError(peek(), "expected `,` after match expression arm");

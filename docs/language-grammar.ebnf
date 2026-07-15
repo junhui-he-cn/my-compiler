@@ -77,14 +77,14 @@ ifStmt      = "if", expression, block,
 
 matchStmt   = "match", expression, "{", { matchArm }, "}" ;
 
-matchArm    = pattern, "=>", block ;
+matchArm    = pattern, [ "if", expression ], "=>", block ;
 
 matchExpr   = "match", expression, "{", [ matchExprArms ], "}" ;
 
 matchExprArms = matchExprArm,
                 { ",", matchExprArm }, [ "," ] ;
 
-matchExprArm = pattern, "=>", expression ;
+matchExprArm = pattern, [ "if", expression ], "=>", expression ;
 
 pattern     = "_"
             | identifier

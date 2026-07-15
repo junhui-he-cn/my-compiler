@@ -334,6 +334,7 @@ struct VariantPattern final : Pattern {
 struct MatchExprArm {
     Token arrow;
     PatternPtr pattern;
+    ExprPtr guard;
     ExprPtr value;
 };
 
@@ -356,6 +357,7 @@ struct EnumDeclStmt final : Stmt {
 
 struct MatchArm {
     PatternPtr pattern;
+    ExprPtr guard;
     StmtPtr body;
 };
 

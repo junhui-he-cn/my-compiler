@@ -1,0 +1,26 @@
+enum Result { Ok(number), Empty }
+
+fun describe(result: Result): string {
+  match result {
+    Result.Ok(value) if value > 0 => { return "positive"; }
+    Result.Ok(_) => { return "zero"; }
+    _ => { return "empty"; }
+  }
+}
+
+let positive = Result.Ok(3);
+let zero = Result.Ok(0);
+let empty = Result.Empty();
+print describe(positive);
+print describe(zero);
+print describe(empty);
+print match positive {
+  Result.Ok(value) if value > 10 => "large",
+  Result.Ok(value) if value > 0 => "positive",
+  Result.Ok(_) => "zero",
+  Result.Empty => "empty",
+};
+print match empty {
+  Result.Empty if 1 => "truthy",
+  _ => "fallback",
+};

@@ -1,0 +1,7 @@
+enum Option { Some(number), None }
+let value = Option.Some(4);
+print match value {
+  Option.Some(number) if number > 4 => number,
+  Option.Some(_) => 0,
+  Option.None => 0,
+};

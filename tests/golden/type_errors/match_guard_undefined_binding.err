@@ -1,0 +1,3 @@
+Type error at 4:23: undefined variable `missing`
+    Result.Ok(value) if missing > 0 => "positive",
+                        ^

@@ -1,0 +1,21 @@
+Program
+  Enum Result {Ok(number), Empty}
+  Fun describe(result: Result): string
+    Match result
+      Arm Result.Ok(value) if (> value 0)
+        Block
+          Return "positive"
+      Arm Result.Ok(_)
+        Block
+          Return "zero"
+      Arm _
+        Block
+          Return "empty"
+  Let positive = (member-call Result Ok 3)
+  Let zero = (member-call Result Ok 0)
+  Let empty = (member-call Result Empty)
+  Print (call describe positive)
+  Print (call describe zero)
+  Print (call describe empty)
+  Print (match positive (arm Result.Ok(value) if (> value 10) "large") (arm Result.Ok(value) if (> value 0) "positive") (arm Result.Ok(_) "zero") (arm Result.Empty "empty"))
+  Print (match empty (arm Result.Empty if 1 "truthy") (arm _ "fallback"))

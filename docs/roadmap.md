@@ -156,15 +156,15 @@ Future work:
 
 ## Phase 18: Pattern-Matching Extensions
 
-Goal: extend the existing named-enum and statement-level pattern-matching
-facilities without prematurely expanding the struct object model. Match
-expressions are now implemented as the first slice of this phase, reusing the
-existing patterns, exhaustive checking, and variant IR operations.
+Goal: extend the existing named-enum and statement- and expression-level
+pattern-matching facilities without prematurely expanding the struct object
+model. Match expressions are now implemented as the first slice of this phase,
+reusing the existing patterns, exhaustive checking, and variant IR operations.
 
 Future work:
 
-- Guards, named payload fields, generic enums, and nullable enum patterns
-  remain out of scope.
+- Named payload fields, generic enums, and nullable enum patterns remain out of
+  scope.
 - Defer inheritance, dynamic dispatch, and protocol/trait systems unless this
   phase identifies a concrete need for one.
 
