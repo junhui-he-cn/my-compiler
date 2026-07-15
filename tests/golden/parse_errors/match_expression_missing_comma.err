@@ -1,0 +1,6 @@
+Parse error at 5:3: expected `,` after match expression arm
+    Result.Empty => 0,
+    ^
+Parse error at 6:2: expected expression
+  };
+   ^

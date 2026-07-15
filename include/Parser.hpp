@@ -98,6 +98,7 @@ private:
     ExprPtr qualifiedStructConstructor();
     bool isQualifiedStructConstructorStart() const;
     ExprPtr functionExpression();
+    ExprPtr matchExpression();
     ExprPtr primary();
     PatternPtr pattern();
     PatternPtr variantPattern(Token qualifier, Token name);

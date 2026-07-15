@@ -331,6 +331,21 @@ struct VariantPattern final : Pattern {
     std::vector<PatternPtr> arguments;
 };
 
+struct MatchExprArm {
+    Token arrow;
+    PatternPtr pattern;
+    ExprPtr value;
+};
+
+struct MatchExpr final : Expr {
+    MatchExpr(Token keyword, ExprPtr value, std::vector<MatchExprArm> arms);
+    void print(std::ostream& out) const override;
+
+    Token keyword;
+    ExprPtr value;
+    std::vector<MatchExprArm> arms;
+};
+
 struct EnumDeclStmt final : Stmt {
     EnumDeclStmt(Token name, std::vector<EnumVariantDecl> variants);
     void print(std::ostream& out, int indent) const override;

@@ -730,6 +730,27 @@ void FunctionExpr::print(std::ostream& out) const
     out << ')';
 }
 
+MatchExpr::MatchExpr(Token keyword, ExprPtr value, std::vector<MatchExprArm> arms)
+    : keyword(std::move(keyword))
+    , value(std::move(value))
+    , arms(std::move(arms))
+{
+}
+
+void MatchExpr::print(std::ostream& out) const
+{
+    out << "(match ";
+    writeExpr(out, value);
+    for (const MatchExprArm& arm : arms) {
+        out << " (arm ";
+        writePattern(out, *arm.pattern);
+        out << ' ';
+        writeExpr(out, arm.value);
+        out << ')';
+    }
+    out << ')';
+}
+
 WildcardPattern::WildcardPattern(Token name)
     : name(std::move(name))
 {

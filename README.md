@@ -163,14 +163,22 @@ match result {
   Result.Err(message) => { print message; }
   Result.Empty => { print 0; }
 }
+
+let label = match result {
+  Result.Ok(value) => "ok:" + str(value),
+  Result.Err(message) => "err:" + message,
+  Result.Empty => "empty",
+};
 ```
 
 Enum constructors use `Enum.Variant(...)`; unit variants use an empty call.
-Match is a statement with arm-local bindings and must cover every variant, or
-use `_` or a binding pattern. Nested patterns are supported. Enum values use
+Match statements and expressions have arm-local bindings and must cover every
+variant, or use `_` or a binding pattern. Statement arms contain blocks;
+expression arms contain one expression and are comma-separated, with an
+optional trailing comma. Nested patterns are supported. Enum values use
 structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
-`typeOf` reports the enum name. Match expressions, guards, named payload
-fields, generic enums, and nullable enum patterns are not implemented.
+`typeOf` reports the enum name. Guards, named payload fields, generic enums,
+and nullable enum patterns are not implemented.
 
 Local named structs may define first-slice methods in top-level `impl` blocks.
 Methods are statically resolved on known named struct receiver types, and
@@ -288,7 +296,9 @@ Supported expressions:
 - Structs: named constructors such as `Name { field: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
 - Enums and patterns: `enum Name { Variant(type, ...) }`, qualified
   constructors such as `Name.Variant(value)`, and exhaustive statement-level
-  `match` with wildcard, binding, and nested variant patterns.
+  `match` with wildcard, binding, and nested variant patterns. Match
+  expressions use `match value { pattern => expression, ... }` and return the
+  selected arm expression.
 - Function expressions: `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`, including direct expression statements such as `fun () { return nil; };`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.

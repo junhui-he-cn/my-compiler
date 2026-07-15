@@ -79,6 +79,13 @@ matchStmt   = "match", expression, "{", { matchArm }, "}" ;
 
 matchArm    = pattern, "=>", block ;
 
+matchExpr   = "match", expression, "{", [ matchExprArms ], "}" ;
+
+matchExprArms = matchExprArm,
+                { ",", matchExprArm }, [ "," ] ;
+
+matchExprArm = pattern, "=>", expression ;
+
 pattern     = "_"
             | identifier
             | literalPattern
@@ -209,6 +216,7 @@ functionExpr = "fun", [ typeParameters ], "(", [ parameters ], ")",
                block ;
 
 primary     = functionExpr
+            | matchExpr
             | "false"
             | "true"
             | "nil"

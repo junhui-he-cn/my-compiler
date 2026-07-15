@@ -299,6 +299,7 @@ private:
         const std::vector<StructField>& fields);
     CheckedExpression checkStructConstructor(const StructConstructExpr& expression);
     CheckedExpression checkVariantConstructor(const MemberCallExpr& expression);
+    CheckedExpression checkMatchExpression(const MatchExpr& expression, const TypeInfo* expectedType);
     void checkMatch(const MatchStmt& statement);
     bool checkPattern(
         const Pattern& pattern,

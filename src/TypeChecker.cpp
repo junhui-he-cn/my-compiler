@@ -2731,6 +2731,10 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         return CheckedExpression{logicalResultType(left, right)};
     }
 
+    if (const auto* match = dynamic_cast<const MatchExpr*>(&expression)) {
+        return checkMatchExpression(*match, expectedType);
+    }
+
     if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
         return checkCall(*call);
     }
@@ -2800,6 +2804,63 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     throw TypeError("unsupported expression node");
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
+    const MatchExpr& expression,
+    const TypeInfo* expectedType)
+{
+    const TypeInfo scrutineeType = checkExpression(*expression.value);
+    if (scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName) {
+        throw TypeError(expression.keyword,
+            "match expects enum value, got " + typeInfoName(scrutineeType));
+    }
+
+    const EnumTypeDecl* enumType = findEnumType(*scrutineeType.enumName);
+    if (!enumType) {
+        throw TypeError(expression.keyword, "unknown enum type " + *scrutineeType.enumName);
+    }
+
+    std::unordered_set<std::string> coveredVariants;
+    bool coversAll = false;
+    std::optional<TypeInfo> resultType;
+    for (const MatchExprArm& arm : expression.arms) {
+        beginScope();
+        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, coveredVariants);
+        coversAll = coversAll || armCoversAll;
+
+        const CheckedExpression result = checkExpressionInfo(*arm.value, expectedType);
+        if (expectedType && !compatible(*expectedType, result.type)) {
+            throw TypeError(arm.arrow,
+                "match arm result expects " + typeInfoName(*expectedType)
+                    + ", got " + typeInfoName(result.type));
+        }
+        if (!resultType) {
+            resultType = result.type;
+        } else if (isKnown(*resultType) && isKnown(result.type)
+            && (!compatible(*resultType, result.type) || !compatible(result.type, *resultType))) {
+            throw TypeError(arm.arrow,
+                "match arm result expects " + typeInfoName(*resultType)
+                    + ", got " + typeInfoName(result.type));
+        } else {
+            resultType = mergeReturnTypes(*resultType, result.type);
+        }
+        endScope();
+    }
+
+    if (!coversAll) {
+        for (const EnumVariantType& variant : enumType->variants) {
+            if (coveredVariants.find(variant.name.lexeme) == coveredVariants.end()) {
+                throw TypeError(expression.keyword,
+                    "non-exhaustive match: missing " + *scrutineeType.enumName
+                        + "." + variant.name.lexeme);
+            }
+        }
+    }
+
+    return CheckedExpression{expectedType
+        ? *expectedType
+        : (resultType ? *resultType : unknownType())};
 }
 
 bool TypeChecker::isBuiltinLenCall(const CallExpr& expression) const
