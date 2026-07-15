@@ -1,0 +1,3 @@
+Type error at 4:3: literal patterns are not valid for enum values
+    nil => "nil",
+    ^

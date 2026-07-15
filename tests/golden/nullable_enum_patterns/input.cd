@@ -1,0 +1,28 @@
+enum Option {
+  Some(value: number),
+  None,
+}
+
+fun describe(value: Option?): string {
+  match value {
+    nil => { return "nil"; }
+    Option.Some(value) if value > 10 => { return "large"; }
+    Option.Some(value) => { return "some:" + str(value); }
+    Option.None => { return "none"; }
+  }
+}
+
+let some: Option? = Option.Some(7);
+let none: Option? = nil;
+print describe(some);
+print describe(none);
+print match some {
+  nil => "nil",
+  Option.Some(value) if value > 10 => "large",
+  Option.Some(_) => "some",
+  Option.None => "none",
+};
+print match none {
+  nil if true => "guarded nil",
+  _ => "fallback",
+};

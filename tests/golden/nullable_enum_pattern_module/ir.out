@@ -1,0 +1,56 @@
+IR
+0000  v0 = constant #0 nil
+0001  store_var @0 make#0, v0
+0002  v1 = make_function $0 make/0
+0003  assign_var @3 make#0, v1
+0004  v2 = constant #3 nil
+0005  store_var @4 render#1, v2
+0006  v3 = make_function $1 render/1
+0007  assign_var @15 render#1, v3
+0008  v4 = load_var @16 render#1
+0009  v5 = constant #9 nil
+0010  v6 = call v4(v5)
+0011  print v6
+0012  v7 = load_var @17 render#1
+0013  v8 = load_var @18 make#0
+0014  v9 = call v8()
+0015  v10 = call v7(v9)
+0016  print v10
+
+function $0 make()
+0000  v0 = constant #1 9
+0001  v1 = variant Outcome.Good (v0)
+0002  return v1
+0003  v2 = constant #2 nil
+0004  return v2
+
+function $1 render(value#2)
+0000  v0 = load_var @5 value#2
+0001  v2 = constant #4 nil
+0002  v3 = equal v0, v2
+0003  jump_if_false v3, 0007
+0004  v4 = constant #5 "nil"
+0005  v1 = copy v4
+0006  jump 0026
+0007  v5 = variant_tag v0 Outcome.Good
+0008  jump_if_false v5, 0017
+0009  v6 = variant_field v0[0]
+0010  store_var @8 number#3, v6
+0011  v7 = constant #6 "good:"
+0012  v8 = load_var @9 number#3
+0013  v9 = native_call @10 str(v8)
+0014  v10 = add v7, v9
+0015  v1 = copy v10
+0016  jump 0026
+0017  v11 = variant_tag v0 Outcome.Bad
+0018  jump_if_false v11, 0026
+0019  v12 = variant_field v0[0]
+0020  store_var @13 message#4, v12
+0021  v13 = constant #7 "bad:"
+0022  v14 = load_var @14 message#4
+0023  v15 = add v13, v14
+0024  v1 = copy v15
+0025  jump 0026
+0026  return v1
+0027  v16 = constant #8 nil
+0028  return v16

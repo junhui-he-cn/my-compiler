@@ -1,0 +1,7 @@
+module 0 "<repo>/tests/golden/nullable_enum_pattern_module/lib.cd"
+  export value make: fun(): Outcome
+  export enum Outcome
+    variant Good(number)
+    variant Bad(string)
+
+module 1 entry "<repo>/tests/golden/nullable_enum_pattern_module/input.cd"

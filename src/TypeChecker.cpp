@@ -1318,23 +1318,17 @@ bool TypeChecker::bodyMayFallThrough(const std::vector<StmtPtr>& body) const
         if (match->arms.empty()) {
             return true;
         }
-        bool hasGuard = false;
-        bool hasUnconditionalCatchAll = false;
         for (const MatchArm& arm : match->arms) {
-            if (arm.guard) {
-                hasGuard = true;
-            }
             const auto* armBlock = dynamic_cast<const BlockStmt*>(arm.body.get());
             if (!armBlock || bodyMayFallThrough(armBlock->statements)) {
                 return true;
             }
-            if (!arm.guard
-                && (dynamic_cast<const WildcardPattern*>(arm.pattern.get())
-                    || dynamic_cast<const VariablePattern*>(arm.pattern.get()))) {
-                hasUnconditionalCatchAll = true;
-            }
         }
-        return hasGuard && !hasUnconditionalCatchAll;
+        // checkMatch has already enforced exhaustive coverage before function
+        // return analysis reaches this helper. Once every arm body returns,
+        // guards only affect which arm runs, not whether the match can fall
+        // through to the following statement.
+        return false;
     }
     return true;
 }
@@ -2383,7 +2377,8 @@ TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(const Member
 bool TypeChecker::checkPattern(
     const Pattern& pattern,
     const TypeInfo& expectedType,
-    std::unordered_set<std::string>& coveredVariants)
+    std::unordered_set<std::string>& coveredVariants,
+    bool& coversNil)
 {
     if (dynamic_cast<const WildcardPattern*>(&pattern)) {
         return true;
@@ -2396,6 +2391,14 @@ bool TypeChecker::checkPattern(
     }
 
     if (const auto* literal = dynamic_cast<const LiteralPattern*>(&pattern)) {
+        if (literal->value.type == TokenType::Nil
+            && (expectedType.kind == StaticType::Nil || isNullable(expectedType))) {
+            if (isNullable(expectedType)) {
+                coversNil = true;
+            }
+            return false;
+        }
+
         throw TypeError(literal->value, "literal patterns are not valid for enum values");
     }
 
@@ -2403,29 +2406,35 @@ bool TypeChecker::checkPattern(
     if (!variantPattern) {
         throw TypeError("unsupported pattern node");
     }
-    if (expectedType.kind != StaticType::Enum || !expectedType.enumName) {
+    const TypeInfo* enumExpectedType = &expectedType;
+    if (isNullable(expectedType)) {
+        enumExpectedType = expectedType.nullableOf.get();
+    }
+    if (!enumExpectedType
+        || enumExpectedType->kind != StaticType::Enum
+        || !enumExpectedType->enumName) {
         throw TypeError(variantPattern->name, "variant pattern expects enum value");
     }
     if (!variantPattern->qualifier
-        || variantPattern->qualifier->lexeme != *expectedType.enumName) {
+        || variantPattern->qualifier->lexeme != *enumExpectedType->enumName) {
         throw TypeError(variantPattern->name,
             "variant pattern belongs to enum "
                 + (variantPattern->qualifier ? variantPattern->qualifier->lexeme : std::string("<unknown>"))
-                + ", expected " + *expectedType.enumName);
+                + ", expected " + *enumExpectedType->enumName);
     }
 
-    const EnumTypeDecl* enumType = findEnumType(*expectedType.enumName);
+    const EnumTypeDecl* enumType = findEnumType(*enumExpectedType->enumName);
     const EnumVariantType* variant = enumType
         ? findEnumVariant(*enumType, variantPattern->name.lexeme)
         : nullptr;
     if (!variant) {
         throw TypeError(variantPattern->name,
-            "enum " + *expectedType.enumName + " has no variant "
+            "enum " + *enumExpectedType->enumName + " has no variant "
                 + variantPattern->name.lexeme);
     }
     if (variant->payloadTypes.size() != variantPattern->arguments.size()) {
         throw TypeError(variantPattern->name,
-            "variant pattern " + *expectedType.enumName + "." + variantPattern->name.lexeme
+            "variant pattern " + *enumExpectedType->enumName + "." + variantPattern->name.lexeme
                 + " expects " + std::to_string(variant->payloadTypes.size())
                 + " patterns but got " + std::to_string(variantPattern->arguments.size()));
     }
@@ -2456,7 +2465,7 @@ bool TypeChecker::checkPattern(
         for (std::size_t i = 0; i < variant->payloadTypes.size(); ++i) {
             if (i >= variant->payloadNames.size() || !variant->payloadNames[i]) {
                 throw TypeError(variantPattern->name,
-                    "variant " + *expectedType.enumName + "." + variantPattern->name.lexeme
+                    "variant " + *enumExpectedType->enumName + "." + variantPattern->name.lexeme
                         + " has no named payload fields");
             }
             declaredPayloads.emplace(variant->payloadNames[i]->lexeme, i);
@@ -2468,13 +2477,13 @@ bool TypeChecker::checkPattern(
             const auto found = declaredPayloads.find(payloadName.lexeme);
             if (found == declaredPayloads.end()) {
                 throw TypeError(payloadName,
-                    "variant " + *expectedType.enumName + "." + variantPattern->name.lexeme
+                    "variant " + *enumExpectedType->enumName + "." + variantPattern->name.lexeme
                         + " has no payload field " + payloadName.lexeme);
             }
             if (!usedPayloads.insert(payloadName.lexeme).second) {
                 throw TypeError(payloadName,
                     "duplicate payload field " + payloadName.lexeme
-                        + " in variant pattern " + *expectedType.enumName
+                        + " in variant pattern " + *enumExpectedType->enumName
                         + "." + variantPattern->name.lexeme);
             }
             payloadIndices.push_back(found->second);
@@ -2482,7 +2491,7 @@ bool TypeChecker::checkPattern(
     }
     coveredVariants.insert(variantPattern->name.lexeme);
 
-    std::string runtimeEnumName = *expectedType.enumName;
+    std::string runtimeEnumName = *enumExpectedType->enumName;
     const std::size_t namespaceSeparator = runtimeEnumName.find('.');
     if (namespaceSeparator != std::string::npos) {
         const std::string alias = runtimeEnumName.substr(0, namespaceSeparator);
@@ -2498,10 +2507,12 @@ bool TypeChecker::checkPattern(
 
     for (std::size_t i = 0; i < variantPattern->arguments.size(); ++i) {
         std::unordered_set<std::string> nestedCoverage;
+        bool nestedCoversNil = false;
         checkPattern(
             *variantPattern->arguments[i],
             variant->payloadTypes[payloadIndices[i]],
-            nestedCoverage);
+            nestedCoverage,
+            nestedCoversNil);
     }
     return false;
 }
@@ -2509,26 +2520,36 @@ bool TypeChecker::checkPattern(
 void TypeChecker::checkMatch(const MatchStmt& statement)
 {
     const TypeInfo scrutineeType = checkExpression(*statement.value);
-    if (scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName) {
+    const bool nullableEnum = isNullable(scrutineeType)
+        && scrutineeType.nullableOf->kind == StaticType::Enum
+        && scrutineeType.nullableOf->enumName;
+    if ((scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName) && !nullableEnum) {
         throw TypeError(statement.value && statement.value->span
                 ? Token{TokenType::Match, "match", statement.value->span->line, statement.value->span->column}
                 : Token{TokenType::Match, "match", 0, 0},
             "match expects enum value, got " + typeInfoName(scrutineeType));
     }
 
-    const EnumTypeDecl* enumType = findEnumType(*scrutineeType.enumName);
+    const std::string& enumName = nullableEnum
+        ? *scrutineeType.nullableOf->enumName
+        : *scrutineeType.enumName;
+    const EnumTypeDecl* enumType = findEnumType(enumName);
     if (!enumType) {
-        throw TypeError("unknown enum type " + *scrutineeType.enumName);
+        throw TypeError("unknown enum type " + enumName);
     }
 
     std::unordered_set<std::string> coveredVariants;
+    bool coveredNil = false;
     bool coversAll = false;
     for (const MatchArm& arm : statement.arms) {
         beginScope();
         std::unordered_set<std::string> armCoveredVariants;
-        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, armCoveredVariants);
+        bool armCoversNil = false;
+        const bool armCoversAll = checkPattern(
+            *arm.pattern, scrutineeType, armCoveredVariants, armCoversNil);
         if (!arm.guard) {
             coveredVariants.insert(armCoveredVariants.begin(), armCoveredVariants.end());
+            coveredNil = coveredNil || armCoversNil;
             coversAll = coversAll || armCoversAll;
         }
         if (arm.guard) {
@@ -2539,12 +2560,18 @@ void TypeChecker::checkMatch(const MatchStmt& statement)
     }
 
     if (!coversAll) {
+        if (nullableEnum && !coveredNil) {
+            throw TypeError(
+                Token{TokenType::Match, "match", statement.value->span ? statement.value->span->line : 0,
+                    statement.value->span ? statement.value->span->column : 0},
+                "non-exhaustive match: missing nil");
+        }
         for (const EnumVariantType& variant : enumType->variants) {
             if (coveredVariants.find(variant.name.lexeme) == coveredVariants.end()) {
                 throw TypeError(
                     Token{TokenType::Match, "match", statement.value->span ? statement.value->span->line : 0,
                         statement.value->span ? statement.value->span->column : 0},
-                    "non-exhaustive match: missing " + *scrutineeType.enumName + "."
+                    "non-exhaustive match: missing " + enumName + "."
                         + variant.name.lexeme);
             }
         }
@@ -2927,25 +2954,35 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
     const TypeInfo* expectedType)
 {
     const TypeInfo scrutineeType = checkExpression(*expression.value);
-    if (scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName) {
+    const bool nullableEnum = isNullable(scrutineeType)
+        && scrutineeType.nullableOf->kind == StaticType::Enum
+        && scrutineeType.nullableOf->enumName;
+    if ((scrutineeType.kind != StaticType::Enum || !scrutineeType.enumName) && !nullableEnum) {
         throw TypeError(expression.keyword,
             "match expects enum value, got " + typeInfoName(scrutineeType));
     }
 
-    const EnumTypeDecl* enumType = findEnumType(*scrutineeType.enumName);
+    const std::string& enumName = nullableEnum
+        ? *scrutineeType.nullableOf->enumName
+        : *scrutineeType.enumName;
+    const EnumTypeDecl* enumType = findEnumType(enumName);
     if (!enumType) {
-        throw TypeError(expression.keyword, "unknown enum type " + *scrutineeType.enumName);
+        throw TypeError(expression.keyword, "unknown enum type " + enumName);
     }
 
     std::unordered_set<std::string> coveredVariants;
+    bool coveredNil = false;
     bool coversAll = false;
     std::optional<TypeInfo> resultType;
     for (const MatchExprArm& arm : expression.arms) {
         beginScope();
         std::unordered_set<std::string> armCoveredVariants;
-        const bool armCoversAll = checkPattern(*arm.pattern, scrutineeType, armCoveredVariants);
+        bool armCoversNil = false;
+        const bool armCoversAll = checkPattern(
+            *arm.pattern, scrutineeType, armCoveredVariants, armCoversNil);
         if (!arm.guard) {
             coveredVariants.insert(armCoveredVariants.begin(), armCoveredVariants.end());
+            coveredNil = coveredNil || armCoversNil;
             coversAll = coversAll || armCoversAll;
         }
         if (arm.guard) {
@@ -2972,10 +3009,13 @@ TypeChecker::CheckedExpression TypeChecker::checkMatchExpression(
     }
 
     if (!coversAll) {
+        if (nullableEnum && !coveredNil) {
+            throw TypeError(expression.keyword, "non-exhaustive match: missing nil");
+        }
         for (const EnumVariantType& variant : enumType->variants) {
             if (coveredVariants.find(variant.name.lexeme) == coveredVariants.end()) {
                 throw TypeError(expression.keyword,
-                    "non-exhaustive match: missing " + *scrutineeType.enumName
+                    "non-exhaustive match: missing " + enumName
                         + "." + variant.name.lexeme);
             }
         }

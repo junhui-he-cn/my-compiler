@@ -1,0 +1,12 @@
+Program
+  Module 0
+    Enum Outcome {Good(number), Bad(string)}
+    Fun make(): Outcome
+      Return (member-call Outcome Good 9)
+    Export Outcome make
+  Module 1 entry
+    Import "./lib.cd" as lib
+    Fun render(value: lib.Outcome?): string
+      Return (match value (arm nil "nil") (arm lib.Outcome.Good(number) (+ "good:" (call str number))) (arm lib.Outcome.Bad(message) (+ "bad:" message)))
+    Print (call render nil)
+    Print (call render (member-call lib make))

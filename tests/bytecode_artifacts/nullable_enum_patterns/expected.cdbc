@@ -1,0 +1,257 @@
+cdbc 0.1
+
+constants:
+  c0 = nil
+  c1 = nil
+  c2 = string "nil"
+  c3 = number 10
+  c4 = string "large"
+  c5 = string "some:"
+  c6 = string "none"
+  c7 = nil
+  c8 = number 7
+  c9 = nil
+  c10 = nil
+  c11 = string "nil"
+  c12 = number 10
+  c13 = string "large"
+  c14 = string "some"
+  c15 = string "none"
+  c16 = nil
+  c17 = bool true
+  c18 = string "guarded nil"
+  c19 = string "fallback"
+
+names:
+  n0 = "describe#0"
+  n1 = "value#1"
+  n2 = "Option"
+  n3 = "Some"
+  n4 = "value#2"
+  n5 = "value#2"
+  n6 = "Option"
+  n7 = "Some"
+  n8 = "value#3"
+  n9 = "value#3"
+  n10 = "str"
+  n11 = "Option"
+  n12 = "None"
+  n13 = "describe#0"
+  n14 = "Option"
+  n15 = "Some"
+  n16 = "some#4"
+  n17 = "none#5"
+  n18 = "describe#0"
+  n19 = "some#4"
+  n20 = "describe#0"
+  n21 = "none#5"
+  n22 = "some#4"
+  n23 = "Option"
+  n24 = "Some"
+  n25 = "value#6"
+  n26 = "value#6"
+  n27 = "Option"
+  n28 = "Some"
+  n29 = "Option"
+  n30 = "None"
+  n31 = "none#5"
+
+main registers=34:
+  r0 = constant c0
+  store_var n0, r0
+  r1 = make_function f0
+  assign_var n13, r1
+  r2 = constant c8
+  r3 = variant n14.n15 [r2]
+  store_var n16, r3
+  r4 = constant c9
+  store_var n17, r4
+  r5 = load_var n18
+  r6 = load_var n19
+  r7 = call r5 [r6]
+  print r7
+  r8 = load_var n20
+  r9 = load_var n21
+  r10 = call r8 [r9]
+  print r10
+  r11 = load_var n22
+  r13 = constant c10
+  r14 = equal r11, r13
+  jump_if_false r14, 24
+  r15 = constant c11
+  r12 = move r15
+  jump 46
+  r16 = variant_tag r11 n23.n24
+  jump_if_false r16, 35
+  r17 = variant_field r11 0
+  store_var n25, r17
+  r18 = load_var n26
+  r19 = constant c12
+  r20 = greater r18, r19
+  jump_if_false r20, 35
+  r21 = constant c13
+  r12 = move r21
+  jump 46
+  r22 = variant_tag r11 n27.n28
+  jump_if_false r22, 41
+  r23 = variant_field r11 0
+  r24 = constant c14
+  r12 = move r24
+  jump 46
+  r25 = variant_tag r11 n29.n30
+  jump_if_false r25, 46
+  r26 = constant c15
+  r12 = move r26
+  jump 46
+  print r12
+  r27 = load_var n31
+  r29 = constant c16
+  r30 = equal r27, r29
+  jump_if_false r30, 56
+  r31 = constant c17
+  jump_if_false r31, 56
+  r32 = constant c18
+  r28 = move r32
+  jump 59
+  r33 = constant c19
+  r28 = move r33
+  jump 59
+  print r28
+
+function f0 name="describe" arity=1 registers=19:
+  param 0 = "value#1"
+  r0 = load_var n1
+  r1 = constant c1
+  r2 = equal r0, r1
+  jump_if_false r2, 7
+  r3 = constant c2
+  return r3
+  jump 33
+  r4 = variant_tag r0 n2.n3
+  jump_if_false r4, 18
+  r5 = variant_field r0 0
+  store_var n4, r5
+  r6 = load_var n5
+  r7 = constant c3
+  r8 = greater r6, r7
+  jump_if_false r8, 18
+  r9 = constant c4
+  return r9
+  jump 33
+  r10 = variant_tag r0 n6.n7
+  jump_if_false r10, 28
+  r11 = variant_field r0 0
+  store_var n8, r11
+  r12 = constant c5
+  r13 = load_var n9
+  r14 = native_call n10 [r13]
+  r15 = add r12, r14
+  return r15
+  jump 33
+  r16 = variant_tag r0 n11.n12
+  jump_if_false r16, 33
+  r17 = constant c6
+  return r17
+  jump 33
+  r18 = constant c7
+  return r18
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/nullable_enum_patterns/input.cd" text="enum Option {\n  Some(value: number),\n  None,\n}\n\nfun describe(value: Option?): string {\n  match value {\n    nil => { return \"nil\"; }\n    Option.Some(value) if value > 10 => { return \"large\"; }\n    Option.Some(value) => { return \"some:\" + str(value); }\n    Option.None => { return \"none\"; }\n  }\n}\n\nlet some: Option? = Option.Some(7);\nlet none: Option? = nil;\nprint describe(some);\nprint describe(none);\nprint match some {\n  nil => \"nil\",\n  Option.Some(value) if value > 10 => \"large\",\n  Option.Some(_) => \"some\",\n  Option.None => \"none\",\n};\nprint match none {\n  nil if true => \"guarded nil\",\n  _ => \"fallback\",\n};\n"
+
+debug_locations:
+  main 0 = s0:6:1
+  main 1 = s0:6:1
+  main 2 = s0:6:1
+  main 3 = s0:6:1
+  main 4 = s0:15:33
+  main 5 = s0:15:21
+  main 6 = s0:15:1
+  main 7 = s0:16:21
+  main 8 = s0:16:1
+  main 9 = s0:17:7
+  main 10 = s0:17:16
+  main 11 = s0:17:7
+  main 12 = s0:17:1
+  main 13 = s0:18:7
+  main 14 = s0:18:16
+  main 15 = s0:18:7
+  main 16 = s0:18:1
+  main 17 = s0:19:13
+  main 18 = s0:19:7
+  main 19 = s0:19:7
+  main 20 = s0:19:7
+  main 21 = s0:20:10
+  main 22 = s0:19:7
+  main 23 = s0:19:7
+  main 24 = s0:19:7
+  main 25 = s0:19:7
+  main 26 = s0:19:7
+  main 27 = s0:19:7
+  main 28 = s0:21:25
+  main 29 = s0:21:33
+  main 30 = s0:21:25
+  main 31 = s0:19:7
+  main 32 = s0:21:39
+  main 33 = s0:19:7
+  main 34 = s0:19:7
+  main 35 = s0:19:7
+  main 36 = s0:19:7
+  main 37 = s0:19:7
+  main 38 = s0:22:21
+  main 39 = s0:19:7
+  main 40 = s0:19:7
+  main 41 = s0:19:7
+  main 42 = s0:19:7
+  main 43 = s0:23:18
+  main 44 = s0:19:7
+  main 45 = s0:19:7
+  main 46 = s0:19:1
+  main 47 = s0:25:13
+  main 48 = s0:25:7
+  main 49 = s0:25:7
+  main 50 = s0:25:7
+  main 51 = s0:26:10
+  main 52 = s0:25:7
+  main 53 = s0:26:18
+  main 54 = s0:25:7
+  main 55 = s0:25:7
+  main 56 = s0:27:8
+  main 57 = s0:25:7
+  main 58 = s0:25:7
+  main 59 = s0:25:1
+  function f0 0 = s0:7:9
+  function f0 1 = s0:7:3
+  function f0 2 = s0:7:3
+  function f0 3 = s0:7:3
+  function f0 4 = s0:8:21
+  function f0 5 = s0:8:14
+  function f0 6 = s0:7:3
+  function f0 7 = s0:7:3
+  function f0 8 = s0:7:3
+  function f0 9 = s0:7:3
+  function f0 10 = s0:7:3
+  function f0 11 = s0:9:27
+  function f0 12 = s0:9:35
+  function f0 13 = s0:9:27
+  function f0 14 = s0:7:3
+  function f0 15 = s0:9:50
+  function f0 16 = s0:9:43
+  function f0 17 = s0:7:3
+  function f0 18 = s0:7:3
+  function f0 19 = s0:7:3
+  function f0 20 = s0:7:3
+  function f0 21 = s0:7:3
+  function f0 22 = s0:10:36
+  function f0 23 = s0:10:50
+  function f0 24 = s0:10:46
+  function f0 25 = s0:10:36
+  function f0 26 = s0:10:29
+  function f0 27 = s0:7:3
+  function f0 28 = s0:7:3
+  function f0 29 = s0:7:3
+  function f0 30 = s0:11:29
+  function f0 31 = s0:11:22
+  function f0 32 = s0:7:3
+  function f0 33 = s0:6:1
+  function f0 34 = s0:6:1

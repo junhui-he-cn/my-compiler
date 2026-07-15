@@ -160,10 +160,14 @@ Goal: extend the existing named-enum and statement- and expression-level
 pattern-matching facilities without prematurely expanding the struct object
 model. Match expressions are now implemented as the first slice of this phase,
 reusing the existing patterns, exhaustive checking, and variant IR operations.
+Nullable enum patterns are now implemented for both match statements and match
+expressions, including unguarded `nil` coverage and guarded-arm behavior.
 
 Future work:
 
-- Generic enums and nullable enum patterns remain out of scope.
+- Generic enums remain out of scope for the current pattern-matching slice.
+- Consider further pattern syntax only as focused slices with explicit
+  binding, coverage, and runtime semantics.
 - Defer inheritance, dynamic dispatch, and protocol/trait systems unless this
   phase identifies a concrete need for one.
 

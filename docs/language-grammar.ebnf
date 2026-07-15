@@ -96,11 +96,7 @@ pattern     = "_"
             | literalPattern
             | variantPattern ;
 
-literalPattern = "nil"
-                | "true"
-                | "false"
-                | number
-                | string ;
+literalPattern = "nil" ;
 
 variantPattern = identifier, ".", identifier,
                  [ "(", [ patternArguments ], ")" ]
@@ -259,7 +255,8 @@ qualifiedType = identifier, ".", identifier ;
 
 functionType = "fun", "(", [ typeArguments ], ")", ":", typeExpr ;
 
-(* `T?` means `T` or `nil`. This slice supports nullable function parameter and
+(* `T?` means `T` or `nil`. Nullable enum match patterns may use `nil` along
+   with the enum variants. This slice supports nullable function parameter and
    return types, but not nullable function values such as `(fun(number): string)?`. *)
 
 typeArguments = typeExpr,

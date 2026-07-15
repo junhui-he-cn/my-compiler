@@ -1,0 +1,22 @@
+Program
+  Enum Option {Some(value: number), None}
+  Fun describe(value: Option?): string
+    Match value
+      Arm nil
+        Block
+          Return "nil"
+      Arm Option.Some(value) if (> value 10)
+        Block
+          Return "large"
+      Arm Option.Some(value)
+        Block
+          Return (+ "some:" (call str value))
+      Arm Option.None
+        Block
+          Return "none"
+  Let some: Option? = (member-call Option Some 7)
+  Let none: Option? = nil
+  Print (call describe some)
+  Print (call describe none)
+  Print (match some (arm nil "nil") (arm Option.Some(value) if (> value 10) "large") (arm Option.Some(_) "some") (arm Option.None "none"))
+  Print (match none (arm nil if true "guarded nil") (arm _ "fallback"))
