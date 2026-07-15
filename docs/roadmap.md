@@ -163,8 +163,7 @@ reusing the existing patterns, exhaustive checking, and variant IR operations.
 
 Future work:
 
-- Named payload fields, generic enums, and nullable enum patterns remain out of
-  scope.
+- Generic enums and nullable enum patterns remain out of scope.
 - Defer inheritance, dynamic dispatch, and protocol/trait systems unless this
   phase identifies a concrete need for one.
 

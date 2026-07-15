@@ -48,6 +48,7 @@ public:
     bool hasPatternVariable(const VariablePattern& pattern) const;
     const std::string& patternVariableName(const VariablePattern& pattern) const;
     const std::string& patternEnumName(const VariantPattern& pattern) const;
+    const std::vector<std::size_t>& patternPayloadIndices(const VariantPattern& pattern) const;
 
 private:
     friend class TypeChecker;
@@ -71,7 +72,10 @@ private:
         std::string enumName,
         std::string variantName);
     void recordPatternVariable(const VariablePattern& pattern, std::string name);
-    void recordPatternVariant(const VariantPattern& pattern, std::string enumName);
+    void recordPatternVariant(
+        const VariantPattern& pattern,
+        std::string enumName,
+        std::vector<std::size_t> payloadIndices);
 
     std::unordered_map<const LetStmt*, std::string> letNames_;
     std::unordered_map<const FunctionStmt*, std::string> functionNames_;
@@ -90,6 +94,7 @@ private:
     std::unordered_map<const MemberCallExpr*, std::pair<std::string, std::string>> variantConstructors_;
     std::unordered_map<const VariablePattern*, std::string> patternVariableNames_;
     std::unordered_map<const VariantPattern*, std::string> patternEnumNames_;
+    std::unordered_map<const VariantPattern*, std::vector<std::size_t>> patternPayloadIndices_;
 };
 
 class TypeChecker {

@@ -151,8 +151,8 @@ p.age = 37;
 
 Named constructor expressions infer the named static type and attach the named runtime type used by `typeOf`; all structs keep the same field-only print format. Annotated bindings must still use an explicit constructor, for example `let p: Person = Person { name: "Ada", age: 36 };`. Field annotations may refer to non-recursive struct names declared later in the same scope, but recursive struct field types such as `struct Node { next: Node? }` are explicitly rejected for now. Field access/assignment on known named struct values is statically checked. Anonymous source struct literals are not a separate form: bare braces such as `{ name: "Ada" }` are map literals, while named constructors such as `Person { name: "Ada" }` remain structs. Constructor functions such as `Person(...)` are not implemented.
 
-Enums define explicit alternatives with positional payloads. Recursive enum
-references are allowed:
+Enums define explicit alternatives with positional or named payloads. Recursive
+enum references are allowed:
 
 ```cd
 enum Result { Ok(number), Err(string), Empty }
@@ -169,6 +169,13 @@ let label = match result {
   Result.Err(message) => "err:" + message,
   Result.Empty => "empty",
 };
+
+enum NamedResult { Ok(value: number), Err(message: string) }
+let named = NamedResult.Ok(7);
+print match named {
+  NamedResult.Ok(value: numberValue) => numberValue,
+  NamedResult.Err(message: text) => 0,
+};
 ```
 
 Enum constructors use `Enum.Variant(...)`; unit variants use an empty call.
@@ -180,7 +187,8 @@ optional trailing comma. Either form may add a guard between the pattern and
 truthiness and do not count toward exhaustive coverage. Nested patterns are
 supported. Enum values use structural equality and print as `Enum.Variant` or
 `Enum.Variant(value, ...)`. `typeOf` reports the enum name. Named payload
-fields, generic enums, and nullable enum patterns are not implemented.
+patterns may be reordered by field name, while constructors remain positional.
+Generic enums and nullable enum patterns are not implemented.
 
 Local named structs may define first-slice methods in top-level `impl` blocks.
 Methods are statically resolved on known named struct receiver types, and
@@ -298,7 +306,7 @@ Supported expressions:
 - Structs: named constructors such as `Name { field: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
 - Enums and patterns: `enum Name { Variant(type, ...) }`, qualified
   constructors such as `Name.Variant(value)`, and exhaustive statement-level
-  `match` with wildcard, binding, and nested variant patterns. Match
+  `match` with wildcard, binding, named payload, and nested variant patterns. Match
   expressions use `match value { pattern [if condition] => expression, ... }`
   and return the selected arm expression. Guards use existing truthiness and
   must be followed by an unguarded exhaustive fallback.

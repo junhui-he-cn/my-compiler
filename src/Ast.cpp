@@ -293,9 +293,12 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
         out << "(enum " << enumDecl->name.lexeme;
         for (const EnumVariantDecl& variant : enumDecl->variants) {
             out << " (variant " << variant.name.lexeme;
-            for (const TypeAnnotation& payload : variant.payloadTypes) {
+            for (std::size_t i = 0; i < variant.payloadTypes.size(); ++i) {
                 out << ' ';
-                writeTypeAnnotation(out, payload);
+                if (i < variant.payloadNames.size() && variant.payloadNames[i]) {
+                    out << variant.payloadNames[i]->lexeme << ": ";
+                }
+                writeTypeAnnotation(out, variant.payloadTypes[i]);
             }
             out << ')';
         }
@@ -789,10 +792,15 @@ void LiteralPattern::print(std::ostream& out) const
     out << value.lexeme;
 }
 
-VariantPattern::VariantPattern(std::optional<Token> qualifier, Token name, std::vector<PatternPtr> arguments)
+VariantPattern::VariantPattern(
+    std::optional<Token> qualifier,
+    Token name,
+    std::vector<PatternPtr> arguments,
+    std::vector<std::optional<Token>> argumentNames)
     : qualifier(std::move(qualifier))
     , name(std::move(name))
     , arguments(std::move(arguments))
+    , argumentNames(std::move(argumentNames))
 {
 }
 
@@ -807,6 +815,9 @@ void VariantPattern::print(std::ostream& out) const
         for (std::size_t i = 0; i < arguments.size(); ++i) {
             if (i != 0) {
                 out << ", ";
+            }
+            if (i < argumentNames.size() && argumentNames[i]) {
+                out << argumentNames[i]->lexeme << ": ";
             }
             writePattern(out, *arguments[i]);
         }
@@ -834,6 +845,9 @@ void EnumDeclStmt::print(std::ostream& out, int indent) const
             for (std::size_t j = 0; j < variants[i].payloadTypes.size(); ++j) {
                 if (j != 0) {
                     out << ", ";
+                }
+                if (j < variants[i].payloadNames.size() && variants[i].payloadNames[j]) {
+                    out << variants[i].payloadNames[j]->lexeme << ": ";
                 }
                 writeTypeAnnotation(out, variants[i].payloadTypes[j]);
             }

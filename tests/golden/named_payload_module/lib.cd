@@ -1,0 +1,10 @@
+enum Outcome {
+  Good(message: string),
+  Bad(code: number),
+}
+
+fun make(): Outcome {
+  return Outcome.Good("ok");
+}
+
+export Outcome, make;

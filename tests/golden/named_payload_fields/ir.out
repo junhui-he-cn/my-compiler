@@ -1,0 +1,128 @@
+IR
+0000  v0 = constant #0 nil
+0001  store_var @0 pairScore#0, v0
+0002  v1 = make_function $0 pairScore/1
+0003  assign_var @10 pairScore#0, v1
+0004  v2 = constant #4 nil
+0005  store_var @11 describe#4, v2
+0006  v3 = make_function $1 describe/1
+0007  assign_var @24 describe#4, v3
+0008  v4 = constant #9 nil
+0009  store_var @25 unwrap#8, v4
+0010  v5 = make_function $2 unwrap/1
+0011  assign_var @44 unwrap#8, v5
+0012  v6 = load_var @45 pairScore#0
+0013  v7 = constant #12 2
+0014  v8 = constant #13 4
+0015  v9 = variant Pair.Values (v7, v8)
+0016  v10 = call v6(v9)
+0017  print v10
+0018  v11 = load_var @48 describe#4
+0019  v12 = constant #14 7
+0020  v13 = variant Result.Ok (v12)
+0021  v14 = call v11(v13)
+0022  print v14
+0023  v15 = load_var @51 describe#4
+0024  v16 = constant #15 "bad"
+0025  v17 = variant Result.Err (v16)
+0026  v18 = call v15(v17)
+0027  print v18
+0028  v19 = load_var @54 describe#4
+0029  v20 = variant Result.Empty ()
+0030  v21 = call v19(v20)
+0031  print v21
+0032  v22 = load_var @57 unwrap#8
+0033  v23 = constant #16 9
+0034  v24 = variant Result.Ok (v23)
+0035  v25 = variant Box.Wrap (v24)
+0036  v26 = call v22(v25)
+0037  print v26
+
+function $0 pairScore(pair#1)
+0000  v0 = load_var @1 pair#1
+0001  v2 = variant_tag v0 Pair.Values
+0002  jump_if_false v2, 0014
+0003  v3 = variant_field v0[1]
+0004  v4 = variant_field v0[0]
+0005  store_var @4 rightValue#2, v3
+0006  store_var @5 leftValue#3, v4
+0007  v5 = load_var @6 rightValue#2
+0008  v6 = constant #1 10
+0009  v7 = multiply v5, v6
+0010  v8 = load_var @7 leftValue#3
+0011  v9 = add v7, v8
+0012  v1 = copy v9
+0013  jump 0019
+0014  v10 = variant_tag v0 Pair.Empty
+0015  jump_if_false v10, 0019
+0016  v11 = constant #2 0
+0017  v1 = copy v11
+0018  jump 0019
+0019  return v1
+0020  v12 = constant #3 nil
+0021  return v12
+
+function $1 describe(result#5)
+0000  v0 = load_var @12 result#5
+0001  v2 = variant_tag v0 Result.Ok
+0002  jump_if_false v2, 0011
+0003  v3 = variant_field v0[0]
+0004  store_var @15 numberValue#6, v3
+0005  v4 = constant #5 "ok:"
+0006  v5 = load_var @16 numberValue#6
+0007  v6 = native_call @17 str(v5)
+0008  v7 = add v4, v6
+0009  v1 = copy v7
+0010  jump 0025
+0011  v8 = variant_tag v0 Result.Err
+0012  jump_if_false v8, 0020
+0013  v9 = variant_field v0[0]
+0014  store_var @20 text#7, v9
+0015  v10 = constant #6 "err:"
+0016  v11 = load_var @21 text#7
+0017  v12 = add v10, v11
+0018  v1 = copy v12
+0019  jump 0025
+0020  v13 = variant_tag v0 Result.Empty
+0021  jump_if_false v13, 0025
+0022  v14 = constant #7 "empty"
+0023  v1 = copy v14
+0024  jump 0025
+0025  return v1
+0026  v15 = constant #8 nil
+0027  return v15
+
+function $2 unwrap(box#9)
+0000  v0 = load_var @26 box#9
+0001  v2 = variant_tag v0 Box.Wrap
+0002  jump_if_false v2, 0012
+0003  v3 = variant_field v0[0]
+0004  v4 = variant_tag v3 Result.Ok
+0005  jump_if_false v4, 0012
+0006  v5 = variant_field v3[0]
+0007  store_var @31 numberValue#10, v5
+0008  v6 = load_var @32 numberValue#10
+0009  v7 = native_call @33 str(v6)
+0010  v1 = copy v7
+0011  jump 0030
+0012  v8 = variant_tag v0 Box.Wrap
+0013  jump_if_false v8, 0022
+0014  v9 = variant_field v0[0]
+0015  v10 = variant_tag v9 Result.Err
+0016  jump_if_false v10, 0022
+0017  v11 = variant_field v9[0]
+0018  store_var @38 text#11, v11
+0019  v12 = load_var @39 text#11
+0020  v1 = copy v12
+0021  jump 0030
+0022  v13 = variant_tag v0 Box.Wrap
+0023  jump_if_false v13, 0030
+0024  v14 = variant_field v0[0]
+0025  v15 = variant_tag v14 Result.Empty
+0026  jump_if_false v15, 0030
+0027  v16 = constant #10 "empty"
+0028  v1 = copy v16
+0029  jump 0030
+0030  return v1
+0031  v17 = constant #11 nil
+0032  return v17

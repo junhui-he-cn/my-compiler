@@ -40,7 +40,12 @@ enumVariants = enumVariant,
                { ",", enumVariant }, [ "," ] ;
 
 enumVariant = identifier,
-              [ "(", [ typeArguments ], ")" ] ;
+              [ "(", [ enumPayloads ], ")" ] ;
+
+enumPayloads = enumPayload,
+               { ",", enumPayload } ;
+
+enumPayload  = [ identifier, ":" ], typeExpr ;
 
 implDecl    = "impl", identifier,
               "{", { methodDecl }, "}" ;
@@ -98,9 +103,14 @@ literalPattern = "nil"
                 | string ;
 
 variantPattern = identifier, ".", identifier,
-                 [ "(", [ pattern, { ",", pattern } ], ")" ]
+                 [ "(", [ patternArguments ], ")" ]
                | identifier, ".", identifier, ".", identifier,
-                 [ "(", [ pattern, { ",", pattern } ], ")" ] ;
+                 [ "(", [ patternArguments ], ")" ] ;
+
+patternArguments = patternArgument,
+                   { ",", patternArgument } ;
+
+patternArgument = [ identifier, ":" ], pattern ;
 
 whileStmt   = "while", expression, block ;
 

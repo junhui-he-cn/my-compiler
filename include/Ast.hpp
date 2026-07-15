@@ -231,6 +231,7 @@ struct StructFieldDecl {
 struct EnumVariantDecl {
     Token name;
     std::vector<TypeAnnotation> payloadTypes;
+    std::vector<std::optional<Token>> payloadNames;
 };
 
 struct IndexExpr final : Expr {
@@ -323,12 +324,17 @@ struct LiteralPattern final : Pattern {
 };
 
 struct VariantPattern final : Pattern {
-    VariantPattern(std::optional<Token> qualifier, Token name, std::vector<PatternPtr> arguments);
+    VariantPattern(
+        std::optional<Token> qualifier,
+        Token name,
+        std::vector<PatternPtr> arguments,
+        std::vector<std::optional<Token>> argumentNames = {});
     void print(std::ostream& out) const override;
 
     std::optional<Token> qualifier;
     Token name;
     std::vector<PatternPtr> arguments;
+    std::vector<std::optional<Token>> argumentNames;
 };
 
 struct MatchExprArm {

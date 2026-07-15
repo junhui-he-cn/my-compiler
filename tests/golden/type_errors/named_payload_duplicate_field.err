@@ -1,0 +1,3 @@
+Type error at 4:27: duplicate payload field value in variant pattern Result.Ok
+    Result.Ok(value: first, value: second) => first,
+                            ^

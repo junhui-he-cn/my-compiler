@@ -4,6 +4,7 @@
 #include "TypeUtils.hpp"
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,7 @@ struct StructTypeDecl {
 struct EnumVariantType {
     Token name;
     std::vector<TypeInfo> payloadTypes;
+    std::vector<std::optional<Token>> payloadNames;
 };
 
 struct EnumTypeDecl {

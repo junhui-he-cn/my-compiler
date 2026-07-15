@@ -286,6 +286,15 @@ const std::string& ResolvedNames::patternEnumName(const VariantPattern& pattern)
     return found->second;
 }
 
+const std::vector<std::size_t>& ResolvedNames::patternPayloadIndices(const VariantPattern& pattern) const
+{
+    const auto found = patternPayloadIndices_.find(&pattern);
+    if (found == patternPayloadIndices_.end()) {
+        throw std::logic_error("missing resolved pattern payload indices");
+    }
+    return found->second;
+}
+
 void ResolvedNames::clear()
 {
     letNames_.clear();
@@ -305,6 +314,7 @@ void ResolvedNames::clear()
     variantConstructors_.clear();
     patternVariableNames_.clear();
     patternEnumNames_.clear();
+    patternPayloadIndices_.clear();
 }
 
 void ResolvedNames::recordLet(const LetStmt& statement, std::string name)
@@ -388,9 +398,13 @@ void ResolvedNames::recordPatternVariable(const VariablePattern& pattern, std::s
     patternVariableNames_.emplace(&pattern, std::move(name));
 }
 
-void ResolvedNames::recordPatternVariant(const VariantPattern& pattern, std::string enumName)
+void ResolvedNames::recordPatternVariant(
+    const VariantPattern& pattern,
+    std::string enumName,
+    std::vector<std::size_t> payloadIndices)
 {
     patternEnumNames_.emplace(&pattern, std::move(enumName));
+    patternPayloadIndices_.emplace(&pattern, std::move(payloadIndices));
 }
 
 const ResolvedNames& TypeChecker::check(const Program& program)
@@ -882,9 +896,17 @@ void TypeChecker::buildModuleInterfaces(const Program& program)
                 ModuleInterfaceEnum enumInfo;
                 enumInfo.name = entry.first;
                 for (const EnumVariantType& variant : entry.second.variants) {
+                    std::vector<std::optional<std::string>> payloadNames;
+                    payloadNames.reserve(variant.payloadNames.size());
+                    for (const std::optional<Token>& payloadName : variant.payloadNames) {
+                        payloadNames.push_back(payloadName
+                            ? std::optional<std::string>(payloadName->lexeme)
+                            : std::nullopt);
+                    }
                     enumInfo.variants.push_back(ModuleInterfaceVariant{
                         variant.name.lexeme,
-                        variant.payloadTypes});
+                        variant.payloadTypes,
+                        std::move(payloadNames)});
                 }
                 interfaceInfo.enums.push_back(std::move(enumInfo));
             }
@@ -1511,7 +1533,30 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
         }
         variantNames.emplace(variant.name.lexeme, variant.name);
 
-        EnumVariantType checkedVariant{variant.name, {}};
+        EnumVariantType checkedVariant{variant.name, {}, {}};
+        bool hasNamedPayload = false;
+        bool hasPositionalPayload = false;
+        std::unordered_set<std::string> payloadNames;
+        checkedVariant.payloadNames.resize(variant.payloadTypes.size());
+        for (std::size_t i = 0; i < variant.payloadTypes.size(); ++i) {
+            if (i < variant.payloadNames.size() && variant.payloadNames[i]) {
+                hasNamedPayload = true;
+                const Token& payloadName = *variant.payloadNames[i];
+                if (!payloadNames.insert(payloadName.lexeme).second) {
+                    throw TypeError(payloadName,
+                        "duplicate enum payload field " + payloadName.lexeme
+                            + " in variant " + statement.name.lexeme + "." + variant.name.lexeme);
+                }
+                checkedVariant.payloadNames[i] = payloadName;
+            } else {
+                hasPositionalPayload = true;
+            }
+        }
+        if (hasNamedPayload && hasPositionalPayload) {
+            throw TypeError(variant.name,
+                "enum variant " + statement.name.lexeme + "." + variant.name.lexeme
+                    + " must use either all named or all positional payloads");
+        }
         for (const TypeAnnotation& payloadType : variant.payloadTypes) {
             checkedVariant.payloadTypes.push_back(resolveAnnotation(payloadType));
         }
@@ -2384,6 +2429,57 @@ bool TypeChecker::checkPattern(
                 + " expects " + std::to_string(variant->payloadTypes.size())
                 + " patterns but got " + std::to_string(variantPattern->arguments.size()));
     }
+
+    std::vector<std::size_t> payloadIndices;
+    payloadIndices.reserve(variantPattern->arguments.size());
+    bool hasNamedPattern = false;
+    bool hasPositionalPattern = false;
+    for (std::size_t i = 0; i < variantPattern->arguments.size(); ++i) {
+        if (i < variantPattern->argumentNames.size() && variantPattern->argumentNames[i]) {
+            hasNamedPattern = true;
+        } else {
+            hasPositionalPattern = true;
+        }
+    }
+    if (hasNamedPattern && hasPositionalPattern) {
+        throw TypeError(variantPattern->name,
+            "variant pattern " + *expectedType.enumName + "." + variantPattern->name.lexeme
+                + " must use either all named or all positional payloads");
+    }
+
+    if (!hasNamedPattern) {
+        for (std::size_t i = 0; i < variantPattern->arguments.size(); ++i) {
+            payloadIndices.push_back(i);
+        }
+    } else {
+        std::unordered_map<std::string, std::size_t> declaredPayloads;
+        for (std::size_t i = 0; i < variant->payloadTypes.size(); ++i) {
+            if (i >= variant->payloadNames.size() || !variant->payloadNames[i]) {
+                throw TypeError(variantPattern->name,
+                    "variant " + *expectedType.enumName + "." + variantPattern->name.lexeme
+                        + " has no named payload fields");
+            }
+            declaredPayloads.emplace(variant->payloadNames[i]->lexeme, i);
+        }
+
+        std::unordered_set<std::string> usedPayloads;
+        for (std::size_t i = 0; i < variantPattern->arguments.size(); ++i) {
+            const Token& payloadName = *variantPattern->argumentNames[i];
+            const auto found = declaredPayloads.find(payloadName.lexeme);
+            if (found == declaredPayloads.end()) {
+                throw TypeError(payloadName,
+                    "variant " + *expectedType.enumName + "." + variantPattern->name.lexeme
+                        + " has no payload field " + payloadName.lexeme);
+            }
+            if (!usedPayloads.insert(payloadName.lexeme).second) {
+                throw TypeError(payloadName,
+                    "duplicate payload field " + payloadName.lexeme
+                        + " in variant pattern " + *expectedType.enumName
+                        + "." + variantPattern->name.lexeme);
+            }
+            payloadIndices.push_back(found->second);
+        }
+    }
     coveredVariants.insert(variantPattern->name.lexeme);
 
     std::string runtimeEnumName = *expectedType.enumName;
@@ -2398,11 +2494,14 @@ bool TypeChecker::checkPattern(
             }
         }
     }
-    resolvedNames_.recordPatternVariant(*variantPattern, runtimeEnumName);
+    resolvedNames_.recordPatternVariant(*variantPattern, runtimeEnumName, payloadIndices);
 
     for (std::size_t i = 0; i < variantPattern->arguments.size(); ++i) {
         std::unordered_set<std::string> nestedCoverage;
-        checkPattern(*variantPattern->arguments[i], variant->payloadTypes[i], nestedCoverage);
+        checkPattern(
+            *variantPattern->arguments[i],
+            variant->payloadTypes[payloadIndices[i]],
+            nestedCoverage);
     }
     return false;
 }

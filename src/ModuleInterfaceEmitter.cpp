@@ -105,6 +105,9 @@ void writeModuleInterfaceText(std::ostream& out, const std::vector<ModuleInterfa
                         if (i != 0) {
                             out << ", ";
                         }
+                        if (i < variant.payloadNames.size() && variant.payloadNames[i]) {
+                            out << *variant.payloadNames[i] << ": ";
+                        }
                         out << typeInfoName(variant.payloadTypes[i]);
                     }
                     out << ')';

@@ -1,0 +1,3 @@
+Type error at 1:15: enum variant Result.Ok must use either all named or all positional payloads
+  enum Result { Ok(value: number, string), Empty }
+                ^

@@ -490,8 +490,9 @@ void IRCompiler::compilePattern(
     const IRRegister tag = ir_.emitVariantTag(
         value, resolvedNames_->patternEnumName(*variant), variant->name.lexeme);
     failJumps.push_back(ir_.emitJumpIfFalse(tag));
+    const std::vector<std::size_t>& payloadIndices = resolvedNames_->patternPayloadIndices(*variant);
     for (std::size_t i = 0; i < variant->arguments.size(); ++i) {
-        const IRRegister field = ir_.emitVariantField(value, i);
+        const IRRegister field = ir_.emitVariantField(value, payloadIndices[i]);
         compilePattern(*variant->arguments[i], field, failJumps, bindings);
     }
 }

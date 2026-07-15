@@ -276,15 +276,22 @@ EnumVariantDecl Parser::enumVariant()
 {
     Token name = consume(TokenType::Identifier, "expected enum variant name");
     std::vector<TypeAnnotation> payloadTypes;
+    std::vector<std::optional<Token>> payloadNames;
     if (match(TokenType::LeftParen)) {
         if (!check(TokenType::RightParen)) {
             do {
+                std::optional<Token> payloadName;
+                if (check(TokenType::Identifier) && checkNext(TokenType::Colon)) {
+                    payloadName = advance();
+                    consume(TokenType::Colon, "expected `:` after enum payload name");
+                }
+                payloadNames.push_back(std::move(payloadName));
                 payloadTypes.push_back(typeAnnotation("expected enum variant payload type"));
             } while (match(TokenType::Comma));
         }
         consume(TokenType::RightParen, "expected `)` after enum variant payload types");
     }
-    return EnumVariantDecl{std::move(name), std::move(payloadTypes)};
+    return EnumVariantDecl{std::move(name), std::move(payloadTypes), std::move(payloadNames)};
 }
 
 std::vector<StructFieldDecl> Parser::structFields()
@@ -1239,16 +1246,24 @@ PatternPtr Parser::variantPattern(Token qualifier, Token name)
 {
     const std::optional<SourceSpan> span = spanForToken(qualifier);
     std::vector<PatternPtr> arguments;
+    std::vector<std::optional<Token>> argumentNames;
     if (match(TokenType::LeftParen)) {
         if (!check(TokenType::RightParen)) {
             do {
+                std::optional<Token> argumentName;
+                if (check(TokenType::Identifier) && checkNext(TokenType::Colon)) {
+                    argumentName = advance();
+                    consume(TokenType::Colon, "expected `:` after pattern payload name");
+                }
+                argumentNames.push_back(std::move(argumentName));
                 arguments.push_back(pattern());
             } while (match(TokenType::Comma));
         }
         consume(TokenType::RightParen, "expected `)` after variant pattern");
     }
     return withSpan(
-        std::make_unique<VariantPattern>(std::move(qualifier), std::move(name), std::move(arguments)),
+        std::make_unique<VariantPattern>(
+            std::move(qualifier), std::move(name), std::move(arguments), std::move(argumentNames)),
         span);
 }
 
