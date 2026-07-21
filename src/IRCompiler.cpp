@@ -746,6 +746,7 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
         || expression.name.lexeme == "any"
         || expression.name.lexeme == "all"
         || expression.name.lexeme == "count"
+        || expression.name.lexeme == "find"
         || expression.name.lexeme == "reduce") {
         std::vector<IRRegister> arguments;
         arguments.push_back(receiver);

@@ -1,0 +1,3 @@
+Type error at 1:37: find expects array as first argument, got number
+  find(1, fun (value) { return true; });
+                                      ^

@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+find(id(1), fun (value) { return true; });

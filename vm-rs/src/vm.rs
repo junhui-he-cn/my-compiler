@@ -374,6 +374,18 @@ mod tests {
                 .unwrap(),
             Value::Number(value) if value == 1.0
         ));
+        let find_source = vm.make_array(vec![Value::number(1.0), Value::number(2.0)]);
+        let find_miss_source = vm.make_array(vec![Value::number(1.0)]);
+        assert!(matches!(
+            vm.execute_native_call("find", vec![find_source, predicate.clone()])
+                .unwrap(),
+            Value::Number(value) if value == 2.0
+        ));
+        assert!(matches!(
+            vm.execute_native_call("find", vec![find_miss_source, predicate.clone()])
+                .unwrap(),
+            Value::Nil
+        ));
         assert!(matches!(
             vm.execute_native_call("any", vec![empty_any_source, predicate.clone()])
                 .unwrap(),
@@ -1956,6 +1968,7 @@ impl<'a> VM<'a> {
             "any" => self.execute_native_any_all(arguments, caller, call_site, true),
             "all" => self.execute_native_any_all(arguments, caller, call_site, false),
             "count" => self.execute_native_count(arguments, caller, call_site),
+            "find" => self.execute_native_find(arguments, caller, call_site),
             "reduce" => self.execute_native_reduce(arguments, caller, call_site),
             "range" => self.execute_native_range(arguments),
             _ => Err(RuntimeError::new(format!(
@@ -2120,6 +2133,42 @@ impl<'a> VM<'a> {
             }
         }
         Ok(Value::number(count as f64))
+    }
+
+    fn execute_native_find(
+        &mut self,
+        arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
+    ) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("find expects 2 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("find expects array as first argument"));
+        };
+        let Value::Function(predicate) = &arguments[1] else {
+            return Err(RuntimeError::new("find expects function as second argument"));
+        };
+        if predicate.arity != 1 {
+            return Err(RuntimeError::new("find expects callback with 1 argument"));
+        }
+
+        let elements = array.elements.borrow().clone();
+        for element in elements {
+            let result = self.call_function(
+                predicate.clone(),
+                vec![element.clone()],
+                caller.clone(),
+                call_site.clone(),
+            )?;
+            match result {
+                Value::Bool(true) => return Ok(element),
+                Value::Bool(false) => {}
+                _ => return Err(RuntimeError::new("find expects callback to return bool")),
+            }
+        }
+        Ok(Value::Nil)
     }
 
     fn execute_native_reduce(

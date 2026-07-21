@@ -1,0 +1,1 @@
+find([1, nil], fun (value: number): bool { return value > 0; });

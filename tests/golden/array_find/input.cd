@@ -1,0 +1,16 @@
+let values: [number] = [1, 2, 3];
+let first: number? = find(values, fun (value) {
+  return value > 1;
+});
+print first;
+print values.find(fun (value: number): bool {
+  return value == 9;
+});
+
+let snapshot: [number] = [1, 2];
+print snapshot.find(fun (value) {
+  push(snapshot, 9);
+  return value == 2;
+});
+print snapshot;
+print [].find(fun (value: number): bool { return true; });

@@ -12,7 +12,7 @@ and map element assignment, numeric compound assignment for variables, array ele
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, `any`, `all`, `count`, `remove`, `clear`, `keys`, `values`,
+`map`, `filter`, `reduce`, `any`, `all`, `count`, `find`, `remove`, `clear`, `keys`, `values`,
 and `typeOf`.
 
 The compiler pipeline includes:
@@ -297,6 +297,15 @@ unshadowed builtin sugar, while the function-style `count` name is shadowable.
 Known array, callback, parameter, and boolean return types are checked
 statically; unknown values are validated at runtime.
 
+The callback-based array helper `find(array, predicate)` invokes its
+one-argument boolean predicate from left to right over a snapshot and returns
+the first matching element, or `nil` when no element matches. It short-circuits
+after the first `true` result; empty arrays return `nil`. The member form
+`array.find(predicate)` is unshadowed builtin sugar, while the function-style
+`find` name is shadowable. A known `[T]` input returns a nullable `T`; if `T`
+is already nullable, that existing nullable layer is preserved. Unknown
+arrays remain dynamically typed.
+
 The callback-based array helper `reduce(array, initial, callback)` invokes its
 two-argument callback as `(accumulator, element)` from left to right. The return
 value becomes the next accumulator, and an empty array returns the explicit
@@ -348,14 +357,15 @@ helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
 `array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
 `array.any(predicate)`, `array.all(predicate)`,
-`array.count(predicate)`, `array.reduce(initial, callback)`, `map.len()`,
+`array.count(predicate)`, `array.find(predicate)`,
+`array.reduce(initial, callback)`, `map.len()`,
 `map.contains(key)`,
 `map.remove(key)`, `map.clear()`, `map.keys()`, `map.values()`, `string.len()`,
 `string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `any`, `all`, `count`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
+`map`, `filter`, `any`, `all`, `count`, `find`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
 member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.

@@ -1,0 +1,2 @@
+fun onlyNumber(value: number): bool { return value > 0; }
+find([1, nil], onlyNumber);

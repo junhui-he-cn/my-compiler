@@ -27,6 +27,7 @@ enum class NativeFunctionKind {
     Any,
     All,
     Count,
+    Find,
     Reduce,
     Range,
 };

@@ -1664,7 +1664,7 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
     return name == "push" || name == "pop" || name == "remove" || name == "clear" || name == "keys" || name == "values" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
-        || name == "map" || name == "filter" || name == "any" || name == "all" || name == "count" || name == "reduce";
+        || name == "map" || name == "filter" || name == "any" || name == "all" || name == "count" || name == "find" || name == "reduce";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -2267,7 +2267,7 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
             ? resolveAnnotation(*parameter.typeName)
             : (context ? context->parameterTypes[i] : unknownType());
 
-        if (context && parameter.typeName && !compatible(context->parameterTypes[i], parameterType)) {
+        if (context && parameter.typeName && !compatible(parameterType, context->parameterTypes[i])) {
             throw TypeError(parameter.name,
                 "parameter `" + parameter.name.lexeme + "` expects " + typeInfoName(context->parameterTypes[i])
                     + ", got " + typeInfoName(parameterType));
@@ -3614,7 +3614,7 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayMap(
         throw TypeError(callToken, "map expects callback with 1 argument");
     }
     if (elementType.kind != StaticType::Unknown
-        && !compatible(elementType, callback.type.parameterTypes.front())) {
+        && !compatible(callback.type.parameterTypes.front(), elementType)) {
         throw TypeError(callToken,
             "map callback expects " + typeInfoName(elementType)
                 + ", got " + typeInfoName(callback.type.parameterTypes.front()));
@@ -3652,7 +3652,7 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayFilter(
             throw TypeError(callToken, "filter expects callback with 1 argument");
         }
         if (elementType.kind != StaticType::Unknown
-            && !compatible(elementType, predicate.type.parameterTypes.front())) {
+            && !compatible(predicate.type.parameterTypes.front(), elementType)) {
             throw TypeError(callToken,
                 "filter callback expects " + typeInfoName(elementType)
                     + ", got " + typeInfoName(predicate.type.parameterTypes.front()));
@@ -3700,7 +3700,7 @@ void TypeChecker::checkArrayPredicate(
             throw TypeError(callToken, functionName + " expects callback with 1 argument");
         }
         if (elementType.kind != StaticType::Unknown
-            && !compatible(elementType, predicate.type.parameterTypes.front())) {
+            && !compatible(predicate.type.parameterTypes.front(), elementType)) {
             throw TypeError(callToken,
                 functionName + " callback expects " + typeInfoName(elementType)
                     + ", got " + typeInfoName(predicate.type.parameterTypes.front()));
@@ -3735,6 +3735,21 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayCount(
     return CheckedExpression{simpleType(StaticType::Number)};
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkArrayFind(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& predicateExpression)
+{
+    checkArrayPredicate(callToken, arrayTypeInfo, predicateExpression, "find");
+    if (arrayTypeInfo.kind == StaticType::Array && arrayTypeInfo.elementType) {
+        if (isNullable(*arrayTypeInfo.elementType)) {
+            return CheckedExpression{*arrayTypeInfo.elementType};
+        }
+        return CheckedExpression{nullableType(*arrayTypeInfo.elementType)};
+    }
+    return CheckedExpression{unknownType()};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkArrayReduce(
     const Token& callToken,
     const TypeInfo& arrayTypeInfo,
@@ -3765,13 +3780,13 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayReduce(
             throw TypeError(callToken, "reduce expects callback with 2 arguments");
         }
         if (initial.type.kind != StaticType::Unknown
-            && !compatible(initial.type, callback.type.parameterTypes.front())) {
+            && !compatible(callback.type.parameterTypes.front(), initial.type)) {
             throw TypeError(callToken,
                 "reduce callback accumulator expects " + typeInfoName(initial.type)
                     + ", got " + typeInfoName(callback.type.parameterTypes.front()));
         }
         if (elementType.kind != StaticType::Unknown
-            && !compatible(elementType, callback.type.parameterTypes[1])) {
+            && !compatible(callback.type.parameterTypes[1], elementType)) {
             throw TypeError(callToken,
                 "reduce callback element expects " + typeInfoName(elementType)
                     + ", got " + typeInfoName(callback.type.parameterTypes[1]));
@@ -4040,6 +4055,10 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
     case NativeFunctionKind::Count: {
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
         return checkArrayCount(expression.paren, arrayArgument.type, *expression.arguments[1]);
+    }
+    case NativeFunctionKind::Find: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        return checkArrayFind(expression.paren, arrayArgument.type, *expression.arguments[1]);
     }
     case NativeFunctionKind::Reduce: {
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
@@ -4311,6 +4330,12 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
         expectArity(1);
         const CheckedExpression receiver = checkReceiver();
         return checkArrayCount(expression.paren, receiver.type, *expression.arguments[0]);
+    }
+
+    if (name == "find") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        return checkArrayFind(expression.paren, receiver.type, *expression.arguments[0]);
     }
 
     if (name == "reduce") {
