@@ -1,0 +1,3 @@
+Type error at 1:12: values expects map receiver, got [number]
+  [1].values();
+             ^

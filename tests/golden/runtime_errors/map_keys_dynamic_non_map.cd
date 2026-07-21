@@ -1,0 +1,4 @@
+fun identity(value) {
+  return value;
+}
+keys(identity(1));

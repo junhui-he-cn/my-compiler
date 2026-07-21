@@ -1,0 +1,10 @@
+Program
+  Fun keys(value)
+    Return (array "shadowed-keys")
+  Fun values(value)
+    Return (array "shadowed-values")
+  Let prices = (map (entry "tea" 3))
+  Print (call keys prices)
+  Print (member-call prices keys)
+  Print (call values prices)
+  Print (member-call prices values)

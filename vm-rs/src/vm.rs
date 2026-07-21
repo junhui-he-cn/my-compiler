@@ -458,6 +458,36 @@ mod tests {
     }
 
     #[test]
+    fn native_map_keys_and_values_return_ordered_fresh_arrays() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(vec![
+            (Value::string("a"), Value::number(1.0)),
+            (Value::string("b"), Value::number(2.0)),
+        ]);
+
+        let keys = vm
+            .execute_native_call("keys", vec![map.clone()])
+            .expect("keys succeeds");
+        let values = vm
+            .execute_native_call("values", vec![map.clone()])
+            .expect("values succeeds");
+        assert_eq!(keys.to_string(), "[a, b]");
+        assert_eq!(values.to_string(), "[1, 2]");
+
+        vm.execute_assign_index(map.clone(), Value::string("c"), Value::number(3.0))
+            .expect("map mutation succeeds");
+        assert_eq!(keys.to_string(), "[a, b]");
+        assert_eq!(values.to_string(), "[1, 2]");
+
+        let fresh_keys = vm
+            .execute_native_call("keys", vec![map])
+            .expect("second keys succeeds");
+        assert_eq!(fresh_keys.to_string(), "[a, b, c]");
+        assert!(!keys.runtime_equals(&fresh_keys));
+    }
+
+    #[test]
     fn assert_array_snapshots_map_keys_in_insertion_order() {
         let program = Program {
             constants: vec![
@@ -1727,6 +1757,8 @@ impl<'a> VM<'a> {
             "push" => self.execute_native_push(arguments),
             "pop" => self.execute_native_pop(arguments),
             "remove" => self.execute_native_remove(arguments),
+            "keys" => self.execute_native_keys(arguments),
+            "values" => self.execute_native_values(arguments),
             "floor" => self.execute_native_floor(arguments),
             "ceil" => self.execute_native_ceil(arguments),
             "sqrt" => self.execute_native_sqrt(arguments),
@@ -1889,6 +1921,38 @@ impl<'a> VM<'a> {
             .position(|(key, _)| key.runtime_equals(&arguments[1]))
             .ok_or_else(|| RuntimeError::new("map key not found"))?;
         Ok(entries.remove(position).1)
+    }
+
+    fn execute_native_keys(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("keys expects 1 argument"));
+        }
+        let Value::Map(map) = &arguments[0] else {
+            return Err(RuntimeError::new("keys expects map as first argument"));
+        };
+        let elements = map
+            .entries
+            .borrow()
+            .iter()
+            .map(|(key, _)| key.clone())
+            .collect();
+        Ok(self.make_array(elements))
+    }
+
+    fn execute_native_values(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("values expects 1 argument"));
+        }
+        let Value::Map(map) = &arguments[0] else {
+            return Err(RuntimeError::new("values expects map as first argument"));
+        };
+        let elements = map
+            .entries
+            .borrow()
+            .iter()
+            .map(|(_, value)| value.clone())
+            .collect();
+        Ok(self.make_array(elements))
     }
 
     fn execute_native_floor(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

@@ -4,10 +4,12 @@
 
 namespace {
 
-constexpr std::array<NativeFunctionSignature, 18> kNativeFunctions{{
+constexpr std::array<NativeFunctionSignature, 20> kNativeFunctions{{
     {"push", 2, NativeFunctionKind::Push},
     {"pop", 1, NativeFunctionKind::Pop},
     {"remove", 2, NativeFunctionKind::Remove},
+    {"keys", 1, NativeFunctionKind::Keys},
+    {"values", 1, NativeFunctionKind::Values},
     {"floor", 1, NativeFunctionKind::Floor},
     {"ceil", 1, NativeFunctionKind::Ceil},
     {"sqrt", 1, NativeFunctionKind::Sqrt},

@@ -153,13 +153,17 @@ map keys through the existing array/range loop lowering. Map removal and map
 iteration together preserve shared-map mutation while keeping loop boundaries
 stable.
 
+Map `keys` and `values` helpers are also implemented as shadowable native
+functions with unshadowed member-call forms, returning fresh insertion-ordered
+shallow arrays with static `[K]`/`[V]` results for known maps.
+
 Future work:
 
 - Extend the first array `map`/`filter`/`reduce` slices with generic collection syntax
   and further higher-order APIs once their remaining inference boundaries are
   defined.
-- Add further map operations, such as bulk helpers, only as focused slices with
-  explicit mutation and missing-key conventions.
+- Add further map operations, such as additional bulk helpers, only as focused
+  slices with explicit mutation and missing-key conventions.
 - Add further range/collection operations only as focused slices with explicit
   mutation and bounds semantics.
 

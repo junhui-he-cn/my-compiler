@@ -1,0 +1,3 @@
+let prices = {"tea": 3, "coffee": 5};
+print keys(prices);
+print prices.values();

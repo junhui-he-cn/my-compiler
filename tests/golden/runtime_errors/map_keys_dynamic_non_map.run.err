@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_keys_dynamic_non_map.cd:4:1: keys expects map as first argument
+  keys(identity(1));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_keys_dynamic_non_map.cd:4:1)

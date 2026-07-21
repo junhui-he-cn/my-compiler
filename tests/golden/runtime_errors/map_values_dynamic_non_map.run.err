@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_values_dynamic_non_map.cd:4:1: values expects map as first argument
+  values(identity(1));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_values_dynamic_non_map.cd:4:1)

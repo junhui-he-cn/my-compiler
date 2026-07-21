@@ -1,0 +1,3 @@
+Type error at 1:7: keys expects map as first argument, got number
+  keys(1);
+        ^

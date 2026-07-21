@@ -732,6 +732,8 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
     if (expression.name.lexeme == "push"
         || expression.name.lexeme == "pop"
         || expression.name.lexeme == "remove"
+        || expression.name.lexeme == "keys"
+        || expression.name.lexeme == "values"
         || expression.name.lexeme == "substr"
         || expression.name.lexeme == "charAt"
         || expression.name.lexeme == "contains"

@@ -303,6 +303,10 @@ validation as lookup and `contains`. The function-style `remove` name is
 shadowable, while member-call sugar is unshadowed. Map iteration yields a
 snapshot of insertion-ordered keys, so changes made by the loop body do not
 change the iteration boundary. Custom iterators are not implemented.
+The `keys(map)`/`map.keys()` and `values(map)`/`map.values()` helpers return
+fresh shallow arrays in the same insertion order; existing snapshots do not
+change when the map is later mutated. Function-style names are shadowable,
+while member-call forms are unshadowed.
 
 The native `range` helper constructs immutable finite integer ranges:
 `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are
@@ -320,12 +324,13 @@ Builtin member-call sugar is available for selected array, map, and string
 helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
 `array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
-`array.reduce(initial, callback)`, `map.len()`, `map.contains(key)`, `string.len()`,
-`map.remove(key)`, `string.substr(start, length)`, `string.charAt(index)`, and
+`array.reduce(initial, callback)`, `map.len()`, `map.contains(key)`,
+`map.remove(key)`, `map.keys()`, `map.values()`, `string.len()`,
+`string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, `remove`, `substr`, or `charAt` do not shadow
+`map`, `filter`, `reduce`, `remove`, `keys`, `values`, `substr`, or `charAt` do not shadow
 member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.

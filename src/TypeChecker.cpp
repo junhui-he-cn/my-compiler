@@ -1661,7 +1661,7 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
 
 bool TypeChecker::isBuiltinMemberName(const std::string& name) const
 {
-    return name == "push" || name == "pop" || name == "remove" || name == "len"
+    return name == "push" || name == "pop" || name == "remove" || name == "keys" || name == "values" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
         || name == "map" || name == "filter" || name == "reduce";
@@ -3808,6 +3808,21 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         }
         return CheckedExpression{unknownType()};
     }
+    case NativeFunctionKind::Keys:
+    case NativeFunctionKind::Values: {
+        const CheckedExpression mapArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (mapArgument.type.kind != StaticType::Unknown && mapArgument.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren,
+                std::string(function->name) + " expects map as first argument, got "
+                    + typeInfoName(mapArgument.type));
+        }
+        const TypeInfo* elementType = mapArgument.type.kind == StaticType::Map
+            ? (function->kind == NativeFunctionKind::Keys
+                    ? mapArgument.type.keyType.get()
+                    : mapArgument.type.valueType.get())
+            : nullptr;
+        return CheckedExpression{elementType ? arrayType(*elementType) : simpleType(StaticType::Array)};
+    }
     case NativeFunctionKind::Floor:
     case NativeFunctionKind::Ceil:
     case NativeFunctionKind::Sqrt: {
@@ -4122,6 +4137,19 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
             return CheckedExpression{*receiver.type.valueType};
         }
         return CheckedExpression{unknownType()};
+    }
+
+    if (name == "keys" || name == "values") {
+        expectArity(0);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren,
+                name + " expects map receiver, got " + typeInfoName(receiver.type));
+        }
+        const TypeInfo* elementType = receiver.type.kind == StaticType::Map
+            ? (name == "keys" ? receiver.type.keyType.get() : receiver.type.valueType.get())
+            : nullptr;
+        return CheckedExpression{elementType ? arrayType(*elementType) : simpleType(StaticType::Array)};
     }
 
     if (name == "slice") {
