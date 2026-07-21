@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+any(id(1), fun (value) { return true; });

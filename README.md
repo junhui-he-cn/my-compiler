@@ -12,7 +12,8 @@ and map element assignment, numeric compound assignment for variables, array ele
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, `remove`, `clear`, `keys`, `values`, and `typeOf`.
+`map`, `filter`, `reduce`, `any`, `all`, `remove`, `clear`, `keys`, `values`,
+and `typeOf`.
 
 The compiler pipeline includes:
 
@@ -274,9 +275,19 @@ original elements for which the predicate returns `true`. It returns a fresh
 shallow array and preserves a known source element type. A known predicate must
 return `bool`; unknown predicate values are validated at runtime. The member
 form `array.filter(predicate)` is unshadowed builtin sugar, while the
-function-style `filter` name is shadowable. Generic predicates are not accepted
+  function-style `filter` name is shadowable. Generic predicates are not accepted
 directly at this monomorphic call site, and callback errors propagate with the
 normal Rust VM call stack.
+
+The callback-based array helpers `any(array, predicate)` and
+`all(array, predicate)` invoke a one-argument boolean predicate from left to
+right over a snapshot and short-circuit at the first decisive result. `any`
+returns `true` for the first matching element and `false` for an empty array;
+`all` returns `false` for the first rejected element and `true` for an empty
+array. Their member forms `array.any(predicate)` and `array.all(predicate)`
+are unshadowed builtin sugar, while the function-style names are shadowable.
+Known array, callback, parameter, and boolean return types are checked
+statically; unknown values are validated at runtime.
 
 The callback-based array helper `reduce(array, initial, callback)` invokes its
 two-argument callback as `(accumulator, element)` from left to right. The return
@@ -328,13 +339,14 @@ Builtin member-call sugar is available for selected array, map, and string
 helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
 `array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
+`array.any(predicate)`, `array.all(predicate)`,
 `array.reduce(initial, callback)`, `map.len()`, `map.contains(key)`,
 `map.remove(key)`, `map.clear()`, `map.keys()`, `map.values()`, `string.len()`,
 `string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
+`map`, `filter`, `any`, `all`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
 member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.

@@ -1,0 +1,3 @@
+Type error at 2:17: parameter `value` expects number, got string
+  values.all(fun (value: string): bool { return true; });
+                  ^

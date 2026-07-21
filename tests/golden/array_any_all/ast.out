@@ -1,0 +1,12 @@
+Program
+  Let values: [number] = (array 1 2 3)
+  Let anyResult: bool = (member-call values any (fun (value) (return (== value 2))))
+  Let allResult: bool = (call all values (fun (value: number): bool (return (< value 4))))
+  Let snapshot: [number] = (array 1 2 3)
+  Print (call any snapshot (fun (value) (expr (call push snapshot 9)) (return (== value 2))))
+  Print snapshot
+  Let allSnapshot: [number] = (array 1 2 3)
+  Print (member-call allSnapshot all (fun (value) (expr (call push allSnapshot 8)) (return (< value 3))))
+  Print allSnapshot
+  Print (member-call (array) any (fun (value: number): bool (return true)))
+  Print (member-call (array 1 2) all (fun (value: number): bool (return (> value 0))))

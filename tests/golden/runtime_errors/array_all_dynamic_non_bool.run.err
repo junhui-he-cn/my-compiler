@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/array_all_dynamic_non_bool.cd:2:1: all expects callback to return bool
+  all([1], id(fun (value) { return nil; }));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/array_all_dynamic_non_bool.cd:2:1)

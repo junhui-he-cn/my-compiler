@@ -316,6 +316,155 @@ mod tests {
     }
 
     #[test]
+    fn native_any_and_all_short_circuit_with_boolean_results() {
+        let program = Program {
+            constants: vec![Constant::Number("2".to_string())],
+            names: vec!["item".to_string()],
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            },
+            functions: vec![Function {
+                index: 0,
+                name: "is_two".to_string(),
+                arity: 1,
+                registers: 3,
+                params: vec!["item".to_string()],
+                instructions: vec![
+                    Instruction::LoadVar { dest: 0, name: 0 },
+                    Instruction::Constant { dest: 1, constant: 0 },
+                    Instruction::Equal {
+                        dest: 2,
+                        left: 0,
+                        right: 1,
+                    },
+                    Instruction::Return { value: 2 },
+                ],
+                locations: vec![None, None, None, None],
+            }],
+            debug_sources: Vec::new(),
+        };
+        let mut vm = VM::new(&program);
+        let predicate = Value::function(FunctionValue {
+            name: "is_two".to_string(),
+            function_index: 0,
+            arity: 1,
+            identity: 1,
+            closure: new_environment(),
+        });
+        let any_source = vm.make_array(vec![Value::number(1.0), Value::number(2.0)]);
+        let all_source = vm.make_array(vec![Value::number(2.0), Value::number(2.0)]);
+        let empty_any_source = vm.make_array(Vec::new());
+        let empty_all_source = vm.make_array(Vec::new());
+
+        assert!(matches!(
+            vm.execute_native_call("any", vec![any_source, predicate.clone()])
+            .unwrap(),
+            Value::Bool(true)
+        ));
+        assert!(matches!(
+            vm.execute_native_call("all", vec![all_source, predicate.clone()])
+            .unwrap(),
+            Value::Bool(true)
+        ));
+        assert!(matches!(
+            vm.execute_native_call("any", vec![empty_any_source, predicate.clone()])
+                .unwrap(),
+            Value::Bool(false)
+        ));
+        assert!(matches!(
+            vm.execute_native_call("all", vec![empty_all_source, predicate])
+                .unwrap(),
+            Value::Bool(true)
+        ));
+    }
+
+    #[test]
+    fn native_any_and_all_validate_operands_and_predicate_results() {
+        let program = Program {
+            constants: vec![Constant::Nil],
+            names: Vec::new(),
+            main: FunctionBody {
+                registers: 0,
+                instructions: Vec::new(),
+                locations: Vec::new(),
+            },
+            functions: vec![
+                Function {
+                    index: 0,
+                    name: "no_args".to_string(),
+                    arity: 0,
+                    registers: 0,
+                    params: Vec::new(),
+                    instructions: Vec::new(),
+                    locations: Vec::new(),
+                },
+                Function {
+                    index: 1,
+                    name: "returns_nil".to_string(),
+                    arity: 1,
+                    registers: 1,
+                    params: vec!["item".to_string()],
+                    instructions: vec![
+                        Instruction::Constant { dest: 0, constant: 0 },
+                        Instruction::Return { value: 0 },
+                    ],
+                    locations: vec![None, None],
+                },
+            ],
+            debug_sources: Vec::new(),
+        };
+        let mut vm = VM::new(&program);
+        let array = vm.make_array(vec![Value::number(1.0)]);
+        let no_args = Value::function(FunctionValue {
+            name: "no_args".to_string(),
+            function_index: 0,
+            arity: 0,
+            identity: 1,
+            closure: new_environment(),
+        });
+        let returns_nil = Value::function(FunctionValue {
+            name: "returns_nil".to_string(),
+            function_index: 1,
+            arity: 1,
+            identity: 2,
+            closure: new_environment(),
+        });
+
+        assert_eq!(
+            vm.execute_native_call("any", Vec::new())
+                .unwrap_err()
+                .message,
+            "any expects 2 arguments"
+        );
+        assert_eq!(
+            vm.execute_native_call("all", vec![Value::number(1.0), no_args.clone()])
+                .unwrap_err()
+                .message,
+            "all expects array as first argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("any", vec![array.clone(), Value::number(1.0)])
+                .unwrap_err()
+                .message,
+            "any expects function as second argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("all", vec![array.clone(), no_args])
+                .unwrap_err()
+                .message,
+            "all expects callback with 1 argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("any", vec![array, returns_nil])
+                .unwrap_err()
+                .message,
+            "any expects callback to return bool"
+        );
+    }
+
+    #[test]
     fn native_reduce_threads_accumulator_and_returns_initial_for_empty_arrays() {
         let program = Program {
             constants: Vec::new(),
@@ -1798,6 +1947,8 @@ impl<'a> VM<'a> {
             "concat" => self.execute_native_concat(arguments),
             "map" => self.execute_native_map(arguments, caller, call_site),
             "filter" => self.execute_native_filter(arguments, caller, call_site),
+            "any" => self.execute_native_any_all(arguments, caller, call_site, true),
+            "all" => self.execute_native_any_all(arguments, caller, call_site, false),
             "reduce" => self.execute_native_reduce(arguments, caller, call_site),
             "range" => self.execute_native_range(arguments),
             _ => Err(RuntimeError::new(format!(
@@ -1874,6 +2025,57 @@ impl<'a> VM<'a> {
             }
         }
         Ok(self.make_array(filtered))
+    }
+
+    fn execute_native_any_all(
+        &mut self,
+        arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
+        any: bool,
+    ) -> Result<Value, RuntimeError> {
+        let name = if any { "any" } else { "all" };
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new(format!("{} expects 2 arguments", name)));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new(format!(
+                "{} expects array as first argument",
+                name
+            )));
+        };
+        let Value::Function(predicate) = &arguments[1] else {
+            return Err(RuntimeError::new(format!(
+                "{} expects function as second argument",
+                name
+            )));
+        };
+        if predicate.arity != 1 {
+            return Err(RuntimeError::new(format!(
+                "{} expects callback with 1 argument",
+                name
+            )));
+        }
+
+        let elements = array.elements.borrow().clone();
+        for element in elements {
+            let result = self.call_function(
+                predicate.clone(),
+                vec![element],
+                caller.clone(),
+                call_site.clone(),
+            )?;
+            let Value::Bool(result) = result else {
+                return Err(RuntimeError::new(format!(
+                    "{} expects callback to return bool",
+                    name
+                )));
+            };
+            if (any && result) || (!any && !result) {
+                return Ok(Value::boolean(result));
+            }
+        }
+        Ok(Value::boolean(!any))
     }
 
     fn execute_native_reduce(

@@ -1,0 +1,1 @@
+any([1], fun (value: number): number { return 1; });

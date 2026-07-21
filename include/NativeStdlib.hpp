@@ -24,6 +24,8 @@ enum class NativeFunctionKind {
     Concat,
     Map,
     Filter,
+    Any,
+    All,
     Reduce,
     Range,
 };

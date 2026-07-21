@@ -167,11 +167,16 @@ Map `clear` is also implemented as a shadowable native function with an
 unshadowed member-call form; it clears the shared ordered entry vector in
 place and returns `nil`.
 
+Array `any` and `all` are implemented as shadowable native functions with
+unshadowed member-call forms. They use boolean predicates over snapshot
+elements, short-circuit left to right, and return the standard empty-array
+identities (`false` for `any`, `true` for `all`).
+
 Future work:
 
-- Extend the first array `map`/`filter`/`reduce` slices with generic collection syntax
-  and further higher-order APIs once their remaining inference boundaries are
-  defined.
+- Extend the first array `map`/`filter`/`reduce`/`any`/`all` slices with generic
+  collection syntax and further higher-order APIs once their remaining
+  inference boundaries are defined.
 - Add further map operations, such as additional bulk helpers, only as focused
   slices with explicit mutation and missing-key conventions.
 - Add further range/collection operations only as focused slices with explicit

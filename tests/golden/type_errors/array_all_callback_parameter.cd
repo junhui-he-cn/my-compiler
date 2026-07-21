@@ -1,0 +1,2 @@
+let values: [number] = [1];
+values.all(fun (value: string): bool { return true; });

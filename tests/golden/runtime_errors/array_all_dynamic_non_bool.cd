@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+all([1], id(fun (value) { return nil; }));
