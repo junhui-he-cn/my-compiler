@@ -1,0 +1,3 @@
+Type error at 1:42: findIndex expects array as first argument, got number
+  findIndex(1, fun (value) { return true; });
+                                           ^

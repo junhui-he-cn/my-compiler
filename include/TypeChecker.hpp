@@ -310,6 +310,10 @@ private:
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,
         const Expr& predicateExpression);
+    CheckedExpression checkArrayFindIndex(
+        const Token& callToken,
+        const TypeInfo& arrayTypeInfo,
+        const Expr& predicateExpression);
     CheckedExpression checkArrayReduce(
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,

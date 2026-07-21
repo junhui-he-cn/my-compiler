@@ -1664,7 +1664,7 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
     return name == "push" || name == "pop" || name == "remove" || name == "clear" || name == "keys" || name == "values" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
-        || name == "map" || name == "filter" || name == "any" || name == "all" || name == "count" || name == "find" || name == "reduce";
+        || name == "map" || name == "filter" || name == "any" || name == "all" || name == "count" || name == "find" || name == "findIndex" || name == "reduce";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -3750,6 +3750,15 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayFind(
     return CheckedExpression{unknownType()};
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkArrayFindIndex(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& predicateExpression)
+{
+    checkArrayPredicate(callToken, arrayTypeInfo, predicateExpression, "findIndex");
+    return CheckedExpression{simpleType(StaticType::Number)};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkArrayReduce(
     const Token& callToken,
     const TypeInfo& arrayTypeInfo,
@@ -4060,6 +4069,10 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
         return checkArrayFind(expression.paren, arrayArgument.type, *expression.arguments[1]);
     }
+    case NativeFunctionKind::FindIndex: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        return checkArrayFindIndex(expression.paren, arrayArgument.type, *expression.arguments[1]);
+    }
     case NativeFunctionKind::Reduce: {
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
         return checkArrayReduce(
@@ -4336,6 +4349,12 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
         expectArity(1);
         const CheckedExpression receiver = checkReceiver();
         return checkArrayFind(expression.paren, receiver.type, *expression.arguments[0]);
+    }
+
+    if (name == "findIndex") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        return checkArrayFindIndex(expression.paren, receiver.type, *expression.arguments[0]);
     }
 
     if (name == "reduce") {

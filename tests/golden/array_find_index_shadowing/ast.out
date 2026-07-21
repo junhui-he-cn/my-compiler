@@ -1,0 +1,4 @@
+Program
+  Let findIndex = (fun (array, predicate) (return "shadowed findIndex"))
+  Print (call findIndex (array 1) (fun (value) (return true)))
+  Print (member-call (array 1 2) findIndex (fun (value) (return (== value 2))))

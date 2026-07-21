@@ -181,9 +181,13 @@ it short-circuits at the first match, returns `nil` when no element matches,
 and preserves a known `[T]` element type as a nullable `T` result without
 nested nullable layers.
 
+Array `findIndex` is implemented with the same shadowing, member-call,
+predicate, snapshot, and short-circuit conventions; it returns the first
+zero-based matching index and `-1` for an empty array or no match.
+
 Future work:
 
-- Extend the first array `map`/`filter`/`reduce`/`any`/`all`/`count`/`find` slices with generic
+- Extend the first array `map`/`filter`/`reduce`/`any`/`all`/`count`/`find`/`findIndex` slices with generic
   collection syntax and further higher-order APIs once their remaining
   inference boundaries are defined.
 - Add further map operations, such as additional bulk helpers, only as focused

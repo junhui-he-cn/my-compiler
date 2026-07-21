@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/array_find_index_dynamic_non_array.cd:2:1: findIndex expects array as first argument
+  findIndex(id(1), fun (value) { return true; });
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/array_find_index_dynamic_non_array.cd:2:1)
