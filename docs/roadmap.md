@@ -71,9 +71,11 @@ Goal: continue struct polish around field rules and future type-system features
 without expanding into object-system features prematurely.
 
 Future work:
-- Treat recursive struct field types as a separate design decision; do not add
+- Recursive struct field types are intentionally unsupported in the current
+  language. Direct, mutual, and nested recursive references through arrays,
+  maps, nullable types, or function signatures remain type errors. Do not add
   recursive initialization or runtime representation in an incremental polish
-  slice.
+  slice; revisit this only through a dedicated language and runtime design.
 - Keep field creation by assignment, dynamic dispatch, inheritance, overloading,
   protocols, and optional chaining out of the near-term struct work unless a
   dedicated design justifies them.
