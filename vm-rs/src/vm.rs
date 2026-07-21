@@ -458,6 +458,40 @@ mod tests {
     }
 
     #[test]
+    fn assert_array_snapshots_map_keys_in_insertion_order() {
+        let program = Program {
+            constants: vec![
+                Constant::String("a".to_string()),
+                Constant::Number("1".to_string()),
+                Constant::String("b".to_string()),
+                Constant::Number("2".to_string()),
+            ],
+            names: Vec::new(),
+            main: FunctionBody {
+                registers: 6,
+                instructions: vec![
+                    Instruction::Constant { dest: 0, constant: 0 },
+                    Instruction::Constant { dest: 1, constant: 1 },
+                    Instruction::Constant { dest: 2, constant: 2 },
+                    Instruction::Constant { dest: 3, constant: 3 },
+                    Instruction::Map {
+                        dest: 4,
+                        entries: vec![(0, 1), (2, 3)],
+                    },
+                    Instruction::AssertArray { dest: 5, value: 4 },
+                    Instruction::Print { value: 5 },
+                    Instruction::Return { value: 5 },
+                ],
+                locations: Vec::new(),
+            },
+            functions: Vec::new(),
+            debug_sources: Vec::new(),
+        };
+
+        assert_eq!(VM::new(&program).run().expect("map iteration succeeds"), "[a, b]\n");
+    }
+
+    #[test]
     fn native_remove_updates_shared_maps_and_returns_removed_value() {
         let program = empty_program();
         let mut vm = VM::new(&program);
@@ -1258,10 +1292,24 @@ impl<'a> VM<'a> {
                 }
                 Instruction::AssertArray { dest, value } => {
                     let input = self.read_register(frame, *value)?;
-                    if !matches!(input, Value::Array(_) | Value::Range(_)) {
-                        return Err(RuntimeError::new("for-in expects array or range"));
-                    }
-                    self.write_register(frame, *dest, input)?;
+                    let iterable = match input {
+                        Value::Array(_) | Value::Range(_) => input,
+                        Value::Map(map) => {
+                            let keys = map
+                                .entries
+                                .borrow()
+                                .iter()
+                                .map(|(key, _)| key.clone())
+                                .collect();
+                            self.make_array(keys)
+                        }
+                        _ => {
+                            return Err(RuntimeError::new(
+                                "for-in expects array, range, or map",
+                            ));
+                        }
+                    };
+                    self.write_register(frame, *dest, iterable)?;
                 }
                 Instruction::AssertNumber {
                     dest,

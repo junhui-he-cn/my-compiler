@@ -41,7 +41,7 @@ print expression;
 if expression { declaration* } [else { declaration* }]
 while expression { declaration* }
 for [initializer]; [condition]; [increment] { declaration* }
-for item in array { declaration* }
+for item in array|range|map { declaration* }
 break;
 continue;
 fun name(parameter[: type]*) [: type] { declaration* }
@@ -71,7 +71,7 @@ let values: [number?] = [1, nil, 3];
 let maybeValues: [number]? = nil;
 ```
 
-`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. C-style `for` loops use clauses: `for initializer; condition; increment { ... }`. Each clause is optional. A `let` initializer is scoped to the loop condition, body, and increment, and is not visible after the loop. `for item in array { ... }` iterates arrays in index order, and `for item in range(...) { ... }` iterates finite integer ranges. The item binding is scoped to the loop body and may shadow an outer variable. Array iteration snapshots the array length before iteration, while ranges are immutable. `break;` exits the nearest enclosing loop. `continue;` in a `while` skips to that loop's next condition check, in a C-style `for` evaluates the increment before checking the condition again, and in a `for-in` advances to the next item. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
+`while` evaluates its condition before each iteration, uses the same truthiness rules as `if`, `!`, `&&`, and `||`, and requires a block body. C-style `for` loops use clauses: `for initializer; condition; increment { ... }`. Each clause is optional. A `let` initializer is scoped to the loop condition, body, and increment, and is not visible after the loop. `for item in array { ... }` iterates arrays in index order, `for item in range(...) { ... }` iterates finite integer ranges, and `for item in map { ... }` iterates map keys in insertion order. The item binding is scoped to the loop body and may shadow an outer variable. Array iteration snapshots the array length, map iteration snapshots its key list, and ranges are immutable. `break;` exits the nearest enclosing loop. `continue;` in a `while` skips to that loop's next condition check, in a C-style `for` evaluates the increment before checking the condition again, and in a `for-in` advances to the next item. Loop-control statements outside loops are type errors; nested function bodies cannot break or continue an enclosing loop.
 
 ### Source imports
 
@@ -300,8 +300,9 @@ but separately constructed maps do not. Map values print as
 return its value; aliases observe the mutation. Removing a missing key is a
 runtime error (`map key not found`), and keys use the same primitive-only
 validation as lookup and `contains`. The function-style `remove` name is
-shadowable, while member-call sugar is unshadowed. Map `for-in` and custom
-iterators are not implemented.
+shadowable, while member-call sugar is unshadowed. Map iteration yields a
+snapshot of insertion-ordered keys, so changes made by the loop body do not
+change the iteration boundary. Custom iterators are not implemented.
 
 The native `range` helper constructs immutable finite integer ranges:
 `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are

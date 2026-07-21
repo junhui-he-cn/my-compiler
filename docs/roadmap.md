@@ -148,13 +148,18 @@ Future work:
 Goal: extend the existing collection types without committing prematurely to a
 large general-purpose collection protocol.
 
+Map `for-in` is now implemented by iterating an insertion-ordered snapshot of
+map keys through the existing array/range loop lowering. Map removal and map
+iteration together preserve shared-map mutation while keeping loop boundaries
+stable.
+
 Future work:
 
 - Extend the first array `map`/`filter`/`reduce` slices with generic collection syntax
   and further higher-order APIs once their remaining inference boundaries are
   defined.
-- Add further map operations, such as iteration or bulk helpers, only as focused
-  slices with explicit mutation and missing-key conventions.
+- Add further map operations, such as bulk helpers, only as focused slices with
+  explicit mutation and missing-key conventions.
 - Add further range/collection operations only as focused slices with explicit
   mutation and bounds semantics.
 

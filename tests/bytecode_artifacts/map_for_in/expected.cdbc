@@ -1,0 +1,120 @@
+cdbc 0.1
+
+constants:
+  c0 = string "a"
+  c1 = number 1
+  c2 = string "b"
+  c3 = number 2
+  c4 = string "c"
+  c5 = number 3
+  c6 = number 0
+  c7 = nil
+  c8 = number 1
+
+names:
+  n0 = "values#0"
+  n1 = "values#0"
+  n2 = "__for_in_iter#0"
+  n3 = "__for_in_index#1"
+  n4 = "key#1"
+  n5 = "__for_in_iter#0"
+  n6 = "__for_in_len#2"
+  n7 = "__for_in_index#1"
+  n8 = "__for_in_len#2"
+  n9 = "__for_in_iter#0"
+  n10 = "__for_in_index#1"
+  n11 = "key#1"
+  n12 = "__for_in_index#1"
+  n13 = "__for_in_index#1"
+  n14 = "key#1"
+  n15 = "values#0"
+  n16 = "key#1"
+  n17 = "remove"
+  n18 = "values#0"
+
+main registers=27:
+  r0 = constant c0
+  r1 = constant c1
+  r2 = constant c2
+  r3 = constant c3
+  r4 = constant c4
+  r5 = constant c5
+  r6 = map [r0: r1, r2: r3, r4: r5]
+  store_var n0, r6
+  r7 = load_var n1
+  r8 = assert_array r7
+  store_var n2, r8
+  r9 = constant c6
+  store_var n3, r9
+  r10 = constant c7
+  store_var n4, r10
+  r11 = load_var n5
+  r12 = len r11
+  store_var n6, r12
+  r13 = load_var n7
+  r14 = load_var n8
+  r15 = less r13, r14
+  jump_if_false r15, 38
+  r16 = load_var n9
+  r17 = load_var n10
+  r18 = index r16, r17
+  assign_var n11, r18
+  jump 32
+  r19 = load_var n12
+  r20 = constant c8
+  r21 = add r19, r20
+  assign_var n13, r21
+  jump 18
+  r22 = load_var n14
+  print r22
+  r23 = load_var n15
+  r24 = load_var n16
+  r25 = native_call n17 [r23, r24]
+  jump 27
+  r26 = load_var n18
+  print r26
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/map_for_in/input.cd" text="let values = {\"a\": 1, \"b\": 2, \"c\": 3};\nfor key in values {\n  print key;\n  remove(values, key);\n}\nprint values;\n"
+
+debug_locations:
+  main 0 = s0:1:15
+  main 1 = s0:1:20
+  main 2 = s0:1:23
+  main 3 = s0:1:28
+  main 4 = s0:1:31
+  main 5 = s0:1:36
+  main 6 = s0:1:14
+  main 7 = s0:1:1
+  main 8 = s0:2:12
+  main 9 = s0:2:1
+  main 10 = s0:2:1
+  main 11 = s0:2:1
+  main 12 = s0:2:1
+  main 13 = s0:2:1
+  main 14 = s0:2:1
+  main 15 = s0:2:1
+  main 16 = s0:2:1
+  main 17 = s0:2:1
+  main 18 = s0:2:1
+  main 19 = s0:2:1
+  main 20 = s0:2:1
+  main 21 = s0:2:1
+  main 22 = s0:2:1
+  main 23 = s0:2:1
+  main 24 = s0:2:1
+  main 25 = s0:2:1
+  main 26 = s0:2:1
+  main 27 = s0:2:1
+  main 28 = s0:2:1
+  main 29 = s0:2:1
+  main 30 = s0:2:1
+  main 31 = s0:2:1
+  main 32 = s0:3:9
+  main 33 = s0:3:3
+  main 34 = s0:4:10
+  main 35 = s0:4:18
+  main 36 = s0:4:3
+  main 37 = s0:2:1
+  main 38 = s0:6:7
+  main 39 = s0:6:1

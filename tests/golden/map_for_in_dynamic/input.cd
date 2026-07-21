@@ -1,0 +1,7 @@
+fun identity(value) {
+  return value;
+}
+
+for key in identity({"a": 1, "b": 2}) {
+  print key;
+}

@@ -1,3 +1,0 @@
-Type error at 1:5: for-in expects array or range, got map<string, number>
-  for item in {"a": 1} {
-      ^

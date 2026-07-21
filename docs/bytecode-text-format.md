@@ -208,8 +208,9 @@ rD = native_call nName [rArg0, rArg1, ...]
 
 The `range` native is also supported with one to three numeric arguments. Its
 result is consumed by the existing `len`, `index`, and `assert_array`
-instructions; `assert_array` accepts both arrays and ranges for compatibility
-with existing artifacts.
+instructions. `assert_array` accepts arrays and ranges unchanged; when given a
+map for `for-in`, it produces an array snapshot of the map's insertion-ordered
+keys before the existing length/index loop lowering runs.
 
 New opcodes must be added by updating this document, the C++ bytecode artifact emitter, and the Rust VM parser/formatter and executor together.
 
