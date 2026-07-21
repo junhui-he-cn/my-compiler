@@ -552,6 +552,31 @@ mod tests {
     }
 
     #[test]
+    fn native_clear_empties_shared_map_and_allows_new_insertion() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(vec![
+            (Value::string("a"), Value::number(1.0)),
+            (Value::string("b"), Value::number(2.0)),
+        ]);
+        let alias = map.clone();
+
+        let result = vm
+            .execute_native_call("clear", vec![map.clone()])
+            .expect("clear succeeds");
+        assert!(matches!(result, Value::Nil));
+        assert_eq!(alias.to_string(), "map{}");
+        assert!(matches!(
+            vm.execute_len(alias.clone()).unwrap(),
+            Value::Number(value) if value == 0.0
+        ));
+
+        vm.execute_assign_index(alias.clone(), Value::string("c"), Value::number(3.0))
+            .expect("map insertion after clear succeeds");
+        assert_eq!(map.to_string(), "map{c: 3}");
+    }
+
+    #[test]
     fn map_aliases_share_updates_through_cells() {
         let program = empty_program();
         let mut vm = VM::new(&program);
@@ -1757,6 +1782,7 @@ impl<'a> VM<'a> {
             "push" => self.execute_native_push(arguments),
             "pop" => self.execute_native_pop(arguments),
             "remove" => self.execute_native_remove(arguments),
+            "clear" => self.execute_native_clear(arguments),
             "keys" => self.execute_native_keys(arguments),
             "values" => self.execute_native_values(arguments),
             "floor" => self.execute_native_floor(arguments),
@@ -1921,6 +1947,17 @@ impl<'a> VM<'a> {
             .position(|(key, _)| key.runtime_equals(&arguments[1]))
             .ok_or_else(|| RuntimeError::new("map key not found"))?;
         Ok(entries.remove(position).1)
+    }
+
+    fn execute_native_clear(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 1 {
+            return Err(RuntimeError::new("clear expects 1 argument"));
+        }
+        let Value::Map(map) = &arguments[0] else {
+            return Err(RuntimeError::new("clear expects map as first argument"));
+        };
+        map.entries.borrow_mut().clear();
+        Ok(Value::Nil)
     }
 
     fn execute_native_keys(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

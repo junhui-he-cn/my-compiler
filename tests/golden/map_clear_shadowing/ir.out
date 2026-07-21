@@ -1,0 +1,26 @@
+IR
+0000  v0 = constant #0 nil
+0001  store_var @0 clear#0, v0
+0002  v1 = make_function $0 clear/1
+0003  assign_var @1 clear#0, v1
+0004  v2 = constant #3 "a"
+0005  v3 = constant #4 1
+0006  v4 = map [v2: v3]
+0007  store_var @2 values#2, v4
+0008  v5 = load_var @3 clear#0
+0009  v6 = load_var @4 values#2
+0010  v7 = call v5(v6)
+0011  print v7
+0012  v8 = load_var @5 values#2
+0013  print v8
+0014  v9 = load_var @6 values#2
+0015  v10 = native_call @7 clear(v9)
+0016  print v10
+0017  v11 = load_var @8 values#2
+0018  print v11
+
+function $0 clear(map#1)
+0000  v0 = constant #1 "shadowed"
+0001  return v0
+0002  v1 = constant #2 nil
+0003  return v1

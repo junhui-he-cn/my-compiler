@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_clear_dynamic_member_non_map.cd:2:1: clear expects map as first argument
+  id(1).clear();
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_clear_dynamic_member_non_map.cd:2:1)

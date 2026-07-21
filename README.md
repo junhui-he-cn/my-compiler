@@ -12,7 +12,7 @@ and map element assignment, numeric compound assignment for variables, array ele
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, and `typeOf`.
+`map`, `filter`, `reduce`, `remove`, `clear`, `keys`, `values`, and `typeOf`.
 
 The compiler pipeline includes:
 
@@ -300,7 +300,11 @@ but separately constructed maps do not. Map values print as
 return its value; aliases observe the mutation. Removing a missing key is a
 runtime error (`map key not found`), and keys use the same primitive-only
 validation as lookup and `contains`. The function-style `remove` name is
-shadowable, while member-call sugar is unshadowed. Map iteration yields a
+shadowable, while member-call sugar is unshadowed. `clear(map)` and
+`map.clear()` remove all entries in place and return `nil`; aliases observe the
+same empty map, and later insertions use normal insertion order. The
+function-style `clear` name is shadowable, while member-call sugar is
+unshadowed. Map iteration yields a
 snapshot of insertion-ordered keys, so changes made by the loop body do not
 change the iteration boundary. Custom iterators are not implemented.
 The `keys(map)`/`map.keys()` and `values(map)`/`map.values()` helpers return
@@ -325,12 +329,12 @@ helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
 `array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
 `array.reduce(initial, callback)`, `map.len()`, `map.contains(key)`,
-`map.remove(key)`, `map.keys()`, `map.values()`, `string.len()`,
+`map.remove(key)`, `map.clear()`, `map.keys()`, `map.values()`, `string.len()`,
 `string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, `remove`, `keys`, `values`, `substr`, or `charAt` do not shadow
+`map`, `filter`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
 member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.

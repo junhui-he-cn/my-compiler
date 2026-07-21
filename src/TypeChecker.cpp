@@ -1661,7 +1661,7 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
 
 bool TypeChecker::isBuiltinMemberName(const std::string& name) const
 {
-    return name == "push" || name == "pop" || name == "remove" || name == "keys" || name == "values" || name == "len"
+    return name == "push" || name == "pop" || name == "remove" || name == "clear" || name == "keys" || name == "values" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
         || name == "map" || name == "filter" || name == "reduce";
@@ -3808,6 +3808,14 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         }
         return CheckedExpression{unknownType()};
     }
+    case NativeFunctionKind::Clear: {
+        const CheckedExpression mapArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (mapArgument.type.kind != StaticType::Unknown && mapArgument.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren,
+                "clear expects map as first argument, got " + typeInfoName(mapArgument.type));
+        }
+        return CheckedExpression{simpleType(StaticType::Nil)};
+    }
     case NativeFunctionKind::Keys:
     case NativeFunctionKind::Values: {
         const CheckedExpression mapArgument = checkExpressionInfo(*expression.arguments[0]);
@@ -4137,6 +4145,16 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
             return CheckedExpression{*receiver.type.valueType};
         }
         return CheckedExpression{unknownType()};
+    }
+
+    if (name == "clear") {
+        expectArity(0);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren,
+                "clear expects map receiver, got " + typeInfoName(receiver.type));
+        }
+        return CheckedExpression{simpleType(StaticType::Nil)};
     }
 
     if (name == "keys" || name == "values") {

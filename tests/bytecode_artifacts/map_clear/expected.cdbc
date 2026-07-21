@@ -1,0 +1,72 @@
+cdbc 0.1
+
+constants:
+  c0 = string "a"
+  c1 = number 1
+  c2 = string "b"
+  c3 = number 2
+  c4 = string "c"
+  c5 = number 3
+
+names:
+  n0 = "values#0"
+  n1 = "values#0"
+  n2 = "alias#1"
+  n3 = "values#0"
+  n4 = "clear"
+  n5 = "alias#1"
+  n6 = "values#0"
+  n7 = "values#0"
+  n8 = "clear"
+  n9 = "values#0"
+
+main registers=17:
+  r0 = constant c0
+  r1 = constant c1
+  r2 = constant c2
+  r3 = constant c3
+  r4 = map [r0: r1, r2: r3]
+  store_var n0, r4
+  r5 = load_var n1
+  store_var n2, r5
+  r6 = load_var n3
+  r7 = native_call n4 [r6]
+  r8 = load_var n5
+  print r8
+  r9 = load_var n6
+  r10 = constant c4
+  r11 = constant c5
+  r12 = assign_index r9, r10, r11
+  r13 = load_var n7
+  r14 = native_call n8 [r13]
+  print r14
+  r15 = load_var n9
+  r16 = len r15
+  print r16
+
+debug_sources:
+  s0 path="tests/bytecode_artifacts/map_clear/input.cd" text="let values = {\"a\": 1, \"b\": 2};\nlet alias = values;\nclear(values);\nprint alias;\nvalues[\"c\"] = 3;\nprint values.clear();\nprint values.len();\n"
+
+debug_locations:
+  main 0 = s0:1:15
+  main 1 = s0:1:20
+  main 2 = s0:1:23
+  main 3 = s0:1:28
+  main 4 = s0:1:14
+  main 5 = s0:1:1
+  main 6 = s0:2:13
+  main 7 = s0:2:1
+  main 8 = s0:3:7
+  main 9 = s0:3:1
+  main 10 = s0:4:7
+  main 11 = s0:4:1
+  main 12 = s0:5:1
+  main 13 = s0:5:8
+  main 14 = s0:5:15
+  main 15 = s0:5:1
+  main 16 = s0:6:7
+  main 17 = s0:6:7
+  main 18 = s0:6:1
+  main 19 = s0:7:7
+  main 20 = s0:7:7
+  main 21 = s0:7:1

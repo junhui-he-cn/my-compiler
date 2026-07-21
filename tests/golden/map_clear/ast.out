@@ -1,0 +1,11 @@
+Program
+  Let values = (map (entry "a" 1) (entry "b" 2))
+  Let alias = values
+  Print (call clear values)
+  Print alias
+  Expr (= (index values "c") 3)
+  Print alias
+  Print (member-call alias clear)
+  Print (member-call values len)
+  Expr (= (index values "d") 4)
+  Print values

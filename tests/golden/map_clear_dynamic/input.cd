@@ -1,0 +1,4 @@
+fun id(value) { return value; }
+let values = id({"a": 1});
+print clear(values);
+print values;

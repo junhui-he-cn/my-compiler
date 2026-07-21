@@ -1,0 +1,32 @@
+IR
+0000  v0 = constant #0 "a"
+0001  v1 = constant #1 1
+0002  v2 = constant #2 "b"
+0003  v3 = constant #3 2
+0004  v4 = map [v0: v1, v2: v3]
+0005  store_var @0 values#0, v4
+0006  v5 = load_var @1 values#0
+0007  store_var @2 alias#1, v5
+0008  v6 = load_var @3 values#0
+0009  v7 = native_call @4 clear(v6)
+0010  print v7
+0011  v8 = load_var @5 alias#1
+0012  print v8
+0013  v9 = load_var @6 values#0
+0014  v10 = constant #4 "c"
+0015  v11 = constant #5 3
+0016  v12 = assign_index v9, v10, v11
+0017  v13 = load_var @7 alias#1
+0018  print v13
+0019  v14 = load_var @8 alias#1
+0020  v15 = native_call @9 clear(v14)
+0021  print v15
+0022  v16 = load_var @10 values#0
+0023  v17 = len v16
+0024  print v17
+0025  v18 = load_var @11 values#0
+0026  v19 = constant #6 "d"
+0027  v20 = constant #7 4
+0028  v21 = assign_index v18, v19, v20
+0029  v22 = load_var @12 values#0
+0030  print v22

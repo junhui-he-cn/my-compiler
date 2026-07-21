@@ -1,0 +1,8 @@
+fun clear(map) {
+  return "shadowed";
+}
+let values = {"a": 1};
+print clear(values);
+print values;
+print values.clear();
+print values;

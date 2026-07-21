@@ -1,0 +1,3 @@
+Type error at 1:8: clear expects map as first argument, got number
+  clear(1);
+         ^

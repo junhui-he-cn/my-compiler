@@ -1,0 +1,8 @@
+Program
+  Fun clear(map)
+    Return "shadowed"
+  Let values = (map (entry "a" 1))
+  Print (call clear values)
+  Print values
+  Print (member-call values clear)
+  Print values

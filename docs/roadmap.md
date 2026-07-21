@@ -103,6 +103,10 @@ Map removal is also implemented through the same path: `remove(map, key)` and
 `map.remove(key)` mutate shared maps and return the removed value, with static
 map/key checks and runtime missing-key validation.
 
+Map clearing is implemented through the same path: `clear(map)` and
+`map.clear()` empty shared maps in place and return `nil`, with static and
+runtime map checks and shadowing behavior aligned with the other helpers.
+
 Future work:
 
 - Add further non-higher-order helpers only as focused slices with explicit
@@ -156,6 +160,10 @@ stable.
 Map `keys` and `values` helpers are also implemented as shadowable native
 functions with unshadowed member-call forms, returning fresh insertion-ordered
 shallow arrays with static `[K]`/`[V]` results for known maps.
+
+Map `clear` is also implemented as a shadowable native function with an
+unshadowed member-call form; it clears the shared ordered entry vector in
+place and returns `nil`.
 
 Future work:
 
