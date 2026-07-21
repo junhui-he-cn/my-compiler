@@ -1664,7 +1664,7 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
     return name == "push" || name == "pop" || name == "remove" || name == "clear" || name == "keys" || name == "values" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
-        || name == "map" || name == "filter" || name == "any" || name == "all" || name == "reduce";
+        || name == "map" || name == "filter" || name == "any" || name == "all" || name == "count" || name == "reduce";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -3671,7 +3671,7 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayFilter(
     return CheckedExpression{simpleType(StaticType::Array)};
 }
 
-TypeChecker::CheckedExpression TypeChecker::checkArrayAnyAll(
+void TypeChecker::checkArrayPredicate(
     const Token& callToken,
     const TypeInfo& arrayTypeInfo,
     const Expr& predicateExpression,
@@ -3714,7 +3714,25 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayAnyAll(
         }
     }
 
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkArrayAnyAll(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& predicateExpression,
+    const std::string& functionName)
+{
+    checkArrayPredicate(callToken, arrayTypeInfo, predicateExpression, functionName);
     return CheckedExpression{simpleType(StaticType::Bool)};
+}
+
+TypeChecker::CheckedExpression TypeChecker::checkArrayCount(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& predicateExpression)
+{
+    checkArrayPredicate(callToken, arrayTypeInfo, predicateExpression, "count");
+    return CheckedExpression{simpleType(StaticType::Number)};
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkArrayReduce(
@@ -4019,6 +4037,10 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
             *expression.arguments[1],
             function->name);
     }
+    case NativeFunctionKind::Count: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        return checkArrayCount(expression.paren, arrayArgument.type, *expression.arguments[1]);
+    }
     case NativeFunctionKind::Reduce: {
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
         return checkArrayReduce(
@@ -4283,6 +4305,12 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
         expectArity(1);
         const CheckedExpression receiver = checkReceiver();
         return checkArrayAnyAll(expression.paren, receiver.type, *expression.arguments[0], name);
+    }
+
+    if (name == "count") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        return checkArrayCount(expression.paren, receiver.type, *expression.arguments[0]);
     }
 
     if (name == "reduce") {

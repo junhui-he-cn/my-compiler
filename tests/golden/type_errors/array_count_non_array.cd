@@ -1,0 +1,1 @@
+count(1, fun (value) { return true; });

@@ -172,9 +172,13 @@ unshadowed member-call forms. They use boolean predicates over snapshot
 elements, short-circuit left to right, and return the standard empty-array
 identities (`false` for `any`, `true` for `all`).
 
+Array `count` is implemented with the same shadowing, member-call, predicate,
+and snapshot conventions; it invokes every predicate and returns the number
+of true results, with `0` for an empty array.
+
 Future work:
 
-- Extend the first array `map`/`filter`/`reduce`/`any`/`all` slices with generic
+- Extend the first array `map`/`filter`/`reduce`/`any`/`all`/`count` slices with generic
   collection syntax and further higher-order APIs once their remaining
   inference boundaries are defined.
 - Add further map operations, such as additional bulk helpers, only as focused

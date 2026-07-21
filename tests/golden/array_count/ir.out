@@ -1,0 +1,66 @@
+IR
+0000  v0 = constant #0 1
+0001  v1 = constant #1 2
+0002  v2 = constant #2 3
+0003  v3 = constant #3 4
+0004  v4 = array [v0, v1, v2, v3]
+0005  store_var @0 values#0, v4
+0006  v5 = load_var @1 values#0
+0007  v6 = make_function $0 <lambda>/1
+0008  v7 = native_call @3 count(v5, v6)
+0009  print v7
+0010  v8 = load_var @4 values#0
+0011  v9 = make_function $1 <lambda>/1
+0012  v10 = native_call @7 count(v8, v9)
+0013  print v10
+0014  v11 = constant #9 1
+0015  v12 = constant #10 2
+0016  v13 = array [v11, v12]
+0017  store_var @8 snapshot#3, v13
+0018  v14 = load_var @9 snapshot#3
+0019  v15 = make_function $2 <lambda>/1
+0020  v16 = native_call @12 count(v14, v15)
+0021  print v16
+0022  v17 = load_var @13 snapshot#3
+0023  print v17
+0024  v18 = array []
+0025  v19 = make_function $3 <lambda>/1
+0026  v20 = native_call @14 count(v18, v19)
+0027  print v20
+
+function $0 <lambda>(value#1)
+0000  v0 = load_var @2 value#1
+0001  v1 = constant #4 2
+0002  v2 = greater v0, v1
+0003  return v2
+0004  v3 = constant #5 nil
+0005  return v3
+
+function $1 <lambda>(value#2)
+0000  v0 = load_var @5 value#2
+0001  v1 = constant #6 2
+0002  v2 = equal v0, v1
+0003  v3 = copy v2
+0004  jump_if_true v3, 0009
+0005  v4 = load_var @6 value#2
+0006  v5 = constant #7 4
+0007  v6 = equal v4, v5
+0008  v3 = copy v6
+0009  return v3
+0010  v7 = constant #8 nil
+0011  return v7
+
+function $2 <lambda>(value#4)
+0000  v0 = load_var @10 snapshot#3
+0001  v1 = constant #11 9
+0002  v2 = native_call @11 push(v0, v1)
+0003  v3 = constant #12 true
+0004  return v3
+0005  v4 = constant #13 nil
+0006  return v4
+
+function $3 <lambda>(value#5)
+0000  v0 = constant #14 true
+0001  return v0
+0002  v1 = constant #15 nil
+0003  return v1

@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/array_count_dynamic_non_bool.cd:2:1: count expects callback to return bool
+  count([1], id(fun (value) { return nil; }));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/array_count_dynamic_non_bool.cd:2:1)

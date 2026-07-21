@@ -292,11 +292,20 @@ private:
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,
         const Expr& predicateExpression);
+    void checkArrayPredicate(
+        const Token& callToken,
+        const TypeInfo& arrayTypeInfo,
+        const Expr& predicateExpression,
+        const std::string& functionName);
     CheckedExpression checkArrayAnyAll(
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,
         const Expr& predicateExpression,
         const std::string& functionName);
+    CheckedExpression checkArrayCount(
+        const Token& callToken,
+        const TypeInfo& arrayTypeInfo,
+        const Expr& predicateExpression);
     CheckedExpression checkArrayReduce(
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,

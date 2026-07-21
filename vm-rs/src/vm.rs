@@ -355,6 +355,7 @@ mod tests {
         });
         let any_source = vm.make_array(vec![Value::number(1.0), Value::number(2.0)]);
         let all_source = vm.make_array(vec![Value::number(2.0), Value::number(2.0)]);
+        let count_source = vm.make_array(vec![Value::number(1.0), Value::number(2.0)]);
         let empty_any_source = vm.make_array(Vec::new());
         let empty_all_source = vm.make_array(Vec::new());
 
@@ -367,6 +368,11 @@ mod tests {
             vm.execute_native_call("all", vec![all_source, predicate.clone()])
             .unwrap(),
             Value::Bool(true)
+        ));
+        assert!(matches!(
+            vm.execute_native_call("count", vec![count_source, predicate.clone()])
+                .unwrap(),
+            Value::Number(value) if value == 1.0
         ));
         assert!(matches!(
             vm.execute_native_call("any", vec![empty_any_source, predicate.clone()])
@@ -1949,6 +1955,7 @@ impl<'a> VM<'a> {
             "filter" => self.execute_native_filter(arguments, caller, call_site),
             "any" => self.execute_native_any_all(arguments, caller, call_site, true),
             "all" => self.execute_native_any_all(arguments, caller, call_site, false),
+            "count" => self.execute_native_count(arguments, caller, call_site),
             "reduce" => self.execute_native_reduce(arguments, caller, call_site),
             "range" => self.execute_native_range(arguments),
             _ => Err(RuntimeError::new(format!(
@@ -2076,6 +2083,43 @@ impl<'a> VM<'a> {
             }
         }
         Ok(Value::boolean(!any))
+    }
+
+    fn execute_native_count(
+        &mut self,
+        arguments: Vec<Value>,
+        caller: String,
+        call_site: Option<DebugLocation>,
+    ) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("count expects 2 arguments"));
+        }
+        let Value::Array(array) = &arguments[0] else {
+            return Err(RuntimeError::new("count expects array as first argument"));
+        };
+        let Value::Function(predicate) = &arguments[1] else {
+            return Err(RuntimeError::new("count expects function as second argument"));
+        };
+        if predicate.arity != 1 {
+            return Err(RuntimeError::new("count expects callback with 1 argument"));
+        }
+
+        let elements = array.elements.borrow().clone();
+        let mut count = 0usize;
+        for element in elements {
+            let result = self.call_function(
+                predicate.clone(),
+                vec![element],
+                caller.clone(),
+                call_site.clone(),
+            )?;
+            match result {
+                Value::Bool(true) => count += 1,
+                Value::Bool(false) => {}
+                _ => return Err(RuntimeError::new("count expects callback to return bool")),
+            }
+        }
+        Ok(Value::number(count as f64))
     }
 
     fn execute_native_reduce(
