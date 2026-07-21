@@ -1,0 +1,4 @@
+fun id(value) {
+  return value;
+}
+remove(id(1), "a");

@@ -458,6 +458,36 @@ mod tests {
     }
 
     #[test]
+    fn native_remove_updates_shared_maps_and_returns_removed_value() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(vec![
+            (Value::string("a"), Value::number(1.0)),
+            (Value::string("b"), Value::Nil),
+        ]);
+        let alias = map.clone();
+
+        let removed = vm
+            .execute_native_call("remove", vec![map.clone(), Value::string("a")])
+            .expect("remove succeeds");
+        assert!(matches!(removed, Value::Number(value) if value == 1.0));
+        assert_eq!(map.to_string(), "map{b: nil}");
+        assert!(matches!(
+            vm.execute_index(alias.clone(), Value::string("b")).unwrap(),
+            Value::Nil
+        ));
+
+        let removed_nil = vm
+            .execute_native_call("remove", vec![alias.clone(), Value::string("b")])
+            .expect("remove can return nil");
+        assert!(matches!(removed_nil, Value::Nil));
+        assert!(matches!(
+            vm.execute_len(alias).unwrap(),
+            Value::Number(value) if value == 0.0
+        ));
+    }
+
+    #[test]
     fn map_aliases_share_updates_through_cells() {
         let program = empty_program();
         let mut vm = VM::new(&program);
@@ -1648,6 +1678,7 @@ impl<'a> VM<'a> {
         match name {
             "push" => self.execute_native_push(arguments),
             "pop" => self.execute_native_pop(arguments),
+            "remove" => self.execute_native_remove(arguments),
             "floor" => self.execute_native_floor(arguments),
             "ceil" => self.execute_native_ceil(arguments),
             "sqrt" => self.execute_native_sqrt(arguments),
@@ -1794,6 +1825,22 @@ impl<'a> VM<'a> {
             .borrow_mut()
             .pop()
             .ok_or_else(|| RuntimeError::new("cannot pop from empty array"))
+    }
+
+    fn execute_native_remove(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("remove expects 2 arguments"));
+        }
+        let Value::Map(map) = &arguments[0] else {
+            return Err(RuntimeError::new("remove expects map as first argument"));
+        };
+        self.validate_map_key(&arguments[1])?;
+        let mut entries = map.entries.borrow_mut();
+        let position = entries
+            .iter()
+            .position(|(key, _)| key.runtime_equals(&arguments[1]))
+            .ok_or_else(|| RuntimeError::new("map key not found"))?;
+        Ok(entries.remove(position).1)
     }
 
     fn execute_native_floor(&self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

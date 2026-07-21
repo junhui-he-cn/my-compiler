@@ -1,0 +1,3 @@
+Type error at 2:17: map key is incompatible with map key type
+  remove(values, 1);
+                  ^

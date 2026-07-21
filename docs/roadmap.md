@@ -99,6 +99,10 @@ callback/result element checking and Rust VM callback execution. `filter`
 requires a boolean predicate and preserves the source element type; `reduce`
 requires an explicit initial accumulator and preserves its known type.
 
+Map removal is also implemented through the same path: `remove(map, key)` and
+`map.remove(key)` mutate shared maps and return the removed value, with static
+map/key checks and runtime missing-key validation.
+
 Future work:
 
 - Add further non-higher-order helpers only as focused slices with explicit
@@ -149,8 +153,8 @@ Future work:
 - Extend the first array `map`/`filter`/`reduce` slices with generic collection syntax
   and further higher-order APIs once their remaining inference boundaries are
   defined.
-- Add further map operations, such as deletion, only as focused slices with
-  explicit mutation and missing-key conventions.
+- Add further map operations, such as iteration or bulk helpers, only as focused
+  slices with explicit mutation and missing-key conventions.
 - Add further range/collection operations only as focused slices with explicit
   mutation and bounds semantics.
 

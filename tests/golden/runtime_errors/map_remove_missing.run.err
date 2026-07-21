@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_remove_missing.cd:2:1: map key not found
+  remove(values, "missing");
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_remove_missing.cd:2:1)

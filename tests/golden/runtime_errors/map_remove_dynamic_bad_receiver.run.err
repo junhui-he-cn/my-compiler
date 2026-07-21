@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_remove_dynamic_bad_receiver.cd:4:1: remove expects map as first argument
+  remove(id(1), "a");
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_remove_dynamic_bad_receiver.cd:4:1)

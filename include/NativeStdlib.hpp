@@ -7,6 +7,7 @@
 enum class NativeFunctionKind {
     Push,
     Pop,
+    Remove,
     Floor,
     Ceil,
     Sqrt,

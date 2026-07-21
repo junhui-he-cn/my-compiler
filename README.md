@@ -296,7 +296,12 @@ existing key replaces its value and assigning a new key appends it. The
 `len(map)`. Equality between maps is identity-based, so aliases compare equal
 but separately constructed maps do not. Map values print as
 `map{key: value, ...}` in insertion order.
-Map deletion, map `for-in`, and custom iterators are not implemented.
+`remove(map, key)` and `map.remove(key)` delete an existing entry in place and
+return its value; aliases observe the mutation. Removing a missing key is a
+runtime error (`map key not found`), and keys use the same primitive-only
+validation as lookup and `contains`. The function-style `remove` name is
+shadowable, while member-call sugar is unshadowed. Map `for-in` and custom
+iterators are not implemented.
 
 The native `range` helper constructs immutable finite integer ranges:
 `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are
@@ -315,11 +320,12 @@ helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.contains(value)`, `array.slice(start, length)`, `array.copy()`,
 `array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
 `array.reduce(initial, callback)`, `map.len()`, `map.contains(key)`, `string.len()`,
-`string.substr(start, length)`, `string.charAt(index)`, and
+`map.remove(key)`, `string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, `substr`, or `charAt` do not shadow member-call sugar.
+`map`, `filter`, `reduce`, `remove`, `substr`, or `charAt` do not shadow
+member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
 

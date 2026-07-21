@@ -1658,7 +1658,7 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
 
 bool TypeChecker::isBuiltinMemberName(const std::string& name) const
 {
-    return name == "push" || name == "pop" || name == "len"
+    return name == "push" || name == "pop" || name == "remove" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
         || name == "map" || name == "filter" || name == "reduce";
@@ -3781,6 +3781,30 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         }
         return CheckedExpression{unknownType()};
     }
+    case NativeFunctionKind::Remove: {
+        const CheckedExpression mapArgument = checkExpressionInfo(*expression.arguments[0]);
+        if (mapArgument.type.kind != StaticType::Unknown && mapArgument.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren,
+                "remove expects map as first argument, got " + typeInfoName(mapArgument.type));
+        }
+
+        const TypeInfo* expectedKey = mapArgument.type.kind == StaticType::Map
+            ? mapArgument.type.keyType.get()
+            : nullptr;
+        const CheckedExpression keyArgument = checkExpressionInfo(*expression.arguments[1], expectedKey);
+        if (mapArgument.type.kind == StaticType::Map
+            && isKnown(keyArgument.type)
+            && !mapKeyTypeAllowed(keyArgument.type)) {
+            throw TypeError(expression.paren, "map key must be nil, number, bool, or string");
+        }
+        if (expectedKey && !compatible(*expectedKey, keyArgument.type)) {
+            throw TypeError(expression.paren, "map key is incompatible with map key type");
+        }
+        if (mapArgument.type.kind == StaticType::Map && mapArgument.type.valueType) {
+            return CheckedExpression{*mapArgument.type.valueType};
+        }
+        return CheckedExpression{unknownType()};
+    }
     case NativeFunctionKind::Floor:
     case NativeFunctionKind::Ceil:
     case NativeFunctionKind::Sqrt: {
@@ -4070,6 +4094,31 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
                 "contains expects number as range value, got " + typeInfoName(value.type));
         }
         return CheckedExpression{simpleType(StaticType::Bool)};
+    }
+
+    if (name == "remove") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        if (receiver.type.kind != StaticType::Unknown && receiver.type.kind != StaticType::Map) {
+            throw TypeError(expression.paren,
+                "remove expects map receiver, got " + typeInfoName(receiver.type));
+        }
+        const TypeInfo* expectedKey = receiver.type.kind == StaticType::Map
+            ? receiver.type.keyType.get()
+            : nullptr;
+        const CheckedExpression key = checkExpressionInfo(*expression.arguments[0], expectedKey);
+        if (receiver.type.kind == StaticType::Map
+            && isKnown(key.type)
+            && !mapKeyTypeAllowed(key.type)) {
+            throw TypeError(expression.paren, "map key must be nil, number, bool, or string");
+        }
+        if (expectedKey && !compatible(*expectedKey, key.type)) {
+            throw TypeError(expression.paren, "map key is incompatible with map key type");
+        }
+        if (receiver.type.kind == StaticType::Map && receiver.type.valueType) {
+            return CheckedExpression{*receiver.type.valueType};
+        }
+        return CheckedExpression{unknownType()};
     }
 
     if (name == "slice") {

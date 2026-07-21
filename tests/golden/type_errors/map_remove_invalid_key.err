@@ -1,0 +1,3 @@
+Type error at 2:19: map key must be nil, number, bool, or string
+  remove(values, [1]);
+                    ^

@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_remove_dynamic_bad_key.cd:5:1: map key must be nil, number, bool, or string
+  remove(values, id([1]));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_remove_dynamic_bad_key.cd:5:1)
