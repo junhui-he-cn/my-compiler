@@ -49,8 +49,9 @@ let product = [1, 2, 3].reduce(1, fun (acc: number, value: number): number {
   initial value and array element type.
 - The result type is the known initial accumulator type; unknown initial values
   produce an unknown result.
-- Generic callback values are rejected because this call site requires one
-  monomorphic instantiation.
+- Generic callback values are specialized from the known initial accumulator
+  and array element types; every callback type parameter must be inferable at
+  the call site.
 - The member form is always builtin sugar and cannot be shadowed by a lexical
   binding named `reduce`.
 
@@ -76,5 +77,6 @@ Runtime error: reduce expects callback with 2 arguments
 
 Cover direct and member calls, closure capture, empty arrays, source snapshots,
 array accumulators, shadowing, static accumulator/element/result mismatches,
-generic callback rejection, runtime operand/arity failures, callback
+generic callback specialization and unresolved inference, runtime operand/arity
+failures, callback
 exceptions, `.cdbc` artifact output, and Rust VM parity.

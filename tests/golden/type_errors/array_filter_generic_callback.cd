@@ -1,4 +1,4 @@
-fun keep<T>(value: T): bool {
+fun predicate<T>(value: number): bool {
   return true;
 }
-filter([1], keep);
+filter([1], predicate);

@@ -138,7 +138,7 @@ Exported enums are available through direct imports and namespace aliases,
 including qualified annotations, constructors, and patterns such as
 lib.Outcome.Good(value).
 
-Functions are values. Named functions use `fun name[<T, U>](parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`. Generic named functions, methods, and anonymous function expressions infer type parameters at each call, including direct, namespace, and re-exported struct method paths; callers may also provide all type arguments explicitly, such as `identity<number>(42)`, `lib.identity<string>("hello")`, `box.echo<string>("hello")`, or `identityLambda<number>(42)`. An unannotated alias preserves the generic signature. Generic function values are not coerced to monomorphic function annotations. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated or contextually typed, and inferred, annotated, or contextually checked return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
+Functions are values. Named functions use `fun name[<T, U>](parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`. Generic named functions, methods, and anonymous function expressions infer type parameters at each call, including direct, namespace, and re-exported struct method paths; callers may also provide all type arguments explicitly, such as `identity<number>(42)`, `lib.identity<string>("hello")`, `box.echo<string>("hello")`, or `identityLambda<number>(42)`. An unannotated alias preserves the generic signature. Generic function values are not coerced to monomorphic function annotations; when passed to existing array higher-order helpers, known callback argument types specialize them and every generic parameter must be inferable. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated or contextually typed, and inferred, annotated, or contextually checked return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
 Struct values are created with named constructor expressions such as `Person { name: "Ada", age: 36 }` after a matching `struct Person { ... }` declaration. Constructors preserve declared field behavior, require exact field names, and allow fields in any order. Field reads use `value.field`. Existing fields can be reassigned with `value.field = expression`; the assignment evaluates to the assigned value. Structs are reference values with identity equality, so aliases observe field mutation. Assigning a missing field is a runtime error when the target type is not statically known, and a type error when it is known.
 
@@ -266,8 +266,9 @@ callback from left to right over a snapshot of the input elements and returns a
 fresh array of callback results. The member form `array.map(callback)` is
 unshadowed builtin sugar. A known callback return type is preserved as the
 result array's element type; unknown arrays or callback signatures remain
-dynamic. Generic callback values are not accepted directly at this monomorphic
-call site. Callback errors propagate with the normal Rust VM call stack.
+dynamic. Generic callback values are specialized from known input element
+types; unresolved type parameters are static errors. Callback errors propagate
+with the normal Rust VM call stack.
 
 The callback-based array helper `filter(array, predicate)` invokes its
 one-argument predicate from left to right over a snapshot and keeps the
@@ -275,9 +276,9 @@ original elements for which the predicate returns `true`. It returns a fresh
 shallow array and preserves a known source element type. A known predicate must
 return `bool`; unknown predicate values are validated at runtime. The member
 form `array.filter(predicate)` is unshadowed builtin sugar, while the
-  function-style `filter` name is shadowable. Generic predicates are not accepted
-directly at this monomorphic call site, and callback errors propagate with the
-normal Rust VM call stack.
+  function-style `filter` name is shadowable. Generic predicates are
+specialized from known input element types; unresolved type parameters are
+static errors, and callback errors propagate with the normal Rust VM call stack.
 
 The callback-based array helpers `any(array, predicate)` and
 `all(array, predicate)` invoke a one-argument boolean predicate from left to
@@ -331,7 +332,9 @@ elements, preserves accumulator identity, and returns the final accumulator.
 The member form `array.reduce(initial, callback)` is unshadowed builtin sugar,
 while the function-style `reduce` name is shadowable. Known initial,
 element, and callback types are checked statically; callback errors propagate
-with the normal Rust VM call stack.
+with the normal Rust VM call stack. Generic callbacks are specialized from the
+known initial accumulator and element types; unresolved type parameters are
+static errors.
 
 Maps support `map[key]` lookup and `map[key] = value` upsert assignment. A
 missing lookup is a runtime error (`map key not found`), while assigning an

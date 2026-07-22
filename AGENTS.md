@@ -204,6 +204,9 @@ For file-backed lexer, parser, and type diagnostics in imported files and direct
 - The builtin `len(value)` returns array/map/range element counts or Unicode scalar-value counts for strings as a number. User bindings named `len` shadow the function-style builtin; unknown argument types are checked at runtime. Builtin member-call sugar names (`push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`, `map`, `filter`, `flatMap`, `any`, `all`, `count`, `find`, `findIndex`, `reduce`, `remove`, `clear`, `merge`, `keys`, `values`, `substr`, `charAt`) are not shadowed by lexical bindings with the same names.
 - Functions compile to an IR function table. Named functions and anonymous function expressions produce function values. Anonymous function expressions may appear directly as expression statements, for example `fun () { return nil; };`. Parameters and returns may be annotated with `number`, `bool`, `string`, `nil`, or function types such as `fun(number): string`; named functions and anonymous function expressions may add type parameters with `fun name<T>(...)` or `fun<T>(...)`, and call-site inference is erased before IR generation. Known function values carry arity, annotated parameter types, and conservative or annotated return types for static checks. Nested functions and function expressions are closures capturing enclosing locals by reference through shared runtime cells.
 - Runtime variable environments store cells rather than raw values. Assignment mutates an existing cell so closures sharing that cell observe updates.
+- Existing array higher-order helpers specialize generic callbacks from known
+  element, accumulator, and callback parameter types. Every generic callback
+  type parameter must be inferable; unresolved parameters are static errors.
 
 ## Roadmap Hints
 

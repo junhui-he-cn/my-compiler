@@ -1,4 +1,4 @@
-fun keep<T>(acc: T, value: number): T {
+fun reducer<T>(acc: number, value: number): number {
   return acc;
 }
-reduce([1], 0, keep);
+reduce([1], 0, reducer);

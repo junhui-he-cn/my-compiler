@@ -1,2 +1,2 @@
-let identity = fun<T>(value: T): T { return value; };
-map([1], identity);
+fun constant<T>(value: number): number { return value; }
+map([1], constant);

@@ -43,15 +43,14 @@ slices.
 Goal: evolve the current annotation checker into a more useful static type
 layer.
 
-The first generic-function slice now includes named functions, named-struct
-methods, and anonymous function expressions. All three forms support inferred
-and explicit call type arguments, while generic parameters are erased before
-IR lowering.
+The generic-function work now includes named functions, named-struct methods,
+anonymous function expressions, and specialization of generic callbacks passed
+to existing array higher-order helpers. All forms support inferred and explicit
+call type arguments, while generic parameters are erased before IR lowering.
 
 Future work:
 
-- Add constraints, generic container syntax beyond the built-in `map` form,
-  and the inference rules needed by higher-order collection APIs.
+- Add constraints and generic container syntax beyond the built-in `map` form.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -196,13 +195,15 @@ and snapshot conventions. It requires each callback result to be an array,
 flattens exactly one level into a fresh shallow array, and preserves a known
 callback element type in the static result.
 
+Existing array higher-order helpers specialize generic callbacks from known
+element and accumulator types. Every callback type parameter must be inferred;
+unresolved parameters remain static errors.
+
 Future work:
 
 - Extend the first array `map`/`filter`/`flatMap`/`reduce`/`any`/`all`/`count`/`find`/`findIndex` slices with generic
   collection syntax and further higher-order APIs once their remaining
   inference boundaries are defined.
-- Add further map operations, such as additional bulk helpers, only as focused
-  slices with explicit mutation and missing-key conventions.
 - Add further range/collection operations only as focused slices with explicit
   mutation and bounds semantics.
 

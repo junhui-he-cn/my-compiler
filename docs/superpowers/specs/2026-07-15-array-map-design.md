@@ -43,9 +43,8 @@ let shifted = [1, 2, 3].map(fun (value: number): number {
   lambdas therefore infer unannotated parameters from `[T]`.
 - A known callback return type produces `[R]`. Unknown arrays or unknown
   callback signatures produce a dynamic array with unknown element type.
-- Generic callback values are rejected when used as `map` callbacks because
-  this call site requires one monomorphic instantiation; callers can wrap
-  generic logic in a monomorphic lambda or named function when needed.
+- Generic callback values are specialized from known input element types; every
+  callback type parameter must be inferable at the call site.
 - The member form is always builtin sugar and cannot be shadowed by a lexical
   binding named `map`.
 
@@ -70,6 +69,7 @@ Runtime error: map expects callback with 1 argument
 ## Verification
 
 Cover direct and member calls, closure capture, typed and dynamic arrays,
-static callback mismatches, generic callback rejection, runtime operand and
+static callback mismatches, generic callback specialization and unresolved
+inference, runtime operand and
 arity failures, callback exceptions, `.cdbc` artifact output, and Rust VM
 parity.

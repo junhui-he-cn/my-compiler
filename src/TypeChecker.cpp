@@ -2167,6 +2167,33 @@ TypeInfo TypeChecker::substituteTypeParameters(
     return result;
 }
 
+TypeInfo TypeChecker::specializeGenericCallback(
+    const Token& callToken,
+    const TypeInfo& callbackType,
+    const std::vector<TypeInfo>& argumentTypes,
+    const std::string& functionName) const
+{
+    if (callbackType.genericParameters.empty()) {
+        return callbackType;
+    }
+
+    TypeSubstitutions substitutions;
+    for (std::size_t index = 0; index < callbackType.parameterTypes.size(); ++index) {
+        inferTypeArguments(
+            callbackType.parameterTypes[index], argumentTypes[index], substitutions, callToken);
+    }
+    for (const std::string& parameter : callbackType.genericParameters) {
+        if (substitutions.find(parameter) == substitutions.end()) {
+            throw TypeError(callToken,
+                functionName + " cannot infer type parameter " + parameter);
+        }
+    }
+
+    TypeInfo specialized = substituteTypeParameters(callbackType, substitutions);
+    specialized.genericParameters.clear();
+    return specialized;
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkFunctionCall(
     const Token& callToken,
     const TypeInfo& calleeType,
@@ -2265,6 +2292,7 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
     beginTypeParameterScope(expression.typeParameters);
 
     const TypeInfo* context = contextualFunctionType(expectedType);
+    const TypeInfo* contextualSignature = expression.typeParameters.empty() ? context : nullptr;
     if (context && context->parameterTypes.size() != expression.parameters.size()) {
         throw TypeError(expression.keyword,
             "expected " + std::to_string(context->parameterTypes.size())
@@ -2279,11 +2307,12 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
         const Parameter& parameter = expression.parameters[i];
         TypeInfo parameterType = parameter.typeName
             ? resolveAnnotation(*parameter.typeName)
-            : (context ? context->parameterTypes[i] : unknownType());
+            : (contextualSignature ? contextualSignature->parameterTypes[i] : unknownType());
 
-        if (context && parameter.typeName && !compatible(parameterType, context->parameterTypes[i])) {
+        if (contextualSignature && parameter.typeName
+            && !compatible(parameterType, contextualSignature->parameterTypes[i])) {
             throw TypeError(parameter.name,
-                "parameter `" + parameter.name.lexeme + "` expects " + typeInfoName(context->parameterTypes[i])
+                "parameter `" + parameter.name.lexeme + "` expects " + typeInfoName(contextualSignature->parameterTypes[i])
                     + ", got " + typeInfoName(parameterType));
         }
 
@@ -2294,14 +2323,14 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
     if (expression.returnTypeName) {
         expectedReturnType = resolveAnnotation(*expression.returnTypeName);
     }
-    if (context && context->returnType) {
-        if (expectedReturnType && !compatible(*context->returnType, *expectedReturnType)) {
+    if (contextualSignature && contextualSignature->returnType) {
+        if (expectedReturnType && !compatible(*contextualSignature->returnType, *expectedReturnType)) {
             throw TypeError(expression.returnTypeName->token,
-                "function `<lambda>` expects return " + typeInfoName(*context->returnType)
+                "function `<lambda>` expects return " + typeInfoName(*contextualSignature->returnType)
                     + ", got " + typeInfoName(*expectedReturnType));
         }
         if (!expectedReturnType) {
-            expectedReturnType = *context->returnType;
+            expectedReturnType = *contextualSignature->returnType;
         }
     }
 
@@ -2316,7 +2345,7 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
         Binding parameterBinding = declareVariable(
             parameter.name,
             declaredParameterTypes[i],
-            parameter.typeName.has_value() || context != nullptr);
+            parameter.typeName.has_value() || contextualSignature != nullptr);
         parameterNames.push_back(parameterBinding.resolvedName);
     }
     resolvedNames_.recordParameters(expression, std::move(parameterNames));
@@ -3621,20 +3650,19 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayMap(
     if (callback.type.kind != StaticType::Function || !hasFunctionSignature(callback.type)) {
         return CheckedExpression{simpleType(StaticType::Array)};
     }
-    if (!callback.type.genericParameters.empty()) {
-        throw TypeError(callToken, "map expects a non-generic callback");
-    }
     if (callback.type.parameterTypes.size() != 1) {
         throw TypeError(callToken, "map expects callback with 1 argument");
     }
+    const TypeInfo callbackType = specializeGenericCallback(
+        callToken, callback.type, {elementType}, "map");
     if (elementType.kind != StaticType::Unknown
-        && !compatible(callback.type.parameterTypes.front(), elementType)) {
+        && !compatible(callbackType.parameterTypes.front(), elementType)) {
         throw TypeError(callToken,
             "map callback expects " + typeInfoName(elementType)
-                + ", got " + typeInfoName(callback.type.parameterTypes.front()));
+                + ", got " + typeInfoName(callbackType.parameterTypes.front()));
     }
-    if (callback.type.returnType && isKnown(*callback.type.returnType)) {
-        return CheckedExpression{arrayType(*callback.type.returnType)};
+    if (callbackType.returnType && isKnown(*callbackType.returnType)) {
+        return CheckedExpression{arrayType(*callbackType.returnType)};
     }
     return CheckedExpression{simpleType(StaticType::Array)};
 }
@@ -3659,23 +3687,22 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayFilter(
             "filter expects function as second argument, got " + typeInfoName(predicate.type));
     }
     if (predicate.type.kind == StaticType::Function && hasFunctionSignature(predicate.type)) {
-        if (!predicate.type.genericParameters.empty()) {
-            throw TypeError(callToken, "filter expects a non-generic callback");
-        }
         if (predicate.type.parameterTypes.size() != 1) {
             throw TypeError(callToken, "filter expects callback with 1 argument");
         }
+        const TypeInfo predicateType = specializeGenericCallback(
+            callToken, predicate.type, {elementType}, "filter");
         if (elementType.kind != StaticType::Unknown
-            && !compatible(predicate.type.parameterTypes.front(), elementType)) {
+            && !compatible(predicateType.parameterTypes.front(), elementType)) {
             throw TypeError(callToken,
                 "filter callback expects " + typeInfoName(elementType)
-                    + ", got " + typeInfoName(predicate.type.parameterTypes.front()));
+                    + ", got " + typeInfoName(predicateType.parameterTypes.front()));
         }
-        if (predicate.type.returnType
-            && isKnown(*predicate.type.returnType)
-            && !compatible(simpleType(StaticType::Bool), *predicate.type.returnType)) {
+        if (predicateType.returnType
+            && isKnown(*predicateType.returnType)
+            && !compatible(simpleType(StaticType::Bool), *predicateType.returnType)) {
             throw TypeError(callToken,
-                "filter expects callback to return bool, got " + typeInfoName(*predicate.type.returnType));
+                "filter expects callback to return bool, got " + typeInfoName(*predicateType.returnType));
         }
     }
 
@@ -3707,26 +3734,25 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayFlatMap(
     if (callback.type.kind != StaticType::Function || !hasFunctionSignature(callback.type)) {
         return CheckedExpression{simpleType(StaticType::Array)};
     }
-    if (!callback.type.genericParameters.empty()) {
-        throw TypeError(callToken, "flatMap expects a non-generic callback");
-    }
     if (callback.type.parameterTypes.size() != 1) {
         throw TypeError(callToken, "flatMap expects callback with 1 argument");
     }
+    const TypeInfo callbackType = specializeGenericCallback(
+        callToken, callback.type, {elementType}, "flatMap");
     if (elementType.kind != StaticType::Unknown
-        && !compatible(callback.type.parameterTypes.front(), elementType)) {
+        && !compatible(callbackType.parameterTypes.front(), elementType)) {
         throw TypeError(callToken,
             "flatMap callback expects " + typeInfoName(elementType)
-                + ", got " + typeInfoName(callback.type.parameterTypes.front()));
+                + ", got " + typeInfoName(callbackType.parameterTypes.front()));
     }
-    if (callback.type.returnType && isKnown(*callback.type.returnType)) {
-        if (callback.type.returnType->kind != StaticType::Array) {
+    if (callbackType.returnType && isKnown(*callbackType.returnType)) {
+        if (callbackType.returnType->kind != StaticType::Array) {
             throw TypeError(callToken,
                 "flatMap expects callback to return array, got "
-                    + typeInfoName(*callback.type.returnType));
+                    + typeInfoName(*callbackType.returnType));
         }
-        if (callback.type.returnType->elementType) {
-            return CheckedExpression{arrayType(*callback.type.returnType->elementType)};
+        if (callbackType.returnType->elementType) {
+            return CheckedExpression{arrayType(*callbackType.returnType->elementType)};
         }
     }
     return CheckedExpression{simpleType(StaticType::Array)};
@@ -3754,24 +3780,23 @@ void TypeChecker::checkArrayPredicate(
             functionName + " expects function as second argument, got " + typeInfoName(predicate.type));
     }
     if (predicate.type.kind == StaticType::Function && hasFunctionSignature(predicate.type)) {
-        if (!predicate.type.genericParameters.empty()) {
-            throw TypeError(callToken, functionName + " expects a non-generic callback");
-        }
         if (predicate.type.parameterTypes.size() != 1) {
             throw TypeError(callToken, functionName + " expects callback with 1 argument");
         }
+        const TypeInfo predicateType = specializeGenericCallback(
+            callToken, predicate.type, {elementType}, functionName);
         if (elementType.kind != StaticType::Unknown
-            && !compatible(predicate.type.parameterTypes.front(), elementType)) {
+            && !compatible(predicateType.parameterTypes.front(), elementType)) {
             throw TypeError(callToken,
                 functionName + " callback expects " + typeInfoName(elementType)
-                    + ", got " + typeInfoName(predicate.type.parameterTypes.front()));
+                    + ", got " + typeInfoName(predicateType.parameterTypes.front()));
         }
-        if (predicate.type.returnType
-            && isKnown(*predicate.type.returnType)
-            && !compatible(simpleType(StaticType::Bool), *predicate.type.returnType)) {
+        if (predicateType.returnType
+            && isKnown(*predicateType.returnType)
+            && !compatible(simpleType(StaticType::Bool), *predicateType.returnType)) {
             throw TypeError(callToken,
                 functionName + " expects callback to return bool, got "
-                    + typeInfoName(*predicate.type.returnType));
+                    + typeInfoName(*predicateType.returnType));
         }
     }
 
@@ -3843,30 +3868,29 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayReduce(
             "reduce expects function as third argument, got " + typeInfoName(callback.type));
     }
     if (callback.type.kind == StaticType::Function && hasFunctionSignature(callback.type)) {
-        if (!callback.type.genericParameters.empty()) {
-            throw TypeError(callToken, "reduce expects a non-generic callback");
-        }
         if (callback.type.parameterTypes.size() != 2) {
             throw TypeError(callToken, "reduce expects callback with 2 arguments");
         }
+        const TypeInfo callbackType = specializeGenericCallback(
+            callToken, callback.type, {initial.type, elementType}, "reduce");
         if (initial.type.kind != StaticType::Unknown
-            && !compatible(callback.type.parameterTypes.front(), initial.type)) {
+            && !compatible(callbackType.parameterTypes.front(), initial.type)) {
             throw TypeError(callToken,
                 "reduce callback accumulator expects " + typeInfoName(initial.type)
-                    + ", got " + typeInfoName(callback.type.parameterTypes.front()));
+                    + ", got " + typeInfoName(callbackType.parameterTypes.front()));
         }
         if (elementType.kind != StaticType::Unknown
-            && !compatible(callback.type.parameterTypes[1], elementType)) {
+            && !compatible(callbackType.parameterTypes[1], elementType)) {
             throw TypeError(callToken,
                 "reduce callback element expects " + typeInfoName(elementType)
-                    + ", got " + typeInfoName(callback.type.parameterTypes[1]));
+                    + ", got " + typeInfoName(callbackType.parameterTypes[1]));
         }
-        if (callback.type.returnType
-            && isKnown(*callback.type.returnType)
-            && !compatible(initial.type, *callback.type.returnType)) {
+        if (callbackType.returnType
+            && isKnown(*callbackType.returnType)
+            && !compatible(initial.type, *callbackType.returnType)) {
             throw TypeError(callToken,
                 "reduce expects callback to return " + typeInfoName(initial.type)
-                    + ", got " + typeInfoName(*callback.type.returnType));
+                    + ", got " + typeInfoName(*callbackType.returnType));
         }
     }
 

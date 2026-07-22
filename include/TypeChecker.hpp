@@ -252,6 +252,11 @@ private:
     TypeInfo substituteTypeParameters(
         const TypeInfo& type,
         const TypeSubstitutions& substitutions) const;
+    TypeInfo specializeGenericCallback(
+        const Token& callToken,
+        const TypeInfo& callbackType,
+        const std::vector<TypeInfo>& argumentTypes,
+        const std::string& functionName) const;
     CheckedExpression checkFunctionCall(
         const Token& callToken,
         const TypeInfo& calleeType,

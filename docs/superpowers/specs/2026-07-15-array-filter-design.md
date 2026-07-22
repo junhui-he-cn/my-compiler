@@ -43,8 +43,8 @@ let positives = [1, -2, 3].filter(fun (value: number): bool {
 - A known predicate return type must be `bool`; an unknown return type remains a
   runtime check. A known array element type produces the same `[T]` result type;
   unknown array element information produces a dynamic array type.
-- Generic predicate values are rejected because this call site requires one
-  monomorphic instantiation.
+- Generic predicate values are specialized from known input element types;
+  every predicate type parameter must be inferable at the call site.
 - The member form is always builtin sugar and cannot be shadowed by a lexical
   binding named `filter`.
 
@@ -69,6 +69,7 @@ Runtime error: filter expects callback to return bool
 ## Verification
 
 Cover direct and member calls, closure capture, source snapshots, empty and
-mixed arrays, static predicate mismatches, generic predicate rejection, runtime
+mixed arrays, static predicate mismatches, generic predicate specialization and
+unresolved inference, runtime
 operand/arity/return failures, callback exceptions, `.cdbc` artifact output, and
 Rust VM parity.
