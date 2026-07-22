@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "matrix_revision": "m0d-2026-07-22-r1",
+  "inventory_revision": "m0d-2026-07-22-r1",
+  "reference_commit": "79fbfa0",
+  "canonical_command": [
+    "python3",
+    "tests/run_verification.py",
+    "{compiler}",
+    "{vm}",
+    "--report",
+    "{report_dir}/verification-report.json"
+  ],
+  "cells": [
+    {
+      "cell_id": "build.default",
+      "family": "build",
+      "environment": "default",
+      "execution": "matrix",
+      "commands": [
+        [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "{default_build_dir}"
+        ],
+        [
+          "cmake",
+          "--build",
+          "{default_build_dir}"
+        ]
+      ],
+      "coverage": [
+        "compile"
+      ],
+      "reachability": {
+        "kind": "environment-wrapper",
+        "name": "matrix.clean.default"
+      }
+    },
+    {
+      "cell_id": "build.sanitizers",
+      "family": "build",
+      "environment": "sanitizers",
+      "execution": "matrix",
+      "commands": [
+        [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "{sanitizer_build_dir}",
+          "-DCOMPILER_DESIGN_ENABLE_WARNINGS=ON",
+          "-DCOMPILER_DESIGN_ENABLE_SANITIZERS=ON"
+        ],
+        [
+          "cmake",
+          "--build",
+          "{sanitizer_build_dir}"
+        ]
+      ],
+      "coverage": [
+        "compile",
+        "sanitizer-build"
+      ],
+      "reachability": {
+        "kind": "environment-wrapper",
+        "name": "ci.sanitizers.build"
+      }
+    },
+    {
+      "cell_id": "build.warnings",
+      "family": "build",
+      "environment": "warnings",
+      "execution": "matrix",
+      "commands": [
+        [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "{warnings_build_dir}",
+          "-DCOMPILER_DESIGN_ENABLE_WARNINGS=ON"
+        ],
+        [
+          "cmake",
+          "--build",
+          "{warnings_build_dir}"
+        ]
+      ],
+      "coverage": [
+        "compile",
+        "warning-build"
+      ],
+      "reachability": {
+        "kind": "environment-wrapper",
+        "name": "ci.verify.warning-build"
+      }
+    },
+    {
+      "cell_id": "canonical.verification",
+      "family": "canonical-runner",
+      "environment": "default",
+      "execution": "matrix",
+      "commands": [
+        [
+          "python3",
+          "tests/run_verification.py",
+          "{compiler}",
+          "{vm}",
+          "--report",
+          "{report_dir}/verification-report.json"
+        ]
+      ],
+      "coverage": [
+        "cpp-tests",
+        "python-goldens",
+        "artifact-tests",
+        "rust-vm-tests",
+        "cargo-test"
+      ],
+      "reachability": {
+        "kind": "matrix-wrapper",
+        "name": "tests/run_verification_matrix.py"
+      }
+    },
+    {
+      "cell_id": "tests.artifact",
+      "family": "artifact-tests",
+      "environment": "default",
+      "execution": "canonical",
+      "commands": [
+        [
+          "python3",
+          "tests/bytecode_artifact_tests.py",
+          "{compiler}",
+          "{vm}"
+        ]
+      ],
+      "coverage": [
+        "artifact-tests"
+      ],
+      "reachability": {
+        "kind": "canonical",
+        "name": "tests/run_verification.py",
+        "runner": "artifact"
+      },
+      "duplicate_of": "canonical.verification"
+    },
+    {
+      "cell_id": "tests.cargo",
+      "family": "cargo-test",
+      "environment": "default",
+      "execution": "canonical",
+      "commands": [
+        [
+          "cargo",
+          "test",
+          "--manifest-path",
+          "{vm}/Cargo.toml"
+        ]
+      ],
+      "coverage": [
+        "cargo-test"
+      ],
+      "reachability": {
+        "kind": "canonical",
+        "name": "tests/run_verification.py",
+        "runner": "cargo_test"
+      },
+      "duplicate_of": "canonical.verification"
+    },
+    {
+      "cell_id": "tests.ctest",
+      "family": "cpp-tests",
+      "environment": "default",
+      "execution": "canonical",
+      "commands": [
+        [
+          "ctest",
+          "--test-dir",
+          "{default_build_dir}",
+          "--output-on-failure"
+        ]
+      ],
+      "coverage": [
+        "cpp-tests"
+      ],
+      "reachability": {
+        "kind": "canonical",
+        "name": "tests/run_verification.py",
+        "runner": "ctest"
+      },
+      "duplicate_of": "canonical.verification"
+    },
+    {
+      "cell_id": "tests.golden",
+      "family": "python-goldens",
+      "environment": "default",
+      "execution": "canonical",
+      "commands": [
+        [
+          "python3",
+          "tests/run_golden_tests.py",
+          "{compiler}"
+        ]
+      ],
+      "coverage": [
+        "python-goldens"
+      ],
+      "reachability": {
+        "kind": "canonical",
+        "name": "tests/run_verification.py",
+        "runner": "golden"
+      },
+      "duplicate_of": "canonical.verification"
+    },
+    {
+      "cell_id": "tests.rust_vm",
+      "family": "rust-vm-tests",
+      "environment": "default",
+      "execution": "canonical",
+      "commands": [
+        [
+          "python3",
+          "tests/run_rust_vm_tests.py",
+          "{compiler}",
+          "{vm}",
+          "--goldens"
+        ]
+      ],
+      "coverage": [
+        "rust-vm-tests"
+      ],
+      "reachability": {
+        "kind": "canonical",
+        "name": "tests/run_verification.py",
+        "runner": "rust_vm_artifact,rust_vm_golden,rust_vm_runtime_error"
+      },
+      "duplicate_of": "canonical.verification"
+    },
+    {
+      "cell_id": "tests.sanitizer_ctest",
+      "family": "cpp-tests",
+      "environment": "sanitizers",
+      "execution": "matrix",
+      "commands": [
+        [
+          "ctest",
+          "--test-dir",
+          "{sanitizer_build_dir}",
+          "--output-on-failure"
+        ]
+      ],
+      "coverage": [
+        "cpp-tests",
+        "sanitizer-build"
+      ],
+      "reachability": {
+        "kind": "environment-wrapper",
+        "name": "ci.sanitizers.ctest"
+      }
+    }
+  ],
+  "measurements": {
+    "compile_time": {
+      "unit": "seconds",
+      "statistic": "observed",
+      "repetitions": 1,
+      "tolerance_percent": 50.0,
+      "enforcement": "informational",
+      "definition": "Wall-clock CMake configure plus build time for each clean build environment."
+    },
+    "test_duration": {
+      "unit": "seconds",
+      "statistic": "observed",
+      "repetitions": 1,
+      "tolerance_percent": 50.0,
+      "enforcement": "informational",
+      "definition": "Wall-clock canonical verification plus sanitizer CTest time; duplicate projections count once."
+    },
+    "artifact_size": {
+      "unit": "bytes",
+      "statistic": "exact",
+      "repetitions": 1,
+      "tolerance_bytes": 0,
+      "enforcement": "deterministic",
+      "root": "tests/bytecode_artifacts",
+      "pattern": "expected.cdbc",
+      "definition": "Count, total bytes, and SHA-256 of the checked-in artifact corpus."
+    },
+    "runtime_workload": {
+      "unit": "seconds",
+      "statistic": "median",
+      "repetitions": 3,
+      "tolerance_percent": 50.0,
+      "enforcement": "informational",
+      "definition": "Rust VM wall-clock execution after one compiler emission, with exact stdout validation."
+    }
+  },
+  "workloads": [
+    {
+      "workload_id": "arithmetic",
+      "fixture": "tests/bytecode_artifacts/arithmetic",
+      "sources": [
+        "tests/bytecode_artifacts/arithmetic/input.cd"
+      ],
+      "expected_output": "tests/bytecode_artifacts/arithmetic/run.out"
+    },
+    {
+      "workload_id": "collection_helpers",
+      "fixture": "tests/bytecode_artifacts/collection_helpers",
+      "sources": [
+        "tests/bytecode_artifacts/collection_helpers/input.cd"
+      ],
+      "expected_output": "tests/bytecode_artifacts/collection_helpers/run.out"
+    },
+    {
+      "workload_id": "maps",
+      "fixture": "tests/bytecode_artifacts/maps",
+      "sources": [
+        "tests/bytecode_artifacts/maps/input.cd"
+      ],
+      "expected_output": "tests/bytecode_artifacts/maps/run.out"
+    },
+    {
+      "workload_id": "native_stdlib_math",
+      "fixture": "tests/bytecode_artifacts/native_stdlib_math",
+      "sources": [
+        "tests/bytecode_artifacts/native_stdlib_math/input.cd"
+      ],
+      "expected_output": "tests/bytecode_artifacts/native_stdlib_math/run.out"
+    },
+    {
+      "workload_id": "unicode_strings",
+      "fixture": "tests/bytecode_artifacts/unicode_strings",
+      "sources": [
+        "tests/bytecode_artifacts/unicode_strings/input.cd"
+      ],
+      "expected_output": "tests/bytecode_artifacts/unicode_strings/run.out"
+    }
+  ]
+}

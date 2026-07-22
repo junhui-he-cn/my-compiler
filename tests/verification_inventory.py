@@ -22,8 +22,8 @@ import malformed_corpus
 
 
 SCHEMA_VERSION = 1
-INVENTORY_REVISION = "m0c-2026-07-22-r1"
-BASELINE_COMMIT = "30ae329"
+INVENTORY_REVISION = "m0d-2026-07-22-r1"
+BASELINE_COMMIT = "79fbfa0"
 BOUNDARY_CASES_PATH = Path(__file__).resolve().with_name("boundary_cases.json")
 
 CANONICAL_COMMAND = [
@@ -86,6 +86,12 @@ CTEST_SOURCE_OVERRIDES = {
         "tests/malformed_tests_selftest.py",
         "tests/malformed_corpus.py",
         "tests/run_malformed_tests.py",
+    ],
+    "verification_matrix_selftest": [
+        "tests/verification_matrix_selftest.py",
+        "tests/verification_matrix.py",
+        "tests/run_verification_matrix.py",
+        "tests/verification_matrix.json",
     ],
 }
 

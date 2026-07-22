@@ -128,6 +128,12 @@ add_test(
 )
 
 add_test(
+    NAME verification_matrix_selftest
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
+            ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verification_matrix_selftest.py
+)
+
+add_test(
     NAME cmake_config
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
             ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/cmake_config_tests.py ${CMAKE_SOURCE_DIR}

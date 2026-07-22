@@ -521,6 +521,28 @@ python3 tests/run_boundary_tests.py ./build/compiler_design
 Boundary path substitutions are limited to the reviewed machine-readable
 allowlist in `tests/boundary_allowlist.json`.
 
+The M0D verification matrix records the warning-enabled build, sanitizer build,
+CTest, Python golden, artifact, Rust VM, and Cargo coverage. It also records
+clean-build time, test duration, artifact-corpus size, and five fixed Rust VM
+workloads. Validate the matrix manifest and run a clean temporary-build
+measurement locally with:
+
+```sh
+python3 tests/verification_matrix.py
+python3 tests/run_verification_matrix.py --mode clean --report build/verification-matrix-report.json
+```
+
+CI keeps the existing jobs as the environment wrappers and records a projection
+without running the canonical suites a second time:
+
+```sh
+python3 tests/run_verification_matrix.py --mode reuse ./build/compiler_design vm-rs --build-dir build --canonical-report build/verification-report.json --report build/verification-matrix-report.json
+```
+
+The checked-in M0D baseline is `docs/verification/m0d-baseline.json`; its
+measurement policy and migration/deletion conditions are documented in
+`docs/verification/m0d-verification-matrix-design.md`.
+
 The bounded malformed-input corpus covers lexer/parser recovery and mutated
 `.cdbc` parser inputs with deterministic seeds and timeouts:
 

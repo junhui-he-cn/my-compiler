@@ -22,6 +22,7 @@ REQUIRED_SNIPPETS = (
     "python3 tests/run_rust_vm_tests.py ./build/compiler_design vm-rs --goldens",
     "cargo test --manifest-path vm-rs/Cargo.toml",
     "python3 tests/run_verification.py ./build/compiler_design vm-rs --report build/verification-report.json",
+    "python3 tests/run_verification_matrix.py --mode reuse ./build/compiler_design vm-rs --build-dir build --canonical-report build/verification-report.json --report build/verification-matrix-report.json",
     "uses: actions/upload-artifact@v4",
     "name: verification-report",
     "sanitizers:",
