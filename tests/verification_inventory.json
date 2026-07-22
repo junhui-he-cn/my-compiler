@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "inventory_revision": "m0b-2026-07-22-r1",
-  "baseline_commit": "6feb009",
+  "inventory_revision": "m0c-2026-07-22-r1",
+  "baseline_commit": "30ae329",
   "canonical_command": [
     "python3",
     "tests/run_verification.py",
@@ -26,6 +26,14 @@
       "python3",
       "tests/run_boundary_tests.py",
       "./build/compiler_design"
+    ],
+    [
+      "python3",
+      "tests/run_malformed_tests.py",
+      "./build/compiler_design",
+      "vm-rs",
+      "--report",
+      "build/malformed-report.json"
     ],
     [
       "python3",
@@ -3928,6 +3936,29 @@
       "sources": [
         "CMakeLists.txt",
         "tests/ir_source_location_tests.cpp"
+      ],
+      "expected_files": []
+    },
+    {
+      "case_id": "ctest.malformed_harness_selftest",
+      "runner": "ctest",
+      "result_name": "malformed_harness_selftest",
+      "stage": "verification",
+      "capability_tags": [
+        "ctest",
+        "malformed_harness_selftest"
+      ],
+      "backend": "python",
+      "expected_result_kind": "pass",
+      "boundary_sequence": [
+        "verification"
+      ],
+      "terminal_boundary": "verification",
+      "sources": [
+        "CMakeLists.txt",
+        "tests/malformed_tests_selftest.py",
+        "tests/malformed_corpus.py",
+        "tests/run_malformed_tests.py"
       ],
       "expected_files": []
     },
@@ -24040,6 +24071,2476 @@
         "tests/golden/type_errors/while_body_scope_escape.exit"
       ],
       "fixture": "tests/golden/type_errors"
+    },
+    {
+      "case_id": "malformed.cdbc.arithmetic.bad_header",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.arithmetic.bad_header",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "bad_header"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/arithmetic"
+    },
+    {
+      "case_id": "malformed.cdbc.arithmetic.trailing_garbage",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.arithmetic.trailing_garbage",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "trailing_garbage"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/arithmetic"
+    },
+    {
+      "case_id": "malformed.cdbc.arithmetic.truncate",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.arithmetic.truncate",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "truncate"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/arithmetic"
+    },
+    {
+      "case_id": "malformed.cdbc.arithmetic.unknown_opcode",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.arithmetic.unknown_opcode",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "unknown_opcode"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/arithmetic"
+    },
+    {
+      "case_id": "malformed.cdbc.functions_arrays.bad_header",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.functions_arrays.bad_header",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "bad_header"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/functions_arrays"
+    },
+    {
+      "case_id": "malformed.cdbc.functions_arrays.trailing_garbage",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.functions_arrays.trailing_garbage",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "trailing_garbage"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/functions_arrays"
+    },
+    {
+      "case_id": "malformed.cdbc.functions_arrays.truncate",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.functions_arrays.truncate",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "truncate"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/functions_arrays"
+    },
+    {
+      "case_id": "malformed.cdbc.functions_arrays.unknown_opcode",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.functions_arrays.unknown_opcode",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "unknown_opcode"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/functions_arrays/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/functions_arrays"
+    },
+    {
+      "case_id": "malformed.cdbc.maps.bad_header",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.maps.bad_header",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "bad_header"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/maps"
+    },
+    {
+      "case_id": "malformed.cdbc.maps.trailing_garbage",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.maps.trailing_garbage",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "trailing_garbage"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/maps"
+    },
+    {
+      "case_id": "malformed.cdbc.maps.truncate",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.maps.truncate",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "truncate"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/maps"
+    },
+    {
+      "case_id": "malformed.cdbc.maps.unknown_opcode",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.maps.unknown_opcode",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "unknown_opcode"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/maps/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/maps"
+    },
+    {
+      "case_id": "malformed.cdbc.runtime_diagnostics.bad_header",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.runtime_diagnostics.bad_header",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "bad_header"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/runtime_diagnostics"
+    },
+    {
+      "case_id": "malformed.cdbc.runtime_diagnostics.trailing_garbage",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.runtime_diagnostics.trailing_garbage",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "trailing_garbage"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/runtime_diagnostics"
+    },
+    {
+      "case_id": "malformed.cdbc.runtime_diagnostics.truncate",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.runtime_diagnostics.truncate",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "truncate"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/runtime_diagnostics"
+    },
+    {
+      "case_id": "malformed.cdbc.runtime_diagnostics.unknown_opcode",
+      "runner": "malformed",
+      "result_name": "malformed.cdbc.runtime_diagnostics.unknown_opcode",
+      "stage": "cdbc-parser",
+      "capability_tags": [
+        "malformed",
+        "cdbc",
+        "rust-parser",
+        "unknown_opcode"
+      ],
+      "backend": "rust-vm",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "cdbc",
+        "rust_decode"
+      ],
+      "terminal_boundary": "rust_decode",
+      "sources": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "expected_files": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc"
+      ],
+      "fixture": "tests/bytecode_artifacts/runtime_diagnostics"
+    },
+    {
+      "case_id": "malformed.lexer.unexpected_character",
+      "runner": "malformed",
+      "result_name": "malformed.lexer.unexpected_character",
+      "stage": "lexical",
+      "capability_tags": [
+        "malformed",
+        "lexer",
+        "unexpected-character"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens"
+      ],
+      "terminal_boundary": "tokens",
+      "sources": [
+        "tests/malformed_cases.json"
+      ],
+      "expected_files": [],
+      "fixture": "tests/malformed_cases.json"
+    },
+    {
+      "case_id": "malformed.lexer.unterminated_string",
+      "runner": "malformed",
+      "result_name": "malformed.lexer.unterminated_string",
+      "stage": "lexical",
+      "capability_tags": [
+        "malformed",
+        "lexer",
+        "unterminated-string"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens"
+      ],
+      "terminal_boundary": "tokens",
+      "sources": [
+        "tests/malformed_cases.json"
+      ],
+      "expected_files": [],
+      "fixture": "tests/malformed_cases.json"
+    },
+    {
+      "case_id": "malformed.parse_error.adt_missing_arrow",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.adt_missing_arrow",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/adt_missing_arrow.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/adt_missing_arrow.cd",
+        "tests/golden/parse_errors/adt_missing_arrow.err",
+        "tests/golden/parse_errors/adt_missing_arrow.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.array_index_missing_bracket",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.array_index_missing_bracket",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/array_index_missing_bracket.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/array_index_missing_bracket.cd",
+        "tests/golden/parse_errors/array_index_missing_bracket.err",
+        "tests/golden/parse_errors/array_index_missing_bracket.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.array_literal_missing_bracket",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.array_literal_missing_bracket",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/array_literal_missing_bracket.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/array_literal_missing_bracket.cd",
+        "tests/golden/parse_errors/array_literal_missing_bracket.err",
+        "tests/golden/parse_errors/array_literal_missing_bracket.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.array_trailing_comma",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.array_trailing_comma",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/array_trailing_comma.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/array_trailing_comma.cd",
+        "tests/golden/parse_errors/array_trailing_comma.err",
+        "tests/golden/parse_errors/array_trailing_comma.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.array_type_missing_bracket",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.array_type_missing_bracket",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/array_type_missing_bracket.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/array_type_missing_bracket.cd",
+        "tests/golden/parse_errors/array_type_missing_bracket.err",
+        "tests/golden/parse_errors/array_type_missing_bracket.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.break_missing_semicolon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.break_missing_semicolon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/break_missing_semicolon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/break_missing_semicolon.cd",
+        "tests/golden/parse_errors/break_missing_semicolon.err",
+        "tests/golden/parse_errors/break_missing_semicolon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.call_assignment_target",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.call_assignment_target",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/call_assignment_target.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/call_assignment_target.cd",
+        "tests/golden/parse_errors/call_assignment_target.err",
+        "tests/golden/parse_errors/call_assignment_target.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.call_missing_argument",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.call_missing_argument",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/call_missing_argument.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/call_missing_argument.cd",
+        "tests/golden/parse_errors/call_missing_argument.err",
+        "tests/golden/parse_errors/call_missing_argument.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.compound_assignment_invalid_expression_target",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.compound_assignment_invalid_expression_target",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/compound_assignment_invalid_expression_target.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/compound_assignment_invalid_expression_target.cd",
+        "tests/golden/parse_errors/compound_assignment_invalid_expression_target.err",
+        "tests/golden/parse_errors/compound_assignment_invalid_expression_target.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.continue_missing_semicolon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.continue_missing_semicolon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/continue_missing_semicolon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/continue_missing_semicolon.cd",
+        "tests/golden/parse_errors/continue_missing_semicolon.err",
+        "tests/golden/parse_errors/continue_missing_semicolon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.export_invalid_fun",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.export_invalid_fun",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/export_invalid_fun.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/export_invalid_fun.cd",
+        "tests/golden/parse_errors/export_invalid_fun.err",
+        "tests/golden/parse_errors/export_invalid_fun.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.export_invalid_statement",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.export_invalid_statement",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/export_invalid_statement.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/export_invalid_statement.cd",
+        "tests/golden/parse_errors/export_invalid_statement.err",
+        "tests/golden/parse_errors/export_invalid_statement.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.export_invalid_struct",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.export_invalid_struct",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/export_invalid_struct.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/export_invalid_struct.cd",
+        "tests/golden/parse_errors/export_invalid_struct.err",
+        "tests/golden/parse_errors/export_invalid_struct.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.export_nested",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.export_nested",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/export_nested.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/export_nested.cd",
+        "tests/golden/parse_errors/export_nested.err",
+        "tests/golden/parse_errors/export_nested.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.export_trailing_comma",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.export_trailing_comma",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/export_trailing_comma.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/export_trailing_comma.cd",
+        "tests/golden/parse_errors/export_trailing_comma.err",
+        "tests/golden/parse_errors/export_trailing_comma.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.field_assignment_invalid_target",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.field_assignment_invalid_target",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/field_assignment_invalid_target.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/field_assignment_invalid_target.cd",
+        "tests/golden/parse_errors/field_assignment_invalid_target.err",
+        "tests/golden/parse_errors/field_assignment_invalid_target.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.field_assignment_missing_value",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.field_assignment_missing_value",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/field_assignment_missing_value.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/field_assignment_missing_value.cd",
+        "tests/golden/parse_errors/field_assignment_missing_value.err",
+        "tests/golden/parse_errors/field_assignment_missing_value.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.field_missing_name",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.field_missing_name",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/field_missing_name.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/field_missing_name.cd",
+        "tests/golden/parse_errors/field_missing_name.err",
+        "tests/golden/parse_errors/field_missing_name.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.for_in_missing_block",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.for_in_missing_block",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/for_in_missing_block.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/for_in_missing_block.cd",
+        "tests/golden/parse_errors/for_in_missing_block.err",
+        "tests/golden/parse_errors/for_in_missing_block.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.for_in_missing_in_or_semicolon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.for_in_missing_in_or_semicolon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/for_in_missing_in_or_semicolon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/for_in_missing_in_or_semicolon.cd",
+        "tests/golden/parse_errors/for_in_missing_in_or_semicolon.err",
+        "tests/golden/parse_errors/for_in_missing_in_or_semicolon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.for_in_missing_iterable",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.for_in_missing_iterable",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/for_in_missing_iterable.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/for_in_missing_iterable.cd",
+        "tests/golden/parse_errors/for_in_missing_iterable.err",
+        "tests/golden/parse_errors/for_in_missing_iterable.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.for_in_missing_variable",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.for_in_missing_variable",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/for_in_missing_variable.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/for_in_missing_variable.cd",
+        "tests/golden/parse_errors/for_in_missing_variable.err",
+        "tests/golden/parse_errors/for_in_missing_variable.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.for_missing_block",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.for_missing_block",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/for_missing_block.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/for_missing_block.cd",
+        "tests/golden/parse_errors/for_missing_block.err",
+        "tests/golden/parse_errors/for_missing_block.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.for_missing_first_semicolon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.for_missing_first_semicolon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/for_missing_first_semicolon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/for_missing_first_semicolon.cd",
+        "tests/golden/parse_errors/for_missing_first_semicolon.err",
+        "tests/golden/parse_errors/for_missing_first_semicolon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.for_missing_second_semicolon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.for_missing_second_semicolon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/for_missing_second_semicolon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/for_missing_second_semicolon.cd",
+        "tests/golden/parse_errors/for_missing_second_semicolon.err",
+        "tests/golden/parse_errors/for_missing_second_semicolon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.fun_invalid_start",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.fun_invalid_start",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/fun_invalid_start.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/fun_invalid_start.cd",
+        "tests/golden/parse_errors/fun_invalid_start.err",
+        "tests/golden/parse_errors/fun_invalid_start.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.function_missing_parameter_paren",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.function_missing_parameter_paren",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/function_missing_parameter_paren.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/function_missing_parameter_paren.cd",
+        "tests/golden/parse_errors/function_missing_parameter_paren.err",
+        "tests/golden/parse_errors/function_missing_parameter_paren.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.function_param_missing_type",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.function_param_missing_type",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/function_param_missing_type.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/function_param_missing_type.cd",
+        "tests/golden/parse_errors/function_param_missing_type.err",
+        "tests/golden/parse_errors/function_param_missing_type.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.function_return_missing_type",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.function_return_missing_type",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/function_return_missing_type.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/function_return_missing_type.cd",
+        "tests/golden/parse_errors/function_return_missing_type.err",
+        "tests/golden/parse_errors/function_return_missing_type.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.function_type_missing_colon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.function_type_missing_colon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/function_type_missing_colon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/function_type_missing_colon.cd",
+        "tests/golden/parse_errors/function_type_missing_colon.err",
+        "tests/golden/parse_errors/function_type_missing_colon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.function_type_missing_paren",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.function_type_missing_paren",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/function_type_missing_paren.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/function_type_missing_paren.cd",
+        "tests/golden/parse_errors/function_type_missing_paren.err",
+        "tests/golden/parse_errors/function_type_missing_paren.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.function_type_missing_return",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.function_type_missing_return",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/function_type_missing_return.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/function_type_missing_return.cd",
+        "tests/golden/parse_errors/function_type_missing_return.err",
+        "tests/golden/parse_errors/function_type_missing_return.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.generic_constraint_missing_type",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.generic_constraint_missing_type",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/generic_constraint_missing_type.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/generic_constraint_missing_type.cd",
+        "tests/golden/parse_errors/generic_constraint_missing_type.err",
+        "tests/golden/parse_errors/generic_constraint_missing_type.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.generic_struct_missing_args",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.generic_struct_missing_args",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/generic_struct_missing_args.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/generic_struct_missing_args.cd",
+        "tests/golden/parse_errors/generic_struct_missing_args.err",
+        "tests/golden/parse_errors/generic_struct_missing_args.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.import_alias_missing_name",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.import_alias_missing_name",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/import_alias_missing_name.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/import_alias_missing_name.cd",
+        "tests/golden/parse_errors/import_alias_missing_name.err",
+        "tests/golden/parse_errors/import_alias_missing_name.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.import_missing_path",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.import_missing_path",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/import_missing_path.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/import_missing_path.cd",
+        "tests/golden/parse_errors/import_missing_path.err",
+        "tests/golden/parse_errors/import_missing_path.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.import_missing_semicolon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.import_missing_semicolon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/import_missing_semicolon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/import_missing_semicolon.cd",
+        "tests/golden/parse_errors/import_missing_semicolon.err",
+        "tests/golden/parse_errors/import_missing_semicolon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.import_nested_block",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.import_nested_block",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/import_nested_block.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/import_nested_block.cd",
+        "tests/golden/parse_errors/import_nested_block.err",
+        "tests/golden/parse_errors/import_nested_block.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.imported_file_parse_error",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.imported_file_parse_error",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/imported_file_parse_error.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/imported_file_parse_error.cd",
+        "tests/golden/parse_errors/imported_file_parse_error.err",
+        "tests/golden/parse_errors/imported_file_parse_error.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.invalid_assignment_target",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.invalid_assignment_target",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/invalid_assignment_target.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/invalid_assignment_target.cd",
+        "tests/golden/parse_errors/invalid_assignment_target.err",
+        "tests/golden/parse_errors/invalid_assignment_target.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.lambda_missing_body",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.lambda_missing_body",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/lambda_missing_body.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/lambda_missing_body.cd",
+        "tests/golden/parse_errors/lambda_missing_body.err",
+        "tests/golden/parse_errors/lambda_missing_body.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.lambda_missing_parameter_paren",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.lambda_missing_parameter_paren",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/lambda_missing_parameter_paren.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/lambda_missing_parameter_paren.cd",
+        "tests/golden/parse_errors/lambda_missing_parameter_paren.err",
+        "tests/golden/parse_errors/lambda_missing_parameter_paren.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.logical_and_missing_rhs",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.logical_and_missing_rhs",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/logical_and_missing_rhs.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/logical_and_missing_rhs.cd",
+        "tests/golden/parse_errors/logical_and_missing_rhs.err",
+        "tests/golden/parse_errors/logical_and_missing_rhs.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.logical_or_missing_rhs",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.logical_or_missing_rhs",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/logical_or_missing_rhs.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/logical_or_missing_rhs.cd",
+        "tests/golden/parse_errors/logical_or_missing_rhs.err",
+        "tests/golden/parse_errors/logical_or_missing_rhs.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.map_missing_colon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.map_missing_colon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/map_missing_colon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/map_missing_colon.cd",
+        "tests/golden/parse_errors/map_missing_colon.err",
+        "tests/golden/parse_errors/map_missing_colon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.map_trailing_comma",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.map_trailing_comma",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/map_trailing_comma.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/map_trailing_comma.cd",
+        "tests/golden/parse_errors/map_trailing_comma.err",
+        "tests/golden/parse_errors/map_trailing_comma.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.map_type_missing_value",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.map_type_missing_value",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/map_type_missing_value.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/map_type_missing_value.cd",
+        "tests/golden/parse_errors/map_type_missing_value.err",
+        "tests/golden/parse_errors/map_type_missing_value.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.match_expression_missing_comma",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.match_expression_missing_comma",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/match_expression_missing_comma.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/match_expression_missing_comma.cd",
+        "tests/golden/parse_errors/match_expression_missing_comma.err",
+        "tests/golden/parse_errors/match_expression_missing_comma.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.match_guard_missing_condition",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.match_guard_missing_condition",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/match_guard_missing_condition.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/match_guard_missing_condition.cd",
+        "tests/golden/parse_errors/match_guard_missing_condition.err",
+        "tests/golden/parse_errors/match_guard_missing_condition.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.multiple_block_parse_errors",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.multiple_block_parse_errors",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/multiple_block_parse_errors.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/multiple_block_parse_errors.cd",
+        "tests/golden/parse_errors/multiple_block_parse_errors.err",
+        "tests/golden/parse_errors/multiple_block_parse_errors.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.multiple_top_level_parse_errors",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.multiple_top_level_parse_errors",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/multiple_top_level_parse_errors.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/multiple_top_level_parse_errors.cd",
+        "tests/golden/parse_errors/multiple_top_level_parse_errors.err",
+        "tests/golden/parse_errors/multiple_top_level_parse_errors.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.nullable_double_question",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.nullable_double_question",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/nullable_double_question.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/nullable_double_question.cd",
+        "tests/golden/parse_errors/nullable_double_question.err",
+        "tests/golden/parse_errors/nullable_double_question.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.or_pattern_missing_rhs",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.or_pattern_missing_rhs",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/or_pattern_missing_rhs.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/or_pattern_missing_rhs.cd",
+        "tests/golden/parse_errors/or_pattern_missing_rhs.err",
+        "tests/golden/parse_errors/or_pattern_missing_rhs.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.re_export_missing_path",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.re_export_missing_path",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/re_export_missing_path.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/re_export_missing_path.cd",
+        "tests/golden/parse_errors/re_export_missing_path.err",
+        "tests/golden/parse_errors/re_export_missing_path.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.record_pattern_missing_colon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.record_pattern_missing_colon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/record_pattern_missing_colon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/record_pattern_missing_colon.cd",
+        "tests/golden/parse_errors/record_pattern_missing_colon.err",
+        "tests/golden/parse_errors/record_pattern_missing_colon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_constructor_missing_value",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_constructor_missing_value",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_constructor_missing_value.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_constructor_missing_value.cd",
+        "tests/golden/parse_errors/struct_constructor_missing_value.err",
+        "tests/golden/parse_errors/struct_constructor_missing_value.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_decl_missing_field_type",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_decl_missing_field_type",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_decl_missing_field_type.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_decl_missing_field_type.cd",
+        "tests/golden/parse_errors/struct_decl_missing_field_type.err",
+        "tests/golden/parse_errors/struct_decl_missing_field_type.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_decl_missing_left_brace",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_decl_missing_left_brace",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_decl_missing_left_brace.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_decl_missing_left_brace.cd",
+        "tests/golden/parse_errors/struct_decl_missing_left_brace.err",
+        "tests/golden/parse_errors/struct_decl_missing_left_brace.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_decl_missing_name",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_decl_missing_name",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_decl_missing_name.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_decl_missing_name.cd",
+        "tests/golden/parse_errors/struct_decl_missing_name.err",
+        "tests/golden/parse_errors/struct_decl_missing_name.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_decl_missing_right_brace",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_decl_missing_right_brace",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_decl_missing_right_brace.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_decl_missing_right_brace.cd",
+        "tests/golden/parse_errors/struct_decl_missing_right_brace.err",
+        "tests/golden/parse_errors/struct_decl_missing_right_brace.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_missing_brace",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_missing_brace",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_missing_brace.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_missing_brace.cd",
+        "tests/golden/parse_errors/struct_missing_brace.err",
+        "tests/golden/parse_errors/struct_missing_brace.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_missing_colon",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_missing_colon",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_missing_colon.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_missing_colon.cd",
+        "tests/golden/parse_errors/struct_missing_colon.err",
+        "tests/golden/parse_errors/struct_missing_colon.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_missing_field_name",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_missing_field_name",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_missing_field_name.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_missing_field_name.cd",
+        "tests/golden/parse_errors/struct_missing_field_name.err",
+        "tests/golden/parse_errors/struct_missing_field_name.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_missing_value",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_missing_value",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_missing_value.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_missing_value.cd",
+        "tests/golden/parse_errors/struct_missing_value.err",
+        "tests/golden/parse_errors/struct_missing_value.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.struct_trailing_comma",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.struct_trailing_comma",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/struct_trailing_comma.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/struct_trailing_comma.cd",
+        "tests/golden/parse_errors/struct_trailing_comma.err",
+        "tests/golden/parse_errors/struct_trailing_comma.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parse_error.while_missing_block",
+      "runner": "malformed",
+      "result_name": "malformed.parse_error.while_missing_block",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery",
+        "golden-corpus"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/golden/parse_errors/while_missing_block.cd"
+      ],
+      "expected_files": [
+        "tests/golden/parse_errors/while_missing_block.cd",
+        "tests/golden/parse_errors/while_missing_block.err",
+        "tests/golden/parse_errors/while_missing_block.exit"
+      ],
+      "fixture": "tests/golden/parse_errors"
+    },
+    {
+      "case_id": "malformed.parser.empty_initializer",
+      "runner": "malformed",
+      "result_name": "malformed.parser.empty_initializer",
+      "stage": "parser",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "initializer-recovery"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/malformed_cases.json"
+      ],
+      "expected_files": [],
+      "fixture": "tests/malformed_cases.json"
+    },
+    {
+      "case_id": "malformed.parser.malformed_number",
+      "runner": "malformed",
+      "result_name": "malformed.parser.malformed_number",
+      "stage": "parser",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "number-recovery"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/malformed_cases.json"
+      ],
+      "expected_files": [],
+      "fixture": "tests/malformed_cases.json"
+    },
+    {
+      "case_id": "malformed.parser.missing_delimiter",
+      "runner": "malformed",
+      "result_name": "malformed.parser.missing_delimiter",
+      "stage": "parser",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "delimiter-recovery"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/malformed_cases.json"
+      ],
+      "expected_files": [],
+      "fixture": "tests/malformed_cases.json"
+    },
+    {
+      "case_id": "malformed.parser.multiple_errors",
+      "runner": "malformed",
+      "result_name": "malformed.parser.multiple_errors",
+      "stage": "diagnostic-recovery",
+      "capability_tags": [
+        "malformed",
+        "parser",
+        "diagnostic-recovery"
+      ],
+      "backend": "cpp",
+      "expected_result_kind": "reject",
+      "boundary_sequence": [
+        "tokens",
+        "ast",
+        "parse_diagnostic"
+      ],
+      "terminal_boundary": "parse_diagnostic",
+      "sources": [
+        "tests/malformed_cases.json"
+      ],
+      "expected_files": [],
+      "fixture": "tests/malformed_cases.json"
     },
     {
       "case_id": "runner.cargo_test",

@@ -33,6 +33,9 @@ jobs:
       - name: Run boundary token tests
         run: python3 tests/run_boundary_tests.py ./build/compiler_design
 
+      - name: Run malformed-input harness
+        run: python3 tests/run_malformed_tests.py ./build/compiler_design vm-rs --report build/malformed-report.json
+
       - name: Run golden runner selftest
         run: python3 tests/run_golden_tests_selftest.py
 
@@ -53,7 +56,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: verification-report
-          path: build/verification-report.json
+          path: |
+            build/verification-report.json
+            build/malformed-report.json
 
   sanitizers:
     name: Sanitizers

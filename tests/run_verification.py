@@ -27,6 +27,7 @@ import bytecode_artifact_tests  # noqa: E402
 import boundary_comparison  # noqa: E402
 import run_golden_tests  # noqa: E402
 import run_boundary_tests  # noqa: E402
+import run_malformed_tests  # noqa: E402
 import run_rust_vm_tests  # noqa: E402
 import verification_inventory  # noqa: E402
 
@@ -152,6 +153,22 @@ def run_boundary_token_suite(
     )
 
 
+def run_malformed_suite(
+    compiler: Path,
+    vm_manifest: Path,
+    checks: list[dict[str, object]],
+) -> tuple[list[RecordedResult], list[str]]:
+    return run_imported_runner(
+        checks,
+        "malformed",
+        lambda: run_malformed_tests.run_all(
+            compiler,
+            vm_manifest,
+            report_path=compiler.parent / "malformed-report.json",
+        ),
+    )
+
+
 def run_artifact_suite(
     compiler: Path,
     vm_manifest: Path,
@@ -274,6 +291,7 @@ def run_canonical(
     direct_suites = (
         ("golden", lambda: run_golden_suite(compiler, checks)),
         ("boundary_tokens", lambda: run_boundary_token_suite(compiler, checks)),
+        ("malformed", lambda: run_malformed_suite(compiler, vm_manifest, checks)),
         (
             "golden_selftest",
             lambda: run_named_process_suite(

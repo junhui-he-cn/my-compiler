@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "corpus_revision": "m0c-2026-07-22-r1",
+  "seed": 20260722,
+  "limits": {
+    "max_input_bytes": 8192,
+    "per_case_timeout_seconds": 2,
+    "max_total_seconds": 120
+  },
+  "source_cases": [
+    {
+      "case_id": "malformed.lexer.unterminated_string",
+      "source": "print \"unterminated;\n",
+      "stage": "lexical",
+      "capability_tags": ["malformed", "lexer", "unterminated-string"]
+    },
+    {
+      "case_id": "malformed.lexer.unexpected_character",
+      "source": "print 1 @ 2;\n",
+      "stage": "lexical",
+      "capability_tags": ["malformed", "lexer", "unexpected-character"]
+    },
+    {
+      "case_id": "malformed.parser.missing_delimiter",
+      "source": "print (1 + 2;\n",
+      "stage": "parser",
+      "capability_tags": ["malformed", "parser", "delimiter-recovery"]
+    },
+    {
+      "case_id": "malformed.parser.malformed_number",
+      "source": "print 1.2.3;\n",
+      "stage": "parser",
+      "capability_tags": ["malformed", "parser", "number-recovery"]
+    },
+    {
+      "case_id": "malformed.parser.empty_initializer",
+      "source": "let value = ;\n",
+      "stage": "parser",
+      "capability_tags": ["malformed", "parser", "initializer-recovery"]
+    },
+    {
+      "case_id": "malformed.parser.multiple_errors",
+      "source": "print (1;\nprint [;\n",
+      "stage": "diagnostic-recovery",
+      "capability_tags": ["malformed", "parser", "diagnostic-recovery"]
+    }
+  ],
+  "parse_error_family": {
+    "root": "tests/golden/parse_errors",
+    "pattern": "*.cd",
+    "case_prefix": "malformed.parse_error",
+    "stage": "diagnostic-recovery",
+    "capability_tags": ["malformed", "parser", "diagnostic-recovery", "golden-corpus"]
+  },
+  "cdbc_cases": [
+    {
+      "case_prefix": "malformed.cdbc.arithmetic",
+      "fixture": "tests/bytecode_artifacts/arithmetic/expected.cdbc",
+      "mutations": ["bad_header", "truncate", "unknown_opcode", "trailing_garbage"]
+    },
+    {
+      "case_prefix": "malformed.cdbc.functions_arrays",
+      "fixture": "tests/bytecode_artifacts/functions_arrays/expected.cdbc",
+      "mutations": ["bad_header", "truncate", "unknown_opcode", "trailing_garbage"]
+    },
+    {
+      "case_prefix": "malformed.cdbc.maps",
+      "fixture": "tests/bytecode_artifacts/maps/expected.cdbc",
+      "mutations": ["bad_header", "truncate", "unknown_opcode", "trailing_garbage"]
+    },
+    {
+      "case_prefix": "malformed.cdbc.runtime_diagnostics",
+      "fixture": "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc",
+      "mutations": ["bad_header", "truncate", "unknown_opcode", "trailing_garbage"]
+    }
+  ]
+}

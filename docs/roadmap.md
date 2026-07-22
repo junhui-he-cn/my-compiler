@@ -967,6 +967,15 @@ the five-case token corpus plus mismatch selftests are checked in under
 `docs/verification/m0b-baseline.json`; M0C, M0D, M0.5A, and M0.5B are the next
 independently deliverable foundation slices.
 
+M0C is implemented at corpus revision `m0c-2026-07-22-r1` against the M0B
+reference commit `30ae329`. The bounded deterministic corpus has 88 cases,
+including lexer/parser seeds, the existing parse-error family, and `.cdbc`
+mutations; the canonical inventory now reports 1,658 cases. The harness,
+minimizer selftest, and observed baseline are recorded in
+`docs/verification/m0c-malformed-design.md` and
+`docs/verification/m0c-baseline.json`. M0D and M0.5A/M0.5B are the remaining
+independently deliverable foundation slices.
+
 The hard dependency gates are:
 
 ```text

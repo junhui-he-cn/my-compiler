@@ -68,6 +68,7 @@ The M0A canonical verification command is:
 python3 tests/verification_inventory.py
 python3 tests/run_verification.py ./build/compiler_design vm-rs --report build/verification-report.json
 python3 tests/run_boundary_tests.py ./build/compiler_design
+python3 tests/run_malformed_tests.py ./build/compiler_design vm-rs --report build/malformed-report.json
 ```
 
 Refresh `tests/verification_inventory.json` explicitly after adding fixtures or

@@ -18,10 +18,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+import malformed_corpus
+
 
 SCHEMA_VERSION = 1
-INVENTORY_REVISION = "m0b-2026-07-22-r1"
-BASELINE_COMMIT = "6feb009"
+INVENTORY_REVISION = "m0c-2026-07-22-r1"
+BASELINE_COMMIT = "30ae329"
 BOUNDARY_CASES_PATH = Path(__file__).resolve().with_name("boundary_cases.json")
 
 CANONICAL_COMMAND = [
@@ -37,6 +39,14 @@ LEGACY_COMMANDS = [
     ["ctest", "--test-dir", "build", "--output-on-failure"],
     ["python3", "tests/run_golden_tests.py", "./build/compiler_design"],
     ["python3", "tests/run_boundary_tests.py", "./build/compiler_design"],
+    [
+        "python3",
+        "tests/run_malformed_tests.py",
+        "./build/compiler_design",
+        "vm-rs",
+        "--report",
+        "build/malformed-report.json",
+    ],
     ["python3", "tests/run_golden_tests_selftest.py"],
     ["python3", "tests/bytecode_artifact_tests.py", "./build/compiler_design", "vm-rs"],
     ["python3", "tests/run_rust_vm_tests.py", "./build/compiler_design", "vm-rs", "--goldens"],
@@ -71,6 +81,11 @@ CTEST_SOURCE_OVERRIDES = {
         "tests/boundary_comparison_selftest.py",
         "tests/boundary_comparison.py",
         "tests/boundary_allowlist.json",
+    ],
+    "malformed_harness_selftest": [
+        "tests/malformed_tests_selftest.py",
+        "tests/malformed_corpus.py",
+        "tests/run_malformed_tests.py",
     ],
 }
 
@@ -489,6 +504,26 @@ def add_boundary_token_cases(repo_root: Path, cases: list[dict[str, object]]) ->
         )
 
 
+def add_malformed_cases(repo_root: Path, cases: list[dict[str, object]]) -> None:
+    for malformed_case in malformed_corpus.expand_cases(repo_root=repo_root):
+        cases.append(
+            make_case(
+                case_id=str(malformed_case["case_id"]),
+                runner="malformed",
+                result_name=str(malformed_case["result_name"]),
+                fixture=str(malformed_case["fixture"]),
+                sources=[str(source) for source in malformed_case["sources"]],
+                expected_files=[str(path) for path in malformed_case["expected_files"]],
+                stage=str(malformed_case["stage"]),
+                capability_tags=[str(tag) for tag in malformed_case["capability_tags"]],
+                backend=str(malformed_case["backend"]),
+                expected_result_kind=str(malformed_case["expected_result_kind"]),
+                boundary_sequence=[str(boundary) for boundary in malformed_case["boundary_sequence"]],
+                terminal_boundary=str(malformed_case["terminal_boundary"]),
+            )
+        )
+
+
 def add_named_suite_cases(repo_root: Path, cases: list[dict[str, object]]) -> None:
     cases.append(
         make_case(
@@ -527,6 +562,7 @@ def build_cases(repo_root: Path) -> list[dict[str, object]]:
     add_artifact_cases(repo_root, cases)
     add_rust_vm_cases(repo_root, cases)
     add_boundary_token_cases(repo_root, cases)
+    add_malformed_cases(repo_root, cases)
     add_named_suite_cases(repo_root, cases)
     return sorted(cases, key=lambda case: str(case["case_id"]))
 
