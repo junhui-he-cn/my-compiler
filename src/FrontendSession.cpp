@@ -2,6 +2,7 @@
 
 #include "Diagnostic.hpp"
 #include "Lexer.hpp"
+#include "LosslessSource.hpp"
 #include "Parser.hpp"
 
 #include <algorithm>
@@ -699,6 +700,38 @@ std::vector<Token> FrontendSession::displayTokens() const
     }
     display.push_back(std::move(eof));
     return display;
+}
+
+LosslessSourceView FrontendSession::losslessSourceView() const
+{
+    std::vector<std::vector<Token>> tokensBySource(sourceFiles_.size());
+    const auto collect = [&tokensBySource](const std::vector<Token>& tokens) {
+        for (const Token& token : tokens) {
+            std::optional<SourceFileId> sourceId = token.sourceId;
+            if (!sourceId && token.source) {
+                sourceId = SourceFileId{*token.source};
+            }
+            if (!sourceId || !sourceId->valid() || sourceId->value >= tokensBySource.size()) {
+                continue;
+            }
+            tokensBySource[sourceId->value].push_back(token);
+        }
+    };
+
+    if (!directDisplayTokens_.empty()) {
+        collect(directDisplayTokens_);
+    } else {
+        for (const ParsedUnit& unit : units_) {
+            collect(unit.tokens);
+        }
+    }
+
+    std::vector<LosslessSourceFileView> files;
+    files.reserve(sourceFiles_.size());
+    for (std::size_t index = 0; index < sourceFiles_.size(); ++index) {
+        files.push_back(buildLosslessSourceFileView(sourceFiles_[index], tokensBySource[index]));
+    }
+    return LosslessSourceView(std::move(files));
 }
 
 const std::string& FrontendSession::sourceForDiagnostics() const

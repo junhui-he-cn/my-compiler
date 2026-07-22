@@ -22,3 +22,13 @@ The current proof slice covers lexical declarations, block scopes, variable
 reads, assignments, and direct multi-file diagnostics. Bytecode emission does
 not serialize these snapshot-local identities; artifact-local debug identity
 remains owned by M4A/M4B.
+
+## Lossless source view
+
+`FrontendSession::losslessSourceView()` groups `LosslessPiece` values by
+`SourceFileId`. Existing lexer tokens become token pieces; every byte gap
+between adjacent token ranges becomes one or more trivia pieces. Line comments
+are classified from those already-known gaps, while their bytes and all other
+trivia are copied directly from `SourceFile::text`. No second lexer or parser
+grammar is involved. Concatenating a file view's pieces reproduces the exact
+original source bytes, including comments, whitespace, and comment placement.

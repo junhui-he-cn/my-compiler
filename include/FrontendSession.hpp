@@ -2,6 +2,7 @@
 
 #include "Ast.hpp"
 #include "Diagnostic.hpp"
+#include "LosslessSource.hpp"
 #include "Parser.hpp"
 #include "Token.hpp"
 
@@ -21,6 +22,7 @@ public:
     Program loadFiles(const std::vector<std::string>& paths);
 
     std::vector<Token> displayTokens() const;
+    LosslessSourceView losslessSourceView() const;
     const std::string& sourceForDiagnostics() const;
     std::optional<FileDiagnosticError> remapDirectDiagnostic(const DiagnosticError& error) const;
     std::optional<FileDiagnosticErrorList> remapDirectDiagnostics(const ParseErrorList& errors) const;

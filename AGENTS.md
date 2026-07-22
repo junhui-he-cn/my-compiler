@@ -34,6 +34,9 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
 - `include/SourceIdentity.hpp`, `include/SourceMap.hpp`, `src/SourceMap.cpp`:
   snapshot-local typed IDs, source-local byte ranges, and line/column
   conversion.
+- `include/LosslessSource.hpp`, `src/LosslessSource.cpp`:
+  lossless token/trivia pieces reconstructed from production token ranges and
+  original source bytes.
 - `include/Parser.hpp`, `src/Parser.cpp`: grammar and recursive-descent parsing.
 - `include/Ast.hpp`, `src/Ast.cpp`: AST node types and AST printer output.
 - `include/IR.hpp`, `src/IR.cpp`: IR opcodes, instructions, constants, names, registers, and IR printer output.

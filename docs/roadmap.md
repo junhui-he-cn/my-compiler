@@ -405,6 +405,12 @@ code, and the named proof cases pass through the canonical verification command.
 
 #### M1A2: Lossless token and trivia source view
 
+Current implementation slice: `LosslessSourceView` is built from the production
+token ranges and original source bytes, then exposed by
+`FrontendSession::losslessSourceView()`. Its focused tests cover exact
+round-trip, comment placement, comment text inside strings, and direct
+multi-file source grouping.
+
 **Deliverable:** introduce a lossless token/source view that preserves comments
 and other trivia exactly once, anchored to M1A1 source IDs and ranges, without
 creating a second lexer or grammar.

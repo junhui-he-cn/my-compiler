@@ -50,6 +50,7 @@ add_executable(compiler_design
     src/IR.cpp
     src/IRCompiler.cpp
     src/Lexer.cpp
+    src/LosslessSource.cpp
     src/ModuleSymbols.cpp
     src/ModuleInterfaceEmitter.cpp
     src/NativeStdlib.cpp
@@ -82,6 +83,7 @@ add_executable(ir_source_location_tests
     src/IR.cpp
     src/IRCompiler.cpp
     src/Lexer.cpp
+    src/LosslessSource.cpp
     src/ModuleSymbols.cpp
     src/NativeStdlib.cpp
     src/Parser.cpp
@@ -175,6 +177,7 @@ add_executable(frontend_session_tests
     src/Diagnostic.cpp
     src/FrontendSession.cpp
     src/Lexer.cpp
+    src/LosslessSource.cpp
     src/Parser.cpp
 )
 target_include_directories(frontend_session_tests PRIVATE include)
