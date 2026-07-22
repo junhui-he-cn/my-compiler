@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "name": "checkout-root-before-tests",
+      "pattern": "(?:[A-Za-z]:)?[/\\\\][^\\n]*?(?=[/\\\\]tests[/\\\\])",
+      "replacement": "<repo>",
+      "reason": "Compiler diagnostics and module metadata may contain checkout-specific absolute paths."
+    },
+    {
+      "name": "checkout-root-before-vm",
+      "pattern": "(?:[A-Za-z]:)?[/\\\\][^\\n]*?(?=[/\\\\]vm-rs[/\\\\])",
+      "replacement": "<repo>",
+      "reason": "Rust VM paths must compare independently of the checkout root."
+    }
+  ]
+}

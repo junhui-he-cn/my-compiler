@@ -958,6 +958,15 @@ two-run migration gate. The design and observed baseline are recorded in
 `docs/verification/m0a-baseline.json`. M0B is the next foundation slice after
 this migration evidence is accepted.
 
+M0B is implemented at inventory revision `m0b-2026-07-22-r1` against the M0A
+reference commit `6feb009`. The canonical report now records boundary
+sequences and first-failure attribution across 13 supported boundaries, and
+the five-case token corpus plus mismatch selftests are checked in under
+`tests/` and `docs/verification/`. The observed M0B baseline is recorded in
+`docs/verification/m0b-boundary-design.md` and
+`docs/verification/m0b-baseline.json`; M0C, M0D, M0.5A, and M0.5B are the next
+independently deliverable foundation slices.
+
 The hard dependency gates are:
 
 ```text

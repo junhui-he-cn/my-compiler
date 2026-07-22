@@ -2,11 +2,12 @@
 
 import argparse
 import difflib
-import re
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+import boundary_comparison
 
 
 @dataclass(frozen=True)
@@ -33,7 +34,7 @@ def write_text(path: Path, text: str) -> None:
 
 
 def normalize_checkout_paths(text: str) -> str:
-    return re.sub(r"(?:[A-Za-z]:)?[/\\][^\n]*?(?=[/\\]tests[/\\]golden[/\\])", "<repo>", text)
+    return boundary_comparison.canonicalize(text)
 
 
 def compiler_inputs(case_dir: Path) -> list[Path]:

@@ -20,8 +20,9 @@ from typing import Optional
 
 
 SCHEMA_VERSION = 1
-INVENTORY_REVISION = "m0a-2026-07-22-r1"
-BASELINE_COMMIT = "0481624"
+INVENTORY_REVISION = "m0b-2026-07-22-r1"
+BASELINE_COMMIT = "6feb009"
+BOUNDARY_CASES_PATH = Path(__file__).resolve().with_name("boundary_cases.json")
 
 CANONICAL_COMMAND = [
     "python3",
@@ -35,6 +36,7 @@ CANONICAL_COMMAND = [
 LEGACY_COMMANDS = [
     ["ctest", "--test-dir", "build", "--output-on-failure"],
     ["python3", "tests/run_golden_tests.py", "./build/compiler_design"],
+    ["python3", "tests/run_boundary_tests.py", "./build/compiler_design"],
     ["python3", "tests/run_golden_tests_selftest.py"],
     ["python3", "tests/bytecode_artifact_tests.py", "./build/compiler_design", "vm-rs"],
     ["python3", "tests/run_rust_vm_tests.py", "./build/compiler_design", "vm-rs", "--goldens"],
@@ -65,7 +67,51 @@ CTEST_SOURCE_OVERRIDES = {
     "module_interface_emitter": ["tests/module_interface_emitter_tests.cpp"],
     "verification_inventory": ["tests/verification_inventory.py", "tests/verification_inventory.json"],
     "verification_runner_selftest": ["tests/run_verification_selftest.py"],
+    "boundary_comparison_selftest": [
+        "tests/boundary_comparison_selftest.py",
+        "tests/boundary_comparison.py",
+        "tests/boundary_allowlist.json",
+    ],
 }
+
+
+def infer_boundary_metadata(
+    runner: str,
+    result_name: str,
+    expected_result_kind: str,
+    stage: str,
+) -> tuple[list[str], str]:
+    parsed = ["tokens", "ast"]
+    lowered = [*parsed, "semantic", "ir", "bytecode", "cdbc"]
+
+    if runner in {"ctest", "golden_selftest", "cargo_test"}:
+        return ["verification"], "verification"
+    if runner == "boundary_tokens":
+        return ["tokens"], "tokens"
+    if runner == "golden":
+        if stage == "parse-error":
+            return [*parsed, "parse_diagnostic"], "parse_diagnostic"
+        if stage == "type-error":
+            return [*parsed, "semantic_diagnostic"], "semantic_diagnostic"
+        if stage == "import-error":
+            return [*parsed, "import_diagnostic"], "import_diagnostic"
+        if "default(ast)" in result_name:
+            return parsed, "ast"
+        if result_name.endswith(" --ir"):
+            return [*parsed, "semantic", "ir"], "ir"
+        if result_name.endswith(" --bytecode"):
+            return lowered[:-1], "bytecode"
+        if result_name.endswith(" --module-interface"):
+            return [*parsed, "semantic", "module_interface"], "module_interface"
+    if runner in {"artifact", "rust_vm_artifact", "rust_vm_golden", "rust_vm_runtime_error"}:
+        if result_name.endswith(" rust-dump"):
+            return [*lowered, "rust_decode"], "rust_decode"
+        if result_name.endswith(" rust-run"):
+            return [*lowered, "rust_decode", "vm_output"], "vm_output"
+        return lowered, "cdbc"
+    if expected_result_kind == "diagnostic-and-exit":
+        return [*parsed, "semantic_diagnostic"], "semantic_diagnostic"
+    return ["verification"], "verification"
 
 
 def read_text(path: Path) -> str:
@@ -103,7 +149,20 @@ def make_case(
     capability_tags: list[str],
     backend: str,
     expected_result_kind: str,
+    boundary_sequence: Optional[list[str]] = None,
+    terminal_boundary: Optional[str] = None,
 ) -> dict[str, object]:
+    if boundary_sequence is None or terminal_boundary is None:
+        inferred_sequence, inferred_terminal = infer_boundary_metadata(
+            runner,
+            result_name,
+            expected_result_kind,
+            stage,
+        )
+        if boundary_sequence is None:
+            boundary_sequence = inferred_sequence
+        if terminal_boundary is None:
+            terminal_boundary = inferred_terminal
     case: dict[str, object] = {
         "case_id": case_id,
         "runner": runner,
@@ -112,6 +171,8 @@ def make_case(
         "capability_tags": capability_tags,
         "backend": backend,
         "expected_result_kind": expected_result_kind,
+        "boundary_sequence": boundary_sequence,
+        "terminal_boundary": terminal_boundary,
         "sources": sources,
         "expected_files": expected_files,
     }
@@ -383,6 +444,51 @@ def add_rust_vm_cases(repo_root: Path, cases: list[dict[str, object]]) -> None:
         )
 
 
+def load_boundary_cases(repo_root: Path) -> list[dict[str, object]]:
+    value = json.loads(read_text(BOUNDARY_CASES_PATH))
+    if not isinstance(value, dict) or value.get("schema_version") != 1:
+        raise ValueError(f"invalid boundary case manifest: {BOUNDARY_CASES_PATH}")
+    manifest_cases = value.get("cases")
+    if not isinstance(manifest_cases, list):
+        raise ValueError(f"boundary case manifest cases must be a list: {BOUNDARY_CASES_PATH}")
+    cases = [case for case in manifest_cases if isinstance(case, dict)]
+    for case in cases:
+        for field in (
+            "case_id",
+            "result_name",
+            "fixture",
+            "sources",
+            "expected_files",
+            "stage",
+            "capability_tags",
+            "backend",
+            "expected_result_kind",
+        ):
+            if field not in case:
+                raise ValueError(f"boundary case is missing {field}: {case!r}")
+    return sorted(cases, key=lambda case: str(case["case_id"]))
+
+
+def add_boundary_token_cases(repo_root: Path, cases: list[dict[str, object]]) -> None:
+    for boundary_case in load_boundary_cases(repo_root):
+        cases.append(
+            make_case(
+                case_id=str(boundary_case["case_id"]),
+                runner="boundary_tokens",
+                result_name=str(boundary_case["result_name"]),
+                fixture=str(boundary_case["fixture"]),
+                sources=[str(source) for source in boundary_case["sources"]],
+                expected_files=[str(path) for path in boundary_case["expected_files"]],
+                stage=str(boundary_case["stage"]),
+                capability_tags=[str(tag) for tag in boundary_case["capability_tags"]],
+                backend=str(boundary_case["backend"]),
+                expected_result_kind=str(boundary_case["expected_result_kind"]),
+                boundary_sequence=["tokens"],
+                terminal_boundary="tokens",
+            )
+        )
+
+
 def add_named_suite_cases(repo_root: Path, cases: list[dict[str, object]]) -> None:
     cases.append(
         make_case(
@@ -420,6 +526,7 @@ def build_cases(repo_root: Path) -> list[dict[str, object]]:
     add_golden_cases(repo_root, cases)
     add_artifact_cases(repo_root, cases)
     add_rust_vm_cases(repo_root, cases)
+    add_boundary_token_cases(repo_root, cases)
     add_named_suite_cases(repo_root, cases)
     return sorted(cases, key=lambda case: str(case["case_id"]))
 
@@ -490,6 +597,8 @@ def validate_inventory(inventory: dict[str, object], repo_root: Path) -> list[st
             "capability_tags",
             "backend",
             "expected_result_kind",
+            "boundary_sequence",
+            "terminal_boundary",
             "sources",
             "expected_files",
         ):
@@ -504,6 +613,12 @@ def validate_inventory(inventory: dict[str, object], repo_root: Path) -> list[st
                 path = repo_root / str(value)
                 if not path.exists():
                     errors.append(f"{case.get('case_id', '<unknown>')} missing path: {value}")
+        sequence = case.get("boundary_sequence")
+        terminal = case.get("terminal_boundary")
+        if not isinstance(sequence, list) or not sequence:
+            errors.append(f"{case.get('case_id', '<unknown>')} boundary_sequence must be a non-empty list")
+        elif terminal not in sequence:
+            errors.append(f"{case.get('case_id', '<unknown>')} terminal_boundary is not in boundary_sequence")
 
     return errors
 
@@ -529,7 +644,9 @@ def main() -> int:
         baseline_commit = BASELINE_COMMIT
         if inventory_path.is_file():
             try:
-                baseline_commit = str(load_inventory(inventory_path).get("baseline_commit", baseline_commit))
+                existing = load_inventory(inventory_path)
+                if existing.get("inventory_revision") == INVENTORY_REVISION:
+                    baseline_commit = str(existing.get("baseline_commit", baseline_commit))
             except (OSError, ValueError, json.JSONDecodeError):
                 pass
         inventory = build_inventory(repo_root, baseline_commit)

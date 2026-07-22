@@ -1,0 +1,121 @@
+1:1 Enum `enum`
+1:6 Identifier `Outcome`
+1:14 LeftBrace `{`
+2:3 Identifier `Good`
+2:7 LeftParen `(`
+2:8 Identifier `number`
+2:14 RightParen `)`
+2:15 Comma `,`
+3:3 Identifier `Bad`
+3:6 LeftParen `(`
+3:7 Identifier `string`
+3:13 RightParen `)`
+3:14 Comma `,`
+4:1 RightBrace `}`
+6:1 Fun `fun`
+6:5 Identifier `make`
+6:9 LeftParen `(`
+6:10 RightParen `)`
+6:11 Colon `:`
+6:13 Identifier `Outcome`
+6:21 LeftBrace `{`
+7:3 Return `return`
+7:10 Identifier `Outcome`
+7:17 Dot `.`
+7:18 Identifier `Good`
+7:22 LeftParen `(`
+7:23 Number `9`
+7:24 RightParen `)`
+7:25 Semicolon `;`
+8:1 RightBrace `}`
+10:1 Export `export`
+10:8 Identifier `Outcome`
+10:15 Comma `,`
+10:17 Identifier `make`
+10:21 Semicolon `;`
+11:1 Import `import`
+11:8 String `"./lib.cd"`
+11:19 As `as`
+11:22 Identifier `lib`
+11:25 Semicolon `;`
+13:1 Fun `fun`
+13:5 Identifier `render`
+13:11 LeftParen `(`
+13:12 Identifier `value`
+13:17 Colon `:`
+13:19 Identifier `lib`
+13:22 Dot `.`
+13:23 Identifier `Outcome`
+13:30 RightParen `)`
+13:31 Colon `:`
+13:33 Identifier `string`
+13:40 LeftBrace `{`
+14:3 Match `match`
+14:9 Identifier `value`
+14:15 LeftBrace `{`
+15:5 Identifier `lib`
+15:8 Dot `.`
+15:9 Identifier `Outcome`
+15:16 Dot `.`
+15:17 Identifier `Good`
+15:21 LeftParen `(`
+15:22 Identifier `number`
+15:28 RightParen `)`
+15:30 FatArrow `=>`
+15:33 LeftBrace `{`
+15:35 Return `return`
+15:42 String `"good:"`
+15:50 Plus `+`
+15:52 Identifier `str`
+15:55 LeftParen `(`
+15:56 Identifier `number`
+15:62 RightParen `)`
+15:63 Semicolon `;`
+15:65 RightBrace `}`
+16:5 Identifier `lib`
+16:8 Dot `.`
+16:9 Identifier `Outcome`
+16:16 Dot `.`
+16:17 Identifier `Bad`
+16:20 LeftParen `(`
+16:21 Identifier `message`
+16:28 RightParen `)`
+16:30 FatArrow `=>`
+16:33 LeftBrace `{`
+16:35 Return `return`
+16:42 String `"bad:"`
+16:49 Plus `+`
+16:51 Identifier `message`
+16:58 Semicolon `;`
+16:60 RightBrace `}`
+17:3 RightBrace `}`
+18:1 RightBrace `}`
+20:1 Print `print`
+20:7 Identifier `render`
+20:13 LeftParen `(`
+20:14 Identifier `lib`
+20:17 Dot `.`
+20:18 Identifier `make`
+20:22 LeftParen `(`
+20:23 RightParen `)`
+20:24 RightParen `)`
+20:25 Semicolon `;`
+21:1 EndOfFile
+
+Program
+  Module 0
+    Enum Outcome {Good(number), Bad(string)}
+    Fun make(): Outcome
+      Return (member-call Outcome Good 9)
+    Export Outcome make
+  Module 1 entry
+    Import "./lib.cd" as lib
+    Fun render(value: lib.Outcome): string
+      Match value
+        Arm lib.Outcome.Good(number)
+          Block
+            Return (+ "good:" (call str number))
+        Arm lib.Outcome.Bad(message)
+          Block
+            Return (+ "bad:" message)
+    Print (call render (member-call lib make))

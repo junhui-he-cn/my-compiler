@@ -15,6 +15,7 @@ REQUIRED_SNIPPETS = (
     "cmake --build build",
     "ctest --test-dir build --output-on-failure",
     "python3 tests/run_golden_tests.py ./build/compiler_design",
+    "python3 tests/run_boundary_tests.py ./build/compiler_design",
     "python3 tests/run_golden_tests_selftest.py",
     "python3 tests/bytecode_artifact_tests.py ./build/compiler_design vm-rs",
     "python3 tests/run_rust_vm_tests.py ./build/compiler_design vm-rs --goldens",

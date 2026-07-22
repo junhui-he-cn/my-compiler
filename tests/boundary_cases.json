@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "inventory_revision": "m0b-2026-07-22-r1",
+  "cases": [
+    {
+      "case_id": "boundary.tokens.adt_module_import",
+      "result_name": "boundary.tokens.adt_module_import",
+      "fixture": "tests/golden/adt_module_import",
+      "sources": ["tests/golden/adt_module_import/input.cd"],
+      "expected_files": ["tests/boundary_references/tokens/adt_module_import.out"],
+      "stage": "lexical",
+      "capability_tags": ["boundary", "tokens", "imports", "adt"],
+      "backend": "cpp",
+      "expected_result_kind": "tokens-golden"
+    },
+    {
+      "case_id": "boundary.tokens.array_find_index",
+      "result_name": "boundary.tokens.array_find_index",
+      "fixture": "tests/golden/array_find_index",
+      "sources": ["tests/golden/array_find_index/input.cd"],
+      "expected_files": ["tests/boundary_references/tokens/array_find_index.out"],
+      "stage": "lexical",
+      "capability_tags": ["boundary", "tokens", "arrays", "native-call"],
+      "backend": "cpp",
+      "expected_result_kind": "tokens-golden"
+    },
+    {
+      "case_id": "boundary.tokens.generic_struct_methods",
+      "result_name": "boundary.tokens.generic_struct_methods",
+      "fixture": "tests/golden/generic_struct_methods",
+      "sources": ["tests/golden/generic_struct_methods/input.cd"],
+      "expected_files": ["tests/boundary_references/tokens/generic_struct_methods.out"],
+      "stage": "lexical",
+      "capability_tags": ["boundary", "tokens", "generics", "structs", "methods"],
+      "backend": "cpp",
+      "expected_result_kind": "tokens-golden"
+    },
+    {
+      "case_id": "boundary.tokens.match_expression",
+      "result_name": "boundary.tokens.match_expression",
+      "fixture": "tests/golden/match_expression",
+      "sources": ["tests/golden/match_expression/input.cd"],
+      "expected_files": ["tests/boundary_references/tokens/match_expression.out"],
+      "stage": "lexical",
+      "capability_tags": ["boundary", "tokens", "patterns", "match"],
+      "backend": "cpp",
+      "expected_result_kind": "tokens-golden"
+    },
+    {
+      "case_id": "boundary.tokens.unicode_strings",
+      "result_name": "boundary.tokens.unicode_strings",
+      "fixture": "tests/golden/unicode_strings",
+      "sources": ["tests/golden/unicode_strings/input.cd"],
+      "expected_files": ["tests/boundary_references/tokens/unicode_strings.out"],
+      "stage": "lexical",
+      "capability_tags": ["boundary", "tokens", "strings", "unicode"],
+      "backend": "cpp",
+      "expected_result_kind": "tokens-golden"
+    }
+  ]
+}

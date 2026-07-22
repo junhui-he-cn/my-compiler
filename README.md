@@ -509,6 +509,18 @@ python3 tests/verification_inventory.py --write
 python3 tests/verification_inventory.py
 ```
 
+The canonical report includes the expected boundary sequence for each case and
+reports the first failing boundary across tokens, AST, semantic diagnostics,
+IR, bytecode, `.cdbc`, Rust decoding, and VM output. The focused lexical
+boundary corpus can be run independently:
+
+```sh
+python3 tests/run_boundary_tests.py ./build/compiler_design
+```
+
+Boundary path substitutions are limited to the reviewed machine-readable
+allowlist in `tests/boundary_allowlist.json`.
+
 Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, `bytecode.out`, or `run.out` files to cover successful syntax and backend behavior. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files. Type-error fixtures live in `tests/golden/type_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
 
 To refresh golden files after an intentional output change:

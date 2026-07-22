@@ -30,6 +30,9 @@ jobs:
       - name: Run golden tests
         run: python3 tests/run_golden_tests.py ./build/compiler_design
 
+      - name: Run boundary token tests
+        run: python3 tests/run_boundary_tests.py ./build/compiler_design
+
       - name: Run golden runner selftest
         run: python3 tests/run_golden_tests_selftest.py
 

@@ -71,11 +71,22 @@ class VerificationInventoryTests(unittest.TestCase):
             "inventory_revision": "test",
             "baseline_commit": "test",
             "checks": [
-                {"case_id": "suite.one", "runner": "suite", "stage": "test", "backend": "test"}
+                {
+                    "case_id": "suite.one",
+                    "runner": "suite",
+                    "stage": "test",
+                    "backend": "test",
+                    "boundary_sequence": ["verification"],
+                    "terminal_boundary": "verification",
+                }
             ],
         }
         report = run_verification.build_report(minimal_inventory, [], [])
         self.assertEqual(report["summary"], {"total": 1, "passed": 0, "failed": 1, "untracked_results": 0})
+        self.assertEqual(
+            report["boundary_summary"]["first_failure"],
+            {"case_id": "suite.one", "boundary": "verification"},
+        )
         json.dumps(report)
 
 

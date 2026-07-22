@@ -24,7 +24,9 @@ REPO_ROOT = TESTS_DIR.parent
 sys.path.insert(0, str(TESTS_DIR))
 
 import bytecode_artifact_tests  # noqa: E402
+import boundary_comparison  # noqa: E402
 import run_golden_tests  # noqa: E402
+import run_boundary_tests  # noqa: E402
 import run_rust_vm_tests  # noqa: E402
 import verification_inventory  # noqa: E402
 
@@ -136,6 +138,17 @@ def run_golden_suite(compiler: Path, checks: list[dict[str, object]]) -> tuple[l
         checks,
         "golden",
         lambda: run_golden_tests.run_all(compiler, TESTS_DIR / "golden", update=False),
+    )
+
+
+def run_boundary_token_suite(
+    compiler: Path,
+    checks: list[dict[str, object]],
+) -> tuple[list[RecordedResult], list[str]]:
+    return run_imported_runner(
+        checks,
+        "boundary_tokens",
+        lambda: run_boundary_tests.run_all(compiler),
     )
 
 
@@ -260,6 +273,7 @@ def run_canonical(
 
     direct_suites = (
         ("golden", lambda: run_golden_suite(compiler, checks)),
+        ("boundary_tokens", lambda: run_boundary_token_suite(compiler, checks)),
         (
             "golden_selftest",
             lambda: run_named_process_suite(
@@ -301,6 +315,7 @@ def build_report(
 ) -> dict[str, object]:
     by_case_id = {result.case_id: result for result in results}
     cases = []
+    allowlist = boundary_comparison.load_allowlist()
     for check in inventory["checks"]:
         case_id = str(check["case_id"])
         result = by_case_id.get(case_id)
@@ -311,13 +326,25 @@ def build_report(
             "runner": check["runner"],
             "stage": check["stage"],
             "backend": check["backend"],
+            "boundary_sequence": check["boundary_sequence"],
+            "terminal_boundary": check["terminal_boundary"],
             "passed": result.passed,
         }
         if result.message:
-            entry["message"] = result.message
+            entry["message"] = boundary_comparison.canonicalize(result.message, allowlist)
+        if not result.passed:
+            entry["failure_boundary"] = boundary_comparison.failure_boundary(check)
         cases.append(entry)
 
     failed = [case for case in cases if not case["passed"]]
+    supported_boundaries = sorted(
+        {
+            str(boundary)
+            for check in inventory["checks"]
+            for boundary in check["boundary_sequence"]
+        },
+        key=lambda boundary: boundary_comparison.boundary_rank(boundary),
+    )
     report: dict[str, object] = {
         "schema_version": 1,
         "inventory_revision": inventory["inventory_revision"],
@@ -327,6 +354,11 @@ def build_report(
             "passed": len(cases) - len(failed),
             "failed": len(failed),
             "untracked_results": len(extras),
+        },
+        "boundary_summary": {
+            "supported_boundaries": supported_boundaries,
+            "first_failure": boundary_comparison.first_failure(cases),
+            "failed_by_boundary": boundary_comparison.failure_counts(cases),
         },
         "cases": cases,
         "untracked_results": extras,

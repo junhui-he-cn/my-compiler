@@ -1,0 +1,88 @@
+1:1 Let `let`
+1:5 Identifier `text`
+1:10 Equal `=`
+1:12 String `"你🙂"`
+1:21 Semicolon `;`
+2:1 Print `print`
+2:7 Identifier `len`
+2:10 LeftParen `(`
+2:11 Identifier `text`
+2:15 RightParen `)`
+2:16 Semicolon `;`
+3:1 Print `print`
+3:7 Identifier `text`
+3:11 Dot `.`
+3:12 Identifier `len`
+3:15 LeftParen `(`
+3:16 RightParen `)`
+3:17 Semicolon `;`
+4:1 Print `print`
+4:7 Identifier `substr`
+4:13 LeftParen `(`
+4:14 Identifier `text`
+4:18 Comma `,`
+4:20 Number `0`
+4:21 Comma `,`
+4:23 Number `1`
+4:24 RightParen `)`
+4:25 Semicolon `;`
+5:1 Print `print`
+5:7 Identifier `text`
+5:11 Dot `.`
+5:12 Identifier `substr`
+5:18 LeftParen `(`
+5:19 Number `1`
+5:20 Comma `,`
+5:22 Number `1`
+5:23 RightParen `)`
+5:24 Semicolon `;`
+6:1 Print `print`
+6:7 Identifier `charAt`
+6:13 LeftParen `(`
+6:14 Identifier `text`
+6:18 Comma `,`
+6:20 Number `0`
+6:21 RightParen `)`
+6:22 Semicolon `;`
+7:1 Print `print`
+7:7 Identifier `text`
+7:11 Dot `.`
+7:12 Identifier `charAt`
+7:18 LeftParen `(`
+7:19 Number `1`
+7:20 RightParen `)`
+7:21 Semicolon `;`
+8:1 Let `let`
+8:5 Identifier `combined`
+8:14 Equal `=`
+8:16 String `"é"`
+8:21 Semicolon `;`
+9:1 Print `print`
+9:7 Identifier `len`
+9:10 LeftParen `(`
+9:11 Identifier `combined`
+9:19 RightParen `)`
+9:20 Semicolon `;`
+10:1 Print `print`
+10:7 Identifier `combined`
+10:15 Dot `.`
+10:16 Identifier `substr`
+10:22 LeftParen `(`
+10:23 Number `0`
+10:24 Comma `,`
+10:26 Number `2`
+10:27 RightParen `)`
+10:28 Semicolon `;`
+11:1 EndOfFile
+
+Program
+  Let text = "你🙂"
+  Print (call len text)
+  Print (member-call text len)
+  Print (call substr text 0 1)
+  Print (member-call text substr 1 1)
+  Print (call charAt text 0)
+  Print (member-call text charAt 1)
+  Let combined = "é"
+  Print (call len combined)
+  Print (member-call combined substr 0 2)
