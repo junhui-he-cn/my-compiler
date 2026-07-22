@@ -211,4 +211,17 @@ For file-backed lexer, parser, and type diagnostics in imported files and direct
 
 ## Roadmap Hints
 
-The active roadmap in `docs/roadmap.md` is now language-focused. The near-term sequence is remaining type-system extensions, collection extensions and higher-order APIs, then pattern-matching extensions. Broader iteration is not part of the active plan. Bytecode VM follow-ups such as GC, task scheduling, and JIT exploration are deferred backend tracks; start them only from a dedicated backend design spec and implementation plan. When adding language features, prefer vertical slices that update parser, AST, type checker, IR, bytecode, interpreters/VM, docs, and goldens together.
+The active roadmap in `docs/roadmap.md` is outcome-oriented rather than a queue
+of individual APIs. Its execution order is M0 verification foundation, M0.5
+semantic decisions and the minimum artifact envelope, then independently
+deliverable M1 semantic-front-end slices, M2 language-wide analysis, M3 module
+graph and interface-driven compilation, M4 formal bytecode/runtime compatibility,
+and separately scheduled formatter, LSP, REPL, and debugger work. Do not make
+another isolated builtin, syntax convenience, or VM opcode the next priority
+unless it validates one of those capabilities. Every milestone needs a
+quantitative gate, migration strategy, and explicit old-path deletion
+condition. Bytecode VM follow-ups such as GC, task scheduling, and JIT
+exploration remain conditional backend tracks; start them only from a dedicated
+backend design spec and implementation plan. When a behavior-changing feature
+is justified, keep the existing vertical-slice discipline across parser, AST,
+type checker, IR, bytecode, Rust VM, docs, and goldens.
