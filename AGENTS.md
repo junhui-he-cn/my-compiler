@@ -62,6 +62,17 @@ cargo test --manifest-path vm-rs/Cargo.toml
 rm -rf tests/__pycache__
 ```
 
+The M0A canonical verification command is:
+
+```sh
+python3 tests/verification_inventory.py
+python3 tests/run_verification.py ./build/compiler_design vm-rs --report build/verification-report.json
+```
+
+Refresh `tests/verification_inventory.json` explicitly after adding fixtures or
+CTest checks with `python3 tests/verification_inventory.py --write`, then review
+the generated case metadata.
+
 Run the relevant subset during development. Before claiming work is complete, run the full set above and report the exact commands and results.
 
 To refresh golden files after an intentional output change:

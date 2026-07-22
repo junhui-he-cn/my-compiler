@@ -42,6 +42,16 @@ jobs:
       - name: Run Rust unit tests
         run: cargo test --manifest-path vm-rs/Cargo.toml
 
+      - name: Run canonical verification inventory
+        run: python3 tests/run_verification.py ./build/compiler_design vm-rs --report build/verification-report.json
+
+      - name: Upload canonical verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-report
+          path: build/verification-report.json
+
   sanitizers:
     name: Sanitizers
     runs-on: ubuntu-latest

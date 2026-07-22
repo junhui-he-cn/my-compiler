@@ -493,6 +493,22 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
+The versioned M0A verification inventory and canonical stage-aware runner can
+run the same CTest and backend checks as one command and write a machine-readable
+result report:
+
+```sh
+python3 tests/run_verification.py ./build/compiler_design vm-rs --report build/verification-report.json
+```
+
+The inventory is stored in `tests/verification_inventory.json`. When adding a
+fixture or CTest check, refresh it explicitly and validate the result:
+
+```sh
+python3 tests/verification_inventory.py --write
+python3 tests/verification_inventory.py
+```
+
 Golden CLI tests live under `tests/golden`. Add a new directory with `input.cd` and expected `ast.out`, `ir.out`, `bytecode.out`, or `run.out` files to cover successful syntax and backend behavior. Runtime-error fixtures live in `tests/golden/runtime_errors`: for `example.cd`, add matching `example.run.err` and `example.exit` files. Parse-error fixtures live in `tests/golden/parse_errors`: for `example.cd`, add matching `example.err` and `example.exit` files. Type-error fixtures live in `tests/golden/type_errors`: for `example.cd`, add matching `example.err` and `example.exit` files.
 
 To refresh golden files after an intentional output change:

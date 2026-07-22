@@ -949,6 +949,15 @@ The only immediate slice is M0A: inventory the existing checks and expose one
 canonical verification command. After M0A, M0B, M0C, M0D, M0.5A, and M0.5B are
 independently deliverable and may proceed in parallel when ownership permits.
 
+M0A is implemented at inventory revision `m0a-2026-07-22-r1` against baseline
+commit `0481624`. The checked-in inventory contains 1,563 stable case IDs;
+`tests/run_verification.py` is the canonical runner and writes a machine-
+readable report, while the legacy CI commands remain active during the
+two-run migration gate. The design and observed baseline are recorded in
+`docs/verification/m0a-inventory-design.md` and
+`docs/verification/m0a-baseline.json`. M0B is the next foundation slice after
+this migration evidence is accepted.
+
 The hard dependency gates are:
 
 ```text
