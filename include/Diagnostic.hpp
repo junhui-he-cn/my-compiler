@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SourceIdentity.hpp"
+
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -30,14 +32,21 @@ public:
     DiagnosticError(DiagnosticKind kind, std::string message);
     DiagnosticError(DiagnosticKind kind, SourceLocation location, std::string message);
     DiagnosticError(DiagnosticKind kind, std::optional<SourceLocation> location, std::string message);
+    DiagnosticError(
+        DiagnosticKind kind,
+        std::optional<SourceLocation> location,
+        std::optional<SourceRange> range,
+        std::string message);
 
     DiagnosticKind kind() const;
     const std::optional<SourceLocation>& location() const;
+    const std::optional<SourceRange>& range() const;
     const std::string& message() const;
 
 private:
     DiagnosticKind kind_;
     std::optional<SourceLocation> location_;
+    std::optional<SourceRange> range_;
     std::string message_;
 };
 

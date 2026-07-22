@@ -372,6 +372,12 @@ formatter-oriented trivia work in M1A2.
 
 #### M1A1: Snapshot identities and source ranges
 
+Current implementation slice: `include/SourceIdentity.hpp`, token/AST range
+metadata, `ResolvedNames` binding/scope IDs, and direct multi-file diagnostic
+range coverage are documented in `docs/source-metadata.md`. The existing
+point-span, string lookup, CLI diagnostic, and artifact paths remain in place
+until their later migration gates are satisfied.
+
 **Deliverable:** introduce domain-typed, snapshot-stable identities for source
 files, syntax nodes, declarations/symbols, and bindings, plus complete byte
 ranges anchored to source IDs and documented line/column conversion. Each

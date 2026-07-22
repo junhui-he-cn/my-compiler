@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Diagnostic.hpp"
+#include "SourceIdentity.hpp"
 
 #include <cstddef>
 #include <string>
@@ -9,6 +10,7 @@
 struct SourceFile {
     std::string path;
     std::string text;
+    SourceFileId id{};
 };
 
 struct SourceSpan {
@@ -18,4 +20,8 @@ struct SourceSpan {
 };
 
 std::string sourceLine(const SourceFile& file, SourceLocation location);
+SourcePosition sourcePositionAt(const SourceFile& file, std::size_t byte);
+SourcePosition sourcePositionAt(const std::vector<SourceFile>& files, const SourceRange& range);
+bool isValidSourceRange(const SourceRange& range, const std::vector<SourceFile>& files);
 std::string formatSourceSpan(const SourceSpan& span, const std::vector<SourceFile>& files);
+std::string formatSourceRange(const SourceRange& range, const std::vector<SourceFile>& files);

@@ -35,9 +35,19 @@ public:
     const std::vector<std::string>& methodParameterNames(const MethodDecl& method) const;
     bool hasVariable(const VariableExpr& expression) const;
     const std::string& variableName(const VariableExpr& expression) const;
+    BindingId variableBindingId(const VariableExpr& expression) const;
     const std::string& assignmentName(const AssignExpr& expression) const;
+    BindingId assignmentBindingId(const AssignExpr& expression) const;
     const std::string& compoundAssignmentName(const CompoundAssignExpr& expression) const;
+    BindingId compoundAssignmentBindingId(const CompoundAssignExpr& expression) const;
+    BindingId letBindingId(const LetStmt& statement) const;
     const std::string& forInVariableName(const ForInStmt& statement) const;
+    BindingId forInBindingId(const ForInStmt& statement) const;
+    bool hasScope(const Stmt& statement) const;
+    ScopeId scopeId(const Stmt& statement) const;
+    const TypeBinding& binding(BindingId id) const;
+    std::size_t bindingCount() const;
+    std::size_t bindingShadowMismatchCount() const;
     bool hasFieldAccess(const FieldAccessExpr& expression) const;
     const std::string& fieldAccessName(const FieldAccessExpr& expression) const;
     bool hasMemberCallCallee(const MemberCallExpr& expression) const;
@@ -48,6 +58,11 @@ public:
     const std::string& variantName(const MemberCallExpr& expression) const;
     bool hasPatternVariable(const VariablePattern& pattern) const;
     const std::string& patternVariableName(const VariablePattern& pattern) const;
+    BindingId patternVariableBindingId(const VariablePattern& pattern) const;
+    DeclarationId declarationId(const Stmt& statement) const;
+    SymbolId symbolId(const Stmt& statement) const;
+    DeclarationId methodDeclarationId(const MethodDecl& method) const;
+    SymbolId methodSymbolId(const MethodDecl& method) const;
     const std::string& patternEnumName(const VariantPattern& pattern) const;
     const std::vector<std::size_t>& patternPayloadIndices(const VariantPattern& pattern) const;
 
@@ -55,24 +70,29 @@ private:
     friend class TypeChecker;
 
     void clear();
-    void recordLet(const LetStmt& statement, std::string name);
+    void recordBinding(const TypeBinding& binding);
+    void compareBindingName(const TypeBinding& binding);
+    void recordLet(const LetStmt& statement, const TypeBinding& binding);
+    void recordDeclaration(const Stmt& statement, DeclarationId declaration, SymbolId symbol);
+    void recordMethodDeclaration(const MethodDecl& method, DeclarationId declaration, SymbolId symbol);
     void recordFunction(const FunctionStmt& statement, std::string name);
     void recordParameters(const FunctionStmt& statement, std::vector<std::string> names);
     void recordFunction(const FunctionExpr& expression, std::string name);
     void recordParameters(const FunctionExpr& expression, std::vector<std::string> names);
     void recordMethod(const MethodDecl& method, std::string name);
     void recordMethodParameters(const MethodDecl& method, std::vector<std::string> names);
-    void recordVariable(const VariableExpr& expression, std::string name);
-    void recordAssignment(const AssignExpr& expression, std::string name);
-    void recordCompoundAssignment(const CompoundAssignExpr& expression, std::string name);
-    void recordForInVariable(const ForInStmt& statement, std::string name);
+    void recordVariable(const VariableExpr& expression, const TypeBinding& binding);
+    void recordAssignment(const AssignExpr& expression, const TypeBinding& binding);
+    void recordCompoundAssignment(const CompoundAssignExpr& expression, const TypeBinding& binding);
+    void recordForInVariable(const ForInStmt& statement, const TypeBinding& binding);
+    void recordScope(const Stmt& statement, ScopeId id);
     void recordFieldAccess(const FieldAccessExpr& expression, std::string name);
     void recordMemberCallCallee(const MemberCallExpr& expression, std::string name, bool passesReceiver);
     void recordVariantConstructor(
         const MemberCallExpr& expression,
         std::string enumName,
         std::string variantName);
-    void recordPatternVariable(const VariablePattern& pattern, std::string name);
+    void recordPatternVariable(const VariablePattern& pattern, const TypeBinding& binding);
     void recordPatternVariant(
         const VariantPattern& pattern,
         std::string enumName,
@@ -86,9 +106,22 @@ private:
     std::unordered_map<const MethodDecl*, std::string> methodNames_;
     std::unordered_map<const MethodDecl*, std::vector<std::string>> methodParameterNames_;
     std::unordered_map<const VariableExpr*, std::string> variableNames_;
+    std::unordered_map<const VariableExpr*, BindingId> variableBindingIds_;
     std::unordered_map<const AssignExpr*, std::string> assignmentNames_;
+    std::unordered_map<const AssignExpr*, BindingId> assignmentBindingIds_;
     std::unordered_map<const CompoundAssignExpr*, std::string> compoundAssignmentNames_;
+    std::unordered_map<const CompoundAssignExpr*, BindingId> compoundAssignmentBindingIds_;
+    std::unordered_map<const LetStmt*, BindingId> letBindingIds_;
+    std::unordered_map<const Stmt*, DeclarationId> declarationIds_;
+    std::unordered_map<const Stmt*, SymbolId> symbolIds_;
+    std::unordered_map<const MethodDecl*, DeclarationId> methodDeclarationIds_;
+    std::unordered_map<const MethodDecl*, SymbolId> methodSymbolIds_;
     std::unordered_map<const ForInStmt*, std::string> forInVariableNames_;
+    std::unordered_map<const ForInStmt*, BindingId> forInBindingIds_;
+    std::unordered_map<const Stmt*, ScopeId> scopeIds_;
+    std::unordered_map<const VariablePattern*, BindingId> patternVariableBindingIds_;
+    std::unordered_map<BindingId, TypeBinding, SnapshotIdHash<BindingIdTag>> bindings_;
+    std::size_t bindingShadowMismatches_ = 0;
     std::unordered_map<const FieldAccessExpr*, std::string> fieldAccessNames_;
     std::unordered_map<const MemberCallExpr*, std::string> memberCallCalleeNames_;
     std::unordered_map<const MemberCallExpr*, bool> memberCallPassesReceiver_;
@@ -161,6 +194,7 @@ private:
 
     void beginScope();
     void endScope();
+    ScopeId currentScopeId() const;
     void beginTypeParameterScope(const std::vector<TypeParameter>& parameters);
     void endTypeParameterScope();
     Scope& currentScope();
@@ -397,6 +431,7 @@ private:
     bool isCurrentFunctionBinding(const Binding& binding) const;
 
     std::vector<Scope> scopes_;
+    std::vector<ScopeId> scopeIds_;
     std::vector<std::unordered_map<std::string, TypeInfo>> typeParameterScopes_;
     std::unordered_map<std::string, StructTypeDecl> structTypes_;
     std::unordered_map<std::string, const StructDeclStmt*> structDeclarations_;
@@ -412,6 +447,10 @@ private:
     ResolvedNames resolvedNames_;
     const Program* currentProgram_ = nullptr;
     std::size_t nextResolvedName_ = 0;
+    std::size_t nextBindingId_ = 0;
+    std::size_t nextDeclarationId_ = 0;
+    std::size_t nextSymbolId_ = 0;
+    std::size_t nextScopeId_ = 0;
     std::size_t functionDepth_ = 0;
     std::size_t loopDepth_ = 0;
     std::vector<FunctionReturnContext> returnContexts_;

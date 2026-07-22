@@ -33,6 +33,7 @@ template <typename Node>
 std::unique_ptr<Node> withSpan(std::unique_ptr<Node> node, const Token& token)
 {
     node->span = spanForToken(token);
+    node->range = token.range;
     return node;
 }
 
@@ -73,7 +74,11 @@ ExprPtr buildAssignmentTarget(
 } // namespace
 
 ParseError::ParseError(const Token& token, const std::string& message)
-    : DiagnosticError(DiagnosticKind::Parse, SourceLocation{token.line, token.column}, message)
+    : DiagnosticError(
+        DiagnosticKind::Parse,
+        SourceLocation{token.line, token.column},
+        token.range,
+        message)
 {
 }
 
@@ -112,6 +117,7 @@ Program Parser::parse()
         throw ParseErrorList(std::move(errors_));
     }
 
+    finalizeSyntaxMetadata(program);
     return program;
 }
 
@@ -712,8 +718,7 @@ StmtPtr Parser::blockStatement()
     ++blockDepth_;
     std::vector<StmtPtr> statements = blockStatements();
     --blockDepth_;
-    const std::optional<SourceSpan> span = spanForToken(brace);
-    return withSpan(std::make_unique<BlockStmt>(std::move(statements)), span);
+    return withSpan(std::make_unique<BlockStmt>(std::move(statements)), brace);
 }
 
 std::vector<StmtPtr> Parser::blockStatements()

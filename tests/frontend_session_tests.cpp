@@ -166,6 +166,30 @@ void test_direct_inputs_preserve_source_spans(const fs::path& root)
     assert(firstPrint->span->line == 1);
 }
 
+void test_direct_diagnostics_keep_source_ranges(const fs::path& root)
+{
+    fs::remove_all(root);
+    const fs::path first = root / "first.cd";
+    const fs::path second = root / "second.cd";
+    writeFile(first, "print 1;\n");
+    writeFile(second, "print ;\n");
+
+    FrontendSession session;
+    try {
+        (void)session.loadFiles({first.string(), second.string()});
+    } catch (const FileDiagnosticErrorList& errors) {
+        assert(errors.errors().size() == 1);
+        const FileDiagnosticError& error = errors.errors().front();
+        assert(error.sourceContext().path.find("second.cd") != std::string::npos);
+        assert(error.range().has_value());
+        assert(error.range()->source == SourceFileId{1});
+        assert(error.range()->start <= error.range()->end);
+        assert(error.range()->end <= error.sourceContext().source.size());
+        return;
+    }
+    assert(false && "expected direct multi-file parse diagnostic");
+}
+
 } // namespace
 
 int main()
@@ -177,6 +201,7 @@ int main()
     test_importing_file_directory_precedes_search_path(root / "precedence");
     test_explicit_relative_import_does_not_use_search_path(root / "explicit_no_fallback");
     test_direct_inputs_preserve_source_spans(root / "direct_sources");
+    test_direct_diagnostics_keep_source_ranges(root / "direct_diagnostics");
 
     fs::remove_all(root);
 }

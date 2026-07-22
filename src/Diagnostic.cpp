@@ -135,23 +135,30 @@ DiagnosticError::DiagnosticError(DiagnosticKind kind, std::string message)
 }
 
 DiagnosticError::DiagnosticError(DiagnosticKind kind, SourceLocation location, std::string message)
-    : std::runtime_error(formatDiagnostic(kind, location, message))
-    , kind_(kind)
-    , location_(location)
-    , message_(std::move(message))
+    : DiagnosticError(kind, location, std::nullopt, std::move(message))
 {
 }
 
 DiagnosticError::DiagnosticError(DiagnosticKind kind, std::optional<SourceLocation> location, std::string message)
+    : DiagnosticError(kind, std::move(location), std::nullopt, std::move(message))
+{
+}
+
+DiagnosticError::DiagnosticError(
+    DiagnosticKind kind,
+    std::optional<SourceLocation> location,
+    std::optional<SourceRange> range,
+    std::string message)
     : std::runtime_error(formatDiagnostic(kind, location, message))
     , kind_(kind)
-    , location_(location)
+    , location_(std::move(location))
+    , range_(std::move(range))
     , message_(std::move(message))
 {
 }
 
 FileDiagnosticError::FileDiagnosticError(const DiagnosticError& inner, DiagnosticSourceContext context)
-    : DiagnosticError(inner.kind(), inner.location(), inner.message())
+    : DiagnosticError(inner.kind(), inner.location(), inner.range(), inner.message())
     , context_(std::move(context))
 {
 }
@@ -184,6 +191,11 @@ DiagnosticKind DiagnosticError::kind() const
 const std::optional<SourceLocation>& DiagnosticError::location() const
 {
     return location_;
+}
+
+const std::optional<SourceRange>& DiagnosticError::range() const
+{
+    return range_;
 }
 
 const std::string& DiagnosticError::message() const

@@ -43,6 +43,7 @@ private:
         std::string path;
         std::string canonicalPath;
         std::string source;
+        std::size_t combinedStartOffset = 0;
     };
 
     struct ImportResolution {

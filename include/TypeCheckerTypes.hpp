@@ -15,6 +15,11 @@ struct TypeBinding {
     std::size_t functionDepth = 0;
     bool explicitType = false;
     bool imported = false;
+    BindingId bindingId;
+    DeclarationId declarationId;
+    SymbolId symbolId;
+    ScopeId scopeId;
+    std::optional<SourceRange> range;
 };
 
 struct StructFieldType {

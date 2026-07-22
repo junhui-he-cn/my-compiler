@@ -17,6 +17,8 @@ struct Expr {
     virtual void print(std::ostream& out) const = 0;
 
     std::optional<SourceSpan> span;
+    std::optional<SourceRange> range;
+    std::optional<SyntaxNodeId> syntaxNodeId;
 };
 
 using ExprPtr = std::unique_ptr<Expr>;
@@ -76,6 +78,8 @@ struct MethodDecl {
     std::vector<Parameter> parameters;
     std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;
+    std::optional<SourceRange> range;
+    std::optional<SyntaxNodeId> syntaxNodeId;
 };
 
 struct LiteralExpr final : Expr {
@@ -302,6 +306,8 @@ struct Stmt {
     virtual void print(std::ostream& out, int indent) const = 0;
 
     std::optional<SourceSpan> span;
+    std::optional<SourceRange> range;
+    std::optional<SyntaxNodeId> syntaxNodeId;
 };
 
 struct Pattern {
@@ -309,6 +315,8 @@ struct Pattern {
     virtual void print(std::ostream& out) const = 0;
 
     std::optional<SourceSpan> span;
+    std::optional<SourceRange> range;
+    std::optional<SyntaxNodeId> syntaxNodeId;
 };
 
 using PatternPtr = std::unique_ptr<Pattern>;
@@ -451,10 +459,17 @@ struct ExportStmt final : Stmt {
 };
 
 struct ModuleStmt final : Stmt {
-    ModuleStmt(std::size_t moduleId, std::string path, std::string source, std::vector<StmtPtr> statements, bool isEntry);
+    ModuleStmt(
+        std::size_t moduleId,
+        std::string path,
+        std::string source,
+        std::vector<StmtPtr> statements,
+        bool isEntry,
+        SourceFileId sourceId = SourceFileId{});
     void print(std::ostream& out, int indent) const override;
 
     std::size_t moduleId;
+    SourceFileId sourceId;
     std::string path;
     std::string source;
     std::vector<StmtPtr> statements;
@@ -569,3 +584,11 @@ struct Program {
     // Emit a readable tree view of the parsed program.
     void print(std::ostream& out) const;
 };
+
+// Complete the source metadata produced by the parser.  IDs are allocated in
+// traversal order and are therefore stable for the lifetime of one Program
+// snapshot.  FrontendSession calls this once after assembling all source
+// units, so IDs do not collide across direct multi-file inputs or imports.
+void populateSyntaxRanges(Program& program);
+void assignSyntaxNodeIds(Program& program);
+void finalizeSyntaxMetadata(Program& program);

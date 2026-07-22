@@ -205,6 +205,8 @@ ParsedSource parseSource(
             for (Token& token : tokens) {
                 token.source = sourceId;
                 token.sourceLine = token.line;
+                token.sourceId = SourceFileId{*sourceId};
+                token.range = SourceRange{*token.sourceId, token.startOffset, token.endOffset};
             }
         }
         Parser parser(tokens);
@@ -247,7 +249,10 @@ Token endOfFileToken(const std::string& source)
             ++column;
         }
     }
-    return Token{TokenType::EndOfFile, "", line, column};
+    Token token{TokenType::EndOfFile, "", line, column};
+    token.startOffset = source.size();
+    token.endOffset = source.size();
+    return token;
 }
 
 std::size_t sourceLineSpan(const std::string& source)
@@ -297,6 +302,8 @@ void FrontendSession::annotateSourceTokens(std::vector<Token>& tokens, std::size
     for (Token& token : tokens) {
         token.source = sourceId;
         token.sourceLine = token.line;
+        token.sourceId = SourceFileId{sourceId};
+        token.range = SourceRange{*token.sourceId, token.startOffset, token.endOffset};
     }
 }
 
@@ -314,8 +321,20 @@ void FrontendSession::annotateDirectTokens(std::vector<Token>& tokens) const
             }
         }
         if (sourceIndex < directInputs_.size()) {
-            token.source = directInputs_[sourceIndex].sourceId;
+            const DirectInput& input = directInputs_[sourceIndex];
+            token.source = input.sourceId;
             token.sourceLine = token.line - sourceStart + 1;
+            token.sourceId = SourceFileId{input.sourceId};
+            const std::size_t localStart = token.startOffset < input.combinedStartOffset
+                ? 0
+                : token.startOffset - input.combinedStartOffset;
+            const std::size_t localEnd = token.endOffset < input.combinedStartOffset
+                ? 0
+                : token.endOffset - input.combinedStartOffset;
+            token.range = SourceRange{
+                *token.sourceId,
+                std::min(localStart, input.source.size()),
+                std::min(std::max(localEnd, localStart), input.source.size())};
         }
     }
 }
@@ -366,7 +385,7 @@ Program FrontendSession::loadStdin(std::istream& input)
     reset();
 
     std::string source = readAll(input);
-    sourceFiles_.push_back(SourceFile{"<stdin>", source});
+    sourceFiles_.push_back(SourceFile{"<stdin>", source, SourceFileId{0}});
     ParsedSource parsed = parseSource("<stdin>", source, true, 0);
     if (hasImportToken(parsed.tokens)) {
         throw DiagnosticError(DiagnosticKind::Import, "import is not supported from stdin");
@@ -417,7 +436,10 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
 
         std::string source = readAll(input);
         const std::size_t sourceId = sourceFiles_.size();
-        sourceFiles_.push_back(SourceFile{sourceMetadataPath(displayPath), source});
+        sourceFiles_.push_back(SourceFile{
+            sourceMetadataPath(displayPath),
+            source,
+            SourceFileId{sourceId}});
         directInputIds.emplace(canonicalPath, directInputs_.size());
         directInputs_.push_back(DirectInput{
             sourceId,
@@ -427,13 +449,21 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
         });
     }
 
-    for (const DirectInput& input : directInputs_) {
+    for (std::size_t index = 0; index < directInputs_.size(); ++index) {
+        DirectInput& input = directInputs_[index];
         int sourceStart = lineAtEnd(combinedSource_);
         if (!combinedSource_.empty() && combinedSource_.back() != '\n') {
             ++sourceStart;
         }
         directSourceLineStarts_.push_back(sourceStart);
-        appendWithNewlineSeparation(combinedSource_, input.source);
+        if (!combinedSource_.empty() && combinedSource_.back() != '\n') {
+            combinedSource_.push_back('\n');
+        }
+        input.combinedStartOffset = combinedSource_.size();
+        combinedSource_ += input.source;
+        if (!combinedSource_.empty() && combinedSource_.back() != '\n') {
+            combinedSource_.push_back('\n');
+        }
     }
     Program directProgram;
     try {
@@ -461,6 +491,7 @@ Program FrontendSession::loadFiles(const std::vector<std::string>& paths)
 
     if (!hasImports) {
         directProgram.sources = sourceFiles_;
+        finalizeSyntaxMetadata(directProgram);
         return directProgram;
     }
 
@@ -515,7 +546,10 @@ std::size_t FrontendSession::loadFile(
     try {
         std::string source = readAll(input);
         const std::size_t sourceId = sourceFiles_.size();
-        sourceFiles_.push_back(SourceFile{sourceMetadataPath(displayPath), source});
+        sourceFiles_.push_back(SourceFile{
+            sourceMetadataPath(displayPath),
+            source,
+            SourceFileId{sourceId}});
         std::vector<Token> tokens;
         try {
             Lexer lexer(source);
@@ -606,8 +640,10 @@ Program FrontendSession::assembleProgram()
                 unit.path,
                 unit.source,
                 std::move(unit.statements),
-                unit.isEntry));
+                unit.isEntry,
+                SourceFileId{unit.sourceId}));
         }
+        finalizeSyntaxMetadata(program);
         return program;
     }
 
@@ -617,6 +653,7 @@ Program FrontendSession::assembleProgram()
             program.statements.push_back(std::move(statement));
         }
     }
+    finalizeSyntaxMetadata(program);
     return program;
 }
 
@@ -649,7 +686,18 @@ std::vector<Token> FrontendSession::displayTokens() const
         }
         appendWithNewlineSeparation(combined, unit.source);
     }
-    display.push_back(endOfFileToken(combined));
+    Token eof = endOfFileToken(combined);
+    if (!units_.empty()) {
+        const ParsedUnit& last = units_.back();
+        eof.source = last.sourceId;
+        eof.sourceLine = lineAtEnd(last.source);
+        eof.sourceId = SourceFileId{last.sourceId};
+        eof.range = SourceRange{
+            *eof.sourceId,
+            last.source.size(),
+            last.source.size()};
+    }
+    display.push_back(std::move(eof));
     return display;
 }
 
@@ -679,6 +727,7 @@ std::optional<FileDiagnosticError> FrontendSession::remapDirectDiagnostic(const 
                     static_cast<int>(diagnosticLine - startLine + 1),
                     error.location()->column,
                 },
+                error.range(),
                 error.message());
             return FileDiagnosticError(
                 remapped,
@@ -719,6 +768,7 @@ std::optional<FileDiagnosticErrorList> FrontendSession::remapDirectDiagnostics(c
                         static_cast<int>(diagnosticLine - startLine + 1),
                         error.location()->column,
                     },
+                    error.range(),
                     error.message());
                 mapped.push_back(FileDiagnosticError(
                     remapped,

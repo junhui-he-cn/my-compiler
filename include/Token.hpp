@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SourceIdentity.hpp"
+
 #include <cstddef>
 #include <optional>
 #include <ostream>
@@ -79,6 +81,15 @@ struct Token {
     // Parser diagnostics continue to use the combined `line` coordinate.
     std::optional<std::size_t> source = std::nullopt;
     std::optional<int> sourceLine = std::nullopt;
+    // Typed source identity and source-local half-open byte range.  `source`
+    // remains as a compatibility field for existing IR/debug consumers.
+    std::optional<SourceFileId> sourceId = std::nullopt;
+    std::optional<SourceRange> range = std::nullopt;
+    // Lexer-owned offsets are source-buffer offsets before FrontendSession
+    // attaches a SourceFileId.  They are also useful for direct multi-file
+    // remapping.
+    std::size_t startOffset = 0;
+    std::size_t endOffset = 0;
 };
 
 std::string tokenTypeName(TokenType type);

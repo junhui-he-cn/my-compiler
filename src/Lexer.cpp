@@ -4,6 +4,7 @@
 #include <cctype>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility>
 
 namespace {
 
@@ -32,7 +33,10 @@ std::vector<Token> Lexer::scanTokens()
         scanToken();
     }
 
-    tokens_.push_back(Token{TokenType::EndOfFile, "", line_, column_});
+    Token eof{TokenType::EndOfFile, "", line_, column_};
+    eof.startOffset = current_;
+    eof.endOffset = current_;
+    tokens_.push_back(std::move(eof));
     return tokens_;
 }
 
@@ -48,7 +52,10 @@ std::vector<Token> Lexer::scanTokensUntil(TokenType stopType)
         }
     }
 
-    tokens_.push_back(Token{TokenType::EndOfFile, "", line_, column_});
+    Token eof{TokenType::EndOfFile, "", line_, column_};
+    eof.startOffset = current_;
+    eof.endOffset = current_;
+    tokens_.push_back(std::move(eof));
     return tokens_;
 }
 
@@ -207,12 +214,15 @@ void Lexer::scanToken()
 
 void Lexer::addToken(TokenType type)
 {
-    tokens_.push_back(Token{
+    Token token{
         type,
         source_.substr(start_, current_ - start_),
         line_,
         tokenColumn_,
-    });
+    };
+    token.startOffset = start_;
+    token.endOffset = current_;
+    tokens_.push_back(std::move(token));
 }
 
 void Lexer::stringLiteral()
