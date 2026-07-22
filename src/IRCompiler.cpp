@@ -743,6 +743,7 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
         || expression.name.lexeme == "concat"
         || expression.name.lexeme == "map"
         || expression.name.lexeme == "filter"
+        || expression.name.lexeme == "flatMap"
         || expression.name.lexeme == "any"
         || expression.name.lexeme == "all"
         || expression.name.lexeme == "count"

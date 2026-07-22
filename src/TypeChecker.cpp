@@ -1664,7 +1664,7 @@ bool TypeChecker::isBuiltinMemberName(const std::string& name) const
     return name == "push" || name == "pop" || name == "remove" || name == "clear" || name == "keys" || name == "values" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
-        || name == "map" || name == "filter" || name == "any" || name == "all" || name == "count" || name == "find" || name == "findIndex" || name == "reduce";
+        || name == "map" || name == "filter" || name == "flatMap" || name == "any" || name == "all" || name == "count" || name == "find" || name == "findIndex" || name == "reduce";
 }
 
 std::vector<TypeInfo> TypeChecker::resolveParameterTypes(const std::vector<Parameter>& parameters)
@@ -3671,6 +3671,53 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayFilter(
     return CheckedExpression{simpleType(StaticType::Array)};
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkArrayFlatMap(
+    const Token& callToken,
+    const TypeInfo& arrayTypeInfo,
+    const Expr& callbackExpression)
+{
+    if (arrayTypeInfo.kind != StaticType::Unknown && arrayTypeInfo.kind != StaticType::Array) {
+        throw TypeError(callToken, "flatMap expects array as first argument, got " + typeInfoName(arrayTypeInfo));
+    }
+
+    TypeInfo elementType = unknownType();
+    if (arrayTypeInfo.kind == StaticType::Array && arrayTypeInfo.elementType) {
+        elementType = *arrayTypeInfo.elementType;
+    }
+    const TypeInfo expectedCallback = functionType({elementType}, simpleType(StaticType::Array));
+    const CheckedExpression callback = checkExpressionInfo(callbackExpression, &expectedCallback);
+    if (callback.type.kind != StaticType::Unknown && callback.type.kind != StaticType::Function) {
+        throw TypeError(callToken,
+            "flatMap expects function as second argument, got " + typeInfoName(callback.type));
+    }
+    if (callback.type.kind != StaticType::Function || !hasFunctionSignature(callback.type)) {
+        return CheckedExpression{simpleType(StaticType::Array)};
+    }
+    if (!callback.type.genericParameters.empty()) {
+        throw TypeError(callToken, "flatMap expects a non-generic callback");
+    }
+    if (callback.type.parameterTypes.size() != 1) {
+        throw TypeError(callToken, "flatMap expects callback with 1 argument");
+    }
+    if (elementType.kind != StaticType::Unknown
+        && !compatible(callback.type.parameterTypes.front(), elementType)) {
+        throw TypeError(callToken,
+            "flatMap callback expects " + typeInfoName(elementType)
+                + ", got " + typeInfoName(callback.type.parameterTypes.front()));
+    }
+    if (callback.type.returnType && isKnown(*callback.type.returnType)) {
+        if (callback.type.returnType->kind != StaticType::Array) {
+            throw TypeError(callToken,
+                "flatMap expects callback to return array, got "
+                    + typeInfoName(*callback.type.returnType));
+        }
+        if (callback.type.returnType->elementType) {
+            return CheckedExpression{arrayType(*callback.type.returnType->elementType)};
+        }
+    }
+    return CheckedExpression{simpleType(StaticType::Array)};
+}
+
 void TypeChecker::checkArrayPredicate(
     const Token& callToken,
     const TypeInfo& arrayTypeInfo,
@@ -4052,6 +4099,10 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
         return checkArrayFilter(expression.paren, arrayArgument.type, *expression.arguments[1]);
     }
+    case NativeFunctionKind::FlatMap: {
+        const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
+        return checkArrayFlatMap(expression.paren, arrayArgument.type, *expression.arguments[1]);
+    }
     case NativeFunctionKind::Any:
     case NativeFunctionKind::All: {
         const CheckedExpression arrayArgument = checkExpressionInfo(*expression.arguments[0]);
@@ -4331,6 +4382,12 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
         expectArity(1);
         const CheckedExpression receiver = checkReceiver();
         return checkArrayFilter(expression.paren, receiver.type, *expression.arguments[0]);
+    }
+
+    if (name == "flatMap") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        return checkArrayFlatMap(expression.paren, receiver.type, *expression.arguments[0]);
     }
 
     if (name == "any" || name == "all") {

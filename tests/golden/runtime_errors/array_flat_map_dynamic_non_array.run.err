@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/array_flat_map_dynamic_non_array.cd:2:1: flatMap expects array as first argument
+  flatMap(id(1), fun (value) { return [value]; });
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/array_flat_map_dynamic_non_array.cd:2:1)

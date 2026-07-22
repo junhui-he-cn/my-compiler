@@ -12,7 +12,7 @@ and map element assignment, numeric compound assignment for variables, array ele
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `reduce`, `any`, `all`, `count`, `find`, `findIndex`, `remove`, `clear`, `keys`, `values`,
+`map`, `filter`, `flatMap`, `reduce`, `any`, `all`, `count`, `find`, `findIndex`, `remove`, `clear`, `keys`, `values`,
 and `typeOf`.
 
 The compiler pipeline includes:
@@ -314,6 +314,15 @@ matches. It short-circuits after the first `true` result; empty arrays return
 sugar, while the function-style `findIndex` name is shadowable. Known callback
 and array types are checked statically; unknown values are validated at runtime.
 
+The callback-based array helper `flatMap(array, callback)` invokes its
+one-argument callback from left to right over a snapshot of the input array.
+Each callback result must be an array; its elements are appended to a fresh
+output array and only one outer level is flattened. The member form
+`array.flatMap(callback)` is unshadowed builtin sugar, while the function-style
+`flatMap` name is shadowable. Known array and callback return types are checked
+statically; unknown values are validated at runtime. Callback errors propagate
+with the normal Rust VM call stack.
+
 The callback-based array helper `reduce(array, initial, callback)` invokes its
 two-argument callback as `(accumulator, element)` from left to right. The return
 value becomes the next accumulator, and an empty array returns the explicit
@@ -366,6 +375,7 @@ helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.concat(right)`, `array.map(callback)`, `array.filter(predicate)`,
 `array.any(predicate)`, `array.all(predicate)`,
 `array.count(predicate)`, `array.find(predicate)`, `array.findIndex(predicate)`,
+`array.flatMap(callback)`,
 `array.reduce(initial, callback)`, `map.len()`,
 `map.contains(key)`,
 `map.remove(key)`, `map.clear()`, `map.keys()`, `map.values()`, `string.len()`,
@@ -373,7 +383,7 @@ helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `any`, `all`, `count`, `find`, `findIndex`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
+`map`, `filter`, `flatMap`, `any`, `all`, `count`, `find`, `findIndex`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
 member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.

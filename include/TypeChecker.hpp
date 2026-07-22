@@ -292,6 +292,10 @@ private:
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,
         const Expr& predicateExpression);
+    CheckedExpression checkArrayFlatMap(
+        const Token& callToken,
+        const TypeInfo& arrayTypeInfo,
+        const Expr& callbackExpression);
     void checkArrayPredicate(
         const Token& callToken,
         const TypeInfo& arrayTypeInfo,

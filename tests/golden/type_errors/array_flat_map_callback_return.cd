@@ -1,0 +1,1 @@
+flatMap([1], fun (value: number): number { return value; });

@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/array_flat_map_dynamic_callback_result.cd:2:1: flatMap expects callback to return array
+  flatMap([1], id(fun (value) { return value; }));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/array_flat_map_dynamic_callback_result.cd:2:1)

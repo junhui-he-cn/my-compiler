@@ -185,9 +185,14 @@ Array `findIndex` is implemented with the same shadowing, member-call,
 predicate, snapshot, and short-circuit conventions; it returns the first
 zero-based matching index and `-1` for an empty array or no match.
 
+Array `flatMap` is implemented with the same shadowing, member-call, callback,
+and snapshot conventions. It requires each callback result to be an array,
+flattens exactly one level into a fresh shallow array, and preserves a known
+callback element type in the static result.
+
 Future work:
 
-- Extend the first array `map`/`filter`/`reduce`/`any`/`all`/`count`/`find`/`findIndex` slices with generic
+- Extend the first array `map`/`filter`/`flatMap`/`reduce`/`any`/`all`/`count`/`find`/`findIndex` slices with generic
   collection syntax and further higher-order APIs once their remaining
   inference boundaries are defined.
 - Add further map operations, such as additional bulk helpers, only as focused

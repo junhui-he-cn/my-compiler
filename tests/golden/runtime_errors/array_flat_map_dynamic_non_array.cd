@@ -1,0 +1,2 @@
+fun id(value) { return value; }
+flatMap(id(1), fun (value) { return [value]; });
