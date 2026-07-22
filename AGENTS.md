@@ -4,6 +4,13 @@ This file is project memory for Codex/AI agents working in this repository. Read
 
 ## Agent Workflow Defaults
 
+- Before starting any non-trivial execution or making workspace changes, first
+  do a concise brainstorming pass and share the proposed scope, likely files or
+  components, main risks, and verification approach with the user. Wait for the
+  user's confirmation of the broad direction before implementing. After that
+  confirmation, continue with the agent's own detailed execution, editing, and
+  verification workflow without requiring approval for every individual
+  command.
 - Do not invoke or assume `superpowers` skills by default.
 - Use the normal repository workflow unless the user explicitly requests a
   particular skill or workflow.
