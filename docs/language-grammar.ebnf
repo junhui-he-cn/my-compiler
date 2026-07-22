@@ -49,7 +49,7 @@ enumPayloads = enumPayload,
 
 enumPayload  = [ identifier, ":" ], typeExpr ;
 
-implDecl    = "impl", identifier,
+implDecl    = "impl", identifier, [ typeParameters ],
               "{", { methodDecl }, "}" ;
 
 methodDecl  = "fun", identifier, [ typeParameters ],

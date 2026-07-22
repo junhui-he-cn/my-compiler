@@ -272,6 +272,7 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 
     if (const auto* implStmt = dynamic_cast<const ImplStmt*>(&stmt)) {
         out << "(impl " << implStmt->typeName.lexeme;
+        writeTypeParameterList(out, implStmt->typeParameters);
         for (const MethodDecl& method : implStmt->methods) {
             out << " (method " << method.name.lexeme;
             writeTypeParameterList(out, method.typeParameters);
@@ -971,8 +972,12 @@ void StructDeclStmt::print(std::ostream& out, int indent) const
     out << "}\n";
 }
 
-ImplStmt::ImplStmt(Token typeName, std::vector<MethodDecl> methods)
+ImplStmt::ImplStmt(
+    Token typeName,
+    std::vector<TypeParameter> typeParameters,
+    std::vector<MethodDecl> methods)
     : typeName(std::move(typeName))
+    , typeParameters(std::move(typeParameters))
     , methods(std::move(methods))
 {
 }
@@ -980,7 +985,9 @@ ImplStmt::ImplStmt(Token typeName, std::vector<MethodDecl> methods)
 void ImplStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
-    out << "Impl " << typeName.lexeme << '\n';
+    out << "Impl " << typeName.lexeme;
+    writeTypeParameterList(out, typeParameters);
+    out << '\n';
     for (const MethodDecl& method : methods) {
         writeIndent(out, indent + 1);
         out << "Method " << method.name.lexeme;

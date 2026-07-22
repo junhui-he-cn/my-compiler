@@ -422,10 +422,11 @@ struct StructDeclStmt final : Stmt {
 };
 
 struct ImplStmt final : Stmt {
-    ImplStmt(Token typeName, std::vector<MethodDecl> methods);
+    ImplStmt(Token typeName, std::vector<TypeParameter> typeParameters, std::vector<MethodDecl> methods);
     void print(std::ostream& out, int indent) const override;
 
     Token typeName;
+    std::vector<TypeParameter> typeParameters;
     std::vector<MethodDecl> methods;
 };
 

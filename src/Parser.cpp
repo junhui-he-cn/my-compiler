@@ -325,6 +325,7 @@ StmtPtr Parser::implDeclaration()
 {
     Token keyword = previous();
     Token typeName = consume(TokenType::Identifier, "expected struct name after `impl`");
+    std::vector<TypeParameter> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftBrace, "expected `{` after impl type name");
     std::vector<MethodDecl> methods;
     while (!check(TokenType::RightBrace) && !isAtEnd()) {
@@ -332,7 +333,10 @@ StmtPtr Parser::implDeclaration()
     }
     consume(TokenType::RightBrace, "expected `}` after impl methods");
     const std::optional<SourceSpan> span = spanForToken(keyword);
-    return withSpan(std::make_unique<ImplStmt>(std::move(typeName), std::move(methods)), span);
+    return withSpan(
+        std::make_unique<ImplStmt>(
+            std::move(typeName), std::move(parsedTypeParameters), std::move(methods)),
+        span);
 }
 
 MethodDecl Parser::methodDeclaration()

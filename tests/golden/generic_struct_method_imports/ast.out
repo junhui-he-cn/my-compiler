@@ -1,0 +1,22 @@
+Program
+  Module 0
+    Struct Box<T> {value: T}
+    Impl Box<T>
+      Method get(): T
+        Return (field this value)
+      Method wrap<U>(value: U): Box<U>
+        Return (construct Box<U> value: value)
+    Export Box
+  Module 1
+    Export Box from "lib.cd"
+  Module 2 entry
+    Import "lib.cd"
+    Import "lib.cd" as lib
+    Import "forward.cd" as forwarded
+    Let direct: Box<number> = (construct Box<number> value: 1)
+    Let namespaced: lib.Box<number> = (construct lib.Box<number> value: 2)
+    Let reexported: forwarded.Box<number> = (construct forwarded.Box<number> value: 3)
+    Print (member-call direct get)
+    Print (member-call namespaced get)
+    Print (field (member-call namespaced wrap<string> "two") value)
+    Print (member-call reexported get)

@@ -1,0 +1,24 @@
+Program
+  Struct Box<T> {value: T}
+  Struct NumberBox<T: number> {value: T}
+  Impl Box<T>
+    Method get(): T
+      Return (field this value)
+    Method set(value: T): T
+      Expr (= (field this value) value)
+      Return (field this value)
+    Method wrap<U>(value: U): Box<U>
+      Return (construct Box<U> value: value)
+  Impl NumberBox<T>
+    Method get(): T
+      Return (field this value)
+  Let box: Box<number> = (construct Box value: 1)
+  Let numberBox: NumberBox<number> = (construct NumberBox value: 3)
+  Print (member-call box get)
+  Print (member-call box set 2)
+  Print (field box value)
+  Let textBox = (member-call box wrap<string> "text")
+  Print (field textBox value)
+  Print (field (member-call box wrap "inferred") value)
+  Print (member-call numberBox get)
+  Print (call typeOf textBox)

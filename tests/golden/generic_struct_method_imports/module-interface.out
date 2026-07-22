@@ -1,0 +1,13 @@
+module 0 "<repo>/tests/golden/generic_struct_method_imports/lib.cd"
+  export struct Box<T>
+    field value: T
+    method get(): T
+    method wrap<U>(U): Box<U>
+
+module 1 "<repo>/tests/golden/generic_struct_method_imports/forward.cd"
+  export struct Box<T>
+    field value: T
+    method get(): T
+    method wrap<U>(U): Box<U>
+
+module 2 entry "<repo>/tests/golden/generic_struct_method_imports/input.cd"

@@ -1,0 +1,13 @@
+struct Box<T> { value: T }
+
+impl Box<T> {
+  fun get(): T {
+    return this.value;
+  }
+
+  fun wrap<U>(value: U): Box<U> {
+    return Box<U> { value: value };
+  }
+}
+
+export Box;

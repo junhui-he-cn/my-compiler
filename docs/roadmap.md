@@ -75,9 +75,9 @@ Likely touch points:
 Goal: continue struct polish around field rules and future type-system features
 without expanding into object-system features prematurely.
 
-Generic struct declarations and instantiated field types are implemented. Keep
-generic receiver methods, recursive generic structs, and generic object-system
-features behind dedicated designs.
+Generic struct declarations, instantiated field types, and generic receiver
+methods are implemented. Keep recursive generic structs and generic
+object-system features behind dedicated designs.
 
 Future work:
 - Recursive struct field types are intentionally unsupported in the current

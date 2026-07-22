@@ -2120,6 +2120,17 @@ void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, cons
 {
     checkMethodNameAvailable(structType, statement, method);
 
+    for (const std::string& receiverParameter : structType.genericParameters) {
+        for (const TypeParameter& methodParameter : method.typeParameters) {
+            if (receiverParameter == methodParameter.name.lexeme) {
+                throw TypeError(methodParameter.name,
+                    "method type parameter `" + methodParameter.name.lexeme
+                        + "` conflicts with receiver type parameter `"
+                        + receiverParameter + "`");
+            }
+        }
+    }
+
     auto& structMethods = methods_[statement.typeName.lexeme];
     beginTypeParameterScope(method.typeParameters);
     std::vector<TypeInfo> parameterTypes = resolveParameterTypes(method.parameters);
@@ -2129,7 +2140,14 @@ void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, cons
     endTypeParameterScope();
     MethodInfo info;
     info.declaration = &method;
-    info.receiverType = namedStructType(statement.typeName.lexeme);
+    std::vector<TypeInfo> receiverTypeArguments;
+    receiverTypeArguments.reserve(structType.genericParameters.size());
+    for (const std::string& receiverParameter : structType.genericParameters) {
+        const TypeInfo* type = findTypeParameter(receiverParameter);
+        receiverTypeArguments.push_back(type ? *type : typeParameterType(receiverParameter));
+    }
+    info.receiverType = namedStructType(
+        statement.typeName.lexeme, std::move(receiverTypeArguments));
     info.parameterTypes = std::move(parameterTypes);
     info.returnType = expectedReturnType ? *expectedReturnType : unknownType();
     info.resolvedName = makeResolvedName("__method_" + statement.typeName.lexeme + "_" + method.name.lexeme);
@@ -2187,9 +2205,59 @@ void TypeChecker::checkImpl(const ImplStmt& statement)
     if (!structType) {
         throw TypeError(statement.typeName, "unknown struct type `" + statement.typeName.lexeme + "` in impl");
     }
-    if (!structType->genericParameters.empty()) {
-        throw TypeError(statement.typeName,
-            "impl for generic struct `" + statement.typeName.lexeme + "` is not supported");
+
+    if (structType->genericParameters.empty()) {
+        if (!statement.typeParameters.empty()) {
+            throw TypeError(statement.typeName,
+                "impl for non-generic struct `" + statement.typeName.lexeme
+                    + "` cannot declare type parameters");
+        }
+    } else {
+        if (statement.typeParameters.size() != structType->genericParameters.size()) {
+            throw TypeError(statement.typeName,
+                "impl for generic struct `" + statement.typeName.lexeme + "` expects "
+                    + std::to_string(structType->genericParameters.size())
+                    + " type parameters but got "
+                    + std::to_string(statement.typeParameters.size()));
+        }
+        for (std::size_t i = 0; i < statement.typeParameters.size(); ++i) {
+            if (statement.typeParameters[i].name.lexeme != structType->genericParameters[i]) {
+                throw TypeError(statement.typeParameters[i].name,
+                    "impl type parameter `" + statement.typeParameters[i].name.lexeme
+                        + "` must bind struct type parameter `"
+                        + structType->genericParameters[i] + "`");
+            }
+            if (!statement.typeParameters[i].constraint) {
+                continue;
+            }
+            const TypeInfo headerConstraint = resolveAnnotation(
+                *statement.typeParameters[i].constraint);
+            const std::shared_ptr<TypeInfo>& declaredConstraint
+                = i < structType->genericParameterConstraints.size()
+                ? structType->genericParameterConstraints[i]
+                : nullptr;
+            if (!declaredConstraint
+                || !compatible(*declaredConstraint, headerConstraint)
+                || !compatible(headerConstraint, *declaredConstraint)) {
+                throw TypeError(statement.typeParameters[i].name,
+                    "impl constraint for type parameter `"
+                        + statement.typeParameters[i].name.lexeme
+                        + "` does not match the struct declaration");
+            }
+        }
+
+        beginTypeParameterScope(statement.typeParameters);
+        for (std::size_t i = 0; i < structType->genericParameters.size(); ++i) {
+            const auto found = typeParameterScopes_.back().find(
+                structType->genericParameters[i]);
+            if (found != typeParameterScopes_.back().end()
+                && i < structType->genericParameterConstraints.size()
+                && structType->genericParameterConstraints[i]) {
+                found->second.typeParameterConstraint
+                    = std::make_shared<TypeInfo>(
+                        *structType->genericParameterConstraints[i]);
+            }
+        }
     }
 
     auto& structMethods = methods_[statement.typeName.lexeme];
@@ -2202,6 +2270,10 @@ void TypeChecker::checkImpl(const ImplStmt& statement)
             throw TypeError(method.name, "internal error: missing method signature");
         }
         checkMethodBody(statement.typeName.lexeme, info->second);
+    }
+
+    if (!structType->genericParameters.empty()) {
+        endTypeParameterScope();
     }
 }
 
@@ -4633,9 +4705,50 @@ TypeChecker::CheckedExpression TypeChecker::checkStructMethodCall(const MemberCa
         throw TypeError(expression.paren, "struct `" + *receiverType.structName + "` has no method `" + name + "`");
     }
 
+    TypeSubstitutions receiverSubstitutions;
+    if (!method->receiverType.typeArguments.empty()) {
+        if (method->receiverType.typeArguments.size() != receiverType.typeArguments.size()) {
+            throw TypeError(expression.paren,
+                "method receiver expects "
+                    + std::to_string(method->receiverType.typeArguments.size())
+                    + " type arguments but got "
+                    + std::to_string(receiverType.typeArguments.size()));
+        }
+        for (std::size_t i = 0; i < method->receiverType.typeArguments.size(); ++i) {
+            inferTypeArguments(
+                method->receiverType.typeArguments[i],
+                receiverType.typeArguments[i],
+                receiverSubstitutions,
+                expression.paren);
+        }
+        const StructTypeDecl* structType = findStructType(*receiverType.structName);
+        if (structType) {
+            for (const std::string& parameter : structType->genericParameters) {
+                if (receiverSubstitutions.find(parameter) == receiverSubstitutions.end()) {
+                    throw TypeError(expression.paren,
+                        "cannot specialize method receiver type parameter " + parameter);
+                }
+            }
+            validateGenericTypeArguments(
+                structType->genericParameters,
+                structType->genericParameterConstraints,
+                receiverSubstitutions,
+                expression.paren,
+                "method receiver");
+        }
+    }
+
+    std::vector<TypeInfo> parameterTypes;
+    parameterTypes.reserve(method->parameterTypes.size());
+    for (const TypeInfo& parameter : method->parameterTypes) {
+        parameterTypes.push_back(
+            substituteTypeParameters(parameter, receiverSubstitutions));
+    }
+    const TypeInfo returnType = substituteTypeParameters(
+        method->returnType, receiverSubstitutions);
     const TypeInfo signature = functionType(
-        method->parameterTypes,
-        method->returnType,
+        std::move(parameterTypes),
+        returnType,
         method->genericParameters,
         method->genericParameterConstraints);
     const CheckedExpression result = checkFunctionCall(

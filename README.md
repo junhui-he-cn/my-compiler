@@ -35,7 +35,7 @@ let name = expression;
 let name: type = expression;
 import "path" [as alias];
 export name[, name...];
-struct Name { field: type, ... }
+struct Name[<T, U>] { field: type, ... }
 enum Name { Variant(type, ...), Other }
 match expression { Pattern => { declaration* } }
 print expression;
@@ -222,9 +222,10 @@ tried left to right and must bind the same names with compatible types. The
 bindings remain available once in the arm-local scope.
 
 Local named structs may define first-slice methods in top-level `impl` blocks.
-Methods are statically resolved on known named struct receiver types, and
-method calls lower to ordinary function calls with the receiver passed as
-implicit `this`:
+Generic structs bind their receiver parameters in the same order, for example
+`impl Box<T>`. Methods are statically resolved on known named struct receiver
+types, and method calls lower to ordinary function calls with the receiver
+passed as implicit `this`:
 
 ```cd
 struct Person { name: string }
@@ -235,7 +236,15 @@ let p: Person = Person { name: "Ada" };
 print p.greet();
 ```
 
-Inside a method, `this` has the impl struct type; field assignment through `this.field = value` mutates the receiver. Methods on exported/imported named structs are available through direct imports and namespace imports, so `import "path";` supports `value.method()` and `import "path" as alias;` supports methods on `alias.Type` values. Inheritance, overloading, dynamic dispatch, static methods, and function-valued field calls are not implemented yet.
+Inside a method, `this` has the impl struct type; for `impl Box<T>`, fields
+using `T` are specialized from the receiver at each call. Method type
+parameters may still be inferred or supplied explicitly. Field assignment
+through `this.field = value` mutates the receiver. Methods on
+exported/imported named structs are available through direct imports and
+namespace imports, so `import "path";` supports `value.method()` and
+`import "path" as alias;` supports methods on `alias.Type` values. Inheritance,
+overloading, dynamic dispatch, static methods, and function-valued field calls
+are not implemented yet.
 
 ```cd
 struct Person { name: string, age: number }

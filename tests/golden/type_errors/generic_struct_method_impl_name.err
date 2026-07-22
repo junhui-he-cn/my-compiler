@@ -1,0 +1,3 @@
+Type error at 3:10: impl type parameter `U` must bind struct type parameter `T`
+  impl Box<U> {
+           ^
