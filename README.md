@@ -215,7 +215,8 @@ structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
 `typeOf` reports the enum name. Named payload patterns may be reordered by field
 name, while constructors remain positional. Generic enum types are nominal and
 invariant in their type arguments; their type parameters may use concrete bounds
-such as `T: number`. Generic structs are not implemented. Named struct record patterns use the same left-to-right and
+such as `T: number`. Generic structs use the same nominal and erased-runtime
+model described above. Named struct record patterns use the same left-to-right and
 nested matching model. Existing patterns may be combined with `|`; alternatives are
 tried left to right and must bind the same names with compatible types. The
 bindings remain available once in the arm-local scope.
