@@ -23,7 +23,11 @@ TypeBinding binding(std::string resolvedName, StaticType kind)
 
 StructTypeDecl structDecl(std::string name)
 {
-    return StructTypeDecl{token(std::move(name)), {StructFieldType{token("field"), simpleType(StaticType::Number)}}};
+    return StructTypeDecl{
+        token(std::move(name)),
+        {StructFieldType{token("field"), simpleType(StaticType::Number)}},
+        {},
+        {}};
 }
 
 MethodSignature methodSignature(std::string resolvedName, TypeInfo returnType)

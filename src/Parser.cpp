@@ -240,11 +240,15 @@ StmtPtr Parser::structDeclaration()
 {
     Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected struct name after `struct`");
+    std::vector<TypeParameter> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftBrace, "expected `{` after struct name");
     std::vector<StructFieldDecl> fields = structFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
     const std::optional<SourceSpan> span = spanForToken(keyword);
-    return withSpan(std::make_unique<StructDeclStmt>(std::move(name), std::move(fields)), span);
+    return withSpan(
+        std::make_unique<StructDeclStmt>(
+            std::move(name), std::move(parsedTypeParameters), std::move(fields)),
+        span);
 }
 
 StmtPtr Parser::enumDeclaration()
@@ -1102,21 +1106,78 @@ ExprPtr Parser::structConstructor()
 {
     Token name = consume(TokenType::Identifier, "expected struct constructor name");
     const std::optional<SourceSpan> span = spanForToken(name);
+    std::vector<TypeAnnotation> typeArguments;
+    if (check(TokenType::Less)) {
+        typeArguments = explicitTypeArguments();
+    }
     consume(TokenType::LeftBrace, "expected `{` after struct constructor name");
     std::vector<StructField> fields = structLiteralFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
     return withSpan(
-        std::make_unique<StructConstructExpr>(std::nullopt, std::move(name), std::move(fields)),
+        std::make_unique<StructConstructExpr>(
+            std::nullopt, std::move(name), std::move(typeArguments), std::move(fields)),
         span);
+}
+
+bool Parser::isStructConstructorStart() const
+{
+    if (!check(TokenType::Identifier)) {
+        return false;
+    }
+    std::size_t index = current_ + 1;
+    if (index < tokens_.size() && tokens_[index].type == TokenType::LeftBrace) {
+        return true;
+    }
+    if (index >= tokens_.size() || tokens_[index].type != TokenType::Less) {
+        return false;
+    }
+    int depth = 0;
+    for (; index < tokens_.size(); ++index) {
+        if (tokens_[index].type == TokenType::Less) {
+            ++depth;
+        } else if (tokens_[index].type == TokenType::Greater) {
+            --depth;
+            if (depth == 0) {
+                return index + 1 < tokens_.size()
+                    && tokens_[index + 1].type == TokenType::LeftBrace;
+            }
+        } else if (tokens_[index].type == TokenType::EndOfFile) {
+            return false;
+        }
+    }
+    return false;
 }
 
 bool Parser::isQualifiedStructConstructorStart() const
 {
-    return check(TokenType::Identifier)
-        && current_ + 3 < tokens_.size()
-        && tokens_[current_ + 1].type == TokenType::Dot
-        && tokens_[current_ + 2].type == TokenType::Identifier
-        && tokens_[current_ + 3].type == TokenType::LeftBrace;
+    if (!check(TokenType::Identifier)
+        || current_ + 2 >= tokens_.size()
+        || tokens_[current_ + 1].type != TokenType::Dot
+        || tokens_[current_ + 2].type != TokenType::Identifier) {
+        return false;
+    }
+    std::size_t index = current_ + 3;
+    if (index < tokens_.size() && tokens_[index].type == TokenType::LeftBrace) {
+        return true;
+    }
+    if (index >= tokens_.size() || tokens_[index].type != TokenType::Less) {
+        return false;
+    }
+    int depth = 0;
+    for (; index < tokens_.size(); ++index) {
+        if (tokens_[index].type == TokenType::Less) {
+            ++depth;
+        } else if (tokens_[index].type == TokenType::Greater) {
+            --depth;
+            if (depth == 0) {
+                return index + 1 < tokens_.size()
+                    && tokens_[index + 1].type == TokenType::LeftBrace;
+            }
+        } else if (tokens_[index].type == TokenType::EndOfFile) {
+            return false;
+        }
+    }
+    return false;
 }
 
 ExprPtr Parser::qualifiedStructConstructor()
@@ -1125,11 +1186,16 @@ ExprPtr Parser::qualifiedStructConstructor()
     const std::optional<SourceSpan> span = spanForToken(qualifier);
     consume(TokenType::Dot, "expected `.` after namespace alias");
     Token name = consume(TokenType::Identifier, "expected struct constructor name after `.`");
+    std::vector<TypeAnnotation> typeArguments;
+    if (check(TokenType::Less)) {
+        typeArguments = explicitTypeArguments();
+    }
     consume(TokenType::LeftBrace, "expected `{` after struct constructor name");
     std::vector<StructField> fields = structLiteralFields();
     consume(TokenType::RightBrace, "expected `}` after struct fields");
     return withSpan(
-        std::make_unique<StructConstructExpr>(std::move(qualifier), std::move(name), std::move(fields)),
+        std::make_unique<StructConstructExpr>(
+            std::move(qualifier), std::move(name), std::move(typeArguments), std::move(fields)),
         span);
 }
 
@@ -1189,7 +1255,7 @@ ExprPtr Parser::primary()
     if (allowStructConstructors_ && isQualifiedStructConstructorStart()) {
         return qualifiedStructConstructor();
     }
-    if (allowStructConstructors_ && check(TokenType::Identifier) && checkNext(TokenType::LeftBrace)) {
+    if (allowStructConstructors_ && isStructConstructorStart()) {
         return structConstructor();
     }
     if (match(TokenType::Identifier)) {

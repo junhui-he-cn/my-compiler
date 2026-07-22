@@ -16,11 +16,12 @@ TypeInfo simpleType(StaticType kind)
     return result;
 }
 
-TypeInfo namedStructType(std::string name)
+TypeInfo namedStructType(std::string name, std::vector<TypeInfo> typeArguments)
 {
     TypeInfo result;
     result.kind = StaticType::Struct;
     result.structName = std::move(name);
+    result.typeArguments = std::move(typeArguments);
     return result;
 }
 
@@ -147,7 +148,18 @@ std::string typeInfoName(const TypeInfo& type)
     }
 
     if (type.kind == StaticType::Struct && type.structName) {
-        return *type.structName;
+        std::string result = *type.structName;
+        if (!type.typeArguments.empty()) {
+            result += '<';
+            for (std::size_t i = 0; i < type.typeArguments.size(); ++i) {
+                if (i != 0) {
+                    result += ", ";
+                }
+                result += typeInfoName(type.typeArguments[i]);
+            }
+            result += '>';
+        }
+        return result;
     }
 
     if (type.kind == StaticType::Enum && type.enumName) {
@@ -240,7 +252,17 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
     }
     if (expected.kind == StaticType::Struct) {
         if (expected.structName || actual.structName) {
-            return expected.structName == actual.structName;
+            if (expected.structName != actual.structName
+                || expected.typeArguments.size() != actual.typeArguments.size()) {
+                return false;
+            }
+            for (std::size_t i = 0; i < expected.typeArguments.size(); ++i) {
+                if (!compatible(expected.typeArguments[i], actual.typeArguments[i])
+                    || !compatible(actual.typeArguments[i], expected.typeArguments[i])) {
+                    return false;
+                }
+            }
+            return true;
         }
         return true;
     }

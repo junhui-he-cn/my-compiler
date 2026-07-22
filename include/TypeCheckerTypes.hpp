@@ -25,6 +25,8 @@ struct StructFieldType {
 struct StructTypeDecl {
     Token name;
     std::vector<StructFieldType> fields;
+    std::vector<std::string> genericParameters;
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
 };
 
 struct EnumVariantType {

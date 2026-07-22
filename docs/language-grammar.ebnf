@@ -32,7 +32,7 @@ typeParameters = "<", typeParameter,
 
 typeParameter  = identifier, [ ":", typeExpr ] ;
 
-structDecl  = "struct", identifier,
+structDecl  = "struct", identifier, [ typeParameters ],
               "{", [ structFields ], "}" ;
 
 enumDecl    = "enum", identifier, [ typeParameters ],
@@ -228,7 +228,8 @@ mapEntry    = expression, ":", expression ;
    when Result is an enum type. *)
 
 
-structConstructor = [ identifier, "." ], identifier, "{", [ fields ], "}" ;
+structConstructor = [ identifier, "." ], identifier, [ typeArguments ],
+                     "{", [ fields ], "}" ;
 
 fields      = field,
               { ",", field } ;

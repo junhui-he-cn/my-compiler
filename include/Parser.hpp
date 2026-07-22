@@ -94,6 +94,7 @@ private:
     ExprPtr arrayLiteral(Token bracket);
     ExprPtr mapLiteral(Token brace);
     std::vector<StructField> structLiteralFields();
+    bool isStructConstructorStart() const;
     ExprPtr structConstructor();
     ExprPtr qualifiedStructConstructor();
     bool isQualifiedStructConstructorStart() const;

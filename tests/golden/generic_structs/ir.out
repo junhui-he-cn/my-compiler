@@ -1,0 +1,50 @@
+IR
+0000  v0 = constant #0 1
+0001  v1 = struct Box {value: v0}
+0002  store_var @2 inferred#0, v1
+0003  v2 = constant #1 2
+0004  v3 = struct Box {value: v2}
+0005  store_var @5 explicit#1, v3
+0006  v4 = constant #2 3
+0007  v5 = struct Box {value: v4}
+0008  store_var @8 annotated#2, v5
+0009  v6 = constant #3 "text"
+0010  v7 = struct Box {value: v6}
+0011  store_var @11 textBox#3, v7
+0012  v8 = constant #4 4
+0013  v9 = struct NumberBox {value: v8}
+0014  store_var @14 bounded#4, v9
+0015  v10 = load_var @15 inferred#0
+0016  v11 = constant #5 5
+0017  v12 = assign_field v10.value, v11
+0018  v13 = load_var @17 inferred#0
+0019  v14 = field v13.value
+0020  print v14
+0021  v15 = load_var @19 explicit#1
+0022  v16 = field v15.value
+0023  print v16
+0024  v17 = load_var @21 annotated#2
+0025  v18 = field v17.value
+0026  print v18
+0027  v19 = load_var @23 textBox#3
+0028  v20 = field v19.value
+0029  print v20
+0030  v21 = load_var @25 bounded#4
+0031  v22 = field v21.value
+0032  print v22
+0033  v23 = load_var @27 explicit#1
+0034  v24 = native_call @28 typeOf(v23)
+0035  print v24
+0036  v25 = load_var @29 explicit#1
+0037  v27 = field v25.value
+0038  v28 = constant #6 2
+0039  v29 = equal v27, v28
+0040  jump_if_false v29, 0044
+0041  v30 = constant #7 "two"
+0042  v26 = copy v30
+0043  jump 0048
+0044  v31 = field v25.value
+0045  v32 = constant #8 "other"
+0046  v26 = copy v32
+0047  jump 0048
+0048  print v26

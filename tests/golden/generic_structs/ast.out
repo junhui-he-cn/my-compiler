@@ -1,0 +1,16 @@
+Program
+  Struct Box<T> {value: T}
+  Struct NumberBox<T: number> {value: T}
+  Let inferred = (construct Box value: 1)
+  Let explicit = (construct Box<number> value: 2)
+  Let annotated: Box<number> = (construct Box value: 3)
+  Let textBox = (construct Box value: "text")
+  Let bounded = (construct NumberBox value: 4)
+  Expr (= (field inferred value) 5)
+  Print (field inferred value)
+  Print (field explicit value)
+  Print (field annotated value)
+  Print (field textBox value)
+  Print (field bounded value)
+  Print (call typeOf explicit)
+  Print (match explicit (arm Box {value: 2} "two") (arm Box {value: _} "other"))

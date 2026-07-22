@@ -19,6 +19,11 @@ int main()
         {t}, t, {"T"}, {std::make_shared<TypeInfo>(number)});
     assert(typeInfoName(identity) == "fun<T: number>(T): T");
 
+    const TypeInfo boxedNumber = namedStructType("Box", {number});
+    assert(typeInfoName(boxedNumber) == "Box<number>");
+    assert(compatible(boxedNumber, namedStructType("Box", {number})));
+    assert(!compatible(boxedNumber, namedStructType("Box", {simpleType(StaticType::String)})));
+
     const TypeInfo nested = arrayType(t);
     assert(compatible(nested, arrayType(typeParameterType("T"))));
     assert(!compatible(nested, arrayType(simpleType(StaticType::Number))));

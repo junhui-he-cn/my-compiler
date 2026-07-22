@@ -684,7 +684,11 @@ void TypeChecker::predeclareStructDeclaration(const StructDeclStmt& statement)
         throw TypeError(statement.name, "duplicate struct `" + statement.name.lexeme + "`");
     }
 
-    StructTypeDecl declaration{statement.name, {}};
+    StructTypeDecl declaration{
+        statement.name,
+        {},
+        typeParameterNames(statement.typeParameters),
+        {}};
     structTypes_.emplace(statement.name.lexeme, std::move(declaration));
     structDeclarations_.emplace(statement.name.lexeme, &statement);
     structCheckStates_.emplace(statement.name.lexeme, StructCheckState::Declared);
@@ -700,6 +704,23 @@ void TypeChecker::predeclareStructDeclarations(const std::vector<StmtPtr>& state
         if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(statement.get())) {
             predeclareStructDeclaration(*structDecl);
         }
+    }
+
+}
+
+void TypeChecker::resolvePredeclaredStructParameters(const std::vector<StmtPtr>& statements)
+{
+    for (const auto& statement : statements) {
+        const auto* structDecl = dynamic_cast<const StructDeclStmt*>(statement.get());
+        if (!structDecl) {
+            continue;
+        }
+        beginTypeParameterScope(structDecl->typeParameters);
+        std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints
+            = typeParameterConstraints(structDecl->typeParameters);
+        endTypeParameterScope();
+        structTypes_.at(structDecl->name.lexeme).genericParameterConstraints
+            = std::move(genericParameterConstraints);
     }
 }
 
@@ -726,6 +747,10 @@ void TypeChecker::predeclareEnumDeclarations(const std::vector<StmtPtr>& stateme
         }
     }
 
+}
+
+void TypeChecker::resolvePredeclaredEnumParameters(const std::vector<StmtPtr>& statements)
+{
     for (const auto& statement : statements) {
         const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(statement.get());
         if (!enumDecl) {
@@ -744,6 +769,8 @@ void TypeChecker::checkStatementList(const std::vector<StmtPtr>& statements)
 {
     predeclareStructDeclarations(statements);
     predeclareEnumDeclarations(statements);
+    resolvePredeclaredStructParameters(statements);
+    resolvePredeclaredEnumParameters(statements);
     for (const auto& statement : statements) {
         checkStatement(*statement);
     }
@@ -963,6 +990,8 @@ void TypeChecker::buildModuleInterfaces(const Program& program)
             for (const auto& entry : *structExports) {
                 ModuleInterfaceStruct structInfo;
                 structInfo.name = entry.first;
+                structInfo.genericParameters = entry.second.genericParameters;
+                structInfo.genericParameterConstraints = entry.second.genericParameterConstraints;
                 for (const StructFieldType& field : entry.second.fields) {
                     structInfo.fields.push_back(ModuleInterfaceField{field.name.lexeme, field.type});
                 }
@@ -1136,6 +1165,12 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
     for (const auto& entry : imported.structs) {
         StructTypeDecl qualified = entry.second;
         qualified.name.lexeme = alias.lexeme + "." + entry.first;
+        for (std::shared_ptr<TypeInfo>& constraint : qualified.genericParameterConstraints) {
+            if (constraint) {
+                constraint = std::make_shared<TypeInfo>(
+                    qualifyNamespaceType(*constraint, alias.lexeme, imported.structs, imported.enums));
+            }
+        }
         for (StructFieldType& field : qualified.fields) {
             field.type = qualifyNamespaceType(field.type, alias.lexeme, imported.structs, imported.enums);
         }
@@ -1501,6 +1536,64 @@ const TypeChecker::EnumVariantType* TypeChecker::findEnumVariant(
     return nullptr;
 }
 
+TypeInfo TypeChecker::resolveNamedStructAnnotation(
+    const TypeAnnotation& typeName,
+    std::string structName,
+    const StructTypeDecl& structType) const
+{
+    if (structType.genericParameters.empty()) {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token, "struct `" + structName + "` is not generic");
+        }
+        return namedStructType(std::move(structName));
+    }
+
+    if (typeName.typeArguments.size() != structType.genericParameters.size()) {
+        throw TypeError(typeName.token,
+            "struct `" + structName + "` expects "
+                + std::to_string(structType.genericParameters.size())
+                + " type arguments but got "
+                + std::to_string(typeName.typeArguments.size()));
+    }
+
+    std::vector<TypeInfo> arguments;
+    arguments.reserve(typeName.typeArguments.size());
+    for (const TypeAnnotation& argument : typeName.typeArguments) {
+        arguments.push_back(resolveAnnotation(argument));
+    }
+
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints
+        = structType.genericParameterConstraints;
+    const std::size_t namespaceSeparator = structName.find('.');
+    if (namespaceSeparator != std::string::npos) {
+        const std::string alias = structName.substr(0, namespaceSeparator);
+        if (const NamespaceImport* namespaceImport = findNamespace(alias)) {
+            for (std::shared_ptr<TypeInfo>& constraint : genericParameterConstraints) {
+                if (constraint) {
+                    constraint = std::make_shared<TypeInfo>(
+                        qualifyNamespaceType(
+                            *constraint,
+                            alias,
+                            namespaceImport->structs,
+                            namespaceImport->enums));
+                }
+            }
+        }
+    }
+
+    TypeSubstitutions substitutions;
+    for (std::size_t i = 0; i < structType.genericParameters.size(); ++i) {
+        substitutions.emplace(structType.genericParameters[i], arguments[i]);
+    }
+    validateGenericTypeArguments(
+        structType.genericParameters,
+        genericParameterConstraints,
+        substitutions,
+        typeName.token,
+        "struct " + structName);
+    return namedStructType(std::move(structName), std::move(arguments));
+}
+
 TypeInfo TypeChecker::resolveNamedEnumAnnotation(
     const TypeAnnotation& typeName,
     std::string enumName,
@@ -1624,6 +1717,14 @@ TypeInfo TypeChecker::resolveSimpleStructFieldAnnotation(const TypeAnnotation& t
         return simpleType(StaticType::Nil);
     }
 
+    if (const TypeInfo* typeParameter = findTypeParameter(typeName.token.lexeme)) {
+        if (!typeName.typeArguments.empty()) {
+            throw TypeError(typeName.token,
+                "type parameter `" + typeName.token.lexeme + "` is not generic");
+        }
+        return *typeParameter;
+    }
+
     const auto state = structCheckStates_.find(typeName.token.lexeme);
     if (state != structCheckStates_.end()) {
         if (state->second == StructCheckState::Checking) {
@@ -1637,17 +1738,17 @@ TypeInfo TypeChecker::resolveSimpleStructFieldAnnotation(const TypeAnnotation& t
             }
             checkStructDeclaration(*declaration->second);
         }
-        if (!typeName.typeArguments.empty()) {
-            throw TypeError(typeName.token, "struct `" + typeName.token.lexeme + "` is not generic");
+        const StructTypeDecl* structType = findStructType(typeName.token.lexeme);
+        if (!structType) {
+            throw TypeError(typeName.token, "unknown type `" + typeName.token.lexeme + "`");
         }
-        return namedStructType(typeName.token.lexeme);
+        return resolveNamedStructAnnotation(
+            typeName, typeName.token.lexeme, *structType);
     }
 
-    if (findStructType(typeName.token.lexeme)) {
-        if (!typeName.typeArguments.empty()) {
-            throw TypeError(typeName.token, "struct `" + typeName.token.lexeme + "` is not generic");
-        }
-        return namedStructType(typeName.token.lexeme);
+    if (const StructTypeDecl* structType = findStructType(typeName.token.lexeme)) {
+        return resolveNamedStructAnnotation(
+            typeName, typeName.token.lexeme, *structType);
     }
     if (const EnumTypeDecl* enumType = findEnumType(typeName.token.lexeme)) {
         return resolveNamedEnumAnnotation(typeName, typeName.token.lexeme, *enumType);
@@ -1667,7 +1768,12 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
     }
 
     structCheckStates_[statement.name.lexeme] = StructCheckState::Checking;
-    StructTypeDecl declaration{statement.name, {}};
+    beginTypeParameterScope(statement.typeParameters);
+    StructTypeDecl declaration{
+        statement.name,
+        {},
+        typeParameterNames(statement.typeParameters),
+        typeParameterConstraints(statement.typeParameters)};
     std::unordered_map<std::string, Token> fieldNames;
     for (const StructFieldDecl& field : statement.fields) {
         if (fieldNames.find(field.name.lexeme) != fieldNames.end()) {
@@ -1678,6 +1784,7 @@ void TypeChecker::checkStructDeclaration(const StructDeclStmt& statement)
         declaration.fields.push_back(StructFieldType{field.name, resolveStructFieldAnnotation(field)});
     }
 
+    endTypeParameterScope();
     structTypes_[statement.name.lexeme] = std::move(declaration);
     structCheckStates_[statement.name.lexeme] = StructCheckState::Checked;
 }
@@ -1881,8 +1988,13 @@ TypeInfo TypeChecker::qualifyNamespaceType(
             qualifyNamespaceType(*result.typeParameterConstraint, alias, structs, enums));
         return result;
     }
-    if (result.kind == StaticType::Struct && result.structName && structs.find(*result.structName) != structs.end()) {
-        result.structName = alias + "." + *result.structName;
+    if (result.kind == StaticType::Struct) {
+        for (TypeInfo& argument : result.typeArguments) {
+            argument = qualifyNamespaceType(argument, alias, structs, enums);
+        }
+        if (result.structName && structs.find(*result.structName) != structs.end()) {
+            result.structName = alias + "." + *result.structName;
+        }
         return result;
     }
     if (result.kind == StaticType::Enum && result.enumName && enums.find(*result.enumName) != enums.end()) {
@@ -2075,6 +2187,10 @@ void TypeChecker::checkImpl(const ImplStmt& statement)
     if (!structType) {
         throw TypeError(statement.typeName, "unknown struct type `" + statement.typeName.lexeme + "` in impl");
     }
+    if (!structType->genericParameters.empty()) {
+        throw TypeError(statement.typeName,
+            "impl for generic struct `" + statement.typeName.lexeme + "` is not supported");
+    }
 
     auto& structMethods = methods_[statement.typeName.lexeme];
     for (const MethodDecl& method : statement.methods) {
@@ -2207,6 +2323,16 @@ void TypeChecker::inferTypeArguments(
         && expected.keyType && actual.keyType && expected.valueType && actual.valueType) {
         inferTypeArguments(*expected.keyType, *actual.keyType, substitutions, callToken);
         inferTypeArguments(*expected.valueType, *actual.valueType, substitutions, callToken);
+        return;
+    }
+
+    if (expected.kind == StaticType::Struct && actual.kind == StaticType::Struct
+        && expected.structName && actual.structName
+        && expected.structName == actual.structName
+        && expected.typeArguments.size() == actual.typeArguments.size()) {
+        for (std::size_t i = 0; i < expected.typeArguments.size(); ++i) {
+            inferTypeArguments(expected.typeArguments[i], actual.typeArguments[i], substitutions, callToken);
+        }
         return;
     }
 
@@ -2590,6 +2716,21 @@ const TypeChecker::StructFieldType* TypeChecker::findStructField(
     return nullptr;
 }
 
+TypeInfo TypeChecker::structFieldTypeForValue(
+    const TypeInfo& objectType,
+    const StructTypeDecl& structType,
+    const StructFieldType& field) const
+{
+    TypeSubstitutions substitutions;
+    for (std::size_t i = 0; i < structType.genericParameters.size(); ++i) {
+        if (i < objectType.typeArguments.size()) {
+            substitutions.emplace(
+                structType.genericParameters[i], objectType.typeArguments[i]);
+        }
+    }
+    return substituteTypeParameters(field.type, substitutions);
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkNamedStructFields(
     const Token& diagnosticToken,
     const TypeInfo& declared,
@@ -2614,10 +2755,13 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructFields(
             throw TypeError(diagnosticToken,
                 "missing field `" + expectedField.name.lexeme + "` for struct `" + structType->name.lexeme + "`");
         }
-        const CheckedExpression actual = checkExpressionInfo(*found->second->value, &expectedField.type);
-        if (!compatible(expectedField.type, actual.type)) {
+        const TypeInfo expectedFieldType = structFieldTypeForValue(
+            declared, *structType, expectedField);
+        const CheckedExpression actual = checkExpressionInfo(
+            *found->second->value, &expectedFieldType);
+        if (!compatible(expectedFieldType, actual.type)) {
             throw TypeError(found->second->name,
-                "field `" + expectedField.name.lexeme + "` expects " + typeInfoName(expectedField.type)
+                "field `" + expectedField.name.lexeme + "` expects " + typeInfoName(expectedFieldType)
                     + ", got " + typeInfoName(actual.type));
         }
     }
@@ -2632,7 +2776,9 @@ TypeChecker::CheckedExpression TypeChecker::checkNamedStructFields(
     return CheckedExpression{declared};
 }
 
-TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(const StructConstructExpr& expression)
+TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(
+    const StructConstructExpr& expression,
+    const TypeInfo* expectedType)
 {
     if (expression.qualifier) {
         const NamespaceImport* namespaceImport = findNamespace(expression.qualifier->lexeme);
@@ -2650,7 +2796,107 @@ TypeChecker::CheckedExpression TypeChecker::checkStructConstructor(const StructC
     if (!structType) {
         throw TypeError(expression.name, "unknown struct type `" + typeName + "`");
     }
-    return checkNamedStructFields(expression.name, namedStructType(typeName), expression.fields);
+
+    const bool generic = !structType->genericParameters.empty();
+    if (!generic && !expression.typeArguments.empty()) {
+        throw TypeError(expression.name, "struct `" + typeName + "` is not generic");
+    }
+
+    const TypeInfo* expectedStructType = expectedType;
+    if (expectedStructType && isNullable(*expectedStructType)) {
+        expectedStructType = expectedStructType->nullableOf.get();
+    }
+    const bool expectedMatches = expectedStructType
+        && expectedStructType->kind == StaticType::Struct
+        && expectedStructType->structName
+        && *expectedStructType->structName == typeName;
+
+    TypeSubstitutions substitutions;
+    if (generic && !expression.typeArguments.empty()) {
+        if (expression.typeArguments.size() != structType->genericParameters.size()) {
+            throw TypeError(expression.name,
+                "struct `" + typeName + "` expects "
+                    + std::to_string(structType->genericParameters.size())
+                    + " type arguments but got "
+                    + std::to_string(expression.typeArguments.size()));
+        }
+        for (std::size_t i = 0; i < expression.typeArguments.size(); ++i) {
+            substitutions.emplace(
+                structType->genericParameters[i],
+                resolveAnnotation(expression.typeArguments[i]));
+        }
+    }
+
+    if (generic && expression.typeArguments.empty() && expectedMatches) {
+        if (expectedStructType->typeArguments.size() != structType->genericParameters.size()) {
+            throw TypeError(expression.name,
+                "struct `" + typeName + "` expects "
+                    + std::to_string(structType->genericParameters.size())
+                    + " type arguments but got "
+                    + std::to_string(expectedStructType->typeArguments.size()));
+        }
+        for (std::size_t i = 0; i < structType->genericParameters.size(); ++i) {
+            substitutions.emplace(
+                structType->genericParameters[i], expectedStructType->typeArguments[i]);
+        }
+    }
+
+    std::unordered_map<std::string, const StructField*> literalFields;
+    for (const StructField& field : expression.fields) {
+        if (!literalFields.emplace(field.name.lexeme, &field).second) {
+            throw TypeError(field.name,
+                "duplicate field `" + field.name.lexeme + "` in struct literal");
+        }
+    }
+
+    for (const StructFieldType& field : structType->fields) {
+        const auto found = literalFields.find(field.name.lexeme);
+        if (found == literalFields.end()) {
+            continue;
+        }
+        const TypeInfo expectedFieldType = substituteTypeParameters(field.type, substitutions);
+        const CheckedExpression actual = checkExpressionInfo(
+            *found->second->value, &expectedFieldType);
+        if (!generic || !hasEscapingTypeParameter(expectedFieldType, {})) {
+            if (!compatible(expectedFieldType, actual.type)) {
+                throw TypeError(found->second->name,
+                    "field `" + field.name.lexeme + "` expects "
+                        + typeInfoName(expectedFieldType) + ", got "
+                        + typeInfoName(actual.type));
+            }
+        }
+        if (generic && expression.typeArguments.empty() && !expectedMatches) {
+            inferTypeArguments(field.type, actual.type, substitutions, expression.name);
+        }
+    }
+
+    std::vector<TypeInfo> typeArguments;
+    if (generic) {
+        for (const std::string& parameter : structType->genericParameters) {
+            if (substitutions.find(parameter) == substitutions.end()) {
+                throw TypeError(expression.name,
+                    "cannot infer type parameter " + parameter + " for struct " + typeName);
+            }
+        }
+        validateGenericTypeArguments(
+            structType->genericParameters,
+            structType->genericParameterConstraints,
+            substitutions,
+            expression.name,
+            "struct " + typeName);
+        typeArguments.reserve(structType->genericParameters.size());
+        for (const std::string& parameter : structType->genericParameters) {
+            typeArguments.push_back(substitutions.at(parameter));
+        }
+    }
+
+    const TypeInfo declared = namedStructType(typeName, std::move(typeArguments));
+    if (expectedMatches && !compatible(*expectedStructType, declared)) {
+        throw TypeError(expression.name,
+            "struct constructor produces " + typeInfoName(declared)
+                + ", expected " + typeInfoName(*expectedStructType));
+    }
+    return checkNamedStructFields(expression.name, declared, expression.fields);
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(
@@ -2855,9 +3101,11 @@ bool TypeChecker::checkPattern(
             std::unordered_set<std::string> nestedLiterals;
             bool nestedCoversNil = false;
             bool nestedCoversStruct = false;
+            const TypeInfo fieldType = structFieldTypeForValue(
+                *structExpectedType, *structType, *structField);
             const bool fieldUniversal = checkPattern(
                 *field.pattern,
-                structField->type,
+                fieldType,
                 nestedCoverage,
                 nestedLiterals,
                 nestedCoversNil,
@@ -3577,7 +3825,7 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* construct = dynamic_cast<const StructConstructExpr*>(&expression)) {
-        return checkStructConstructor(*construct);
+        return checkStructConstructor(*construct, expectedType);
     }
 
     if (const auto* field = dynamic_cast<const FieldAccessExpr*>(&expression)) {
@@ -3603,7 +3851,8 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
                 throw TypeError(field->name,
                     "struct `" + *object.structName + "` has no field `" + field->name.lexeme + "`");
             }
-            return CheckedExpression{structField->type};
+            return CheckedExpression{
+                structFieldTypeForValue(object, *structType, *structField)};
         }
         return CheckedExpression{unknownType()};
     }
@@ -4848,7 +5097,7 @@ TypeChecker::CheckedExpression TypeChecker::checkIndexCompoundAssignment(const I
     return CheckedExpression{simpleType(StaticType::Number)};
 }
 
-const TypeChecker::StructFieldType* TypeChecker::checkStructFieldTarget(
+std::optional<TypeInfo> TypeChecker::checkStructFieldTarget(
     const Expr& objectExpression,
     const Token& name,
     const std::string& nonStructMessage)
@@ -4866,26 +5115,26 @@ const TypeChecker::StructFieldType* TypeChecker::checkStructFieldTarget(
             throw TypeError(name,
                 "struct `" + *object.structName + "` has no field `" + name.lexeme + "`");
         }
-        return structField;
+        return structFieldTypeForValue(object, *structType, *structField);
     }
 
-    return nullptr;
+    return std::nullopt;
 }
 
 TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssignExpr& expression)
 {
-    const StructFieldType* structField = checkStructFieldTarget(
+    const std::optional<TypeInfo> structField = checkStructFieldTarget(
         *expression.object, expression.name, "can only assign fields on structs");
-    const TypeInfo* expectedFieldType = structField ? &structField->type : nullptr;
+    const TypeInfo* expectedFieldType = structField ? &*structField : nullptr;
     const CheckedExpression value = checkExpressionInfo(*expression.value, expectedFieldType);
 
     if (structField) {
-        if (!compatible(structField->type, value.type)) {
+        if (!compatible(*structField, value.type)) {
             throw TypeError(expression.name,
-                "field `" + expression.name.lexeme + "` expects " + typeInfoName(structField->type)
+                "field `" + expression.name.lexeme + "` expects " + typeInfoName(*structField)
                     + ", got " + typeInfoName(value.type));
         }
-        return CheckedExpression{structField->type};
+        return CheckedExpression{*structField};
     }
 
     return value;
@@ -4893,10 +5142,10 @@ TypeChecker::CheckedExpression TypeChecker::checkFieldAssignment(const FieldAssi
 
 TypeChecker::CheckedExpression TypeChecker::checkFieldCompoundAssignment(const FieldCompoundAssignExpr& expression)
 {
-    const StructFieldType* structField = checkStructFieldTarget(
+    const std::optional<TypeInfo> structField = checkStructFieldTarget(
         *expression.object, expression.name, "can only assign fields on structs");
     if (structField) {
-        checkKnownNumber(expression.op, structField->type, "compound assignment target must be number, got ");
+        checkKnownNumber(expression.op, *structField, "compound assignment target must be number, got ");
     }
 
     const CheckedExpression value = checkExpressionInfo(*expression.value);
@@ -4944,13 +5193,12 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
         if (!namespaceImport) {
             throw TypeError(typeName.qualifier, "unknown module namespace `" + typeName.qualifier.lexeme + "`");
         }
-        if (namespaceImport->structs.find(typeName.token.lexeme) != namespaceImport->structs.end()) {
-            if (!typeName.typeArguments.empty()) {
-                throw TypeError(typeName.token,
-                    "struct `" + qualifiedStructName(typeName.qualifier, typeName.token)
-                        + "` is not generic");
-            }
-            return namedStructType(qualifiedStructName(typeName.qualifier, typeName.token));
+        const auto structFound = namespaceImport->structs.find(typeName.token.lexeme);
+        if (structFound != namespaceImport->structs.end()) {
+            return resolveNamedStructAnnotation(
+                typeName,
+                qualifiedStructName(typeName.qualifier, typeName.token),
+                structFound->second);
         }
         const auto enumFound = namespaceImport->enums.find(typeName.token.lexeme);
         if (enumFound != namespaceImport->enums.end()) {
@@ -4995,11 +5243,9 @@ TypeInfo TypeChecker::resolveAnnotation(const TypeAnnotation& typeName) const
         }
         return simpleType(StaticType::Nil);
     }
-    if (findStructType(typeName.token.lexeme)) {
-        if (!typeName.typeArguments.empty()) {
-            throw TypeError(typeName.token, "struct `" + typeName.token.lexeme + "` is not generic");
-        }
-        return namedStructType(typeName.token.lexeme);
+    if (const StructTypeDecl* structType = findStructType(typeName.token.lexeme)) {
+        return resolveNamedStructAnnotation(
+            typeName, typeName.token.lexeme, *structType);
     }
     if (const EnumTypeDecl* enumType = findEnumType(typeName.token.lexeme)) {
         return resolveNamedEnumAnnotation(typeName, typeName.token.lexeme, *enumType);

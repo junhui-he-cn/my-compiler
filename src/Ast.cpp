@@ -289,6 +289,7 @@ void writeInlineStmt(std::ostream& out, const Stmt& stmt)
 
     if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(&stmt)) {
         out << "(struct " << structDecl->name.lexeme;
+        writeTypeParameterList(out, structDecl->typeParameters);
         for (const StructFieldDecl& field : structDecl->fields) {
             out << ' ' << field.name.lexeme << ": ";
             writeTypeAnnotation(out, field.typeName);
@@ -636,9 +637,14 @@ void MapExpr::print(std::ostream& out) const
     out << ')';
 }
 
-StructConstructExpr::StructConstructExpr(std::optional<Token> qualifier, Token name, std::vector<StructField> fields)
+StructConstructExpr::StructConstructExpr(
+    std::optional<Token> qualifier,
+    Token name,
+    std::vector<TypeAnnotation> typeArguments,
+    std::vector<StructField> fields)
     : qualifier(std::move(qualifier))
     , name(std::move(name))
+    , typeArguments(std::move(typeArguments))
     , fields(std::move(fields))
 {
 }
@@ -650,6 +656,7 @@ void StructConstructExpr::print(std::ostream& out) const
         out << qualifier->lexeme << '.';
     }
     out << name.lexeme;
+    writeTypeArguments(out, typeArguments);
     for (const StructField& field : fields) {
         out << ' ' << field.name.lexeme << ": ";
         writeExpr(out, field.value);
@@ -938,8 +945,12 @@ void MatchStmt::print(std::ostream& out, int indent) const
     }
 }
 
-StructDeclStmt::StructDeclStmt(Token name, std::vector<StructFieldDecl> fields)
+StructDeclStmt::StructDeclStmt(
+    Token name,
+    std::vector<TypeParameter> typeParameters,
+    std::vector<StructFieldDecl> fields)
     : name(std::move(name))
+    , typeParameters(std::move(typeParameters))
     , fields(std::move(fields))
 {
 }
@@ -947,7 +958,9 @@ StructDeclStmt::StructDeclStmt(Token name, std::vector<StructFieldDecl> fields)
 void StructDeclStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
-    out << "Struct " << name.lexeme << " {";
+    out << "Struct " << name.lexeme;
+    writeTypeParameterList(out, typeParameters);
+    out << " {";
     for (std::size_t i = 0; i < fields.size(); ++i) {
         if (i != 0) {
             out << ", ";

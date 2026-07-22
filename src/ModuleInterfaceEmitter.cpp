@@ -81,7 +81,22 @@ void writeModuleInterfaceText(std::ostream& out, const std::vector<ModuleInterfa
             return structInfo.name;
         });
         for (ModuleInterfaceStruct structInfo : structs) {
-            out << "  export struct " << structInfo.name << "\n";
+            out << "  export struct " << structInfo.name;
+            if (!structInfo.genericParameters.empty()) {
+                out << '<';
+                for (std::size_t i = 0; i < structInfo.genericParameters.size(); ++i) {
+                    if (i != 0) {
+                        out << ", ";
+                    }
+                    out << structInfo.genericParameters[i];
+                    if (i < structInfo.genericParameterConstraints.size()
+                        && structInfo.genericParameterConstraints[i]) {
+                        out << ": " << typeInfoName(*structInfo.genericParameterConstraints[i]);
+                    }
+                }
+                out << '>';
+            }
+            out << '\n';
             for (const ModuleInterfaceField& field : structInfo.fields) {
                 out << "    field " << field.name << ": " << typeInfoName(field.type) << "\n";
             }

@@ -221,11 +221,16 @@ struct StructField {
 };
 
 struct StructConstructExpr final : Expr {
-    StructConstructExpr(std::optional<Token> qualifier, Token name, std::vector<StructField> fields);
+    StructConstructExpr(
+        std::optional<Token> qualifier,
+        Token name,
+        std::vector<TypeAnnotation> typeArguments,
+        std::vector<StructField> fields);
     void print(std::ostream& out) const override;
 
     std::optional<Token> qualifier;
     Token name;
+    std::vector<TypeAnnotation> typeArguments;
     std::vector<StructField> fields;
 };
 
@@ -408,10 +413,11 @@ struct MatchStmt final : Stmt {
 };
 
 struct StructDeclStmt final : Stmt {
-    StructDeclStmt(Token name, std::vector<StructFieldDecl> fields);
+    StructDeclStmt(Token name, std::vector<TypeParameter> typeParameters, std::vector<StructFieldDecl> fields);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
+    std::vector<TypeParameter> typeParameters;
     std::vector<StructFieldDecl> fields;
 };
 

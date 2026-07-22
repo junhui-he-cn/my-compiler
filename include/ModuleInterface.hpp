@@ -27,6 +27,8 @@ struct ModuleInterfaceMethod {
 
 struct ModuleInterfaceStruct {
     std::string name;
+    std::vector<std::string> genericParameters;
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
     std::vector<ModuleInterfaceField> fields;
     std::vector<ModuleInterfaceMethod> methods;
 };

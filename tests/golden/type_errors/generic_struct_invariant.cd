@@ -1,0 +1,4 @@
+struct Box<T> { value: T }
+
+let numberBox: Box<number> = Box { value: 1 };
+let textBox: Box<string> = numberBox;

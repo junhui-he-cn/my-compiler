@@ -49,10 +49,14 @@ to existing array higher-order helpers. All forms support inferred and explicit
 call type arguments, while generic parameters are erased before IR lowering.
 Concrete type-parameter bounds such as `T: number` are checked for functions,
 methods, lambdas, generic enums, collection callbacks, and imported signatures.
+Nominal generic structs now provide the next generic container form: field types
+are substituted at `Box<T>` construction, access, assignment, and pattern sites,
+while runtime representation remains erased.
 
 Future work:
 
-- Add generic container syntax beyond the built-in `map` form.
+- Add further generic container syntax beyond the built-in `map` and nominal
+  generic struct forms.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 
@@ -70,6 +74,10 @@ Likely touch points:
 
 Goal: continue struct polish around field rules and future type-system features
 without expanding into object-system features prematurely.
+
+Generic struct declarations and instantiated field types are implemented. Keep
+generic receiver methods, recursive generic structs, and generic object-system
+features behind dedicated designs.
 
 Future work:
 - Recursive struct field types are intentionally unsupported in the current

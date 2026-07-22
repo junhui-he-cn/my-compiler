@@ -1,0 +1,5 @@
+module 0 "<repo>/tests/golden/generic_struct_imports/lib.cd"
+  export struct Box<T: number>
+    field value: T
+
+module 1 entry "<repo>/tests/golden/generic_struct_imports/input.cd"

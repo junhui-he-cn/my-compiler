@@ -1,0 +1,3 @@
+Type error at 3:6: impl for generic struct `Box` is not supported
+  impl Box {
+       ^

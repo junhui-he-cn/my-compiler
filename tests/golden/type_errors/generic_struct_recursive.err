@@ -1,0 +1,3 @@
+Type error at 1:24: recursive struct field `next` references `Node`
+  struct Node<T> { next: Node<T>? }
+                         ^

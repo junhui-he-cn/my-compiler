@@ -1,0 +1,9 @@
+Parse error at 3:17: expected type argument after `<`
+  let value = Box<> { value: 1 };
+                  ^
+Parse error at 3:26: expected `;` after expression, found Colon `:`
+  let value = Box<> { value: 1 };
+                           ^
+Parse error at 3:31: expected expression
+  let value = Box<> { value: 1 };
+                                ^

@@ -40,7 +40,7 @@ struct TypeInfo {
 
 TypeInfo unknownType();
 TypeInfo simpleType(StaticType kind);
-TypeInfo namedStructType(std::string name);
+TypeInfo namedStructType(std::string name, std::vector<TypeInfo> typeArguments = {});
 TypeInfo namedEnumType(std::string name, std::vector<TypeInfo> typeArguments = {});
 TypeInfo arrayType(TypeInfo elementType);
 TypeInfo mapType(TypeInfo keyType, TypeInfo valueType);

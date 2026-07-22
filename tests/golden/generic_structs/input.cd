@@ -1,0 +1,19 @@
+struct Box<T> { value: T }
+struct NumberBox<T: number> { value: T }
+
+let inferred = Box { value: 1 };
+let explicit = Box<number> { value: 2 };
+let annotated: Box<number> = Box { value: 3 };
+let textBox = Box { value: "text" };
+let bounded = NumberBox { value: 4 };
+inferred.value = 5;
+print inferred.value;
+print explicit.value;
+print annotated.value;
+print textBox.value;
+print bounded.value;
+print typeOf(explicit);
+print match explicit {
+  Box { value: 2 } => "two",
+  Box { value: _ } => "other",
+};

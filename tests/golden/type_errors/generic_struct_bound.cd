@@ -1,0 +1,3 @@
+struct NumberBox<T: number> { value: T }
+
+let value = NumberBox { value: "text" };

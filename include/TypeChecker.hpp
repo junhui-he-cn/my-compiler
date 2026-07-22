@@ -186,6 +186,10 @@ private:
     std::string enumConstructorTypeName(const MemberCallExpr& expression) const;
     const EnumTypeDecl* findEnumType(const std::string& name) const;
     const EnumVariantType* findEnumVariant(const EnumTypeDecl& enumType, const std::string& name) const;
+    TypeInfo resolveNamedStructAnnotation(
+        const TypeAnnotation& typeName,
+        std::string structName,
+        const StructTypeDecl& structType) const;
     TypeInfo resolveNamedEnumAnnotation(
         const TypeAnnotation& typeName,
         std::string enumName,
@@ -193,7 +197,9 @@ private:
 
     void checkStatement(const Stmt& statement);
     void predeclareStructDeclarations(const std::vector<StmtPtr>& statements);
+    void resolvePredeclaredStructParameters(const std::vector<StmtPtr>& statements);
     void predeclareEnumDeclarations(const std::vector<StmtPtr>& statements);
+    void resolvePredeclaredEnumParameters(const std::vector<StmtPtr>& statements);
     void checkStatementList(const std::vector<StmtPtr>& statements);
     void checkModule(const ModuleStmt& module);
     void checkImport(const ImportStmt& statement);
@@ -350,7 +356,7 @@ private:
     TypeInfo checkIndex(const IndexExpr& expression);
     CheckedExpression checkIndexAssignment(const IndexAssignExpr& expression);
     CheckedExpression checkIndexCompoundAssignment(const IndexCompoundAssignExpr& expression);
-    const StructFieldType* checkStructFieldTarget(
+    std::optional<TypeInfo> checkStructFieldTarget(
         const Expr& object,
         const Token& name,
         const std::string& nonStructMessage);
@@ -361,7 +367,9 @@ private:
         const Token& diagnosticToken,
         const TypeInfo& declared,
         const std::vector<StructField>& fields);
-    CheckedExpression checkStructConstructor(const StructConstructExpr& expression);
+    CheckedExpression checkStructConstructor(
+        const StructConstructExpr& expression,
+        const TypeInfo* expectedType = nullptr);
     CheckedExpression checkVariantConstructor(
         const MemberCallExpr& expression,
         const TypeInfo* expectedType);
@@ -376,6 +384,10 @@ private:
         bool& coversStruct,
         PatternBindings* deferredBindings = nullptr);
     const StructFieldType* findStructField(const StructTypeDecl& structType, const std::string& name) const;
+    TypeInfo structFieldTypeForValue(
+        const TypeInfo& objectType,
+        const StructTypeDecl& structType,
+        const StructFieldType& field) const;
     CheckedExpression checkLetInitializer(const LetStmt& statement);
     TypeInfo resolveAnnotation(const TypeAnnotation& typeName) const;
     void checkAssignable(const Token& token, const std::string& context, const TypeInfo& expected, const TypeInfo& actual) const;
