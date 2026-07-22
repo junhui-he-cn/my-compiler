@@ -1,0 +1,3 @@
+Type error at 1:9: constraint for type parameter `T` must be concrete
+  fun bad<T: [T]>(value: T): T {
+          ^

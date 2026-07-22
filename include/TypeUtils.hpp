@@ -33,7 +33,9 @@ struct TypeInfo {
     std::shared_ptr<TypeInfo> valueType;
     std::shared_ptr<TypeInfo> nullableOf;
     std::optional<std::string> typeParameterName;
+    std::shared_ptr<TypeInfo> typeParameterConstraint;
     std::vector<std::string> genericParameters;
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
 };
 
 TypeInfo unknownType();
@@ -42,11 +44,12 @@ TypeInfo namedStructType(std::string name);
 TypeInfo namedEnumType(std::string name, std::vector<TypeInfo> typeArguments = {});
 TypeInfo arrayType(TypeInfo elementType);
 TypeInfo mapType(TypeInfo keyType, TypeInfo valueType);
-TypeInfo typeParameterType(std::string name);
+TypeInfo typeParameterType(std::string name, std::optional<TypeInfo> constraint = std::nullopt);
 TypeInfo functionType(
     std::vector<TypeInfo> parameterTypes,
     TypeInfo returnType,
-    std::vector<std::string> genericParameters = {});
+    std::vector<std::string> genericParameters = {},
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints = {});
 TypeInfo nullableType(TypeInfo innerType);
 TypeInfo functionWithoutSignature();
 

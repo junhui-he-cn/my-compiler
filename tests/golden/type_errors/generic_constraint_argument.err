@@ -1,0 +1,3 @@
+Type error at 5:21: function call: type parameter T must satisfy number, got string
+  print numeric("text");
+                      ^

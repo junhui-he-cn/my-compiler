@@ -1,0 +1,45 @@
+enum Box<T: number> {
+  Value(value: T),
+}
+
+struct Holder { value: number }
+
+impl Holder {
+  fun echo<T: number>(value: T): T {
+    return value;
+  }
+}
+
+fun identity<T: number>(value: T): T {
+  return value;
+}
+
+fun pair<K, V: number>(left: K, right: V): V {
+  return right;
+}
+
+fun keep<T: number>(value: T): bool {
+  return true;
+}
+
+fun outer<T: number>(value: T): T {
+  fun inner<U: number>(nested: U): U {
+    return nested;
+  }
+  return inner(value);
+}
+
+let values: [number] = [1, 2];
+let copied = map(values, identity);
+let kept = filter(values, keep);
+let lambda = fun<T: number>(value: T): T { return value; };
+let box: Holder = Holder { value: 0 };
+let enumValue = Box.Value(6);
+print copied;
+print kept;
+print lambda(3);
+print identity<number>(4);
+print pair("key", 7);
+print box.echo(5);
+print outer(6);
+print enumValue;

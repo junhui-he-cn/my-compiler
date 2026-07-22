@@ -36,6 +36,7 @@ struct EnumVariantType {
 struct EnumTypeDecl {
     Token name;
     std::vector<std::string> genericParameters;
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
     std::vector<EnumVariantType> variants;
 };
 
@@ -45,4 +46,5 @@ struct MethodSignature {
     TypeInfo returnType;
     std::string resolvedName;
     std::vector<std::string> genericParameters;
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
 };

@@ -1,6 +1,7 @@
 #include "TypeUtils.hpp"
 
 #include <cassert>
+#include <memory>
 
 int main()
 {
@@ -9,8 +10,14 @@ int main()
     assert(compatible(t, typeParameterType("T")));
     assert(!compatible(t, typeParameterType("U")));
 
-    const TypeInfo identity = functionType({t}, t, {"T"});
-    assert(typeInfoName(identity) == "fun<T>(T): T");
+    const TypeInfo number = simpleType(StaticType::Number);
+    const TypeInfo boundedT = typeParameterType("T", number);
+    assert(compatible(number, boundedT));
+    assert(!compatible(simpleType(StaticType::String), boundedT));
+
+    const TypeInfo identity = functionType(
+        {t}, t, {"T"}, {std::make_shared<TypeInfo>(number)});
+    assert(typeInfoName(identity) == "fun<T: number>(T): T");
 
     const TypeInfo nested = arrayType(t);
     assert(compatible(nested, arrayType(typeParameterType("T"))));

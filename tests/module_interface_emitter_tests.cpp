@@ -3,6 +3,7 @@
 #include "TypeUtils.hpp"
 
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -77,10 +78,16 @@ void testValuesStructsFieldsMethodsAndTypes()
         "translate",
         {simpleType(StaticType::Number), simpleType(StaticType::Number)},
         namedStructType("Point"),
+        {},
         {}});
     point.methods.push_back(ModuleInterfaceMethod{
-        "echo", {typeParameterType("T")}, typeParameterType("T"), {"T"}});
-    point.methods.push_back(ModuleInterfaceMethod{"length", {}, simpleType(StaticType::Number), {}});
+        "echo",
+        {typeParameterType("T")},
+        typeParameterType("T"),
+        {"T"},
+        {std::make_shared<TypeInfo>(simpleType(StaticType::Number))}});
+    point.methods.push_back(ModuleInterfaceMethod{
+        "length", {}, simpleType(StaticType::Number), {}, {}});
 
     ModuleInterfaceStruct box;
     box.name = "Box";
@@ -108,7 +115,7 @@ void testValuesStructsFieldsMethodsAndTypes()
         "  export struct Point\n"
         "    field y: number\n"
         "    field x: number?\n"
-        "    method echo<T>(T): T\n"
+        "    method echo<T: number>(T): T\n"
         "    method length(): number\n"
         "    method translate(number, number): Point\n"
         "  export enum Result\n"

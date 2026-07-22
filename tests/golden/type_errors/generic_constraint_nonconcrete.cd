@@ -1,0 +1,5 @@
+fun bad<T: [T]>(value: T): T {
+  return value;
+}
+
+print bad(1);

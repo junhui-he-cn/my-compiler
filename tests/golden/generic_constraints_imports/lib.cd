@@ -1,0 +1,17 @@
+enum Box<T: number> {
+  Value(value: T),
+}
+
+struct Boxed { value: number }
+
+impl Boxed {
+  fun echo<T: number>(value: T): T {
+    return value;
+  }
+}
+
+fun identity<T: number>(value: T): T {
+  return value;
+}
+
+export Box, Boxed, identity;

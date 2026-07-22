@@ -251,7 +251,7 @@ StmtPtr Parser::enumDeclaration()
 {
     Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected enum name after `enum`");
-    std::vector<Token> parsedTypeParameters = typeParameters();
+    std::vector<TypeParameter> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftBrace, "expected `{` after enum name");
     std::vector<EnumVariantDecl> variants = enumVariants();
     consume(TokenType::RightBrace, "expected `}` after enum variants");
@@ -335,7 +335,7 @@ MethodDecl Parser::methodDeclaration()
 {
     consume(TokenType::Fun, "expected `fun` method declaration in impl block");
     Token name = consume(TokenType::Identifier, "expected method name after `fun`");
-    std::vector<Token> parsedTypeParameters = typeParameters();
+    std::vector<TypeParameter> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftParen, "expected `(` after method name");
     std::vector<Parameter> parsedParameters = parameters();
     consume(TokenType::RightParen, "expected `)` after method parameters");
@@ -356,7 +356,7 @@ StmtPtr Parser::functionDeclaration()
 {
     Token keyword = previous();
     Token name = consume(TokenType::Identifier, "expected function name after `fun`");
-    std::vector<Token> parsedTypeParameters = typeParameters();
+    std::vector<TypeParameter> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftParen, "expected `(` after function name");
 
     std::vector<Parameter> parsedParameters = parameters();
@@ -377,16 +377,21 @@ StmtPtr Parser::functionDeclaration()
         span);
 }
 
-std::vector<Token> Parser::typeParameters()
+std::vector<TypeParameter> Parser::typeParameters()
 {
-    std::vector<Token> parameters;
+    std::vector<TypeParameter> parameters;
     if (!match(TokenType::Less)) {
         return parameters;
     }
     do {
-        parameters.push_back(consume(
+        Token name = consume(
             TokenType::Identifier,
-            "expected type parameter name after `<` or `,`"));
+            "expected type parameter name after `<` or `,`");
+        std::optional<TypeAnnotation> constraint;
+        if (match(TokenType::Colon)) {
+            constraint = typeAnnotation("expected type constraint after `:`");
+        }
+        parameters.push_back(TypeParameter{std::move(name), std::move(constraint)});
     } while (match(TokenType::Comma));
     consume(TokenType::Greater, "expected `>` after type parameters");
     return parameters;
@@ -1131,7 +1136,7 @@ ExprPtr Parser::qualifiedStructConstructor()
 ExprPtr Parser::functionExpression()
 {
     Token keyword = previous();
-    std::vector<Token> parsedTypeParameters = typeParameters();
+    std::vector<TypeParameter> parsedTypeParameters = typeParameters();
     consume(TokenType::LeftParen, "expected `(` after `fun`");
 
     std::vector<Parameter> parsedParameters = parameters();

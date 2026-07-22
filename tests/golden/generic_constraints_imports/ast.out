@@ -1,0 +1,22 @@
+Program
+  Module 0
+    Enum Box<T: number> {Value(value: T)}
+    Struct Boxed {value: number}
+    Impl Boxed
+      Method echo<T: number>(value: T): T
+        Return value
+    Fun identity<T: number>(value: T): T
+      Return value
+    Export Box Boxed identity
+  Module 1 entry
+    Import "lib.cd"
+    Import "lib.cd" as lib
+    Let direct = (call identity 1)
+    Let namespaced = (member-call lib identity<number> 2)
+    Let box: Boxed = (construct Boxed value: 0)
+    Let directMethod = (member-call box echo 3)
+    Let namespaceEnum = (member-call (field lib Box) Value 4)
+    Print direct
+    Print namespaced
+    Print directMethod
+    Print namespaceEnum

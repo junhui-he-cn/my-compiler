@@ -1,0 +1,3 @@
+Type error at 5:29: enum Box: type parameter T must satisfy number, got string
+  let value = Box.Value("text");
+                              ^

@@ -50,24 +50,29 @@ TypeInfo mapType(TypeInfo keyType, TypeInfo valueType)
     return result;
 }
 
-TypeInfo typeParameterType(std::string name)
+TypeInfo typeParameterType(std::string name, std::optional<TypeInfo> constraint)
 {
     TypeInfo result;
     result.kind = StaticType::TypeParameter;
     result.typeParameterName = std::move(name);
+    if (constraint) {
+        result.typeParameterConstraint = std::make_shared<TypeInfo>(std::move(*constraint));
+    }
     return result;
 }
 
 TypeInfo functionType(
     std::vector<TypeInfo> parameterTypes,
     TypeInfo returnType,
-    std::vector<std::string> genericParameters)
+    std::vector<std::string> genericParameters,
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints)
 {
     TypeInfo result;
     result.kind = StaticType::Function;
     result.parameterTypes = std::move(parameterTypes);
     result.returnType = std::make_shared<TypeInfo>(std::move(returnType));
     result.genericParameters = std::move(genericParameters);
+    result.genericParameterConstraints = std::move(genericParameterConstraints);
     return result;
 }
 
@@ -184,6 +189,11 @@ std::string typeInfoName(const TypeInfo& type)
                 result += ", ";
             }
             result += type.genericParameters[i];
+            if (i < type.genericParameterConstraints.size()
+                && type.genericParameterConstraints[i]) {
+                result += ": ";
+                result += typeInfoName(*type.genericParameterConstraints[i]);
+            }
         }
         result += '>';
     }
@@ -217,9 +227,13 @@ bool compatible(const TypeInfo& expected, const TypeInfo& actual)
         return false;
     }
     if (expected.kind == StaticType::TypeParameter || actual.kind == StaticType::TypeParameter) {
-        return expected.kind == StaticType::TypeParameter
-            && actual.kind == StaticType::TypeParameter
-            && expected.typeParameterName == actual.typeParameterName;
+        if (expected.kind == StaticType::TypeParameter && actual.kind == StaticType::TypeParameter) {
+            return expected.typeParameterName == actual.typeParameterName;
+        }
+        if (actual.kind == StaticType::TypeParameter && actual.typeParameterConstraint) {
+            return compatible(expected, *actual.typeParameterConstraint);
+        }
+        return false;
     }
     if (expected.kind != actual.kind) {
         return false;

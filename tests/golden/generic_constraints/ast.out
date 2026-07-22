@@ -1,0 +1,30 @@
+Program
+  Enum Box<T: number> {Value(value: T)}
+  Struct Holder {value: number}
+  Impl Holder
+    Method echo<T: number>(value: T): T
+      Return value
+  Fun identity<T: number>(value: T): T
+    Return value
+  Fun pair<K, V: number>(left: K, right: V): V
+    Return right
+  Fun keep<T: number>(value: T): bool
+    Return true
+  Fun outer<T: number>(value: T): T
+    Fun inner<U: number>(nested: U): U
+      Return nested
+    Return (call inner value)
+  Let values: [number] = (array 1 2)
+  Let copied = (call map values identity)
+  Let kept = (call filter values keep)
+  Let lambda = (fun <T: number>(value: T): T (return value))
+  Let box: Holder = (construct Holder value: 0)
+  Let enumValue = (member-call Box Value 6)
+  Print copied
+  Print kept
+  Print (call lambda 3)
+  Print (call identity<number> 4)
+  Print (call pair "key" 7)
+  Print (member-call box echo 5)
+  Print (call outer 6)
+  Print enumValue

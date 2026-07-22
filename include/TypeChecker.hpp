@@ -136,6 +136,7 @@ private:
         TypeInfo returnType;
         std::string resolvedName;
         std::vector<std::string> genericParameters;
+        std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
     };
 
     struct IndexTargetTypes {
@@ -160,7 +161,7 @@ private:
 
     void beginScope();
     void endScope();
-    void beginTypeParameterScope(const std::vector<Token>& parameters);
+    void beginTypeParameterScope(const std::vector<TypeParameter>& parameters);
     void endTypeParameterScope();
     Scope& currentScope();
     const Scope& currentScope() const;
@@ -239,7 +240,9 @@ private:
     TypeInfo resolveStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName);
     TypeInfo resolveSimpleStructFieldAnnotation(const TypeAnnotation& typeName, const Token& fieldName);
     void checkFunction(const FunctionStmt& statement);
-    std::vector<std::string> typeParameterNames(const std::vector<Token>& parameters) const;
+    std::vector<std::string> typeParameterNames(const std::vector<TypeParameter>& parameters) const;
+    std::vector<std::shared_ptr<TypeInfo>> typeParameterConstraints(
+        const std::vector<TypeParameter>& parameters) const;
     const TypeInfo* findTypeParameter(const std::string& name) const;
     bool hasEscapingTypeParameter(
         const TypeInfo& type,
@@ -252,6 +255,12 @@ private:
     TypeInfo substituteTypeParameters(
         const TypeInfo& type,
         const TypeSubstitutions& substitutions) const;
+    void validateGenericTypeArguments(
+        const std::vector<std::string>& parameters,
+        const std::vector<std::shared_ptr<TypeInfo>>& constraints,
+        const TypeSubstitutions& substitutions,
+        const Token& callToken,
+        const std::string& context) const;
     TypeInfo specializeGenericCallback(
         const Token& callToken,
         const TypeInfo& callbackType,

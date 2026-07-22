@@ -27,8 +27,10 @@ funDecl     = "fun", identifier, [ typeParameters ],
               [ ":", typeExpr ],
               block ;
 
-typeParameters = "<", identifier,
-                 { ",", identifier }, ">" ;
+typeParameters = "<", typeParameter,
+                 { ",", typeParameter }, ">" ;
+
+typeParameter  = identifier, [ ":", typeExpr ] ;
 
 structDecl  = "struct", identifier,
               "{", [ structFields ], "}" ;

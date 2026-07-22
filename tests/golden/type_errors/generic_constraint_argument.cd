@@ -1,0 +1,5 @@
+fun numeric<T: number>(value: T): T {
+  return value;
+}
+
+print numeric("text");

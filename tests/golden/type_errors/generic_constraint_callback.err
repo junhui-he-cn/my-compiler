@@ -1,0 +1,3 @@
+Type error at 6:37: filter: type parameter T must satisfy number, got string
+  print filter(texts, numericPredicate);
+                                      ^

@@ -138,7 +138,7 @@ Exported enums are available through direct imports and namespace aliases,
 including qualified annotations, constructors, and patterns such as
 lib.Outcome.Good(value).
 
-Functions are values. Named functions use `fun name[<T, U>](parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`. Generic named functions, methods, and anonymous function expressions infer type parameters at each call, including direct, namespace, and re-exported struct method paths; callers may also provide all type arguments explicitly, such as `identity<number>(42)`, `lib.identity<string>("hello")`, `box.echo<string>("hello")`, or `identityLambda<number>(42)`. An unannotated alias preserves the generic signature. Generic function values are not coerced to monomorphic function annotations; when passed to existing array higher-order helpers, known callback argument types specialize them and every generic parameter must be inferable. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated or contextually typed, and inferred, annotated, or contextually checked return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
+Functions are values. Named functions use `fun name[<T, U>](parameter[: type]*) [: type] { declaration* }`, and anonymous function expressions use `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`. Type parameters may have concrete bounds such as `T: number`, for example `fun identity<T: number>(value: T): T { return value; }`; explicit and inferred arguments, generic enum constructors, and generic collection callbacks must satisfy every bound. Generic named functions, methods, and anonymous function expressions infer type parameters at each call, including direct, namespace, and re-exported struct method paths; callers may also provide all type arguments explicitly, such as `identity<number>(42)`, `lib.identity<string>("hello")`, `box.echo<string>("hello")`, or `identityLambda<number>(42)`. An unannotated alias preserves the generic signature. Generic function values are not coerced to monomorphic function annotations; when passed to existing array higher-order helpers, known callback argument types specialize them and every generic parameter must be inferable. Anonymous function expressions may appear in expression positions, including direct expression statements such as `fun () { return nil; };`. Known function values carry arity, parameter types when annotated or contextually typed, and inferred, annotated, or contextually checked return types for static checks, including variables initialized from named functions or function expressions. `return expression;` returns a value, `return;` returns `nil`, and reaching the end of a function also returns `nil`. Recursive named calls are supported, though recursive return inference remains conservative. Nested functions and function expressions are by-reference closures: they capture enclosing local variables through shared runtime cells, so reads and assignments share the same variable even after the outer function returns. Example function type annotations: `let f: fun(number): number = fun (x: number): number { return x + 1; };` and `fun apply(f: fun(number): number, x: number): number { return f(x); }`.
 
 Struct values are created with named constructor expressions such as `Person { name: "Ada", age: 36 }` after a matching `struct Person { ... }` declaration. Constructors preserve declared field behavior, require exact field names, and allow fields in any order. Field reads use `value.field`. Existing fields can be reassigned with `value.field = expression`; the assignment evaluates to the assigned value. Structs are reference values with identity equality, so aliases observe field mutation. Assigning a missing field is a runtime error when the target type is not statically known, and a type error when it is known.
 
@@ -213,8 +213,8 @@ matches require `_` or a binding because their domains are open. Enum values use
 structural equality and print as `Enum.Variant` or `Enum.Variant(value, ...)`.
 `typeOf` reports the enum name. Named payload patterns may be reordered by field
 name, while constructors remain positional. Generic enum types are nominal and
-invariant in their type arguments. Generic constraints and generic structs are
-not implemented. Named struct record patterns use the same left-to-right and
+invariant in their type arguments; their type parameters may use concrete bounds
+such as `T: number`. Generic structs are not implemented. Named struct record patterns use the same left-to-right and
 nested matching model. Existing patterns may be combined with `|`; alternatives are
 tried left to right and must bind the same names with compatible types. The
 bindings remain available once in the arm-local scope.
@@ -408,7 +408,8 @@ Supported expressions:
 - Maps: `{ key: value, ... }` and `{}`; keys are `nil`, `number`, `bool`, or
   `string`, and entries preserve insertion order.
 - Structs: named constructors such as `Name { field: value, ... }`, field reads `value.name`, and existing-field assignment `value.name = expression`.
-- Enums and patterns: `enum Name[<T, U>] { Variant(type, ...) }`, generic type
+- Enums and patterns: `enum Name[<T, U>] { Variant(type, ...) }`, optional
+  concrete bounds such as `enum Box<T: number> { Value(T) }`, and generic type
   annotations such as `Name<number>`, qualified constructors such as
   `Name.Variant(value)`, and exhaustive statement-level
   `match` with wildcard, binding, primitive literal patterns, named struct
@@ -417,7 +418,7 @@ Supported expressions:
   `match value { pattern [if condition] => expression, ... }` and return the
   selected arm expression. Guards use existing truthiness and must be followed
   by unguarded exhaustive coverage.
-- Function expressions: `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`, including direct expression statements such as `fun () { return nil; };`
+- Function expressions: `fun[<T, U>](parameter[: type]*) [: type] { declaration* }`, with optional bounds such as `fun<T: number>(value: T): T { return value; }`, including direct expression statements such as `fun () { return nil; };`
 - Variables: `name`
 - Assignment: `name = expression` updates an existing variable and evaluates to the assigned value. Use `let` to declare variables before assigning to them.
 - Compound assignment: `name += expression`, `array[index] += expression`, and `object.field += expression` forms, plus `-=`, `*=`, and `/=`, update the target and evaluate to the assigned value. Compound assignment is numeric-only for both the old target value and the right-hand value.

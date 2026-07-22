@@ -86,7 +86,7 @@ void writeTypeArguments(std::ostream& out, const std::vector<TypeAnnotation>& ar
     out << '>';
 }
 
-void writeTypeParameterList(std::ostream& out, const std::vector<Token>& parameters)
+void writeTypeParameterList(std::ostream& out, const std::vector<TypeParameter>& parameters)
 {
     if (parameters.empty()) {
         return;
@@ -97,7 +97,11 @@ void writeTypeParameterList(std::ostream& out, const std::vector<Token>& paramet
         if (i != 0) {
             out << ", ";
         }
-        out << parameters[i].lexeme;
+        out << parameters[i].name.lexeme;
+        if (parameters[i].constraint) {
+            out << ": ";
+            writeTypeAnnotation(out, *parameters[i].constraint);
+        }
     }
     out << '>';
 }
@@ -391,7 +395,7 @@ TypeAnnotation TypeAnnotation::nullable(Token token, TypeAnnotation innerType)
 
 MethodDecl::MethodDecl(
     Token name,
-    std::vector<Token> typeParameters,
+    std::vector<TypeParameter> typeParameters,
     std::vector<Parameter> parameters,
     std::optional<TypeAnnotation> returnTypeName,
     std::vector<StmtPtr> body)
@@ -717,7 +721,7 @@ void FieldCompoundAssignExpr::print(std::ostream& out) const
 
 FunctionExpr::FunctionExpr(
     Token keyword,
-    std::vector<Token> typeParameters,
+    std::vector<TypeParameter> typeParameters,
     std::vector<Parameter> parameters,
     std::optional<TypeAnnotation> returnTypeName,
     std::vector<StmtPtr> body)
@@ -872,7 +876,7 @@ void VariantPattern::print(std::ostream& out) const
     }
 }
 
-EnumDeclStmt::EnumDeclStmt(Token name, std::vector<Token> typeParameters, std::vector<EnumVariantDecl> variants)
+EnumDeclStmt::EnumDeclStmt(Token name, std::vector<TypeParameter> typeParameters, std::vector<EnumVariantDecl> variants)
     : name(std::move(name))
     , typeParameters(std::move(typeParameters))
     , variants(std::move(variants))
@@ -967,16 +971,7 @@ void ImplStmt::print(std::ostream& out, int indent) const
     for (const MethodDecl& method : methods) {
         writeIndent(out, indent + 1);
         out << "Method " << method.name.lexeme;
-        if (!method.typeParameters.empty()) {
-            out << '<';
-            for (std::size_t i = 0; i < method.typeParameters.size(); ++i) {
-                if (i != 0) {
-                    out << ", ";
-                }
-                out << method.typeParameters[i].lexeme;
-            }
-            out << '>';
-        }
+        writeTypeParameterList(out, method.typeParameters);
         writeParameterList(out, method.parameters);
         writeReturnAnnotation(out, method.returnTypeName);
         out << '\n';
@@ -1226,7 +1221,7 @@ void ContinueStmt::print(std::ostream& out, int indent) const
     out << "Continue\n";
 }
 
-FunctionStmt::FunctionStmt(Token name, std::vector<Token> typeParameters, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
+FunctionStmt::FunctionStmt(Token name, std::vector<TypeParameter> typeParameters, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body)
     : name(std::move(name))
     , typeParameters(std::move(typeParameters))
     , parameters(std::move(parameters))
@@ -1239,16 +1234,7 @@ void FunctionStmt::print(std::ostream& out, int indent) const
 {
     writeIndent(out, indent);
     out << "Fun " << name.lexeme;
-    if (!typeParameters.empty()) {
-        out << '<';
-        for (std::size_t i = 0; i < typeParameters.size(); ++i) {
-            if (i != 0) {
-                out << ", ";
-            }
-            out << typeParameters[i].lexeme;
-        }
-        out << '>';
-    }
+    writeTypeParameterList(out, typeParameters);
     writeParameterList(out, parameters);
     writeReturnAnnotation(out, returnTypeName);
     out << '\n';

@@ -531,17 +531,32 @@ void TypeChecker::endScope()
     scopes_.pop_back();
 }
 
-void TypeChecker::beginTypeParameterScope(const std::vector<Token>& parameters)
+void TypeChecker::beginTypeParameterScope(const std::vector<TypeParameter>& parameters)
 {
     std::unordered_map<std::string, TypeInfo> scope;
-    for (const Token& parameter : parameters) {
-        if (scope.find(parameter.lexeme) != scope.end()) {
-            throw TypeError(parameter,
-                "duplicate type parameter `" + parameter.lexeme + "`");
+    for (const TypeParameter& parameter : parameters) {
+        if (scope.find(parameter.name.lexeme) != scope.end()) {
+            throw TypeError(parameter.name,
+                "duplicate type parameter `" + parameter.name.lexeme + "`");
         }
-        scope.emplace(parameter.lexeme, typeParameterType(parameter.lexeme));
+        scope.emplace(parameter.name.lexeme, typeParameterType(parameter.name.lexeme));
     }
     typeParameterScopes_.push_back(std::move(scope));
+
+    for (const TypeParameter& parameter : parameters) {
+        if (!parameter.constraint) {
+            continue;
+        }
+        TypeInfo constraint = resolveAnnotation(*parameter.constraint);
+        std::unordered_set<std::string> noTypeParameters;
+        if (hasEscapingTypeParameter(constraint, noTypeParameters)) {
+            throw TypeError(parameter.name,
+                "constraint for type parameter `" + parameter.name.lexeme
+                    + "` must be concrete");
+        }
+        typeParameterScopes_.back().at(parameter.name.lexeme).typeParameterConstraint
+            = std::make_shared<TypeInfo>(std::move(constraint));
+    }
 }
 
 void TypeChecker::endTypeParameterScope()
@@ -698,13 +713,30 @@ void TypeChecker::predeclareEnumDeclarations(const std::vector<StmtPtr>& stateme
             }
             enumTypes_.emplace(
                 enumDecl->name.lexeme,
-                EnumTypeDecl{enumDecl->name, typeParameterNames(enumDecl->typeParameters), {}});
+                EnumTypeDecl{
+                    enumDecl->name,
+                    typeParameterNames(enumDecl->typeParameters),
+                    {},
+                    {}});
             enumDeclarations_.emplace(enumDecl->name.lexeme, enumDecl);
             enumCheckStates_.emplace(enumDecl->name.lexeme, EnumCheckState::Declared);
             if (!moduleStack_.empty()) {
                 moduleSymbols_.markLocalEnum(moduleStack_.back(), enumDecl->name.lexeme);
             }
         }
+    }
+
+    for (const auto& statement : statements) {
+        const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(statement.get());
+        if (!enumDecl) {
+            continue;
+        }
+        beginTypeParameterScope(enumDecl->typeParameters);
+        std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints
+            = typeParameterConstraints(enumDecl->typeParameters);
+        endTypeParameterScope();
+        enumTypes_.at(enumDecl->name.lexeme).genericParameterConstraints
+            = std::move(genericParameterConstraints);
     }
 }
 
@@ -943,7 +975,8 @@ void TypeChecker::buildModuleInterfaces(const Program& program)
                                 methodEntry.first,
                                 methodEntry.second.parameterTypes,
                                 methodEntry.second.returnType,
-                                methodEntry.second.genericParameters});
+                                methodEntry.second.genericParameters,
+                                methodEntry.second.genericParameterConstraints});
                         }
                     }
                 }
@@ -970,6 +1003,7 @@ void TypeChecker::buildModuleInterfaces(const Program& program)
                         variant.payloadTypes,
                         std::move(payloadNames)});
                 }
+                enumInfo.genericParameterConstraints = entry.second.genericParameterConstraints;
                 interfaceInfo.enums.push_back(std::move(enumInfo));
             }
         }
@@ -1111,6 +1145,12 @@ void TypeChecker::declareNamespaceAlias(const ImportStmt& statement, NamespaceIm
     for (const auto& entry : imported.enums) {
         EnumTypeDecl qualified = entry.second;
         qualified.name.lexeme = alias.lexeme + "." + entry.first;
+        for (std::shared_ptr<TypeInfo>& constraint : qualified.genericParameterConstraints) {
+            if (constraint) {
+                constraint = std::make_shared<TypeInfo>(
+                    qualifyNamespaceType(*constraint, alias.lexeme, imported.structs, imported.enums));
+            }
+        }
         for (EnumVariantType& variant : qualified.variants) {
             for (TypeInfo& payload : variant.payloadTypes) {
                 payload = qualifyNamespaceType(payload, alias.lexeme, imported.structs, imported.enums);
@@ -1486,6 +1526,35 @@ TypeInfo TypeChecker::resolveNamedEnumAnnotation(
     for (const TypeAnnotation& argument : typeName.typeArguments) {
         arguments.push_back(resolveAnnotation(argument));
     }
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints
+        = enumType.genericParameterConstraints;
+    const std::size_t namespaceSeparator = enumName.find('.');
+    if (namespaceSeparator != std::string::npos) {
+        const std::string alias = enumName.substr(0, namespaceSeparator);
+        if (const NamespaceImport* namespaceImport = findNamespace(alias)) {
+            for (std::shared_ptr<TypeInfo>& constraint : genericParameterConstraints) {
+                if (constraint) {
+                    constraint = std::make_shared<TypeInfo>(
+                        qualifyNamespaceType(
+                            *constraint,
+                            alias,
+                            namespaceImport->structs,
+                            namespaceImport->enums));
+                }
+            }
+        }
+    }
+
+    TypeSubstitutions substitutions;
+    for (std::size_t i = 0; i < enumType.genericParameters.size(); ++i) {
+        substitutions.emplace(enumType.genericParameters[i], arguments[i]);
+    }
+    validateGenericTypeArguments(
+        enumType.genericParameters,
+        genericParameterConstraints,
+        substitutions,
+        typeName.token,
+        "enum " + enumName);
     return namedEnumType(std::move(enumName), std::move(arguments));
 }
 
@@ -1622,14 +1691,18 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
     if (state == enumCheckStates_.end()) {
         enumTypes_.emplace(
             statement.name.lexeme,
-            EnumTypeDecl{statement.name, typeParameterNames(statement.typeParameters), {}});
+            EnumTypeDecl{statement.name, typeParameterNames(statement.typeParameters), {}, {}});
         enumDeclarations_.emplace(statement.name.lexeme, &statement);
         enumCheckStates_.emplace(statement.name.lexeme, EnumCheckState::Declared);
     }
 
     enumCheckStates_[statement.name.lexeme] = EnumCheckState::Checking;
     beginTypeParameterScope(statement.typeParameters);
-    EnumTypeDecl declaration{statement.name, typeParameterNames(statement.typeParameters), {}};
+    EnumTypeDecl declaration{
+        statement.name,
+        typeParameterNames(statement.typeParameters),
+        typeParameterConstraints(statement.typeParameters),
+        {}};
     std::unordered_map<std::string, Token> variantNames;
     for (const EnumVariantDecl& variant : statement.variants) {
         if (variantNames.find(variant.name.lexeme) != variantNames.end()) {
@@ -1701,14 +1774,30 @@ std::optional<TypeInfo> TypeChecker::resolveOptionalReturnType(const std::option
     return resolveAnnotation(*returnTypeName);
 }
 
-std::vector<std::string> TypeChecker::typeParameterNames(const std::vector<Token>& parameters) const
+std::vector<std::string> TypeChecker::typeParameterNames(const std::vector<TypeParameter>& parameters) const
 {
     std::vector<std::string> names;
     names.reserve(parameters.size());
-    for (const Token& parameter : parameters) {
-        names.push_back(parameter.lexeme);
+    for (const TypeParameter& parameter : parameters) {
+        names.push_back(parameter.name.lexeme);
     }
     return names;
+}
+
+std::vector<std::shared_ptr<TypeInfo>> TypeChecker::typeParameterConstraints(
+    const std::vector<TypeParameter>& parameters) const
+{
+    std::vector<std::shared_ptr<TypeInfo>> constraints;
+    constraints.reserve(parameters.size());
+    for (const TypeParameter& parameter : parameters) {
+        const TypeInfo* type = findTypeParameter(parameter.name.lexeme);
+        if (type && type->typeParameterConstraint) {
+            constraints.push_back(std::make_shared<TypeInfo>(*type->typeParameterConstraint));
+        } else {
+            constraints.push_back(nullptr);
+        }
+    }
+    return constraints;
 }
 
 bool TypeChecker::hasEscapingTypeParameter(
@@ -1764,6 +1853,7 @@ MethodSignature TypeChecker::methodSignatureFromInfo(const MethodInfo& method) c
     signature.returnType = method.returnType;
     signature.resolvedName = method.resolvedName;
     signature.genericParameters = method.genericParameters;
+    signature.genericParameterConstraints = method.genericParameterConstraints;
     return signature;
 }
 
@@ -1775,6 +1865,7 @@ TypeChecker::MethodInfo TypeChecker::methodInfoFromSignature(const MethodSignatu
     info.returnType = signature.returnType;
     info.resolvedName = signature.resolvedName;
     info.genericParameters = signature.genericParameters;
+    info.genericParameterConstraints = signature.genericParameterConstraints;
     return info;
 }
 
@@ -1785,6 +1876,11 @@ TypeInfo TypeChecker::qualifyNamespaceType(
     const ModuleEnumExports& enums) const
 {
     TypeInfo result = type;
+    if (result.kind == StaticType::TypeParameter && result.typeParameterConstraint) {
+        result.typeParameterConstraint = std::make_shared<TypeInfo>(
+            qualifyNamespaceType(*result.typeParameterConstraint, alias, structs, enums));
+        return result;
+    }
     if (result.kind == StaticType::Struct && result.structName && structs.find(*result.structName) != structs.end()) {
         result.structName = alias + "." + *result.structName;
         return result;
@@ -1823,6 +1919,12 @@ TypeInfo TypeChecker::qualifyNamespaceType(
         }
         result.returnType = std::make_shared<TypeInfo>(
             qualifyNamespaceType(*result.returnType, alias, structs, enums));
+        for (std::shared_ptr<TypeInfo>& constraint : result.genericParameterConstraints) {
+            if (constraint) {
+                constraint = std::make_shared<TypeInfo>(
+                    qualifyNamespaceType(*constraint, alias, structs, enums));
+            }
+        }
     }
     return result;
 }
@@ -1839,6 +1941,12 @@ MethodSignature TypeChecker::qualifyNamespaceMethodSignature(
         parameter = qualifyNamespaceType(parameter, alias, structs, enums);
     }
     result.returnType = qualifyNamespaceType(result.returnType, alias, structs, enums);
+    for (std::shared_ptr<TypeInfo>& constraint : result.genericParameterConstraints) {
+        if (constraint) {
+            constraint = std::make_shared<TypeInfo>(
+                qualifyNamespaceType(*constraint, alias, structs, enums));
+        }
+    }
     return result;
 }
 
@@ -1904,6 +2012,8 @@ void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, cons
     beginTypeParameterScope(method.typeParameters);
     std::vector<TypeInfo> parameterTypes = resolveParameterTypes(method.parameters);
     std::optional<TypeInfo> expectedReturnType = resolveOptionalReturnType(method.returnTypeName);
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints
+        = typeParameterConstraints(method.typeParameters);
     endTypeParameterScope();
     MethodInfo info;
     info.declaration = &method;
@@ -1912,6 +2022,7 @@ void TypeChecker::registerMethodSignature(const StructTypeDecl& structType, cons
     info.returnType = expectedReturnType ? *expectedReturnType : unknownType();
     info.resolvedName = makeResolvedName("__method_" + statement.typeName.lexeme + "_" + method.name.lexeme);
     info.genericParameters = typeParameterNames(method.typeParameters);
+    info.genericParameterConstraints = std::move(genericParameterConstraints);
     resolvedNames_.recordMethod(method, info.resolvedName);
     structMethods.emplace(method.name.lexeme, std::move(info));
 }
@@ -1991,6 +2102,9 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
             : unknownType());
     }
 
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints
+        = typeParameterConstraints(statement.typeParameters);
+
     std::optional<TypeInfo> expectedReturnType;
     if (statement.returnTypeName) {
         expectedReturnType = resolveAnnotation(*statement.returnTypeName);
@@ -2001,7 +2115,8 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
         functionType(
             declaredParameterTypes,
             expectedReturnType ? *expectedReturnType : unknownType(),
-            typeParameterNames(statement.typeParameters)),
+            typeParameterNames(statement.typeParameters),
+            genericParameterConstraints),
         statement.returnTypeName.has_value());
     resolvedNames_.recordFunction(statement, functionBinding.resolvedName);
 
@@ -2025,8 +2140,8 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
         statement.name.lexeme);
 
     std::unordered_set<std::string> allowedTypeParameters;
-    for (const Token& parameter : statement.typeParameters) {
-        allowedTypeParameters.insert(parameter.lexeme);
+    for (const TypeParameter& parameter : statement.typeParameters) {
+        allowedTypeParameters.insert(parameter.name.lexeme);
     }
     if (nestedFunction) {
         for (const TypeInfo& parameterType : declaredParameterTypes) {
@@ -2057,7 +2172,8 @@ void TypeChecker::checkFunction(const FunctionStmt& statement)
     storedFunction->type = functionType(
         std::move(declaredParameterTypes),
         returnType,
-        typeParameterNames(statement.typeParameters));
+        typeParameterNames(statement.typeParameters),
+        std::move(genericParameterConstraints));
     endTypeParameterScope();
 }
 
@@ -2164,7 +2280,41 @@ TypeInfo TypeChecker::substituteTypeParameters(
     for (TypeInfo& argument : result.typeArguments) {
         argument = substituteTypeParameters(argument, substitutions);
     }
+    if (type.typeParameterConstraint) {
+        result.typeParameterConstraint = std::make_shared<TypeInfo>(
+            substituteTypeParameters(*type.typeParameterConstraint, substitutions));
+    }
+    for (std::shared_ptr<TypeInfo>& constraint : result.genericParameterConstraints) {
+        if (constraint) {
+            constraint = std::make_shared<TypeInfo>(
+                substituteTypeParameters(*constraint, substitutions));
+        }
+    }
     return result;
+}
+
+void TypeChecker::validateGenericTypeArguments(
+    const std::vector<std::string>& parameters,
+    const std::vector<std::shared_ptr<TypeInfo>>& constraints,
+    const TypeSubstitutions& substitutions,
+    const Token& callToken,
+    const std::string& context) const
+{
+    for (std::size_t i = 0; i < parameters.size(); ++i) {
+        if (i >= constraints.size() || !constraints[i]) {
+            continue;
+        }
+        const auto found = substitutions.find(parameters[i]);
+        if (found == substitutions.end()) {
+            continue;
+        }
+        if (!compatible(*constraints[i], found->second)) {
+            const std::string prefix = context.empty() ? "" : context + ": ";
+            throw TypeError(callToken,
+                prefix + "type parameter " + parameters[i] + " must satisfy "
+                    + typeInfoName(*constraints[i]) + ", got " + typeInfoName(found->second));
+        }
+    }
 }
 
 TypeInfo TypeChecker::specializeGenericCallback(
@@ -2188,9 +2338,16 @@ TypeInfo TypeChecker::specializeGenericCallback(
                 functionName + " cannot infer type parameter " + parameter);
         }
     }
+    validateGenericTypeArguments(
+        callbackType.genericParameters,
+        callbackType.genericParameterConstraints,
+        substitutions,
+        callToken,
+        functionName);
 
     TypeInfo specialized = substituteTypeParameters(callbackType, substitutions);
     specialized.genericParameters.clear();
+    specialized.genericParameterConstraints.clear();
     return specialized;
 }
 
@@ -2258,6 +2415,12 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionCall(
                 throw TypeError(callToken, "cannot infer type parameter " + parameter);
             }
         }
+        validateGenericTypeArguments(
+            calleeType.genericParameters,
+            calleeType.genericParameterConstraints,
+            substitutions,
+            callToken,
+            "function call");
     }
 
     for (std::size_t i = 0; i < arguments.size(); ++i) {
@@ -2357,8 +2520,8 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
         "<lambda>");
 
     std::unordered_set<std::string> allowedTypeParameters;
-    for (const Token& parameter : expression.typeParameters) {
-        allowedTypeParameters.insert(parameter.lexeme);
+    for (const TypeParameter& parameter : expression.typeParameters) {
+        allowedTypeParameters.insert(parameter.name.lexeme);
     }
     if (nestedFunction) {
         for (const TypeInfo& parameterType : declaredParameterTypes) {
@@ -2385,7 +2548,8 @@ TypeChecker::CheckedExpression TypeChecker::checkFunctionExpression(const Functi
     const TypeInfo result = functionType(
         std::move(declaredParameterTypes),
         returnType,
-        typeParameterNames(expression.typeParameters));
+        typeParameterNames(expression.typeParameters),
+        typeParameterConstraints(expression.typeParameters));
     endTypeParameterScope();
     return CheckedExpression{result};
 }
@@ -2577,6 +2741,12 @@ TypeChecker::CheckedExpression TypeChecker::checkVariantConstructor(
                     "cannot infer type parameter " + parameter + " for enum " + enumName);
             }
         }
+        validateGenericTypeArguments(
+            enumType->genericParameters,
+            enumType->genericParameterConstraints,
+            substitutions,
+            expression.paren,
+            "enum " + enumName);
     }
 
     std::vector<TypeInfo> typeArguments;
@@ -4217,7 +4387,8 @@ TypeChecker::CheckedExpression TypeChecker::checkStructMethodCall(const MemberCa
     const TypeInfo signature = functionType(
         method->parameterTypes,
         method->returnType,
-        method->genericParameters);
+        method->genericParameters,
+        method->genericParameterConstraints);
     const CheckedExpression result = checkFunctionCall(
         expression.paren,
         signature,

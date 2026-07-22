@@ -1,0 +1,9 @@
+module 0 "<repo>/tests/golden/generic_constraints_imports/lib.cd"
+  export value identity: fun<T: number>(T): T
+  export struct Boxed
+    field value: number
+    method echo<T: number>(T): T
+  export enum Box<T: number>
+    variant Value(value: T)
+
+module 1 entry "<repo>/tests/golden/generic_constraints_imports/input.cd"

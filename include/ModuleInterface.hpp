@@ -22,6 +22,7 @@ struct ModuleInterfaceMethod {
     std::vector<TypeInfo> parameterTypes;
     TypeInfo returnType;
     std::vector<std::string> genericParameters;
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
 };
 
 struct ModuleInterfaceStruct {
@@ -39,6 +40,7 @@ struct ModuleInterfaceVariant {
 struct ModuleInterfaceEnum {
     std::string name;
     std::vector<std::string> genericParameters;
+    std::vector<std::shared_ptr<TypeInfo>> genericParameterConstraints;
     std::vector<ModuleInterfaceVariant> variants;
 };
 

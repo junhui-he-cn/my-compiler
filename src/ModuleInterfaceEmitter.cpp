@@ -36,6 +36,10 @@ void writeMethodSignature(std::ostream& out, const ModuleInterfaceMethod& method
                 out << ", ";
             }
             out << method.genericParameters[i];
+            if (i < method.genericParameterConstraints.size()
+                && method.genericParameterConstraints[i]) {
+                out << ": " << typeInfoName(*method.genericParameterConstraints[i]);
+            }
         }
         out << '>';
     }
@@ -104,6 +108,10 @@ void writeModuleInterfaceText(std::ostream& out, const std::vector<ModuleInterfa
                         out << ", ";
                     }
                     out << enumInfo.genericParameters[i];
+                    if (i < enumInfo.genericParameterConstraints.size()
+                        && enumInfo.genericParameterConstraints[i]) {
+                        out << ": " << typeInfoName(*enumInfo.genericParameterConstraints[i]);
+                    }
                 }
                 out << '>';
             }

@@ -53,6 +53,11 @@ struct TypeAnnotation {
     std::shared_ptr<TypeAnnotation> innerType;
 };
 
+struct TypeParameter {
+    Token name;
+    std::optional<TypeAnnotation> constraint;
+};
+
 struct Parameter {
     Token name;
     std::optional<TypeAnnotation> typeName;
@@ -61,13 +66,13 @@ struct Parameter {
 struct MethodDecl {
     MethodDecl(
         Token name,
-        std::vector<Token> typeParameters,
+        std::vector<TypeParameter> typeParameters,
         std::vector<Parameter> parameters,
         std::optional<TypeAnnotation> returnTypeName,
         std::vector<StmtPtr> body);
 
     Token name;
-    std::vector<Token> typeParameters;
+    std::vector<TypeParameter> typeParameters;
     std::vector<Parameter> parameters;
     std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;
@@ -274,14 +279,14 @@ struct FieldCompoundAssignExpr final : Expr {
 struct FunctionExpr final : Expr {
     FunctionExpr(
         Token keyword,
-        std::vector<Token> typeParameters,
+        std::vector<TypeParameter> typeParameters,
         std::vector<Parameter> parameters,
         std::optional<TypeAnnotation> returnTypeName,
         std::vector<StmtPtr> body);
     void print(std::ostream& out) const override;
 
     Token keyword;
-    std::vector<Token> typeParameters;
+    std::vector<TypeParameter> typeParameters;
     std::vector<Parameter> parameters;
     std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;
@@ -380,11 +385,11 @@ struct MatchExpr final : Expr {
 };
 
 struct EnumDeclStmt final : Stmt {
-    EnumDeclStmt(Token name, std::vector<Token> typeParameters, std::vector<EnumVariantDecl> variants);
+    EnumDeclStmt(Token name, std::vector<TypeParameter> typeParameters, std::vector<EnumVariantDecl> variants);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
-    std::vector<Token> typeParameters;
+    std::vector<TypeParameter> typeParameters;
     std::vector<EnumVariantDecl> variants;
 };
 
@@ -532,11 +537,11 @@ struct ContinueStmt final : Stmt {
 };
 
 struct FunctionStmt final : Stmt {
-    FunctionStmt(Token name, std::vector<Token> typeParameters, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
+    FunctionStmt(Token name, std::vector<TypeParameter> typeParameters, std::vector<Parameter> parameters, std::optional<TypeAnnotation> returnTypeName, std::vector<StmtPtr> body);
     void print(std::ostream& out, int indent) const override;
 
     Token name;
-    std::vector<Token> typeParameters;
+    std::vector<TypeParameter> typeParameters;
     std::vector<Parameter> parameters;
     std::optional<TypeAnnotation> returnTypeName;
     std::vector<StmtPtr> body;

@@ -47,10 +47,12 @@ The generic-function work now includes named functions, named-struct methods,
 anonymous function expressions, and specialization of generic callbacks passed
 to existing array higher-order helpers. All forms support inferred and explicit
 call type arguments, while generic parameters are erased before IR lowering.
+Concrete type-parameter bounds such as `T: number` are checked for functions,
+methods, lambdas, generic enums, collection callbacks, and imported signatures.
 
 Future work:
 
-- Add constraints and generic container syntax beyond the built-in `map` form.
+- Add generic container syntax beyond the built-in `map` form.
 - Do not plan loop-condition narrowing for `while` or conditional `for` bodies,
   post-branch simple-variable narrowing, or field/index nullable narrowing.
 

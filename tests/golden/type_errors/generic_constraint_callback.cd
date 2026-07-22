@@ -1,0 +1,6 @@
+fun numericPredicate<T: number>(value: T): bool {
+  return true;
+}
+
+let texts: [string] = ["text"];
+print filter(texts, numericPredicate);
