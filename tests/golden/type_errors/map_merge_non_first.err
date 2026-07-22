@@ -1,0 +1,3 @@
+Type error at 1:18: merge expects map as first argument, got number
+  merge(1, {"a": 1});
+                   ^

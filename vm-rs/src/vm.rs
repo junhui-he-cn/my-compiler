@@ -847,6 +847,60 @@ mod tests {
     }
 
     #[test]
+    fn native_merge_returns_fresh_ordered_map_and_shares_values() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let shared = vm.make_array(vec![Value::number(7.0)]);
+        let left = vm.make_map(vec![
+            (Value::string("a"), Value::number(1.0)),
+            (Value::string("b"), shared.clone()),
+        ]);
+        let right = vm.make_map(vec![
+            (Value::string("b"), Value::number(2.0)),
+            (Value::string("c"), shared.clone()),
+        ]);
+
+        let merged = vm
+            .execute_native_call("merge", vec![left.clone(), right])
+            .expect("merge succeeds");
+
+        assert_eq!(merged.to_string(), "map{a: 1, b: 2, c: [7]}");
+        assert_eq!(left.to_string(), "map{a: 1, b: [7]}");
+        assert!(!merged.runtime_equals(&left));
+
+        vm.execute_native_call("push", vec![shared, Value::number(8.0)])
+            .expect("shared value mutation succeeds");
+        assert_eq!(merged.to_string(), "map{a: 1, b: 2, c: [7, 8]}");
+        assert_eq!(left.to_string(), "map{a: 1, b: [7, 8]}");
+    }
+
+    #[test]
+    fn native_merge_validates_arity_and_map_operands() {
+        let program = empty_program();
+        let mut vm = VM::new(&program);
+        let map = vm.make_map(Vec::new());
+
+        assert_eq!(
+            vm.execute_native_call("merge", Vec::new())
+                .unwrap_err()
+                .message,
+            "merge expects 2 arguments"
+        );
+        assert_eq!(
+            vm.execute_native_call("merge", vec![Value::number(1.0), map.clone()])
+                .unwrap_err()
+                .message,
+            "merge expects map as first argument"
+        );
+        assert_eq!(
+            vm.execute_native_call("merge", vec![map, Value::number(1.0)])
+                .unwrap_err()
+                .message,
+            "merge expects map as second argument"
+        );
+    }
+
+    #[test]
     fn map_aliases_share_updates_through_cells() {
         let program = empty_program();
         let mut vm = VM::new(&program);
@@ -2053,6 +2107,7 @@ impl<'a> VM<'a> {
             "pop" => self.execute_native_pop(arguments),
             "remove" => self.execute_native_remove(arguments),
             "clear" => self.execute_native_clear(arguments),
+            "merge" => self.execute_native_merge(arguments),
             "keys" => self.execute_native_keys(arguments),
             "values" => self.execute_native_values(arguments),
             "floor" => self.execute_native_floor(arguments),
@@ -2430,6 +2485,21 @@ impl<'a> VM<'a> {
         };
         map.entries.borrow_mut().clear();
         Ok(Value::Nil)
+    }
+
+    fn execute_native_merge(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if arguments.len() != 2 {
+            return Err(RuntimeError::new("merge expects 2 arguments"));
+        }
+        let Value::Map(left) = &arguments[0] else {
+            return Err(RuntimeError::new("merge expects map as first argument"));
+        };
+        let Value::Map(right) = &arguments[1] else {
+            return Err(RuntimeError::new("merge expects map as second argument"));
+        };
+        let mut entries = left.entries.borrow().clone();
+        entries.extend(right.entries.borrow().iter().cloned());
+        Ok(self.make_map(entries))
     }
 
     fn execute_native_keys(&mut self, arguments: Vec<Value>) -> Result<Value, RuntimeError> {

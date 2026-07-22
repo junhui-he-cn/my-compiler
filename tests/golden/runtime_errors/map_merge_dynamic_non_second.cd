@@ -1,0 +1,2 @@
+fun identity(value) { return value; }
+merge({"a": 1}, identity(2));

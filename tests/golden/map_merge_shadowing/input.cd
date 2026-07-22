@@ -1,0 +1,7 @@
+fun merge(left, right) {
+  return "shadowed merge";
+}
+
+let values = {"a": 1};
+print merge(values, values);
+print values.merge({"b": 2});

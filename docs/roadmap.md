@@ -167,6 +167,12 @@ Map `clear` is also implemented as a shadowable native function with an
 unshadowed member-call form; it clears the shared ordered entry vector in
 place and returns `nil`.
 
+Map `merge` is implemented as a shadowable native function with an unshadowed
+member-call form. It returns a fresh shallow map, preserves left-hand entry
+order, replaces duplicate values without moving keys, and appends new right-hand
+keys in insertion order. Compatible known map component types are preserved;
+unknown or incompatible components produce a dynamic map result.
+
 Array `any` and `all` are implemented as shadowable native functions with
 unshadowed member-call forms. They use boolean predicates over snapshot
 elements, short-circuit left to right, and return the standard empty-array

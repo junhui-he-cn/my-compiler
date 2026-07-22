@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_merge_dynamic_non_first.cd:2:1: merge expects map as first argument
+  merge(identity(1), {"a": 1});
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_merge_dynamic_non_first.cd:2:1)

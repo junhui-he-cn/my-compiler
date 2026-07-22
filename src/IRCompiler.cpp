@@ -733,6 +733,7 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
         || expression.name.lexeme == "pop"
         || expression.name.lexeme == "remove"
         || expression.name.lexeme == "clear"
+        || expression.name.lexeme == "merge"
         || expression.name.lexeme == "keys"
         || expression.name.lexeme == "values"
         || expression.name.lexeme == "substr"

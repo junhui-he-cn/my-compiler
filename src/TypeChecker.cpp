@@ -52,6 +52,20 @@ TypeInfo concatenatedArrayType(const TypeInfo& left, const TypeInfo& right)
     return arrayType(std::move(*merged));
 }
 
+TypeInfo mergedMapType(const TypeInfo& left, const TypeInfo& right)
+{
+    if (left.kind != StaticType::Map || right.kind != StaticType::Map
+        || !left.keyType || !right.keyType || !left.valueType || !right.valueType) {
+        return simpleType(StaticType::Map);
+    }
+    std::optional<TypeInfo> key = mergeArrayElementTypes(*left.keyType, *right.keyType);
+    std::optional<TypeInfo> value = mergeArrayElementTypes(*left.valueType, *right.valueType);
+    if (!key || !value) {
+        return simpleType(StaticType::Map);
+    }
+    return mapType(std::move(*key), std::move(*value));
+}
+
 bool mapKeyTypeAllowed(const TypeInfo& type)
 {
     if (!isKnown(type)) {
@@ -1661,7 +1675,7 @@ void TypeChecker::checkEnumDeclaration(const EnumDeclStmt& statement)
 
 bool TypeChecker::isBuiltinMemberName(const std::string& name) const
 {
-    return name == "push" || name == "pop" || name == "remove" || name == "clear" || name == "keys" || name == "values" || name == "len"
+    return name == "push" || name == "pop" || name == "remove" || name == "clear" || name == "merge" || name == "keys" || name == "values" || name == "len"
         || name == "substr" || name == "charAt"
         || name == "contains" || name == "slice" || name == "copy" || name == "concat"
         || name == "map" || name == "filter" || name == "flatMap" || name == "any" || name == "all" || name == "count" || name == "find" || name == "findIndex" || name == "reduce";
@@ -3859,6 +3873,20 @@ TypeChecker::CheckedExpression TypeChecker::checkArrayReduce(
     return CheckedExpression{initial.type};
 }
 
+TypeChecker::CheckedExpression TypeChecker::checkMapMerge(
+    const Token& callToken,
+    const TypeInfo& leftType,
+    const TypeInfo& rightType)
+{
+    if (leftType.kind != StaticType::Unknown && leftType.kind != StaticType::Map) {
+        throw TypeError(callToken, "merge expects map as first argument, got " + typeInfoName(leftType));
+    }
+    if (rightType.kind != StaticType::Unknown && rightType.kind != StaticType::Map) {
+        throw TypeError(callToken, "merge expects map as second argument, got " + typeInfoName(rightType));
+    }
+    return CheckedExpression{mergedMapType(leftType, rightType)};
+}
+
 TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr& expression)
 {
     if (!expression.typeArguments.empty()) {
@@ -3950,6 +3978,11 @@ TypeChecker::CheckedExpression TypeChecker::checkNativeStdlibCall(const CallExpr
                 "clear expects map as first argument, got " + typeInfoName(mapArgument.type));
         }
         return CheckedExpression{simpleType(StaticType::Nil)};
+    }
+    case NativeFunctionKind::Merge: {
+        const CheckedExpression leftArgument = checkExpressionInfo(*expression.arguments[0]);
+        const CheckedExpression rightArgument = checkExpressionInfo(*expression.arguments[1]);
+        return checkMapMerge(expression.paren, leftArgument.type, rightArgument.type);
     }
     case NativeFunctionKind::Keys:
     case NativeFunctionKind::Values: {
@@ -4315,6 +4348,13 @@ TypeChecker::CheckedExpression TypeChecker::checkMemberCall(
                 "clear expects map receiver, got " + typeInfoName(receiver.type));
         }
         return CheckedExpression{simpleType(StaticType::Nil)};
+    }
+
+    if (name == "merge") {
+        expectArity(1);
+        const CheckedExpression receiver = checkReceiver();
+        const CheckedExpression right = checkExpressionInfo(*expression.arguments[0]);
+        return checkMapMerge(expression.paren, receiver.type, right.type);
     }
 
     if (name == "keys" || name == "values") {

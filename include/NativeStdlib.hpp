@@ -9,6 +9,7 @@ enum class NativeFunctionKind {
     Pop,
     Remove,
     Clear,
+    Merge,
     Keys,
     Values,
     Floor,

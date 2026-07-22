@@ -1,0 +1,5 @@
+Runtime error at tests/golden/runtime_errors/map_merge_dynamic_non_second.cd:2:1: merge expects map as second argument
+  merge({"a": 1}, identity(2));
+  ^
+Call stack:
+  at main (tests/golden/runtime_errors/map_merge_dynamic_non_second.cd:2:1)

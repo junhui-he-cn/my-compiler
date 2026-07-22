@@ -323,6 +323,10 @@ private:
         const TypeInfo& arrayTypeInfo,
         const Expr& initialExpression,
         const Expr& callbackExpression);
+    CheckedExpression checkMapMerge(
+        const Token& callToken,
+        const TypeInfo& leftType,
+        const TypeInfo& rightType);
     CheckedExpression checkNativeStdlibCall(const CallExpr& expression);
     IndexTargetTypes checkIndexTarget(
         const Expr& collection,

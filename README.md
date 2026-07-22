@@ -12,7 +12,7 @@ and map element assignment, numeric compound assignment for variables, array ele
 operators, typed `let` declarations, typed function parameters and returns,
 source imports, and builtins such as `len`, `push`, `pop`, `floor`, `ceil`,
 `sqrt`, `str`, `substr`, `charAt`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `flatMap`, `reduce`, `any`, `all`, `count`, `find`, `findIndex`, `remove`, `clear`, `keys`, `values`,
+`map`, `filter`, `flatMap`, `reduce`, `any`, `all`, `count`, `find`, `findIndex`, `remove`, `clear`, `merge`, `keys`, `values`,
 and `typeOf`.
 
 The compiler pipeline includes:
@@ -357,6 +357,14 @@ fresh shallow arrays in the same insertion order; existing snapshots do not
 change when the map is later mutated. Function-style names are shadowable,
 while member-call forms are unshadowed.
 
+The `merge(left, right)` and `left.merge(right)` helpers return a fresh shallow
+map. Left-hand entries keep their order; right-hand values replace equal keys
+without moving them, and new right-hand keys append in insertion order. Neither
+input map is mutated, and shared nested values remain shared. The function-style
+`merge` name is shadowable, while the member-call form is unshadowed. Known map
+component types are preserved when compatible; unknown or incompatible
+components produce a dynamic map result.
+
 The native `range` helper constructs immutable finite integer ranges:
 `range(stop)`, `range(start, stop)`, and `range(start, stop, step)`. Ranges are
 half-open, so `range(1, 5)` contains `1, 2, 3, 4`; descending ranges require a
@@ -378,12 +386,12 @@ helpers: `array.push(value)`, `array.pop()`, `array.len()`,
 `array.flatMap(callback)`,
 `array.reduce(initial, callback)`, `map.len()`,
 `map.contains(key)`,
-`map.remove(key)`, `map.clear()`, `map.keys()`, `map.values()`, `string.len()`,
+`map.remove(key)`, `map.clear()`, `map.merge(right)`, `map.keys()`, `map.values()`, `string.len()`,
 `string.substr(start, length)`, `string.charAt(index)`, and
 `range.contains(value)`. These forms lower
 to the existing builtins with the receiver as the first argument; lexical
 bindings named `push`, `pop`, `len`, `contains`, `slice`, `copy`, `concat`,
-`map`, `filter`, `flatMap`, `any`, `all`, `count`, `find`, `findIndex`, `reduce`, `remove`, `clear`, `keys`, `values`, `substr`, or `charAt` do not shadow
+`map`, `filter`, `flatMap`, `any`, `all`, `count`, `find`, `findIndex`, `reduce`, `remove`, `clear`, `merge`, `keys`, `values`, `substr`, or `charAt` do not shadow
 member-call sugar.
 
 The debug native stdlib function `typeOf(value)` returns the current runtime type name as a string: primitive values report `"nil"`, `"number"`, `"bool"`, `"string"`, or `"function"`; arrays report `"array"`; maps report `"map"`; ranges report `"range"`; enum values report their enum name such as `"Result"`; named struct values report their runtime struct name such as `"Person"` or `"geo.Point"`. A user binding named `typeOf` shadows the builtin.
