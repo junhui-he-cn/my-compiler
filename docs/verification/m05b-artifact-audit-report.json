@@ -1,0 +1,4799 @@
+{
+  "schema_version": 1,
+  "milestone": "M0.5B",
+  "audit_revision": "m05b-2026-07-22-r1",
+  "baseline_commit": "42b9da1",
+  "verification_inventory_revision": "m0d-2026-07-22-r1",
+  "contract": {
+    "family": "cdbc",
+    "version": "0.1",
+    "transport": "line-oriented UTF-8 text file",
+    "current_promise": "Future changes remain backward-compatible with 0.1 or use a new version number; M4A owns supported-version ranges, negotiation, migration, and rejection policy."
+  },
+  "corpus": {
+    "inventory_path": "tests/verification_inventory.json",
+    "artifact_runner": "artifact",
+    "artifact_case_count": 116,
+    "artifact_fixture_count": 58,
+    "artifact_case_ids": [
+      "artifact.adt_pattern_matching.emit",
+      "artifact.adt_pattern_matching.rust_dump",
+      "artifact.arithmetic.emit",
+      "artifact.arithmetic.rust_dump",
+      "artifact.array_any_all.emit",
+      "artifact.array_any_all.rust_dump",
+      "artifact.array_count.emit",
+      "artifact.array_count.rust_dump",
+      "artifact.array_filter.emit",
+      "artifact.array_filter.rust_dump",
+      "artifact.array_filter_shadowing.emit",
+      "artifact.array_filter_shadowing.rust_dump",
+      "artifact.array_find.emit",
+      "artifact.array_find.rust_dump",
+      "artifact.array_find_index.emit",
+      "artifact.array_find_index.rust_dump",
+      "artifact.array_flat_map.emit",
+      "artifact.array_flat_map.rust_dump",
+      "artifact.array_map.emit",
+      "artifact.array_map.rust_dump",
+      "artifact.array_reduce.emit",
+      "artifact.array_reduce.rust_dump",
+      "artifact.array_reduce_shadowing.emit",
+      "artifact.array_reduce_shadowing.rust_dump",
+      "artifact.collection_helpers.emit",
+      "artifact.collection_helpers.rust_dump",
+      "artifact.compound_assignment.emit",
+      "artifact.compound_assignment.rust_dump",
+      "artifact.control_flow.emit",
+      "artifact.control_flow.rust_dump",
+      "artifact.field_compound_assignment.emit",
+      "artifact.field_compound_assignment.rust_dump",
+      "artifact.for_in_loops.emit",
+      "artifact.for_in_loops.rust_dump",
+      "artifact.for_loops.emit",
+      "artifact.for_loops.rust_dump",
+      "artifact.functions_arrays.emit",
+      "artifact.functions_arrays.rust_dump",
+      "artifact.generic_enums.emit",
+      "artifact.generic_enums.rust_dump",
+      "artifact.generic_explicit_type_arguments.emit",
+      "artifact.generic_explicit_type_arguments.rust_dump",
+      "artifact.generic_functions.emit",
+      "artifact.generic_functions.rust_dump",
+      "artifact.generic_lambdas.emit",
+      "artifact.generic_lambdas.rust_dump",
+      "artifact.generic_methods.emit",
+      "artifact.generic_methods.rust_dump",
+      "artifact.import_basic.emit",
+      "artifact.import_basic.rust_dump",
+      "artifact.index_compound_assignment.emit",
+      "artifact.index_compound_assignment.rust_dump",
+      "artifact.literal_patterns.emit",
+      "artifact.literal_patterns.rust_dump",
+      "artifact.map_clear.emit",
+      "artifact.map_clear.rust_dump",
+      "artifact.map_for_in.emit",
+      "artifact.map_for_in.rust_dump",
+      "artifact.map_keys_values.emit",
+      "artifact.map_keys_values.rust_dump",
+      "artifact.map_merge.emit",
+      "artifact.map_merge.rust_dump",
+      "artifact.map_remove.emit",
+      "artifact.map_remove.rust_dump",
+      "artifact.maps.emit",
+      "artifact.maps.rust_dump",
+      "artifact.match_expression.emit",
+      "artifact.match_expression.rust_dump",
+      "artifact.match_guards.emit",
+      "artifact.match_guards.rust_dump",
+      "artifact.member_calls_arrays.emit",
+      "artifact.member_calls_arrays.rust_dump",
+      "artifact.member_calls_strings.emit",
+      "artifact.member_calls_strings.rust_dump",
+      "artifact.module_exports.emit",
+      "artifact.module_exports.rust_dump",
+      "artifact.multi_file_functions.emit",
+      "artifact.multi_file_functions.rust_dump",
+      "artifact.named_payload_fields.emit",
+      "artifact.named_payload_fields.rust_dump",
+      "artifact.named_struct_runtime_type_name.emit",
+      "artifact.named_struct_runtime_type_name.rust_dump",
+      "artifact.named_struct_types.emit",
+      "artifact.named_struct_types.rust_dump",
+      "artifact.namespace_imports.emit",
+      "artifact.namespace_imports.rust_dump",
+      "artifact.native_stdlib_math.emit",
+      "artifact.native_stdlib_math.rust_dump",
+      "artifact.native_stdlib_push_pop.emit",
+      "artifact.native_stdlib_push_pop.rust_dump",
+      "artifact.native_stdlib_strings.emit",
+      "artifact.native_stdlib_strings.rust_dump",
+      "artifact.native_stdlib_typeof.emit",
+      "artifact.native_stdlib_typeof.rust_dump",
+      "artifact.nullable_enum_patterns.emit",
+      "artifact.nullable_enum_patterns.rust_dump",
+      "artifact.or_patterns.emit",
+      "artifact.or_patterns.rust_dump",
+      "artifact.ranges.emit",
+      "artifact.ranges.rust_dump",
+      "artifact.record_patterns.emit",
+      "artifact.record_patterns.rust_dump",
+      "artifact.runtime_diagnostics.emit",
+      "artifact.runtime_diagnostics.rust_dump",
+      "artifact.struct_field_assignment.emit",
+      "artifact.struct_field_assignment.rust_dump",
+      "artifact.struct_method_compound_assignment.emit",
+      "artifact.struct_method_compound_assignment.rust_dump",
+      "artifact.struct_methods_basic.emit",
+      "artifact.struct_methods_basic.rust_dump",
+      "artifact.struct_methods_mutation.emit",
+      "artifact.struct_methods_mutation.rust_dump",
+      "artifact.structs.emit",
+      "artifact.structs.rust_dump",
+      "artifact.unicode_strings.emit",
+      "artifact.unicode_strings.rust_dump"
+    ]
+  },
+  "envelope": {
+    "current": {
+      "header": "cdbc 0.1",
+      "core_sections": [
+        "constants",
+        "names",
+        "main",
+        "function*"
+      ],
+      "optional_sections": [
+        "debug_sources",
+        "debug_locations"
+      ],
+      "section_order": "constants, names, main, zero or more function sections, optional debug_sources, optional debug_locations",
+      "parser_policy": "Rust parsing is strict: required sections, sequential references, instruction shapes, debug references, and trailing/unknown sections are rejected.",
+      "formatter_policy": "Rust dump canonicalizes a parsed program to the same cdbc 0.1 text representation used by the checked-in reference corpus.",
+      "debug_policy": "Debug metadata is additive and optional; source/function/instruction indexes are artifact-local, while line and column values are one-based."
+    },
+    "observed_header_versions": [
+      "cdbc 0.1"
+    ],
+    "observed_capability_counts": {
+      "with_functions": 28,
+      "with_native_call": 31,
+      "with_debug_sources": 58,
+      "with_debug_locations": 58
+    },
+    "artifacts": [
+      {
+        "path": "tests/bytecode_artifacts/adt_pattern_matching/expected.cdbc",
+        "bytes": 1117,
+        "sha256": "c4eecf35b2cedf8897c5a9027a24e442a0ab50b8e59ea584584e057f65fab74f",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/arithmetic/expected.cdbc",
+        "bytes": 622,
+        "sha256": "43c582a615475a00beb17cf16a3c41a5ef8bfa5214a104c1c265beeb26cab7ee",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_any_all/expected.cdbc",
+        "bytes": 1716,
+        "sha256": "99e4750c407713e0c68f30d67c282e4bc1de53688a8bd05a5c655f068922c1f1",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_count/expected.cdbc",
+        "bytes": 1722,
+        "sha256": "6aca385ef759574fad56b75763b406c361285fcfd3b5546b39f379b4799e8b16",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_filter/expected.cdbc",
+        "bytes": 3847,
+        "sha256": "ce998610d8b9546302b262c1dde63159aa3b8c9c60cbfcb4529c40d65366930f",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 3,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_filter_shadowing/expected.cdbc",
+        "bytes": 1746,
+        "sha256": "ba5ec4528776d7848dac2029b15d15b47b7cd0fcf7dd6bfb28d02d1269a454c4",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 3,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_find/expected.cdbc",
+        "bytes": 1717,
+        "sha256": "9189e208dec9a7ddf9a6f27cc5ced2c2238068bdc7ff34a5f22287ab4dd7ebca",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_find_index/expected.cdbc",
+        "bytes": 1743,
+        "sha256": "034d58490ec503b3fa0261f93aa026c8f7ac77e2620d54700d9143229988d5e9",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_flat_map/expected.cdbc",
+        "bytes": 1843,
+        "sha256": "18f51447e95bf2b08b2793e264a39b4c31c373e076dc8723f434853f93112d08",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_map/expected.cdbc",
+        "bytes": 3038,
+        "sha256": "e4824195888b5189fe5ebca922dd344277ce98152f93c055246aff8ba090568b",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 3,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_reduce/expected.cdbc",
+        "bytes": 5938,
+        "sha256": "ebb2e9fae4d47052900dfd23222f163682a4a95dc856f4e9c54f072aa9358e0e",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 5,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/array_reduce_shadowing/expected.cdbc",
+        "bytes": 2063,
+        "sha256": "e2ca2c4f4f6d8f0c2832ad0b02259c53581f6d0f32f456b87f2a9e6f5cbd0630",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 3,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/collection_helpers/expected.cdbc",
+        "bytes": 1322,
+        "sha256": "4cfe6ec7242b8739fa365fee5bfa015171e816a621723d46db3bcbd54612f51c",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/compound_assignment/expected.cdbc",
+        "bytes": 724,
+        "sha256": "fb8e80a6aa1599a4869a3dca86d093257a171c1096d765e85d9fc92d277670dd",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/control_flow/expected.cdbc",
+        "bytes": 1170,
+        "sha256": "e1d5f5a0a8f61549b4715645c4c4356a392564ac9df52e876b256b412404846a",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/field_compound_assignment/expected.cdbc",
+        "bytes": 1006,
+        "sha256": "6c47690f6c5d3f0f6149cea2895cab4027d1b7a812106742b8178f0a79d52a93",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/for_in_loops/expected.cdbc",
+        "bytes": 1705,
+        "sha256": "78b120ca691bd3d07f14973b3f0f195a8de610f58990a9636fa4b374bed50d7f",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/for_loops/expected.cdbc",
+        "bytes": 1205,
+        "sha256": "d9e2b257263b8b0d5445e44b6e40e2f4196448664c4dea58e4ae8bb2a2d2caa6",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/functions_arrays/expected.cdbc",
+        "bytes": 2740,
+        "sha256": "513b9660292e8ff3e1c1d99dbd662a72164b375c477fcc503afa1f2cc4c5f0fe",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/generic_enums/expected.cdbc",
+        "bytes": 7161,
+        "sha256": "f72ebe52781ab9267f5a3d2c2d874938e1202e0f23f25db985342043bd18edea",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/generic_explicit_type_arguments/expected.cdbc",
+        "bytes": 4305,
+        "sha256": "22e888280ddf5d90c0332ae8e6c6eb8c8646135bdebfc4f8d18873b2b64cb8d2",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 4,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/generic_functions/expected.cdbc",
+        "bytes": 3298,
+        "sha256": "d02e2ca2065aa3834b8066c150257dc0c6ce2a43e9e425ed8e6c2b392bca59cc",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 3,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/generic_lambdas/expected.cdbc",
+        "bytes": 2744,
+        "sha256": "a07c1bf81d7f28524c319e367ddd672df87e5d5c36c7e3ac814a46bf0b799921",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 4,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/generic_methods/expected.cdbc",
+        "bytes": 3562,
+        "sha256": "3af801850fbc5238f83f2c20ec715de26c3d730aabcfa4e100fc4253a0e6c9b8",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 3,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/import_basic/expected.cdbc",
+        "bytes": 1097,
+        "sha256": "9fe94d91ca30490f00b62fe0d0c4c7d12389c29cbc47d600a31f290979a243f3",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/index_compound_assignment/expected.cdbc",
+        "bytes": 984,
+        "sha256": "53ab1f2b6f223e5eaddcd269721521660b7739583edb5b261419f1cd382429eb",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/literal_patterns/expected.cdbc",
+        "bytes": 11476,
+        "sha256": "314e5fccb656fe52fce121a1afaf1fb035a5791fcb30386d924c6570950c1c98",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 3,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/map_clear/expected.cdbc",
+        "bytes": 1426,
+        "sha256": "35c3ad976fbbfb576a5afbb3040423ba28bf2191d3f93ed4b835dc5c0898da3c",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/map_for_in/expected.cdbc",
+        "bytes": 2379,
+        "sha256": "6d65566c8acd0abe98f5148bb4b06c608f7a945045550c1b49ad4ce77cbf8841",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/map_keys_values/expected.cdbc",
+        "bytes": 860,
+        "sha256": "460d11f911b8f06abfadeb5124cbbbed2f9733f2a21a3d02e6e89aaa228847e5",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/map_merge/expected.cdbc",
+        "bytes": 1379,
+        "sha256": "33b945fd3f63eb567121134269a37692a9f76802147289651d8fe40d0c8d89d1",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/map_remove/expected.cdbc",
+        "bytes": 1360,
+        "sha256": "ca13c4840b55970b6e3d29039b51e49c27a358ad72f5c100d7f35354347293d4",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/maps/expected.cdbc",
+        "bytes": 1743,
+        "sha256": "7743903337431d4f28c88cc5f07fafeb0fd2fb745387436a76b613414d49a2c8",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/match_expression/expected.cdbc",
+        "bytes": 1237,
+        "sha256": "2326547a48ffc5a3bec7f229d73cf1f6aa57cee3cb6432309c59963eeec2968a",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/match_guards/expected.cdbc",
+        "bytes": 1665,
+        "sha256": "d3025ec8e482ff2af6b4b2c21e06955da370100f784aed54258a70ef548ac501",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/member_calls_arrays/expected.cdbc",
+        "bytes": 789,
+        "sha256": "a59984b36d2ad99eae318d9a115518153b67e13a0d7d2ef9cccba37504de63e2",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/member_calls_strings/expected.cdbc",
+        "bytes": 940,
+        "sha256": "5ab352ee891c3aee0417318b38ff305302feb9ceaa956920a42eaed2411d9e98",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/module_exports/expected.cdbc",
+        "bytes": 1689,
+        "sha256": "678b1919faa7be7429b4395cc9008f48934d2b3cde0cd3a2c957608de0e4e393",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/multi_file_functions/expected.cdbc",
+        "bytes": 1077,
+        "sha256": "d8fc98243eccf8caed603e45f7d64fe9e165a2071aff0cbb0b5fe61264364e88",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/named_payload_fields/expected.cdbc",
+        "bytes": 1592,
+        "sha256": "cf24429b6f45e1cb9d4fe6280cc209e7845c4c175bfc00d76abfafb5c1b8f918",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/named_struct_runtime_type_name/expected.cdbc",
+        "bytes": 447,
+        "sha256": "4f6a4a49187d941419925e1a85991536b4b9224b4959ef467a7f9fac0085a3db",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/named_struct_types/expected.cdbc",
+        "bytes": 984,
+        "sha256": "d12a19602659f15f2cb544ed3bd84e9bc45c5a0d8a261e67cc84f40e5f675416",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/namespace_imports/expected.cdbc",
+        "bytes": 1114,
+        "sha256": "5c1a65a5a5b876c4a1b3971b9f39d2a8e027959a9877d563bfa56bfee92659cd",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/native_stdlib_math/expected.cdbc",
+        "bytes": 641,
+        "sha256": "809bafc70c131cbfc661ec4627796efeef23641ef1fed1b64d5578f3842a8f3c",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/native_stdlib_push_pop/expected.cdbc",
+        "bytes": 807,
+        "sha256": "955bdd06d91323b0ab64adbe80b41a6f80035e66fd55c052dc1743b7ae2e7cd5",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/native_stdlib_strings/expected.cdbc",
+        "bytes": 962,
+        "sha256": "c3377c939fa756368c7210bb33ea4ada7e39fafd6ac7ed616d41763935304c9b",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/native_stdlib_typeof/expected.cdbc",
+        "bytes": 964,
+        "sha256": "79b4ede95dc063fa4d8f3ed9fb16fe0dafc299f28b61d1ac170b84225051ebec",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/nullable_enum_patterns/expected.cdbc",
+        "bytes": 5811,
+        "sha256": "66d7be8f4977dfd0108fe1e2a83f1e1998f15311096441899d046eeb5faf34bb",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/or_patterns/expected.cdbc",
+        "bytes": 7319,
+        "sha256": "211974823ebb7d8ee9adef521c45da98d0867b93af6d2de0156c561565abe864",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 2,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/ranges/expected.cdbc",
+        "bytes": 4939,
+        "sha256": "a75c0d1a5e1b59c131ea3e247b7cd0469448b37c235d0df11a6e2154a6724fe4",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/record_patterns/expected.cdbc",
+        "bytes": 6095,
+        "sha256": "6e325ce7cb17ae2779997c58746145aa2e7a29b4cb1ef91ada1ff5b719993647",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc",
+        "bytes": 826,
+        "sha256": "caa539eb814d19981b9c94a593dfbe6f999177d605f3503c1d12a5296cea1e68",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/struct_field_assignment/expected.cdbc",
+        "bytes": 862,
+        "sha256": "7396f3191173b22e497cf1a8addd5a0fb416c18397882189fe368560acaf3259",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/struct_method_compound_assignment/expected.cdbc",
+        "bytes": 1842,
+        "sha256": "b3c1005103589e22ffa7cc525952cc148df9f3c28b75c2f1e66bd83b616cb2b8",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/struct_methods_basic/expected.cdbc",
+        "bytes": 1345,
+        "sha256": "32d20302885d0d18e88f01fa54769f95a3a7b2be5ea1b64bc347028bb4e73049",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/struct_methods_mutation/expected.cdbc",
+        "bytes": 1653,
+        "sha256": "4d3fc717a96f11b8cacde1aaed311664093f679783ff6f4d334b3866ef5b2594",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 1,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/structs/expected.cdbc",
+        "bytes": 1360,
+        "sha256": "fab8bf0734772294c79351c1582ee7fdb23b299cf481bf69fc44918216dcbc61",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": false,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "path": "tests/bytecode_artifacts/unicode_strings/expected.cdbc",
+        "bytes": 2228,
+        "sha256": "46a32f92d78f924e7b1d1b3212d09854b16af6a72da46b72add130de239ca99f",
+        "header": "cdbc 0.1",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "functions": 0,
+        "has_native_call": true,
+        "has_debug_sources": true,
+        "has_debug_locations": true,
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      }
+    ],
+    "case_capabilities": [
+      {
+        "case_id": "artifact.adt_pattern_matching.emit",
+        "result_name": "adt_pattern_matching emit",
+        "fixture": "tests/bytecode_artifacts/adt_pattern_matching",
+        "artifact": "tests/bytecode_artifacts/adt_pattern_matching/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.adt_pattern_matching.rust_dump",
+        "result_name": "adt_pattern_matching rust-dump",
+        "fixture": "tests/bytecode_artifacts/adt_pattern_matching",
+        "artifact": "tests/bytecode_artifacts/adt_pattern_matching/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.arithmetic.emit",
+        "result_name": "arithmetic emit",
+        "fixture": "tests/bytecode_artifacts/arithmetic",
+        "artifact": "tests/bytecode_artifacts/arithmetic/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.arithmetic.rust_dump",
+        "result_name": "arithmetic rust-dump",
+        "fixture": "tests/bytecode_artifacts/arithmetic",
+        "artifact": "tests/bytecode_artifacts/arithmetic/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_any_all.emit",
+        "result_name": "array_any_all emit",
+        "fixture": "tests/bytecode_artifacts/array_any_all",
+        "artifact": "tests/bytecode_artifacts/array_any_all/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_any_all.rust_dump",
+        "result_name": "array_any_all rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_any_all",
+        "artifact": "tests/bytecode_artifacts/array_any_all/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_count.emit",
+        "result_name": "array_count emit",
+        "fixture": "tests/bytecode_artifacts/array_count",
+        "artifact": "tests/bytecode_artifacts/array_count/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_count.rust_dump",
+        "result_name": "array_count rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_count",
+        "artifact": "tests/bytecode_artifacts/array_count/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_filter.emit",
+        "result_name": "array_filter emit",
+        "fixture": "tests/bytecode_artifacts/array_filter",
+        "artifact": "tests/bytecode_artifacts/array_filter/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_filter.rust_dump",
+        "result_name": "array_filter rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_filter",
+        "artifact": "tests/bytecode_artifacts/array_filter/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_filter_shadowing.emit",
+        "result_name": "array_filter_shadowing emit",
+        "fixture": "tests/bytecode_artifacts/array_filter_shadowing",
+        "artifact": "tests/bytecode_artifacts/array_filter_shadowing/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_filter_shadowing.rust_dump",
+        "result_name": "array_filter_shadowing rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_filter_shadowing",
+        "artifact": "tests/bytecode_artifacts/array_filter_shadowing/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_find.emit",
+        "result_name": "array_find emit",
+        "fixture": "tests/bytecode_artifacts/array_find",
+        "artifact": "tests/bytecode_artifacts/array_find/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_find.rust_dump",
+        "result_name": "array_find rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_find",
+        "artifact": "tests/bytecode_artifacts/array_find/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_find_index.emit",
+        "result_name": "array_find_index emit",
+        "fixture": "tests/bytecode_artifacts/array_find_index",
+        "artifact": "tests/bytecode_artifacts/array_find_index/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_find_index.rust_dump",
+        "result_name": "array_find_index rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_find_index",
+        "artifact": "tests/bytecode_artifacts/array_find_index/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_flat_map.emit",
+        "result_name": "array_flat_map emit",
+        "fixture": "tests/bytecode_artifacts/array_flat_map",
+        "artifact": "tests/bytecode_artifacts/array_flat_map/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_flat_map.rust_dump",
+        "result_name": "array_flat_map rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_flat_map",
+        "artifact": "tests/bytecode_artifacts/array_flat_map/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_map.emit",
+        "result_name": "array_map emit",
+        "fixture": "tests/bytecode_artifacts/array_map",
+        "artifact": "tests/bytecode_artifacts/array_map/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_map.rust_dump",
+        "result_name": "array_map rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_map",
+        "artifact": "tests/bytecode_artifacts/array_map/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_reduce.emit",
+        "result_name": "array_reduce emit",
+        "fixture": "tests/bytecode_artifacts/array_reduce",
+        "artifact": "tests/bytecode_artifacts/array_reduce/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_reduce.rust_dump",
+        "result_name": "array_reduce rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_reduce",
+        "artifact": "tests/bytecode_artifacts/array_reduce/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_reduce_shadowing.emit",
+        "result_name": "array_reduce_shadowing emit",
+        "fixture": "tests/bytecode_artifacts/array_reduce_shadowing",
+        "artifact": "tests/bytecode_artifacts/array_reduce_shadowing/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.array_reduce_shadowing.rust_dump",
+        "result_name": "array_reduce_shadowing rust-dump",
+        "fixture": "tests/bytecode_artifacts/array_reduce_shadowing",
+        "artifact": "tests/bytecode_artifacts/array_reduce_shadowing/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.collection_helpers.emit",
+        "result_name": "collection_helpers emit",
+        "fixture": "tests/bytecode_artifacts/collection_helpers",
+        "artifact": "tests/bytecode_artifacts/collection_helpers/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.collection_helpers.rust_dump",
+        "result_name": "collection_helpers rust-dump",
+        "fixture": "tests/bytecode_artifacts/collection_helpers",
+        "artifact": "tests/bytecode_artifacts/collection_helpers/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.compound_assignment.emit",
+        "result_name": "compound_assignment emit",
+        "fixture": "tests/bytecode_artifacts/compound_assignment",
+        "artifact": "tests/bytecode_artifacts/compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.compound_assignment.rust_dump",
+        "result_name": "compound_assignment rust-dump",
+        "fixture": "tests/bytecode_artifacts/compound_assignment",
+        "artifact": "tests/bytecode_artifacts/compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.control_flow.emit",
+        "result_name": "control_flow emit",
+        "fixture": "tests/bytecode_artifacts/control_flow",
+        "artifact": "tests/bytecode_artifacts/control_flow/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.control_flow.rust_dump",
+        "result_name": "control_flow rust-dump",
+        "fixture": "tests/bytecode_artifacts/control_flow",
+        "artifact": "tests/bytecode_artifacts/control_flow/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.field_compound_assignment.emit",
+        "result_name": "field_compound_assignment emit",
+        "fixture": "tests/bytecode_artifacts/field_compound_assignment",
+        "artifact": "tests/bytecode_artifacts/field_compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.field_compound_assignment.rust_dump",
+        "result_name": "field_compound_assignment rust-dump",
+        "fixture": "tests/bytecode_artifacts/field_compound_assignment",
+        "artifact": "tests/bytecode_artifacts/field_compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.for_in_loops.emit",
+        "result_name": "for_in_loops emit",
+        "fixture": "tests/bytecode_artifacts/for_in_loops",
+        "artifact": "tests/bytecode_artifacts/for_in_loops/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.for_in_loops.rust_dump",
+        "result_name": "for_in_loops rust-dump",
+        "fixture": "tests/bytecode_artifacts/for_in_loops",
+        "artifact": "tests/bytecode_artifacts/for_in_loops/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.for_loops.emit",
+        "result_name": "for_loops emit",
+        "fixture": "tests/bytecode_artifacts/for_loops",
+        "artifact": "tests/bytecode_artifacts/for_loops/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.for_loops.rust_dump",
+        "result_name": "for_loops rust-dump",
+        "fixture": "tests/bytecode_artifacts/for_loops",
+        "artifact": "tests/bytecode_artifacts/for_loops/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.functions_arrays.emit",
+        "result_name": "functions_arrays emit",
+        "fixture": "tests/bytecode_artifacts/functions_arrays",
+        "artifact": "tests/bytecode_artifacts/functions_arrays/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.functions_arrays.rust_dump",
+        "result_name": "functions_arrays rust-dump",
+        "fixture": "tests/bytecode_artifacts/functions_arrays",
+        "artifact": "tests/bytecode_artifacts/functions_arrays/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_enums.emit",
+        "result_name": "generic_enums emit",
+        "fixture": "tests/bytecode_artifacts/generic_enums",
+        "artifact": "tests/bytecode_artifacts/generic_enums/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_enums.rust_dump",
+        "result_name": "generic_enums rust-dump",
+        "fixture": "tests/bytecode_artifacts/generic_enums",
+        "artifact": "tests/bytecode_artifacts/generic_enums/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_explicit_type_arguments.emit",
+        "result_name": "generic_explicit_type_arguments emit",
+        "fixture": "tests/bytecode_artifacts/generic_explicit_type_arguments",
+        "artifact": "tests/bytecode_artifacts/generic_explicit_type_arguments/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_explicit_type_arguments.rust_dump",
+        "result_name": "generic_explicit_type_arguments rust-dump",
+        "fixture": "tests/bytecode_artifacts/generic_explicit_type_arguments",
+        "artifact": "tests/bytecode_artifacts/generic_explicit_type_arguments/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_functions.emit",
+        "result_name": "generic_functions emit",
+        "fixture": "tests/bytecode_artifacts/generic_functions",
+        "artifact": "tests/bytecode_artifacts/generic_functions/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_functions.rust_dump",
+        "result_name": "generic_functions rust-dump",
+        "fixture": "tests/bytecode_artifacts/generic_functions",
+        "artifact": "tests/bytecode_artifacts/generic_functions/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_lambdas.emit",
+        "result_name": "generic_lambdas emit",
+        "fixture": "tests/bytecode_artifacts/generic_lambdas",
+        "artifact": "tests/bytecode_artifacts/generic_lambdas/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_lambdas.rust_dump",
+        "result_name": "generic_lambdas rust-dump",
+        "fixture": "tests/bytecode_artifacts/generic_lambdas",
+        "artifact": "tests/bytecode_artifacts/generic_lambdas/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_methods.emit",
+        "result_name": "generic_methods emit",
+        "fixture": "tests/bytecode_artifacts/generic_methods",
+        "artifact": "tests/bytecode_artifacts/generic_methods/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.generic_methods.rust_dump",
+        "result_name": "generic_methods rust-dump",
+        "fixture": "tests/bytecode_artifacts/generic_methods",
+        "artifact": "tests/bytecode_artifacts/generic_methods/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.import_basic.emit",
+        "result_name": "import_basic emit",
+        "fixture": "tests/bytecode_artifacts/import_basic",
+        "artifact": "tests/bytecode_artifacts/import_basic/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.import_basic.rust_dump",
+        "result_name": "import_basic rust-dump",
+        "fixture": "tests/bytecode_artifacts/import_basic",
+        "artifact": "tests/bytecode_artifacts/import_basic/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.index_compound_assignment.emit",
+        "result_name": "index_compound_assignment emit",
+        "fixture": "tests/bytecode_artifacts/index_compound_assignment",
+        "artifact": "tests/bytecode_artifacts/index_compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.index_compound_assignment.rust_dump",
+        "result_name": "index_compound_assignment rust-dump",
+        "fixture": "tests/bytecode_artifacts/index_compound_assignment",
+        "artifact": "tests/bytecode_artifacts/index_compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.literal_patterns.emit",
+        "result_name": "literal_patterns emit",
+        "fixture": "tests/bytecode_artifacts/literal_patterns",
+        "artifact": "tests/bytecode_artifacts/literal_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.literal_patterns.rust_dump",
+        "result_name": "literal_patterns rust-dump",
+        "fixture": "tests/bytecode_artifacts/literal_patterns",
+        "artifact": "tests/bytecode_artifacts/literal_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_clear.emit",
+        "result_name": "map_clear emit",
+        "fixture": "tests/bytecode_artifacts/map_clear",
+        "artifact": "tests/bytecode_artifacts/map_clear/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_clear.rust_dump",
+        "result_name": "map_clear rust-dump",
+        "fixture": "tests/bytecode_artifacts/map_clear",
+        "artifact": "tests/bytecode_artifacts/map_clear/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_for_in.emit",
+        "result_name": "map_for_in emit",
+        "fixture": "tests/bytecode_artifacts/map_for_in",
+        "artifact": "tests/bytecode_artifacts/map_for_in/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_for_in.rust_dump",
+        "result_name": "map_for_in rust-dump",
+        "fixture": "tests/bytecode_artifacts/map_for_in",
+        "artifact": "tests/bytecode_artifacts/map_for_in/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_keys_values.emit",
+        "result_name": "map_keys_values emit",
+        "fixture": "tests/bytecode_artifacts/map_keys_values",
+        "artifact": "tests/bytecode_artifacts/map_keys_values/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_keys_values.rust_dump",
+        "result_name": "map_keys_values rust-dump",
+        "fixture": "tests/bytecode_artifacts/map_keys_values",
+        "artifact": "tests/bytecode_artifacts/map_keys_values/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_merge.emit",
+        "result_name": "map_merge emit",
+        "fixture": "tests/bytecode_artifacts/map_merge",
+        "artifact": "tests/bytecode_artifacts/map_merge/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_merge.rust_dump",
+        "result_name": "map_merge rust-dump",
+        "fixture": "tests/bytecode_artifacts/map_merge",
+        "artifact": "tests/bytecode_artifacts/map_merge/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_remove.emit",
+        "result_name": "map_remove emit",
+        "fixture": "tests/bytecode_artifacts/map_remove",
+        "artifact": "tests/bytecode_artifacts/map_remove/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.map_remove.rust_dump",
+        "result_name": "map_remove rust-dump",
+        "fixture": "tests/bytecode_artifacts/map_remove",
+        "artifact": "tests/bytecode_artifacts/map_remove/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.maps.emit",
+        "result_name": "maps emit",
+        "fixture": "tests/bytecode_artifacts/maps",
+        "artifact": "tests/bytecode_artifacts/maps/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.maps.rust_dump",
+        "result_name": "maps rust-dump",
+        "fixture": "tests/bytecode_artifacts/maps",
+        "artifact": "tests/bytecode_artifacts/maps/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.match_expression.emit",
+        "result_name": "match_expression emit",
+        "fixture": "tests/bytecode_artifacts/match_expression",
+        "artifact": "tests/bytecode_artifacts/match_expression/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.match_expression.rust_dump",
+        "result_name": "match_expression rust-dump",
+        "fixture": "tests/bytecode_artifacts/match_expression",
+        "artifact": "tests/bytecode_artifacts/match_expression/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.match_guards.emit",
+        "result_name": "match_guards emit",
+        "fixture": "tests/bytecode_artifacts/match_guards",
+        "artifact": "tests/bytecode_artifacts/match_guards/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.match_guards.rust_dump",
+        "result_name": "match_guards rust-dump",
+        "fixture": "tests/bytecode_artifacts/match_guards",
+        "artifact": "tests/bytecode_artifacts/match_guards/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.member_calls_arrays.emit",
+        "result_name": "member_calls_arrays emit",
+        "fixture": "tests/bytecode_artifacts/member_calls_arrays",
+        "artifact": "tests/bytecode_artifacts/member_calls_arrays/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.member_calls_arrays.rust_dump",
+        "result_name": "member_calls_arrays rust-dump",
+        "fixture": "tests/bytecode_artifacts/member_calls_arrays",
+        "artifact": "tests/bytecode_artifacts/member_calls_arrays/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.member_calls_strings.emit",
+        "result_name": "member_calls_strings emit",
+        "fixture": "tests/bytecode_artifacts/member_calls_strings",
+        "artifact": "tests/bytecode_artifacts/member_calls_strings/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.member_calls_strings.rust_dump",
+        "result_name": "member_calls_strings rust-dump",
+        "fixture": "tests/bytecode_artifacts/member_calls_strings",
+        "artifact": "tests/bytecode_artifacts/member_calls_strings/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.module_exports.emit",
+        "result_name": "module_exports emit",
+        "fixture": "tests/bytecode_artifacts/module_exports",
+        "artifact": "tests/bytecode_artifacts/module_exports/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.module_exports.rust_dump",
+        "result_name": "module_exports rust-dump",
+        "fixture": "tests/bytecode_artifacts/module_exports",
+        "artifact": "tests/bytecode_artifacts/module_exports/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.multi_file_functions.emit",
+        "result_name": "multi_file_functions emit",
+        "fixture": "tests/bytecode_artifacts/multi_file_functions",
+        "artifact": "tests/bytecode_artifacts/multi_file_functions/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.multi_file_functions.rust_dump",
+        "result_name": "multi_file_functions rust-dump",
+        "fixture": "tests/bytecode_artifacts/multi_file_functions",
+        "artifact": "tests/bytecode_artifacts/multi_file_functions/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.named_payload_fields.emit",
+        "result_name": "named_payload_fields emit",
+        "fixture": "tests/bytecode_artifacts/named_payload_fields",
+        "artifact": "tests/bytecode_artifacts/named_payload_fields/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.named_payload_fields.rust_dump",
+        "result_name": "named_payload_fields rust-dump",
+        "fixture": "tests/bytecode_artifacts/named_payload_fields",
+        "artifact": "tests/bytecode_artifacts/named_payload_fields/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.named_struct_runtime_type_name.emit",
+        "result_name": "named_struct_runtime_type_name emit",
+        "fixture": "tests/bytecode_artifacts/named_struct_runtime_type_name",
+        "artifact": "tests/bytecode_artifacts/named_struct_runtime_type_name/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.named_struct_runtime_type_name.rust_dump",
+        "result_name": "named_struct_runtime_type_name rust-dump",
+        "fixture": "tests/bytecode_artifacts/named_struct_runtime_type_name",
+        "artifact": "tests/bytecode_artifacts/named_struct_runtime_type_name/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.named_struct_types.emit",
+        "result_name": "named_struct_types emit",
+        "fixture": "tests/bytecode_artifacts/named_struct_types",
+        "artifact": "tests/bytecode_artifacts/named_struct_types/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.named_struct_types.rust_dump",
+        "result_name": "named_struct_types rust-dump",
+        "fixture": "tests/bytecode_artifacts/named_struct_types",
+        "artifact": "tests/bytecode_artifacts/named_struct_types/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.namespace_imports.emit",
+        "result_name": "namespace_imports emit",
+        "fixture": "tests/bytecode_artifacts/namespace_imports",
+        "artifact": "tests/bytecode_artifacts/namespace_imports/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.namespace_imports.rust_dump",
+        "result_name": "namespace_imports rust-dump",
+        "fixture": "tests/bytecode_artifacts/namespace_imports",
+        "artifact": "tests/bytecode_artifacts/namespace_imports/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_math.emit",
+        "result_name": "native_stdlib_math emit",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_math",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_math/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_math.rust_dump",
+        "result_name": "native_stdlib_math rust-dump",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_math",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_math/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_push_pop.emit",
+        "result_name": "native_stdlib_push_pop emit",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_push_pop",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_push_pop/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_push_pop.rust_dump",
+        "result_name": "native_stdlib_push_pop rust-dump",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_push_pop",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_push_pop/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_strings.emit",
+        "result_name": "native_stdlib_strings emit",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_strings",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_strings/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_strings.rust_dump",
+        "result_name": "native_stdlib_strings rust-dump",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_strings",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_strings/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_typeof.emit",
+        "result_name": "native_stdlib_typeof emit",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_typeof",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_typeof/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.native_stdlib_typeof.rust_dump",
+        "result_name": "native_stdlib_typeof rust-dump",
+        "fixture": "tests/bytecode_artifacts/native_stdlib_typeof",
+        "artifact": "tests/bytecode_artifacts/native_stdlib_typeof/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.nullable_enum_patterns.emit",
+        "result_name": "nullable_enum_patterns emit",
+        "fixture": "tests/bytecode_artifacts/nullable_enum_patterns",
+        "artifact": "tests/bytecode_artifacts/nullable_enum_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.nullable_enum_patterns.rust_dump",
+        "result_name": "nullable_enum_patterns rust-dump",
+        "fixture": "tests/bytecode_artifacts/nullable_enum_patterns",
+        "artifact": "tests/bytecode_artifacts/nullable_enum_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.or_patterns.emit",
+        "result_name": "or_patterns emit",
+        "fixture": "tests/bytecode_artifacts/or_patterns",
+        "artifact": "tests/bytecode_artifacts/or_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.or_patterns.rust_dump",
+        "result_name": "or_patterns rust-dump",
+        "fixture": "tests/bytecode_artifacts/or_patterns",
+        "artifact": "tests/bytecode_artifacts/or_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.ranges.emit",
+        "result_name": "ranges emit",
+        "fixture": "tests/bytecode_artifacts/ranges",
+        "artifact": "tests/bytecode_artifacts/ranges/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.ranges.rust_dump",
+        "result_name": "ranges rust-dump",
+        "fixture": "tests/bytecode_artifacts/ranges",
+        "artifact": "tests/bytecode_artifacts/ranges/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.record_patterns.emit",
+        "result_name": "record_patterns emit",
+        "fixture": "tests/bytecode_artifacts/record_patterns",
+        "artifact": "tests/bytecode_artifacts/record_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.record_patterns.rust_dump",
+        "result_name": "record_patterns rust-dump",
+        "fixture": "tests/bytecode_artifacts/record_patterns",
+        "artifact": "tests/bytecode_artifacts/record_patterns/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.runtime_diagnostics.emit",
+        "result_name": "runtime_diagnostics emit",
+        "fixture": "tests/bytecode_artifacts/runtime_diagnostics",
+        "artifact": "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.runtime_diagnostics.rust_dump",
+        "result_name": "runtime_diagnostics rust-dump",
+        "fixture": "tests/bytecode_artifacts/runtime_diagnostics",
+        "artifact": "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_field_assignment.emit",
+        "result_name": "struct_field_assignment emit",
+        "fixture": "tests/bytecode_artifacts/struct_field_assignment",
+        "artifact": "tests/bytecode_artifacts/struct_field_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_field_assignment.rust_dump",
+        "result_name": "struct_field_assignment rust-dump",
+        "fixture": "tests/bytecode_artifacts/struct_field_assignment",
+        "artifact": "tests/bytecode_artifacts/struct_field_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_method_compound_assignment.emit",
+        "result_name": "struct_method_compound_assignment emit",
+        "fixture": "tests/bytecode_artifacts/struct_method_compound_assignment",
+        "artifact": "tests/bytecode_artifacts/struct_method_compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_method_compound_assignment.rust_dump",
+        "result_name": "struct_method_compound_assignment rust-dump",
+        "fixture": "tests/bytecode_artifacts/struct_method_compound_assignment",
+        "artifact": "tests/bytecode_artifacts/struct_method_compound_assignment/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_methods_basic.emit",
+        "result_name": "struct_methods_basic emit",
+        "fixture": "tests/bytecode_artifacts/struct_methods_basic",
+        "artifact": "tests/bytecode_artifacts/struct_methods_basic/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_methods_basic.rust_dump",
+        "result_name": "struct_methods_basic rust-dump",
+        "fixture": "tests/bytecode_artifacts/struct_methods_basic",
+        "artifact": "tests/bytecode_artifacts/struct_methods_basic/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_methods_mutation.emit",
+        "result_name": "struct_methods_mutation emit",
+        "fixture": "tests/bytecode_artifacts/struct_methods_mutation",
+        "artifact": "tests/bytecode_artifacts/struct_methods_mutation/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.struct_methods_mutation.rust_dump",
+        "result_name": "struct_methods_mutation rust-dump",
+        "fixture": "tests/bytecode_artifacts/struct_methods_mutation",
+        "artifact": "tests/bytecode_artifacts/struct_methods_mutation/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "function",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "function_sections",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.structs.emit",
+        "result_name": "structs emit",
+        "fixture": "tests/bytecode_artifacts/structs",
+        "artifact": "tests/bytecode_artifacts/structs/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.structs.rust_dump",
+        "result_name": "structs rust-dump",
+        "fixture": "tests/bytecode_artifacts/structs",
+        "artifact": "tests/bytecode_artifacts/structs/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.unicode_strings.emit",
+        "result_name": "unicode_strings emit",
+        "fixture": "tests/bytecode_artifacts/unicode_strings",
+        "artifact": "tests/bytecode_artifacts/unicode_strings/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      },
+      {
+        "case_id": "artifact.unicode_strings.rust_dump",
+        "result_name": "unicode_strings rust-dump",
+        "fixture": "tests/bytecode_artifacts/unicode_strings",
+        "artifact": "tests/bytecode_artifacts/unicode_strings/expected.cdbc",
+        "format_family": "cdbc",
+        "format_version": "0.1",
+        "section_order": [
+          "constants",
+          "names",
+          "main",
+          "debug_sources",
+          "debug_locations"
+        ],
+        "envelope_capabilities": [
+          "header_family_version",
+          "canonical_core_sections",
+          "strict_reference_indices",
+          "native_call",
+          "debug_sources",
+          "debug_locations"
+        ]
+      }
+    ]
+  },
+  "evolution_decisions": [
+    {
+      "field_id": "artifact-kind",
+      "field": "artifact kind",
+      "classification": "already present",
+      "current_state": "The cdbc family header, .cdbc extension, compiler emit mode, and Rust dump/run commands identify the current artifact kind.",
+      "named_consumer": "C++ BytecodeTextEmitter and Rust format parser/CLI",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "rationale": "No second artifact family is currently transported or consumed.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "Introduce a distinct artifact family only if a concrete consumer cannot use the cdbc 0.1 envelope."
+      }
+    },
+    {
+      "field_id": "debug-metadata",
+      "field": "debug sources and locations",
+      "classification": "already present",
+      "current_state": "Optional debug_sources and debug_locations sections are emitted, strictly parsed, and used by the Rust VM for source-aware runtime diagnostics.",
+      "named_consumer": "Rust VM runtime diagnostics and debugger-oriented M4B work",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc",
+        "vm-rs/src/format.rs"
+      ],
+      "rationale": "The existing additive metadata already covers the current source-mapped runtime consumer without changing core execution sections.",
+      "revisit": {
+        "milestone": "M4B",
+        "condition": "Extend metadata only when a named debugger/runtime consumer requires a field not expressible by the current sparse mappings."
+      }
+    },
+    {
+      "field_id": "unknown-section-policy",
+      "field": "unknown section handling",
+      "classification": "already present",
+      "current_state": "The Rust parser is strict and rejects an unexpected section instead of silently skipping it.",
+      "named_consumer": "Rust artifact parser",
+      "planned_fixtures": [
+        "tests/malformed_cases.json"
+      ],
+      "rationale": "Strict rejection protects the current canonical parser/formatter contract and prevents an older VM from silently misinterpreting new semantics.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "Change only with an explicit versioned forward-compatibility policy and parser tests for unknown sections."
+      }
+    },
+    {
+      "field_id": "runtime-target-identity",
+      "field": "runtime and target identity",
+      "classification": "deferred",
+      "current_state": "The artifact does not declare a target triple, VM identity, or runtime feature set; the current compiler and Rust VM are the only named consumer pair.",
+      "named_consumer": "M4A compatibility validator, if multi-runtime or cross-target transport is introduced",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/runtime-target-mismatch.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "No current transport or consumer needs to select among runtimes or targets, so adding an unconsumed field would create speculative ABI surface.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A second runtime, target, or artifact transport requires deterministic compatibility rejection or selection."
+      }
+    },
+    {
+      "field_id": "capability-flags",
+      "field": "capability flags",
+      "classification": "deferred",
+      "current_state": "The current version has one fixed opcode/native capability set and no negotiation handshake.",
+      "named_consumer": "M4A version/capability negotiation",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/unsupported-capability.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "Capability bits without a consumer-defined negotiation or rejection rule would be metadata without semantics.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A compatible extension needs feature discovery while preserving a supported 0.1 reader/writer path."
+      }
+    },
+    {
+      "field_id": "module-identity",
+      "field": "module identity",
+      "classification": "deferred",
+      "current_state": "Current .cdbc output is one linked program artifact; module-interface text is inspection metadata and not a separate-compilation input.",
+      "named_consumer": "M3A/M3B module graph and separate/incremental compilation",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/module-identity.cdbc (M3B/M4A planned fixture)"
+      ],
+      "rationale": "Module identity belongs to the module graph and separate-compilation decision; it is not needed in the current whole-program artifact.",
+      "revisit": {
+        "milestone": "M3A/M3B, then M4A if serialized module products use cdbc",
+        "condition": "Choose whether modules link into one final artifact or carry independently validated artifact/interface identities."
+      }
+    },
+    {
+      "field_id": "explicit-framing",
+      "field": "explicit binary or record framing",
+      "classification": "not currently required",
+      "current_state": "The contract is a line-oriented UTF-8 file; no streaming, concatenation, embedded transport, or binary consumer exists.",
+      "named_consumer": "None in the current repository",
+      "planned_fixtures": [],
+      "rationale": "A new framing layer would add format and implementation cost without a concrete transport requirement.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A named transport requires bounded records, random access, binary encoding, or corruption-resilient framing."
+      }
+    },
+    {
+      "field_id": "integrity-metadata",
+      "field": "integrity or content hash metadata",
+      "classification": "deferred",
+      "current_state": "The current artifact has no embedded digest or signature; local tests compare complete text files and the Rust parser validates structure.",
+      "named_consumer": "M4A artifact transport/cache or security validator, if introduced",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/integrity-mismatch.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "Structural parsing and repository golden comparison cover the current local workflow; an integrity field needs a defined trust boundary and failure policy.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "Artifacts cross an untrusted transport or are cached/shared where authenticity or corruption detection is a stated requirement."
+      }
+    },
+    {
+      "field_id": "successor-version-negotiation",
+      "field": "successor version and version negotiation",
+      "classification": "successor-version candidate",
+      "current_state": "No successor version or negotiation range is selected; the parser accepts exactly cdbc 0.1 and rejects other family/version headers before execution.",
+      "named_consumer": "M4A compatibility matrix, migration/rejection policy, and version-aware Rust parser",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/cdbc_0_2_header.cdbc (M4A planned fixture)",
+        "tests/bytecode_artifacts/compatibility/cdbc_0_1_rejection.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "A breaking artifact change would need a new version, but M0.5B finds no current requirement that justifies selecting one now.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A selected artifact/runtime change cannot remain a compatible extension of 0.1 and has a concrete producer/consumer migration plan."
+      }
+    }
+  ],
+  "successor_decision": {
+    "selected": false,
+    "decision": "No cdbc successor is required or selected at M0.5B.",
+    "rationale": "The current 0.1 envelope already provides the emitted core sections, strict Rust parse/dump, optional debug metadata, and the only current compiler/VM consumer pair. All proposed additions without a concrete consumer or transport are deferred or not currently required. M4A remains authorized to select a successor if a later compatibility requirement proves that a 0.1-compatible extension is insufficient.",
+    "m4_owner": "M4A",
+    "triggers": [
+      "breaking opcode or value-layout change",
+      "a second runtime/target requiring negotiation",
+      "separate compiled module artifacts requiring a new envelope",
+      "a named transport/security requirement that cannot fit a compatible extension"
+    ]
+  },
+  "invalid_input_policy": {
+    "family": "reject before VM execution",
+    "version": "reject before VM execution",
+    "unknown_section": "reject in strict parser",
+    "reference_corpus": "tests/malformed_cases.json cdbc mutations plus vm-rs format unit tests",
+    "audit_probes": [
+      "invalid-family",
+      "invalid-version"
+    ]
+  },
+  "errors": [],
+  "dynamic_verification": {
+    "artifact_assertions": {
+      "total": 116,
+      "passed": 116,
+      "failed": 0,
+      "failure_names": []
+    },
+    "reference_dumps": {
+      "total": 58,
+      "passed": 58,
+      "failed": 0,
+      "byte_for_byte": true
+    },
+    "invalid_header_probes": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "probes": [
+        {
+          "probe_id": "invalid-family",
+          "header": "not_cdbc 0.1",
+          "mode": "dump-only",
+          "passed": true,
+          "returncode": 1,
+          "stdout_empty": true,
+          "stderr_nonempty": true
+        },
+        {
+          "probe_id": "invalid-version",
+          "header": "cdbc 9.9",
+          "mode": "dump-only",
+          "passed": true,
+          "returncode": 1,
+          "stdout_empty": true,
+          "stderr_nonempty": true
+        }
+      ],
+      "dump_invocations": 2,
+      "run_invocations": 0
+    }
+  },
+  "summary": {
+    "passed": true,
+    "artifact_case_count": 116,
+    "artifact_fixture_count": 58,
+    "artifact_assertions": 116,
+    "reference_dumps": 58,
+    "invalid_header_probes": 2,
+    "errors": 0
+  }
+}

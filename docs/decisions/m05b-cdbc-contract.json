@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "audit_revision": "m05b-2026-07-22-r1",
+  "baseline_commit": "42b9da1",
+  "inventory_revision": "m0d-2026-07-22-r1",
+  "contract": {
+    "family": "cdbc",
+    "version": "0.1",
+    "transport": "line-oriented UTF-8 text file",
+    "current_promise": "Future changes remain backward-compatible with 0.1 or use a new version number; M4A owns supported-version ranges, negotiation, migration, and rejection policy."
+  },
+  "corpus_scope": {
+    "inventory": "tests/verification_inventory.json",
+    "artifact_runner": "artifact",
+    "artifact_case_count": 116,
+    "artifact_fixture_count": 58,
+    "artifact_expected_file": "expected.cdbc",
+    "reference_assertion_owner": "tests/bytecode_artifact_tests.py"
+  },
+  "current_envelope": {
+    "header": "cdbc 0.1",
+    "core_sections": [
+      "constants",
+      "names",
+      "main",
+      "function*"
+    ],
+    "optional_sections": [
+      "debug_sources",
+      "debug_locations"
+    ],
+    "section_order": "constants, names, main, zero or more function sections, optional debug_sources, optional debug_locations",
+    "parser_policy": "Rust parsing is strict: required sections, sequential references, instruction shapes, debug references, and trailing/unknown sections are rejected.",
+    "formatter_policy": "Rust dump canonicalizes a parsed program to the same cdbc 0.1 text representation used by the checked-in reference corpus.",
+    "debug_policy": "Debug metadata is additive and optional; source/function/instruction indexes are artifact-local, while line and column values are one-based."
+  },
+  "evolution_decisions": [
+    {
+      "field_id": "artifact-kind",
+      "field": "artifact kind",
+      "classification": "already present",
+      "current_state": "The cdbc family header, .cdbc extension, compiler emit mode, and Rust dump/run commands identify the current artifact kind.",
+      "named_consumer": "C++ BytecodeTextEmitter and Rust format parser/CLI",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/arithmetic/expected.cdbc"
+      ],
+      "rationale": "No second artifact family is currently transported or consumed.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "Introduce a distinct artifact family only if a concrete consumer cannot use the cdbc 0.1 envelope."
+      }
+    },
+    {
+      "field_id": "debug-metadata",
+      "field": "debug sources and locations",
+      "classification": "already present",
+      "current_state": "Optional debug_sources and debug_locations sections are emitted, strictly parsed, and used by the Rust VM for source-aware runtime diagnostics.",
+      "named_consumer": "Rust VM runtime diagnostics and debugger-oriented M4B work",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/runtime_diagnostics/expected.cdbc",
+        "vm-rs/src/format.rs"
+      ],
+      "rationale": "The existing additive metadata already covers the current source-mapped runtime consumer without changing core execution sections.",
+      "revisit": {
+        "milestone": "M4B",
+        "condition": "Extend metadata only when a named debugger/runtime consumer requires a field not expressible by the current sparse mappings."
+      }
+    },
+    {
+      "field_id": "unknown-section-policy",
+      "field": "unknown section handling",
+      "classification": "already present",
+      "current_state": "The Rust parser is strict and rejects an unexpected section instead of silently skipping it.",
+      "named_consumer": "Rust artifact parser",
+      "planned_fixtures": [
+        "tests/malformed_cases.json"
+      ],
+      "rationale": "Strict rejection protects the current canonical parser/formatter contract and prevents an older VM from silently misinterpreting new semantics.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "Change only with an explicit versioned forward-compatibility policy and parser tests for unknown sections."
+      }
+    },
+    {
+      "field_id": "runtime-target-identity",
+      "field": "runtime and target identity",
+      "classification": "deferred",
+      "current_state": "The artifact does not declare a target triple, VM identity, or runtime feature set; the current compiler and Rust VM are the only named consumer pair.",
+      "named_consumer": "M4A compatibility validator, if multi-runtime or cross-target transport is introduced",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/runtime-target-mismatch.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "No current transport or consumer needs to select among runtimes or targets, so adding an unconsumed field would create speculative ABI surface.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A second runtime, target, or artifact transport requires deterministic compatibility rejection or selection."
+      }
+    },
+    {
+      "field_id": "capability-flags",
+      "field": "capability flags",
+      "classification": "deferred",
+      "current_state": "The current version has one fixed opcode/native capability set and no negotiation handshake.",
+      "named_consumer": "M4A version/capability negotiation",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/unsupported-capability.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "Capability bits without a consumer-defined negotiation or rejection rule would be metadata without semantics.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A compatible extension needs feature discovery while preserving a supported 0.1 reader/writer path."
+      }
+    },
+    {
+      "field_id": "module-identity",
+      "field": "module identity",
+      "classification": "deferred",
+      "current_state": "Current .cdbc output is one linked program artifact; module-interface text is inspection metadata and not a separate-compilation input.",
+      "named_consumer": "M3A/M3B module graph and separate/incremental compilation",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/module-identity.cdbc (M3B/M4A planned fixture)"
+      ],
+      "rationale": "Module identity belongs to the module graph and separate-compilation decision; it is not needed in the current whole-program artifact.",
+      "revisit": {
+        "milestone": "M3A/M3B, then M4A if serialized module products use cdbc",
+        "condition": "Choose whether modules link into one final artifact or carry independently validated artifact/interface identities."
+      }
+    },
+    {
+      "field_id": "explicit-framing",
+      "field": "explicit binary or record framing",
+      "classification": "not currently required",
+      "current_state": "The contract is a line-oriented UTF-8 file; no streaming, concatenation, embedded transport, or binary consumer exists.",
+      "named_consumer": "None in the current repository",
+      "planned_fixtures": [],
+      "rationale": "A new framing layer would add format and implementation cost without a concrete transport requirement.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A named transport requires bounded records, random access, binary encoding, or corruption-resilient framing."
+      }
+    },
+    {
+      "field_id": "integrity-metadata",
+      "field": "integrity or content hash metadata",
+      "classification": "deferred",
+      "current_state": "The current artifact has no embedded digest or signature; local tests compare complete text files and the Rust parser validates structure.",
+      "named_consumer": "M4A artifact transport/cache or security validator, if introduced",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/integrity-mismatch.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "Structural parsing and repository golden comparison cover the current local workflow; an integrity field needs a defined trust boundary and failure policy.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "Artifacts cross an untrusted transport or are cached/shared where authenticity or corruption detection is a stated requirement."
+      }
+    },
+    {
+      "field_id": "successor-version-negotiation",
+      "field": "successor version and version negotiation",
+      "classification": "successor-version candidate",
+      "current_state": "No successor version or negotiation range is selected; the parser accepts exactly cdbc 0.1 and rejects other family/version headers before execution.",
+      "named_consumer": "M4A compatibility matrix, migration/rejection policy, and version-aware Rust parser",
+      "planned_fixtures": [
+        "tests/bytecode_artifacts/compatibility/cdbc_0_2_header.cdbc (M4A planned fixture)",
+        "tests/bytecode_artifacts/compatibility/cdbc_0_1_rejection.cdbc (M4A planned fixture)"
+      ],
+      "rationale": "A breaking artifact change would need a new version, but M0.5B finds no current requirement that justifies selecting one now.",
+      "revisit": {
+        "milestone": "M4A",
+        "condition": "A selected artifact/runtime change cannot remain a compatible extension of 0.1 and has a concrete producer/consumer migration plan."
+      }
+    }
+  ],
+  "successor_decision": {
+    "selected": false,
+    "decision": "No cdbc successor is required or selected at M0.5B.",
+    "rationale": "The current 0.1 envelope already provides the emitted core sections, strict Rust parse/dump, optional debug metadata, and the only current compiler/VM consumer pair. All proposed additions without a concrete consumer or transport are deferred or not currently required. M4A remains authorized to select a successor if a later compatibility requirement proves that a 0.1-compatible extension is insufficient.",
+    "m4_owner": "M4A",
+    "triggers": [
+      "breaking opcode or value-layout change",
+      "a second runtime/target requiring negotiation",
+      "separate compiled module artifacts requiring a new envelope",
+      "a named transport/security requirement that cannot fit a compatible extension"
+    ]
+  },
+  "invalid_input_policy": {
+    "family": "reject before VM execution",
+    "version": "reject before VM execution",
+    "unknown_section": "reject in strict parser",
+    "reference_corpus": "tests/malformed_cases.json cdbc mutations plus vm-rs format unit tests",
+    "audit_probes": [
+      "invalid-family",
+      "invalid-version"
+    ]
+  }
+}

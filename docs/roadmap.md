@@ -311,6 +311,10 @@ slice after the shared implementation and compatibility evidence exist.
 
 ### M0.5B: `cdbc 0.1` contract audit and evolution decision
 
+Status: implemented in `docs/decisions/m05b-cdbc-contract.json` with the
+reference audit in `docs/verification/m05b-baseline.json`; no successor version
+is selected at this stage.
+
 **Deliverable:** treat the existing line-oriented `cdbc 0.1` format as the
 current versioned compiler/VM contract. Inventory what it already provides:
 the `cdbc 0.1` family/version header, canonical core section order, strict Rust
