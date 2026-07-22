@@ -270,6 +270,9 @@ M0.5B both consume the M0A inventory, but neither blocks the other.
 
 ### M0.5A: Semantic decision log
 
+Status: implemented in `docs/decisions/m05a-semantic-decisions.json` with the
+reproducible source-site baseline in `docs/verification/m05a-baseline.json`.
+
 **Deliverable:** create a small, versioned decision log covering at least:
 
 - evaluation order, side effects, short-circuiting, and error propagation;
