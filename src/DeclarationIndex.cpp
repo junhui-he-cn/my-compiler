@@ -789,6 +789,24 @@ std::optional<ScopeId> DeclarationIndex::scopeFor(const Stmt& statement) const
     return found->second;
 }
 
+std::optional<ResolvedSymbol> DeclarationIndex::forInBinding(const ForInStmt& statement) const
+{
+    const DeclarationRecord* target = declaration(statement);
+    if (!target || target->kind != DeclarationKind::ForInVariable) {
+        return std::nullopt;
+    }
+    return ResolvedSymbol{target->declarationId, target->symbolId};
+}
+
+std::optional<ResolvedSymbol> DeclarationIndex::patternBinding(const VariablePattern& pattern) const
+{
+    const DeclarationRecord* target = declaration(pattern);
+    if (!target || target->kind != DeclarationKind::Variable) {
+        return std::nullopt;
+    }
+    return ResolvedSymbol{target->declarationId, target->symbolId};
+}
+
 const CallTargetRecord* DeclarationIndex::callTarget(const CallExpr& expression) const
 {
     const auto found = callTargets_.find(&expression);
@@ -920,7 +938,13 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
             }
         } else if (record.kind == DeclarationKind::ForInVariable && record.statement) {
             try {
-                if (!resolved.declarationId(*record.statement).valid()) {
+                const auto* forIn = dynamic_cast<const ForInStmt*>(record.statement);
+                const BindingId bindingId = forIn
+                    ? resolved.forInBindingId(*forIn)
+                    : BindingId{};
+                if (!forIn
+                    || !resolved.declarationId(*forIn).valid()
+                    || !bindingMatches(resolved.binding(bindingId), record)) {
                     ++mismatches;
                 }
             } catch (const std::logic_error&) {
@@ -934,6 +958,18 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
             } catch (const std::logic_error&) {
                 ++mismatches;
             }
+        }
+    }
+
+    for (const auto& entry : patternDeclarations_) {
+        const DeclarationRecord* target = declaration(entry.second);
+        try {
+            const BindingId bindingId = resolved.patternVariableBindingId(*entry.first);
+            if (!target || !bindingMatches(resolved.binding(bindingId), *target)) {
+                ++mismatches;
+            }
+        } catch (const std::logic_error&) {
+            ++mismatches;
         }
     }
 

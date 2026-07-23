@@ -39,8 +39,8 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
   original source bytes.
 - `include/DeclarationIndex.hpp`, `src/DeclarationIndex.cpp`: snapshot-local
   declaration, scope, signature, import/export, and lexical-reference metadata
-  plus local direct-call and struct-method targets collected beside the legacy
-  TypeChecker name-resolution path.
+  plus for-in/pattern bindings and local direct-call or struct-method targets
+  collected beside the legacy TypeChecker name-resolution path.
 - `include/Parser.hpp`, `src/Parser.cpp`: grammar and recursive-descent parsing.
 - `include/Ast.hpp`, `src/Ast.cpp`: AST node types and AST printer output.
 - `include/IR.hpp`, `src/IR.cpp`: IR opcodes, instructions, constants, names, registers, and IR printer output.

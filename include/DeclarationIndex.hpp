@@ -97,6 +97,8 @@ public:
     const DeclarationRecord* declaration(const VariablePattern& pattern) const;
     const ScopeRecord* scope(ScopeId id) const;
     std::optional<ScopeId> scopeFor(const Stmt& statement) const;
+    std::optional<ResolvedSymbol> forInBinding(const ForInStmt& statement) const;
+    std::optional<ResolvedSymbol> patternBinding(const VariablePattern& pattern) const;
     const CallTargetRecord* callTarget(const CallExpr& expression) const;
     const CallTargetRecord* callTarget(const MemberCallExpr& expression) const;
 

@@ -223,6 +223,8 @@ void test_declaration_index()
     assert(index.declaration(*firstBinding) != nullptr);
     assert(index.declaration(*firstBinding)->declarationId
         == index.declaration(*secondBinding)->declarationId);
+    assert(index.patternBinding(*firstBinding)->declarationId
+        == index.patternBinding(*secondBinding)->declarationId);
 }
 
 void test_declaration_index_module_metadata()
@@ -261,6 +263,48 @@ void test_declaration_index_module_metadata()
     assert(index.declaration(*aliasId)->kind == DeclarationKind::NamespaceAlias);
 }
 
+void test_declaration_index_for_in_binding()
+{
+    std::istringstream input(
+        "let outer = 0;\n"
+        "for item in [1, 2] {\n"
+        "  print item;\n"
+        "  item += 1;\n"
+        "}\n"
+        "print outer;\n");
+    FrontendSession frontend;
+    Program program = frontend.loadStdin(input);
+    const auto* loop = dynamic_cast<const ForInStmt*>(program.statements[1].get());
+    assert(loop != nullptr);
+    const auto* body = dynamic_cast<const BlockStmt*>(loop->body.get());
+    assert(body != nullptr);
+
+    TypeChecker checker;
+    checker.check(program);
+    const DeclarationIndex& index = checker.declarationIndex();
+    assert(checker.declarationIndexMismatchCount() == 0);
+
+    const DeclarationRecord* loopRecord = index.declaration(*loop);
+    assert(loopRecord != nullptr);
+    assert(loopRecord->kind == DeclarationKind::ForInVariable);
+    assert(loopRecord->range.has_value());
+    assert(isValidSourceRange(*loopRecord->range, program.sources));
+    const std::optional<ResolvedSymbol> binding = index.forInBinding(*loop);
+    assert(binding.has_value());
+    assert(binding->declarationId == loopRecord->declarationId);
+
+    const std::optional<ScopeId> loopScope = index.scopeFor(*loop);
+    const std::optional<ScopeId> bodyScope = index.scopeFor(*body);
+    assert(loopScope.has_value() && bodyScope.has_value());
+    assert(loopScope == bodyScope);
+    assert(index.lookup(*loopScope, "item") == loopRecord->declarationId);
+
+    const auto* print = dynamic_cast<const PrintStmt*>(body->statements[0].get());
+    const auto* read = print ? dynamic_cast<const VariableExpr*>(print->expression.get()) : nullptr;
+    assert(read != nullptr);
+    assert(index.variableReference(*read)->declarationId == loopRecord->declarationId);
+}
+
 } // namespace
 
 int main()
@@ -284,5 +328,6 @@ int main()
     test_snapshot_identity_metadata();
     test_declaration_index();
     test_declaration_index_module_metadata();
+    test_declaration_index_for_in_binding();
     return 0;
 }

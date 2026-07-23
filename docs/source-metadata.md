@@ -32,7 +32,9 @@ lexical lookup tables; function/method signatures; import/export metadata; and
 the targets of variable reads, ordinary assignments, and compound assignments.
 Direct calls through lexical value bindings receive `CallTargetRecord` values,
 and locally declared struct method calls receive exact method declaration and
-symbol targets after the shadow comparison.
+symbol targets after the shadow comparison. For-in variables and match pattern
+variables expose the same declaration/symbol target shape, including one shared
+target for all occurrences of an OR-pattern binding.
 Struct and enum declarations retain their AST records for field and variant
 metadata, while signatures retain their type parameters, parameters, and
 optional return annotations.
