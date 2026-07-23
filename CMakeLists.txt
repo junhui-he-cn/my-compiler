@@ -44,6 +44,7 @@ add_executable(compiler_design
     src/Bytecode.cpp
     src/BytecodeTextEmitter.cpp
     src/BytecodeCompiler.cpp
+    src/DeclarationIndex.cpp
     src/Diagnostic.cpp
     src/FrontendSession.cpp
     src/FlowFacts.cpp
@@ -77,6 +78,7 @@ compiler_design_apply_sanitizers(source_map_tests)
 add_executable(ir_source_location_tests
     tests/ir_source_location_tests.cpp
     src/Ast.cpp
+    src/DeclarationIndex.cpp
     src/Diagnostic.cpp
     src/FlowFacts.cpp
     src/FrontendSession.cpp

@@ -23,6 +23,24 @@ reads, assignments, and direct multi-file diagnostics. Bytecode emission does
 not serialize these snapshot-local identities; artifact-local debug identity
 remains owned by M4A/M4B.
 
+## Declaration index (M1B initial slice)
+
+`DeclarationIndex` is a snapshot-local AST index built beside the existing
+`TypeChecker` path. It records declaration IDs and symbols for lexical values,
+parameters, structs, enums, methods, and namespace aliases; scope parents and
+lexical lookup tables; function/method signatures; import/export metadata; and
+the targets of variable reads, ordinary assignments, and compound assignments.
+Struct and enum declarations retain their AST records for field and variant
+metadata, while signatures retain their type parameters, parameters, and
+optional return annotations.
+
+The checker exposes the index and a shadow-comparison count. During this
+migration slice, type and namespace qualifiers are not treated as value reads,
+and OR-pattern occurrences share one declaration record. The old
+`ResolvedNames` implementation remains the behavior oracle; module graph
+resolution and materialization of imported value symbols are deferred to M3A.
+The index IDs are not serialized into `.cdbc` artifacts or used as cache keys.
+
 ## Lossless source view
 
 `FrontendSession::losslessSourceView()` groups `LosslessPiece` values by

@@ -1,0 +1,901 @@
+#include "DeclarationIndex.hpp"
+
+#include "TypeChecker.hpp"
+
+#include <stdexcept>
+#include <utility>
+
+namespace {
+
+bool sameRange(const std::optional<SourceRange>& left, const std::optional<SourceRange>& right)
+{
+    if (!left || !right) {
+        return !left && !right;
+    }
+    return left->source == right->source
+        && left->start == right->start
+        && left->end == right->end;
+}
+
+std::optional<SourceRange> tokenRange(const Token& token)
+{
+    return token.range;
+}
+
+} // namespace
+
+std::string declarationKindName(DeclarationKind kind)
+{
+    switch (kind) {
+    case DeclarationKind::Module:
+        return "module";
+    case DeclarationKind::Variable:
+        return "variable";
+    case DeclarationKind::Function:
+        return "function";
+    case DeclarationKind::Parameter:
+        return "parameter";
+    case DeclarationKind::ForInVariable:
+        return "for-in variable";
+    case DeclarationKind::Struct:
+        return "struct";
+    case DeclarationKind::Enum:
+        return "enum";
+    case DeclarationKind::Method:
+        return "method";
+    case DeclarationKind::NamespaceAlias:
+        return "namespace alias";
+    }
+    return "unknown";
+}
+
+class DeclarationIndexCollector {
+public:
+    explicit DeclarationIndexCollector(DeclarationIndex& index)
+        : index_(index)
+    {
+    }
+
+    void collect(const Program& program)
+    {
+        bool hasModules = false;
+        for (const StmtPtr& statement : program.statements) {
+            if (dynamic_cast<const ModuleStmt*>(statement.get())) {
+                hasModules = true;
+                break;
+            }
+        }
+
+        if (hasModules) {
+            for (const StmtPtr& statement : program.statements) {
+                if (const auto* module = dynamic_cast<const ModuleStmt*>(statement.get())) {
+                    collectModule(*module);
+                }
+            }
+            return;
+        }
+
+        beginScope(nullptr);
+        collectStatementList(program.statements);
+        endScope();
+    }
+
+private:
+    ScopeRecord& currentScope()
+    {
+        if (scopeStack_.empty()) {
+            throw std::logic_error("declaration collector scope stack is empty");
+        }
+        return index_.scopes_.at(scopeStack_.back().value);
+    }
+
+    const ScopeRecord& currentScope() const
+    {
+        if (scopeStack_.empty()) {
+            throw std::logic_error("declaration collector scope stack is empty");
+        }
+        return index_.scopes_.at(scopeStack_.back().value);
+    }
+
+    void beginScope(const Stmt* owner)
+    {
+        ScopeRecord scope;
+        scope.id = ScopeId{index_.scopes_.size()};
+        if (!scopeStack_.empty()) {
+            scope.parent = scopeStack_.back();
+        }
+        if (owner) {
+            scope.ownerSyntaxNode = owner->syntaxNodeId;
+            index_.statementScopes_.emplace(owner, scope.id);
+        }
+        index_.scopes_.push_back(std::move(scope));
+        scopeStack_.push_back(index_.scopes_.back().id);
+    }
+
+    void endScope()
+    {
+        if (scopeStack_.empty()) {
+            throw std::logic_error("declaration collector scope stack is empty");
+        }
+        scopeStack_.pop_back();
+    }
+
+    DeclarationRecord& addDeclaration(
+        DeclarationKind kind,
+        std::string name,
+        std::optional<SourceRange> range,
+        std::optional<SyntaxNodeId> syntaxNodeId,
+        const Stmt* statement = nullptr,
+        const MethodDecl* method = nullptr,
+        const Parameter* parameter = nullptr,
+        std::string ownerType = {},
+        std::vector<TypeParameter> typeParameters = {},
+        std::vector<Parameter> parameters = {},
+        std::optional<TypeAnnotation> returnType = {},
+        bool addToScope = true)
+    {
+        DeclarationRecord record;
+        record.declarationId = DeclarationId{index_.declarations_.size()};
+        record.symbolId = SymbolId{index_.declarations_.size()};
+        record.kind = kind;
+        record.name = std::move(name);
+        record.scopeId = currentScope().id;
+        record.range = std::move(range);
+        record.syntaxNodeId = syntaxNodeId;
+        record.statement = statement;
+        record.method = method;
+        record.parameter = parameter;
+        record.ownerType = std::move(ownerType);
+        record.typeParameters = std::move(typeParameters);
+        record.parameters = std::move(parameters);
+        record.returnType = std::move(returnType);
+
+        index_.declarations_.push_back(std::move(record));
+        DeclarationRecord& stored = index_.declarations_.back();
+        if (statement) {
+            index_.statementDeclarations_.emplace(statement, stored.declarationId);
+        }
+        if (method) {
+            index_.methodDeclarations_.emplace(method, stored.declarationId);
+        }
+        if (parameter) {
+            index_.parameterDeclarations_.emplace(parameter, stored.declarationId);
+        }
+        if (addToScope && !stored.name.empty()) {
+            currentScope().declarations[stored.name] = stored.declarationId;
+        }
+        return stored;
+    }
+
+    bool hasStatementDeclaration(const Stmt& statement) const
+    {
+        return index_.statementDeclarations_.find(&statement)
+            != index_.statementDeclarations_.end();
+    }
+
+    void predeclareTypes(const std::vector<StmtPtr>& statements)
+    {
+        for (const StmtPtr& statement : statements) {
+            if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(statement.get())) {
+                if (!hasStatementDeclaration(*structDecl)) {
+                    addDeclaration(
+                        DeclarationKind::Struct,
+                        structDecl->name.lexeme,
+                        tokenRange(structDecl->name),
+                        structDecl->syntaxNodeId,
+                        structDecl,
+                        nullptr,
+                        nullptr,
+                        {},
+                        structDecl->typeParameters);
+                }
+            } else if (const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(statement.get())) {
+                if (!hasStatementDeclaration(*enumDecl)) {
+                    addDeclaration(
+                        DeclarationKind::Enum,
+                        enumDecl->name.lexeme,
+                        tokenRange(enumDecl->name),
+                        enumDecl->syntaxNodeId,
+                        enumDecl,
+                        nullptr,
+                        nullptr,
+                        {},
+                        enumDecl->typeParameters);
+                }
+            }
+        }
+    }
+
+    void collectModule(const ModuleStmt& module)
+    {
+        beginScope(&module);
+        addDeclaration(
+            DeclarationKind::Module,
+            module.path,
+            SourceRange{module.sourceId, 0, module.source.size()},
+            module.syntaxNodeId,
+            &module,
+            nullptr,
+            nullptr,
+            {},
+            {},
+            {},
+            {},
+            false);
+        collectStatementList(module.statements);
+        endScope();
+    }
+
+    void collectStatementList(const std::vector<StmtPtr>& statements)
+    {
+        predeclareTypes(statements);
+        for (const StmtPtr& statement : statements) {
+            if (statement) {
+                collectStatement(*statement);
+            }
+        }
+    }
+
+    void collectStatement(const Stmt* statement)
+    {
+        if (statement) {
+            collectStatement(*statement);
+        }
+    }
+
+    void collectStatement(const Stmt& statement)
+    {
+        if (const auto* module = dynamic_cast<const ModuleStmt*>(&statement)) {
+            collectModule(*module);
+            return;
+        }
+        if (dynamic_cast<const StructDeclStmt*>(&statement)) {
+            return;
+        }
+        if (dynamic_cast<const EnumDeclStmt*>(&statement)) {
+            return;
+        }
+        if (const auto* function = dynamic_cast<const FunctionStmt*>(&statement)) {
+            if (!hasStatementDeclaration(*function)) {
+                addDeclaration(
+                    DeclarationKind::Function,
+                    function->name.lexeme,
+                    tokenRange(function->name),
+                    function->syntaxNodeId,
+                    function,
+                    nullptr,
+                    nullptr,
+                    {},
+                    function->typeParameters,
+                    function->parameters,
+                    function->returnTypeName);
+            }
+            beginScope(function);
+            for (const Parameter& parameter : function->parameters) {
+                addDeclaration(
+                    DeclarationKind::Parameter,
+                    parameter.name.lexeme,
+                    tokenRange(parameter.name),
+                    std::nullopt,
+                    nullptr,
+                    nullptr,
+                    &parameter,
+                    {},
+                    {},
+                    {},
+                    parameter.typeName);
+            }
+            collectStatementList(function->body);
+            endScope();
+            return;
+        }
+        if (const auto* let = dynamic_cast<const LetStmt*>(&statement)) {
+            collectExpression(let->initializer.get());
+            addDeclaration(
+                DeclarationKind::Variable,
+                let->name.lexeme,
+                tokenRange(let->name),
+                let->syntaxNodeId,
+                let);
+            return;
+        }
+        if (const auto* import = dynamic_cast<const ImportStmt*>(&statement)) {
+            index_.imports_.push_back(ImportRecord{
+                import,
+                import->resolvedModuleId,
+                import->alias ? std::optional<std::string>(import->alias->lexeme) : std::nullopt});
+            if (import->alias) {
+                addDeclaration(
+                    DeclarationKind::NamespaceAlias,
+                    import->alias->lexeme,
+                    tokenRange(*import->alias),
+                    import->syntaxNodeId,
+                    import);
+            }
+            return;
+        }
+        if (const auto* exportStmt = dynamic_cast<const ExportStmt*>(&statement)) {
+            std::vector<std::string> names;
+            for (const Token& name : exportStmt->names) {
+                names.push_back(name.lexeme);
+            }
+            index_.exports_.push_back(ExportRecord{
+                exportStmt,
+                std::move(names),
+                exportStmt->resolvedModuleId,
+                exportStmt->sourcePath
+                    ? std::optional<std::string>(exportStmt->sourcePath->lexeme)
+                    : std::nullopt});
+            return;
+        }
+        if (const auto* impl = dynamic_cast<const ImplStmt*>(&statement)) {
+            for (const MethodDecl& method : impl->methods) {
+                collectMethod(*impl, method);
+            }
+            return;
+        }
+        if (const auto* block = dynamic_cast<const BlockStmt*>(&statement)) {
+            beginScope(block);
+            collectStatementList(block->statements);
+            endScope();
+            return;
+        }
+        if (const auto* print = dynamic_cast<const PrintStmt*>(&statement)) {
+            collectExpression(print->expression.get());
+            return;
+        }
+        if (const auto* expression = dynamic_cast<const ExpressionStmt*>(&statement)) {
+            collectExpression(expression->expression.get());
+            return;
+        }
+        if (const auto* ifStmt = dynamic_cast<const IfStmt*>(&statement)) {
+            collectExpression(ifStmt->condition.get());
+            collectStatement(ifStmt->thenBranch.get());
+            collectStatement(ifStmt->elseBranch.get());
+            return;
+        }
+        if (const auto* whileStmt = dynamic_cast<const WhileStmt*>(&statement)) {
+            collectExpression(whileStmt->condition.get());
+            collectStatement(whileStmt->body.get());
+            return;
+        }
+        if (const auto* forStmt = dynamic_cast<const ForStmt*>(&statement)) {
+            beginScope(forStmt);
+            collectStatement(forStmt->initializer.get());
+            collectExpression(forStmt->condition.get());
+            collectExpression(forStmt->increment.get());
+            collectStatement(forStmt->body.get());
+            endScope();
+            return;
+        }
+        if (const auto* forIn = dynamic_cast<const ForInStmt*>(&statement)) {
+            collectExpression(forIn->iterable.get());
+            beginScope(forIn);
+            addDeclaration(
+                DeclarationKind::ForInVariable,
+                forIn->variable.lexeme,
+                tokenRange(forIn->variable),
+                forIn->syntaxNodeId,
+                forIn);
+            if (const auto* body = dynamic_cast<const BlockStmt*>(forIn->body.get())) {
+                index_.statementScopes_.emplace(body, currentScope().id);
+                collectStatementList(body->statements);
+            } else {
+                collectStatement(forIn->body.get());
+            }
+            endScope();
+            return;
+        }
+        if (const auto* match = dynamic_cast<const MatchStmt*>(&statement)) {
+            collectExpression(match->value.get());
+            for (const MatchArm& arm : match->arms) {
+                beginScope(nullptr);
+                std::unordered_map<std::string, DeclarationId> bindings;
+                collectPattern(arm.pattern.get(), bindings);
+                collectExpression(arm.guard.get());
+                collectStatement(arm.body.get());
+                endScope();
+            }
+            return;
+        }
+        if (const auto* returnStmt = dynamic_cast<const ReturnStmt*>(&statement)) {
+            collectExpression(returnStmt->value.get());
+            return;
+        }
+        if (dynamic_cast<const BreakStmt*>(&statement)
+            || dynamic_cast<const ContinueStmt*>(&statement)) {
+            return;
+        }
+    }
+
+    void collectMethod(const ImplStmt& impl, const MethodDecl& method)
+    {
+        addDeclaration(
+            DeclarationKind::Method,
+            method.name.lexeme,
+            tokenRange(method.name),
+            method.syntaxNodeId,
+            nullptr,
+            &method,
+            nullptr,
+            impl.typeName.lexeme,
+            method.typeParameters,
+            method.parameters,
+            method.returnTypeName,
+            false);
+        beginScope(nullptr);
+        addDeclaration(
+            DeclarationKind::Parameter,
+            "this",
+            std::nullopt,
+            std::nullopt,
+            nullptr,
+            nullptr,
+            nullptr,
+            {},
+            {},
+            {},
+            {},
+            false);
+        for (const Parameter& parameter : method.parameters) {
+            addDeclaration(
+                DeclarationKind::Parameter,
+                parameter.name.lexeme,
+                tokenRange(parameter.name),
+                std::nullopt,
+                nullptr,
+                nullptr,
+                &parameter,
+                {},
+                {},
+                {},
+                parameter.typeName);
+        }
+        collectStatementList(method.body);
+        endScope();
+    }
+
+    void collectPattern(
+        const Pattern* pattern,
+        std::unordered_map<std::string, DeclarationId>& bindings)
+    {
+        if (!pattern) {
+            return;
+        }
+        if (const auto* variable = dynamic_cast<const VariablePattern*>(pattern)) {
+            DeclarationId declarationId;
+            const auto found = bindings.find(variable->name.lexeme);
+            if (found == bindings.end()) {
+                DeclarationRecord& record = addDeclaration(
+                    DeclarationKind::Variable,
+                    variable->name.lexeme,
+                    tokenRange(variable->name),
+                    variable->syntaxNodeId,
+                    nullptr);
+                declarationId = record.declarationId;
+                bindings.emplace(variable->name.lexeme, declarationId);
+            } else {
+                declarationId = found->second;
+            }
+            index_.patternDeclarations_.emplace(variable, declarationId);
+            return;
+        }
+        if (const auto* orPattern = dynamic_cast<const OrPattern*>(pattern)) {
+            for (const PatternPtr& alternative : orPattern->alternatives) {
+                collectPattern(alternative.get(), bindings);
+            }
+            return;
+        }
+        if (const auto* record = dynamic_cast<const RecordPattern*>(pattern)) {
+            for (const RecordPatternField& field : record->fields) {
+                collectPattern(field.pattern.get(), bindings);
+            }
+            return;
+        }
+        if (const auto* variant = dynamic_cast<const VariantPattern*>(pattern)) {
+            for (const PatternPtr& argument : variant->arguments) {
+                collectPattern(argument.get(), bindings);
+            }
+        }
+    }
+
+    void collectExpression(const Expr* expression)
+    {
+        if (!expression) {
+            return;
+        }
+        if (const auto* assign = dynamic_cast<const AssignExpr*>(expression)) {
+            collectExpression(assign->value.get());
+            recordAssignmentReference(*assign);
+            return;
+        }
+        if (const auto* compound = dynamic_cast<const CompoundAssignExpr*>(expression)) {
+            collectExpression(compound->value.get());
+            recordCompoundAssignmentReference(*compound);
+            return;
+        }
+        if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(expression)) {
+            collectExpression(indexAssign->collection.get());
+            collectExpression(indexAssign->index.get());
+            collectExpression(indexAssign->value.get());
+            return;
+        }
+        if (const auto* indexCompound = dynamic_cast<const IndexCompoundAssignExpr*>(expression)) {
+            collectExpression(indexCompound->collection.get());
+            collectExpression(indexCompound->index.get());
+            collectExpression(indexCompound->value.get());
+            return;
+        }
+        if (const auto* variable = dynamic_cast<const VariableExpr*>(expression)) {
+            recordVariableReference(*variable);
+            return;
+        }
+        if (const auto* unary = dynamic_cast<const UnaryExpr*>(expression)) {
+            collectExpression(unary->right.get());
+            return;
+        }
+        if (const auto* binary = dynamic_cast<const BinaryExpr*>(expression)) {
+            collectExpression(binary->left.get());
+            collectExpression(binary->right.get());
+            return;
+        }
+        if (const auto* logical = dynamic_cast<const LogicalExpr*>(expression)) {
+            collectExpression(logical->left.get());
+            collectExpression(logical->right.get());
+            return;
+        }
+        if (const auto* grouping = dynamic_cast<const GroupingExpr*>(expression)) {
+            collectExpression(grouping->expression.get());
+            return;
+        }
+        if (const auto* call = dynamic_cast<const CallExpr*>(expression)) {
+            collectExpression(call->callee.get());
+            for (const ExprPtr& argument : call->arguments) {
+                collectExpression(argument.get());
+            }
+            return;
+        }
+        if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(expression)) {
+            collectExpression(memberCall->receiver.get());
+            for (const ExprPtr& argument : memberCall->arguments) {
+                collectExpression(argument.get());
+            }
+            return;
+        }
+        if (const auto* array = dynamic_cast<const ArrayExpr*>(expression)) {
+            for (const ExprPtr& element : array->elements) {
+                collectExpression(element.get());
+            }
+            return;
+        }
+        if (const auto* map = dynamic_cast<const MapExpr*>(expression)) {
+            for (const MapEntry& entry : map->entries) {
+                collectExpression(entry.key.get());
+                collectExpression(entry.value.get());
+            }
+            return;
+        }
+        if (const auto* construct = dynamic_cast<const StructConstructExpr*>(expression)) {
+            for (const StructField& field : construct->fields) {
+                collectExpression(field.value.get());
+            }
+            return;
+        }
+        if (const auto* index = dynamic_cast<const IndexExpr*>(expression)) {
+            collectExpression(index->collection.get());
+            collectExpression(index->index.get());
+            return;
+        }
+        if (const auto* field = dynamic_cast<const FieldAccessExpr*>(expression)) {
+            collectExpression(field->object.get());
+            return;
+        }
+        if (const auto* fieldAssign = dynamic_cast<const FieldAssignExpr*>(expression)) {
+            collectExpression(fieldAssign->object.get());
+            collectExpression(fieldAssign->value.get());
+            return;
+        }
+        if (const auto* fieldCompound = dynamic_cast<const FieldCompoundAssignExpr*>(expression)) {
+            collectExpression(fieldCompound->object.get());
+            collectExpression(fieldCompound->value.get());
+            return;
+        }
+        if (const auto* function = dynamic_cast<const FunctionExpr*>(expression)) {
+            beginScope(nullptr);
+            for (const Parameter& parameter : function->parameters) {
+                addDeclaration(
+                    DeclarationKind::Parameter,
+                    parameter.name.lexeme,
+                    tokenRange(parameter.name),
+                    std::nullopt,
+                    nullptr,
+                    nullptr,
+                    &parameter,
+                    {},
+                    {},
+                    {},
+                    parameter.typeName);
+            }
+            collectStatementList(function->body);
+            endScope();
+            return;
+        }
+        if (const auto* match = dynamic_cast<const MatchExpr*>(expression)) {
+            collectExpression(match->value.get());
+            for (const MatchExprArm& arm : match->arms) {
+                beginScope(nullptr);
+                std::unordered_map<std::string, DeclarationId> bindings;
+                collectPattern(arm.pattern.get(), bindings);
+                collectExpression(arm.guard.get());
+                collectExpression(arm.value.get());
+                endScope();
+            }
+        }
+    }
+
+    std::optional<ResolvedSymbol> lookupReference(const std::string& name) const
+    {
+        for (auto scope = scopeStack_.rbegin(); scope != scopeStack_.rend(); ++scope) {
+            const ScopeRecord& record = index_.scopes_.at(scope->value);
+            const auto found = record.declarations.find(name);
+            if (found != record.declarations.end()) {
+                const DeclarationRecord& declaration = index_.declarations_.at(found->second.value);
+                return ResolvedSymbol{declaration.declarationId, declaration.symbolId};
+            }
+        }
+        return std::nullopt;
+    }
+
+    static bool isValueDeclaration(DeclarationKind kind)
+    {
+        return kind == DeclarationKind::Variable
+            || kind == DeclarationKind::Function
+            || kind == DeclarationKind::Parameter
+            || kind == DeclarationKind::ForInVariable;
+    }
+
+    void recordVariableReference(const VariableExpr& expression)
+    {
+        if (const std::optional<ResolvedSymbol> resolved = lookupReference(expression.name.lexeme)) {
+            const DeclarationRecord* target = index_.declaration(resolved->declarationId);
+            if (target && isValueDeclaration(target->kind)) {
+                index_.variableReferences_.emplace(&expression, *resolved);
+            }
+        }
+    }
+
+    void recordAssignmentReference(const AssignExpr& expression)
+    {
+        if (const std::optional<ResolvedSymbol> resolved = lookupReference(expression.name.lexeme)) {
+            const DeclarationRecord* target = index_.declaration(resolved->declarationId);
+            if (target && isValueDeclaration(target->kind)) {
+                index_.assignmentReferences_.emplace(&expression, *resolved);
+            }
+        }
+    }
+
+    void recordCompoundAssignmentReference(const CompoundAssignExpr& expression)
+    {
+        if (const std::optional<ResolvedSymbol> resolved = lookupReference(expression.name.lexeme)) {
+            const DeclarationRecord* target = index_.declaration(resolved->declarationId);
+            if (target && isValueDeclaration(target->kind)) {
+                index_.compoundAssignmentReferences_.emplace(&expression, *resolved);
+            }
+        }
+    }
+
+    DeclarationIndex& index_;
+    std::vector<ScopeId> scopeStack_;
+};
+
+DeclarationIndex DeclarationIndex::collect(const Program& program)
+{
+    DeclarationIndex index;
+    DeclarationIndexCollector collector(index);
+    collector.collect(program);
+    return index;
+}
+
+const std::vector<DeclarationRecord>& DeclarationIndex::declarations() const
+{
+    return declarations_;
+}
+
+const std::vector<ScopeRecord>& DeclarationIndex::scopes() const
+{
+    return scopes_;
+}
+
+const std::vector<ImportRecord>& DeclarationIndex::imports() const
+{
+    return imports_;
+}
+
+const std::vector<ExportRecord>& DeclarationIndex::exports() const
+{
+    return exports_;
+}
+
+const DeclarationRecord* DeclarationIndex::declaration(DeclarationId id) const
+{
+    if (!id.valid() || id.value >= declarations_.size()) {
+        return nullptr;
+    }
+    return &declarations_[id.value];
+}
+
+const DeclarationRecord* DeclarationIndex::declaration(const Stmt& statement) const
+{
+    const auto found = statementDeclarations_.find(&statement);
+    return found == statementDeclarations_.end() ? nullptr : declaration(found->second);
+}
+
+const DeclarationRecord* DeclarationIndex::declaration(const MethodDecl& method) const
+{
+    const auto found = methodDeclarations_.find(&method);
+    return found == methodDeclarations_.end() ? nullptr : declaration(found->second);
+}
+
+const DeclarationRecord* DeclarationIndex::declaration(const Parameter& parameter) const
+{
+    const auto found = parameterDeclarations_.find(&parameter);
+    return found == parameterDeclarations_.end() ? nullptr : declaration(found->second);
+}
+
+const DeclarationRecord* DeclarationIndex::declaration(const VariablePattern& pattern) const
+{
+    const auto found = patternDeclarations_.find(&pattern);
+    return found == patternDeclarations_.end() ? nullptr : declaration(found->second);
+}
+
+const ScopeRecord* DeclarationIndex::scope(ScopeId id) const
+{
+    if (!id.valid() || id.value >= scopes_.size()) {
+        return nullptr;
+    }
+    return &scopes_[id.value];
+}
+
+std::optional<ScopeId> DeclarationIndex::scopeFor(const Stmt& statement) const
+{
+    const auto found = statementScopes_.find(&statement);
+    if (found == statementScopes_.end()) {
+        return std::nullopt;
+    }
+    return found->second;
+}
+
+std::optional<DeclarationId> DeclarationIndex::lookup(ScopeId scopeId, const std::string& name) const
+{
+    std::optional<ScopeId> current = scopeId;
+    while (current) {
+        const ScopeRecord* record = scope(*current);
+        if (!record) {
+            return std::nullopt;
+        }
+        const auto found = record->declarations.find(name);
+        if (found != record->declarations.end()) {
+            return found->second;
+        }
+        current = record->parent;
+    }
+    return std::nullopt;
+}
+
+std::optional<ResolvedSymbol> DeclarationIndex::variableReference(const VariableExpr& expression) const
+{
+    const auto found = variableReferences_.find(&expression);
+    return found == variableReferences_.end()
+        ? std::nullopt
+        : std::optional<ResolvedSymbol>(found->second);
+}
+
+std::optional<ResolvedSymbol> DeclarationIndex::assignmentReference(const AssignExpr& expression) const
+{
+    const auto found = assignmentReferences_.find(&expression);
+    return found == assignmentReferences_.end()
+        ? std::nullopt
+        : std::optional<ResolvedSymbol>(found->second);
+}
+
+std::optional<ResolvedSymbol> DeclarationIndex::compoundAssignmentReference(
+    const CompoundAssignExpr& expression) const
+{
+    const auto found = compoundAssignmentReferences_.find(&expression);
+    return found == compoundAssignmentReferences_.end()
+        ? std::nullopt
+        : std::optional<ResolvedSymbol>(found->second);
+}
+
+std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved) const
+{
+    std::size_t mismatches = 0;
+    const auto compareReference = [&](const auto& references, const auto& resolve) {
+        for (const auto& entry : references) {
+            const DeclarationRecord* target = declaration(entry.second.declarationId);
+            if (!target) {
+                ++mismatches;
+                continue;
+            }
+            try {
+                const BindingId bindingId = resolve(*entry.first);
+                const TypeBinding& binding = resolved.binding(bindingId);
+                if (binding.resolvedName.substr(0, binding.resolvedName.find('#')) != target->name
+                    || !sameRange(binding.range, target->range)) {
+                    ++mismatches;
+                }
+            } catch (const std::logic_error&) {
+                ++mismatches;
+            }
+        }
+    };
+
+    compareReference(
+        variableReferences_,
+        [&resolved](const VariableExpr& expression) {
+            return resolved.variableBindingId(expression);
+        });
+    compareReference(
+        assignmentReferences_,
+        [&resolved](const AssignExpr& expression) {
+            return resolved.assignmentBindingId(expression);
+        });
+    compareReference(
+        compoundAssignmentReferences_,
+        [&resolved](const CompoundAssignExpr& expression) {
+            return resolved.compoundAssignmentBindingId(expression);
+        });
+
+    for (const DeclarationRecord& record : declarations_) {
+        if (record.kind == DeclarationKind::Variable
+            && record.statement
+            && dynamic_cast<const LetStmt*>(record.statement)) {
+            try {
+                const BindingId bindingId = resolved.letBindingId(
+                    *static_cast<const LetStmt*>(record.statement));
+                const TypeBinding& binding = resolved.binding(bindingId);
+                if (binding.resolvedName.substr(0, binding.resolvedName.find('#')) != record.name
+                    || !sameRange(binding.range, record.range)) {
+                    ++mismatches;
+                }
+            } catch (const std::logic_error&) {
+                ++mismatches;
+            }
+        } else if (record.kind == DeclarationKind::Function && record.statement) {
+            try {
+                if (!resolved.declarationId(*record.statement).valid()) {
+                    ++mismatches;
+                }
+            } catch (const std::logic_error&) {
+                ++mismatches;
+            }
+        } else if ((record.kind == DeclarationKind::Struct
+                || record.kind == DeclarationKind::Enum)
+            && record.statement) {
+            try {
+                if (!resolved.declarationId(*record.statement).valid()) {
+                    ++mismatches;
+                }
+            } catch (const std::logic_error&) {
+                ++mismatches;
+            }
+        } else if (record.kind == DeclarationKind::ForInVariable && record.statement) {
+            try {
+                if (!resolved.declarationId(*record.statement).valid()) {
+                    ++mismatches;
+                }
+            } catch (const std::logic_error&) {
+                ++mismatches;
+            }
+        } else if (record.kind == DeclarationKind::Method && record.method) {
+            try {
+                if (!resolved.methodDeclarationId(*record.method).valid()) {
+                    ++mismatches;
+                }
+            } catch (const std::logic_error&) {
+                ++mismatches;
+            }
+        }
+    }
+    return mismatches;
+}

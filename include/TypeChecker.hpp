@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ast.hpp"
+#include "DeclarationIndex.hpp"
 #include "Diagnostic.hpp"
 #include "FlowFacts.hpp"
 #include "ModuleInterface.hpp"
@@ -135,6 +136,8 @@ class TypeChecker {
 public:
     const ResolvedNames& check(const Program& program);
     const std::vector<ModuleInterface>& moduleInterfaces() const;
+    const DeclarationIndex& declarationIndex() const;
+    std::size_t declarationIndexMismatchCount() const;
 
 private:
     struct CheckedExpression {
@@ -445,6 +448,8 @@ private:
     std::unordered_set<std::size_t> checkedModules_;
     std::vector<std::size_t> moduleStack_;
     ResolvedNames resolvedNames_;
+    DeclarationIndex declarationIndex_;
+    std::size_t declarationIndexMismatchCount_ = 0;
     const Program* currentProgram_ = nullptr;
     std::size_t nextResolvedName_ = 0;
     std::size_t nextBindingId_ = 0;

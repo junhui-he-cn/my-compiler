@@ -661,6 +661,8 @@ void ResolvedNames::recordPatternVariant(
 
 const ResolvedNames& TypeChecker::check(const Program& program)
 {
+    declarationIndex_ = DeclarationIndex::collect(program);
+    declarationIndexMismatchCount_ = 0;
     scopes_.clear();
     scopeIds_.clear();
     typeParameterScopes_.clear();
@@ -710,6 +712,7 @@ const ResolvedNames& TypeChecker::check(const Program& program)
     }
 
     buildModuleInterfaces(program);
+    declarationIndexMismatchCount_ = declarationIndex_.compareResolvedNames(resolvedNames_);
     currentProgram_ = nullptr;
     return resolvedNames_;
 }
@@ -717,6 +720,16 @@ const ResolvedNames& TypeChecker::check(const Program& program)
 const std::vector<ModuleInterface>& TypeChecker::moduleInterfaces() const
 {
     return moduleInterfaces_;
+}
+
+const DeclarationIndex& TypeChecker::declarationIndex() const
+{
+    return declarationIndex_;
+}
+
+std::size_t TypeChecker::declarationIndexMismatchCount() const
+{
+    return declarationIndexMismatchCount_;
 }
 
 void TypeChecker::beginScope()
