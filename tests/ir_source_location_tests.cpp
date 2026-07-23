@@ -502,6 +502,74 @@ void test_typed_index_expression_metadata()
     assertType(*dynamicCompound, "number");
 }
 
+void test_native_call_metadata()
+{
+    std::istringstream input(
+        "fun floor(value) { return value; }\n"
+        "let xs: [number] = [1, 2];\n"
+        "let shadowed = floor(1);\n"
+        "let rounded = ceil(1.5);\n"
+        "print xs.contains(1);\n"
+        "let doubled = xs.map(fun (value: number): number { return value + 1; });\n"
+        "print str(rounded);\n"
+        "print xs.len();\n");
+    FrontendSession frontend;
+    Program program = frontend.loadStdin(input);
+
+    const auto* shadowed = dynamic_cast<const LetStmt*>(program.statements[2].get());
+    const auto* rounded = dynamic_cast<const LetStmt*>(program.statements[3].get());
+    const auto* containsPrint = dynamic_cast<const PrintStmt*>(program.statements[4].get());
+    const auto* doubled = dynamic_cast<const LetStmt*>(program.statements[5].get());
+    const auto* strPrint = dynamic_cast<const PrintStmt*>(program.statements[6].get());
+    const auto* lenPrint = dynamic_cast<const PrintStmt*>(program.statements[7].get());
+    const auto* shadowedCall = shadowed
+        ? dynamic_cast<const CallExpr*>(shadowed->initializer.get())
+        : nullptr;
+    const auto* roundedCall = rounded
+        ? dynamic_cast<const CallExpr*>(rounded->initializer.get())
+        : nullptr;
+    const auto* containsCall = containsPrint
+        ? dynamic_cast<const MemberCallExpr*>(containsPrint->expression.get())
+        : nullptr;
+    const auto* mapCall = doubled
+        ? dynamic_cast<const MemberCallExpr*>(doubled->initializer.get())
+        : nullptr;
+    const auto* strCall = strPrint
+        ? dynamic_cast<const CallExpr*>(strPrint->expression.get())
+        : nullptr;
+    const auto* lenCall = lenPrint
+        ? dynamic_cast<const MemberCallExpr*>(lenPrint->expression.get())
+        : nullptr;
+    assert(shadowedCall != nullptr && roundedCall != nullptr);
+    assert(containsCall != nullptr && mapCall != nullptr && strCall != nullptr);
+    assert(lenCall != nullptr);
+
+    TypeChecker checker;
+    checker.check(program);
+    const DeclarationIndex& index = checker.declarationIndex();
+    assert(checker.declarationIndexMismatchCount() == 0);
+
+    assert(index.nativeCall(*shadowedCall) == nullptr);
+    assert(index.typedExpression(*shadowedCall) != nullptr);
+
+    const auto assertNative = [&index](
+        const Expr& expression,
+        const std::string& name,
+        const std::string& type) {
+        const NativeCallRecord* native = index.nativeCall(expression);
+        assert(native != nullptr);
+        assert(native->name == name);
+        const TypedExpressionRecord* typed = index.typedExpression(expression);
+        assert(typed != nullptr);
+        assert(typeInfoName(typed->type) == type);
+    };
+    assertNative(*roundedCall, "ceil", "number");
+    assertNative(*containsCall, "contains", "bool");
+    assertNative(*mapCall, "map", "[number]");
+    assertNative(*strCall, "str", "string");
+    assert(index.nativeCall(*lenCall) == nullptr);
+}
+
 } // namespace
 
 int main()
@@ -529,5 +597,6 @@ int main()
     test_declaration_index_signature_shapes();
     test_typed_expression_metadata();
     test_typed_index_expression_metadata();
+    test_native_call_metadata();
     return 0;
 }

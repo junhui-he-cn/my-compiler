@@ -1,5 +1,6 @@
 #include "DeclarationIndex.hpp"
 
+#include "NativeStdlib.hpp"
 #include "TypeChecker.hpp"
 
 #include <stdexcept>
@@ -557,6 +558,9 @@ private:
             }
             if (const VariableExpr* callee = directCallee(call->callee.get())) {
                 index_.directCallCallees_.emplace(call, callee);
+                if (isNativeStdlibName(callee->name.lexeme)) {
+                    index_.nativeCallCandidates_.emplace(call, callee->name.lexeme);
+                }
                 if (const std::optional<ResolvedSymbol> resolved = lookupReference(callee->name.lexeme)) {
                     const DeclarationRecord* target = index_.declaration(resolved->declarationId);
                     if (target && isValueDeclaration(target->kind)) {
@@ -575,6 +579,9 @@ private:
             }
             index_.memberCallCandidates_.emplace(
                 memberCall, memberCall->name.lexeme);
+            if (isNativeStdlibName(memberCall->name.lexeme)) {
+                index_.nativeCallCandidates_.emplace(memberCall, memberCall->name.lexeme);
+            }
             return;
         }
         if (const auto* array = dynamic_cast<const ArrayExpr*>(expression)) {
@@ -865,6 +872,17 @@ void DeclarationIndex::recordTypedExpression(const Expr& expression, TypeInfo ty
     typedExpressions_.insert_or_assign(&expression, TypedExpressionRecord{std::move(type)});
 }
 
+const NativeCallRecord* DeclarationIndex::nativeCall(const Expr& expression) const
+{
+    const auto found = nativeCalls_.find(&expression);
+    return found == nativeCalls_.end() ? nullptr : &found->second;
+}
+
+void DeclarationIndex::recordNativeCall(const Expr& expression, std::string name)
+{
+    nativeCalls_.insert_or_assign(&expression, NativeCallRecord{std::move(name)});
+}
+
 std::optional<DeclarationId> DeclarationIndex::lookup(ScopeId scopeId, const std::string& name) const
 {
     std::optional<ScopeId> current = scopeId;
@@ -1086,6 +1104,29 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
     }
     for (const IndexCompoundAssignExpr* expression : indexCompoundAssignments_) {
         requireTypedExpression(*expression);
+    }
+
+    for (const auto& entry : nativeCallCandidates_) {
+        const Expr& expression = *entry.first;
+        if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
+            const auto callee = directCallCallees_.find(call);
+            if (callee != directCallCallees_.end()
+                && resolved.hasVariable(*callee->second)) {
+                continue;
+            }
+        } else if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(&expression)) {
+            if (resolved.hasMemberCallCallee(*memberCall)
+                || resolved.hasVariantConstructor(*memberCall)) {
+                continue;
+            }
+        }
+
+        const auto native = nativeCalls_.find(entry.first);
+        if (native == nativeCalls_.end() || native->second.name != entry.second) {
+            ++mismatches;
+            continue;
+        }
+        requireTypedExpression(expression);
     }
     return mismatches;
 }

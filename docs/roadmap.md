@@ -468,12 +468,13 @@ read by IR lowering.
 Current implementation slice: `DeclarationIndex` exposes snapshot-local
 `TypedExpressionRecord` values for resolved variable reads, ordinary and
 compound assignments, direct calls, field access, and index reads/assignments/
-compound assignments. `TypeChecker` materializes the existing `TypeInfo` result
-beside its legacy path, including statically known and dynamically validated
-indexing paths, and shadow comparison requires metadata completeness for the
-migrated expression families. IR lowering still consumes `ResolvedNames` and
-the AST; native calls, collection literals/helpers, control flow, and canonical
-type ownership remain later M1C/M1D/M1E slices.
+compound assignments, and native function/member calls. `TypeChecker`
+materializes the existing `TypeInfo` result beside its legacy path, including
+statically known and dynamically validated indexing paths, and shadow comparison
+requires metadata completeness for the migrated expression families. IR lowering
+still consumes `ResolvedNames` and the AST; native-call lowering, collection
+literals/helpers, control flow, and canonical type ownership remain later
+M1C/M1D/M1E slices.
 
 **Deliverable:** introduce typed semantic nodes for literals, variables, calls,
 indexing, field access, assignments, compound assignments, and native calls. The

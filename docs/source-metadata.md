@@ -52,13 +52,15 @@ the behavior oracle; module graph resolution and materialization of imported
 value symbols are deferred to M3A. The index IDs are not serialized into
 `.cdbc` artifacts or used as cache keys.
 
-## Typed expression metadata (M1C initial slice)
+## Typed expression metadata (M1C slices)
 
 `DeclarationIndex::typedExpression()` exposes the `TypeInfo` produced by the
 existing checker for resolved variable reads, ordinary assignments, numeric
 compound assignments, direct calls, field access, and index reads/assignments/
-compound assignments. The records include both statically known and dynamically
-validated index paths. They are keyed by the AST expression address within the
+compound assignments, and native function/member calls. The records include
+both statically known and dynamically validated index paths. Native call records
+retain the resolved native name; legacy `len` lowering remains outside this
+registry. All records are keyed by the AST expression address within the
 current snapshot, are not persistent identities, and do not claim canonical
 type ownership. The checker requires these records during shadow comparison for
 the migrated expression families; IR lowering remains on the legacy

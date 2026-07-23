@@ -4164,12 +4164,25 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
 
     if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
         CheckedExpression result = checkCall(*call);
+        if (isNativeStdlibCall(*call)) {
+            const auto* variable = dynamic_cast<const VariableExpr*>(call->callee.get());
+            if (variable) {
+                declarationIndex_.recordNativeCall(*call, variable->name.lexeme);
+            }
+        }
         declarationIndex_.recordTypedExpression(*call, result.type);
         return result;
     }
 
     if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(&expression)) {
-        return checkMemberCall(*memberCall, expectedType);
+        CheckedExpression result = checkMemberCall(*memberCall, expectedType);
+        if (isNativeStdlibName(memberCall->name.lexeme)
+            && !resolvedNames_.hasMemberCallCallee(*memberCall)
+            && !resolvedNames_.hasVariantConstructor(*memberCall)) {
+            declarationIndex_.recordNativeCall(*memberCall, memberCall->name.lexeme);
+            declarationIndex_.recordTypedExpression(*memberCall, result.type);
+        }
+        return result;
     }
 
     if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
