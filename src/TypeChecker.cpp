@@ -378,6 +378,12 @@ bool ResolvedNames::memberCallPassesReceiver(const MemberCallExpr& expression) c
     return found->second;
 }
 
+const MethodDecl* ResolvedNames::memberCallMethodTarget(const MemberCallExpr& expression) const
+{
+    const auto found = memberCallMethodTargets_.find(&expression);
+    return found == memberCallMethodTargets_.end() ? nullptr : found->second;
+}
+
 bool ResolvedNames::hasVariantConstructor(const MemberCallExpr& expression) const
 {
     return variantConstructors_.find(&expression) != variantConstructors_.end();
@@ -507,6 +513,7 @@ void ResolvedNames::clear()
     fieldAccessNames_.clear();
     memberCallCalleeNames_.clear();
     memberCallPassesReceiver_.clear();
+    memberCallMethodTargets_.clear();
     variantConstructors_.clear();
     patternVariableNames_.clear();
     patternEnumNames_.clear();
@@ -627,10 +634,17 @@ void ResolvedNames::recordFieldAccess(const FieldAccessExpr& expression, std::st
     fieldAccessNames_.emplace(&expression, std::move(name));
 }
 
-void ResolvedNames::recordMemberCallCallee(const MemberCallExpr& expression, std::string name, bool passesReceiver)
+void ResolvedNames::recordMemberCallCallee(
+    const MemberCallExpr& expression,
+    std::string name,
+    bool passesReceiver,
+    const MethodDecl* method)
 {
     memberCallCalleeNames_.emplace(&expression, std::move(name));
     memberCallPassesReceiver_.emplace(&expression, passesReceiver);
+    if (method) {
+        memberCallMethodTargets_.emplace(&expression, method);
+    }
 }
 
 void ResolvedNames::recordVariantConstructor(
@@ -5018,7 +5032,8 @@ TypeChecker::CheckedExpression TypeChecker::checkStructMethodCall(const MemberCa
         signature,
         expression.typeArguments,
         expression.arguments);
-    resolvedNames_.recordMemberCallCallee(expression, method->resolvedName, true);
+    resolvedNames_.recordMemberCallCallee(
+        expression, method->resolvedName, true, method->declaration);
     return result;
 }
 

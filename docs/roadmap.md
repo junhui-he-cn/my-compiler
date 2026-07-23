@@ -433,11 +433,14 @@ lossless view. M1A2 is not a gate for M1B or M1F.
 Current implementation slice: `DeclarationIndex` collects lexical declaration
 records and scopes from the existing AST, including function signatures,
 struct/enum declarations, method metadata, import/export records, namespace
-aliases, and variable/assignment references. `TypeChecker` builds this index in
-shadow mode and compares value-reference names and source ranges with its
-legacy `ResolvedNames` result. The proof slice is focused in
-`tests/ir_source_location_tests.cpp`; module graph construction and imported
-symbol materialization remain scheduled for M3A.
+aliases, variable/assignment references, and local direct-call or struct-method
+targets. `TypeChecker` builds this index in shadow mode and compares
+value-reference names, source ranges, and locally available call targets with
+its legacy `ResolvedNames` result. The proof slice is focused in
+`tests/ir_source_location_tests.cpp`; native calls, enum constructors,
+namespace-qualified calls, and imported method targets remain external cases,
+while module graph construction and imported symbol materialization remain
+scheduled for M3A.
 
 **Deliverable:** separate declaration collection, lexical lookup,
 imported/exported symbols, function signatures, struct/enum declarations, and

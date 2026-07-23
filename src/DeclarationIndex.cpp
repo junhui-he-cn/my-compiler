@@ -553,6 +553,17 @@ private:
             for (const ExprPtr& argument : call->arguments) {
                 collectExpression(argument.get());
             }
+            if (const VariableExpr* callee = directCallee(call->callee.get())) {
+                index_.directCallCallees_.emplace(call, callee);
+                if (const std::optional<ResolvedSymbol> resolved = lookupReference(callee->name.lexeme)) {
+                    const DeclarationRecord* target = index_.declaration(resolved->declarationId);
+                    if (target && isValueDeclaration(target->kind)) {
+                        index_.callTargets_.emplace(
+                            call,
+                            CallTargetRecord{CallTargetKind::Direct, *resolved});
+                    }
+                }
+            }
             return;
         }
         if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(expression)) {
@@ -560,6 +571,8 @@ private:
             for (const ExprPtr& argument : memberCall->arguments) {
                 collectExpression(argument.get());
             }
+            index_.memberCallCandidates_.emplace(
+                memberCall, memberCall->name.lexeme);
             return;
         }
         if (const auto* array = dynamic_cast<const ArrayExpr*>(expression)) {
@@ -631,6 +644,17 @@ private:
                 endScope();
             }
         }
+    }
+
+    const VariableExpr* directCallee(const Expr* expression) const
+    {
+        if (!expression) {
+            return nullptr;
+        }
+        if (const auto* grouping = dynamic_cast<const GroupingExpr*>(expression)) {
+            return directCallee(grouping->expression.get());
+        }
+        return dynamic_cast<const VariableExpr*>(expression);
     }
 
     std::optional<ResolvedSymbol> lookupReference(const std::string& name) const
@@ -765,6 +789,18 @@ std::optional<ScopeId> DeclarationIndex::scopeFor(const Stmt& statement) const
     return found->second;
 }
 
+const CallTargetRecord* DeclarationIndex::callTarget(const CallExpr& expression) const
+{
+    const auto found = callTargets_.find(&expression);
+    return found == callTargets_.end() ? nullptr : &found->second;
+}
+
+const CallTargetRecord* DeclarationIndex::callTarget(const MemberCallExpr& expression) const
+{
+    const auto found = memberCallTargets_.find(&expression);
+    return found == memberCallTargets_.end() ? nullptr : &found->second;
+}
+
 std::optional<DeclarationId> DeclarationIndex::lookup(ScopeId scopeId, const std::string& name) const
 {
     std::optional<ScopeId> current = scopeId;
@@ -807,9 +843,14 @@ std::optional<ResolvedSymbol> DeclarationIndex::compoundAssignmentReference(
         : std::optional<ResolvedSymbol>(found->second);
 }
 
-std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved) const
+std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved)
 {
     std::size_t mismatches = 0;
+    memberCallTargets_.clear();
+    const auto bindingMatches = [](const TypeBinding& binding, const DeclarationRecord& target) {
+        return binding.resolvedName.substr(0, binding.resolvedName.find('#')) == target.name
+            && sameRange(binding.range, target.range);
+    };
     const auto compareReference = [&](const auto& references, const auto& resolve) {
         for (const auto& entry : references) {
             const DeclarationRecord* target = declaration(entry.second.declarationId);
@@ -820,8 +861,7 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
             try {
                 const BindingId bindingId = resolve(*entry.first);
                 const TypeBinding& binding = resolved.binding(bindingId);
-                if (binding.resolvedName.substr(0, binding.resolvedName.find('#')) != target->name
-                    || !sameRange(binding.range, target->range)) {
+                if (!bindingMatches(binding, *target)) {
                     ++mismatches;
                 }
             } catch (const std::logic_error&) {
@@ -854,8 +894,7 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
                 const BindingId bindingId = resolved.letBindingId(
                     *static_cast<const LetStmt*>(record.statement));
                 const TypeBinding& binding = resolved.binding(bindingId);
-                if (binding.resolvedName.substr(0, binding.resolvedName.find('#')) != record.name
-                    || !sameRange(binding.range, record.range)) {
+                if (!bindingMatches(binding, record)) {
                     ++mismatches;
                 }
             } catch (const std::logic_error&) {
@@ -896,6 +935,53 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
                 ++mismatches;
             }
         }
+    }
+
+    for (const auto& entry : directCallCallees_) {
+        const VariableExpr& callee = *entry.second;
+        if (!resolved.hasVariable(callee)) {
+            continue;
+        }
+        const auto targetFound = callTargets_.find(entry.first);
+        if (targetFound == callTargets_.end()) {
+            ++mismatches;
+            continue;
+        }
+        const DeclarationRecord* target = declaration(targetFound->second.target.declarationId);
+        try {
+            const TypeBinding& binding = resolved.binding(resolved.variableBindingId(callee));
+            if (!target || !bindingMatches(binding, *target)) {
+                ++mismatches;
+            }
+        } catch (const std::logic_error&) {
+            ++mismatches;
+        }
+    }
+
+    for (const auto& entry : memberCallCandidates_) {
+        const MemberCallExpr& expression = *entry.first;
+        if (!resolved.hasMemberCallCallee(expression)
+            || !resolved.memberCallPassesReceiver(expression)) {
+            continue;
+        }
+
+        // Imported method signatures have no AST MethodDecl in the legacy
+        // checker. They remain external targets until module symbol
+        // materialization is migrated; local methods have an exact pointer.
+        const MethodDecl* method = resolved.memberCallMethodTarget(expression);
+        if (!method) {
+            continue;
+        }
+        const DeclarationRecord* target = declaration(*method);
+        if (!target || target->kind != DeclarationKind::Method) {
+            ++mismatches;
+            continue;
+        }
+        memberCallTargets_.emplace(
+            entry.first,
+            CallTargetRecord{
+                CallTargetKind::StructMethod,
+                ResolvedSymbol{target->declarationId, target->symbolId}});
     }
     return mismatches;
 }

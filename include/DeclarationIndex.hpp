@@ -30,6 +30,16 @@ struct ResolvedSymbol {
     SymbolId symbolId;
 };
 
+enum class CallTargetKind {
+    Direct,
+    StructMethod,
+};
+
+struct CallTargetRecord {
+    CallTargetKind kind = CallTargetKind::Direct;
+    ResolvedSymbol target;
+};
+
 struct DeclarationRecord {
     DeclarationId declarationId;
     SymbolId symbolId;
@@ -87,6 +97,8 @@ public:
     const DeclarationRecord* declaration(const VariablePattern& pattern) const;
     const ScopeRecord* scope(ScopeId id) const;
     std::optional<ScopeId> scopeFor(const Stmt& statement) const;
+    const CallTargetRecord* callTarget(const CallExpr& expression) const;
+    const CallTargetRecord* callTarget(const MemberCallExpr& expression) const;
 
     std::optional<DeclarationId> lookup(ScopeId scopeId, const std::string& name) const;
     std::optional<ResolvedSymbol> variableReference(const VariableExpr& expression) const;
@@ -96,7 +108,7 @@ public:
     // Compares the collected declaration/reference shape with the legacy
     // ResolvedNames table. IDs are owned by different migration snapshots, so
     // comparison uses declaration kind/name/range rather than raw integers.
-    std::size_t compareResolvedNames(const ResolvedNames& resolved) const;
+    std::size_t compareResolvedNames(const ResolvedNames& resolved);
 
 private:
     friend class DeclarationIndexCollector;
@@ -110,6 +122,10 @@ private:
     std::unordered_map<const Parameter*, DeclarationId> parameterDeclarations_;
     std::unordered_map<const VariablePattern*, DeclarationId> patternDeclarations_;
     std::unordered_map<const Stmt*, ScopeId> statementScopes_;
+    std::unordered_map<const CallExpr*, const VariableExpr*> directCallCallees_;
+    std::unordered_map<const CallExpr*, CallTargetRecord> callTargets_;
+    std::unordered_map<const MemberCallExpr*, std::string> memberCallCandidates_;
+    std::unordered_map<const MemberCallExpr*, CallTargetRecord> memberCallTargets_;
     std::unordered_map<const VariableExpr*, ResolvedSymbol> variableReferences_;
     std::unordered_map<const AssignExpr*, ResolvedSymbol> assignmentReferences_;
     std::unordered_map<const CompoundAssignExpr*, ResolvedSymbol> compoundAssignmentReferences_;

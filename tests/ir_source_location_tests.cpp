@@ -189,6 +189,24 @@ void test_declaration_index()
         : nullptr;
     assert(methodCall != nullptr && methodReceiver != nullptr);
     assert(index.variableReference(*methodReceiver)->declarationId == index.declaration(*box)->declarationId);
+    const CallTargetRecord* methodTarget = index.callTarget(*methodCall);
+    assert(methodTarget != nullptr);
+    assert(methodTarget->kind == CallTargetKind::StructMethod);
+    assert(methodTarget->target.declarationId == methodRecord->declarationId);
+    assert(index.callTarget(*resultConstructor) == nullptr);
+
+    const auto* directCallStatement = dynamic_cast<const PrintStmt*>(program.statements[11].get());
+    const auto* directCall = directCallStatement
+        ? dynamic_cast<const CallExpr*>(directCallStatement->expression.get())
+        : nullptr;
+    const auto* directCallee = directCall
+        ? dynamic_cast<const VariableExpr*>(directCall->callee.get())
+        : nullptr;
+    assert(directCall != nullptr && directCallee != nullptr);
+    const CallTargetRecord* directTarget = index.callTarget(*directCall);
+    assert(directTarget != nullptr);
+    assert(directTarget->kind == CallTargetKind::Direct);
+    assert(directTarget->target.declarationId == index.declaration(*function)->declarationId);
 
     const auto* chooseMatch = dynamic_cast<const MatchExpr*>(
         dynamic_cast<const ReturnStmt*>(choose->body.front().get())->value.get());
