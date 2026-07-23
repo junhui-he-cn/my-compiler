@@ -129,7 +129,7 @@ int main(int argc, char** argv)
 
         if (emitBytecodePath || showIr || showBytecode) {
             IRCompiler compiler;
-            IRProgram ir = compiler.compile(program, resolvedNames);
+            IRProgram ir = compiler.compile(program, resolvedNames, typeChecker.declarationIndex());
 
             std::optional<BytecodeProgram> bytecode;
             if (emitBytecodePath || showBytecode) {

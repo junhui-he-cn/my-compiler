@@ -472,9 +472,9 @@ compound assignments, and native function/member calls. `TypeChecker`
 materializes the existing `TypeInfo` result beside its legacy path, including
 statically known and dynamically validated indexing paths, and shadow comparison
 requires metadata completeness for the migrated expression families. IR lowering
-still consumes `ResolvedNames` and the AST; native-call lowering, collection
-literals/helpers, control flow, and canonical type ownership remain later
-M1C/M1D/M1E slices.
+now consumes native-call records for direct and member calls while `len` keeps
+its legacy dedicated path. The remaining collection literals/helpers, control
+flow, and canonical type ownership remain later M1C/M1D/M1E slices.
 
 **Deliverable:** introduce typed semantic nodes for literals, variables, calls,
 indexing, field access, assignments, compound assignments, and native calls. The

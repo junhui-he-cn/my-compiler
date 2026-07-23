@@ -19,7 +19,10 @@ public:
 
 class IRCompiler {
 public:
-    IRProgram compile(const Program& program, const ResolvedNames& resolvedNames);
+    IRProgram compile(
+        const Program& program,
+        const ResolvedNames& resolvedNames,
+        const DeclarationIndex& declarationIndex);
 
 private:
     class SpanScope {
@@ -44,7 +47,7 @@ private:
     IRRegister emitCall(const CallExpr& expression);
     IRRegister emitMemberCall(const MemberCallExpr& expression);
     bool isBuiltinLenCall(const CallExpr& expression) const;
-    bool isNativeStdlibCall(const CallExpr& expression) const;
+    bool hasNativeCallMetadata(const CallExpr& expression) const;
     void compileBreak(const BreakStmt& statement);
     void compileContinue(const ContinueStmt& statement);
     void compileFor(const ForStmt& statement);
@@ -89,6 +92,7 @@ private:
 
     IRProgram ir_;
     const ResolvedNames* resolvedNames_ = nullptr;
+    const DeclarationIndex* declarationIndex_ = nullptr;
     std::unordered_map<std::size_t, const ModuleStmt*> modules_;
     std::unordered_set<std::size_t> compiledModules_;
     std::vector<LoopContext> loopContexts_;

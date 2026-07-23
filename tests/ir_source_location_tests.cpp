@@ -580,7 +580,7 @@ int main()
     TypeChecker checker;
     const ResolvedNames& resolved = checker.check(program);
     IRCompiler compiler;
-    IRProgram ir = compiler.compile(program, resolved);
+    IRProgram ir = compiler.compile(program, resolved, checker.declarationIndex());
 
     assert(ir.sources().size() == 1);
     const auto& divide = ir.instructions().at(2);

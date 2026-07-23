@@ -1,7 +1,5 @@
 #include "IRCompiler.hpp"
 
-#include "NativeStdlib.hpp"
-
 #include <cstdlib>
 #include <unordered_map>
 #include <utility>
@@ -56,13 +54,17 @@ void IRCompiler::setCurrentSpan(std::optional<SourceSpan> span)
     ir_.setCurrentSpan(currentSpan_);
 }
 
-IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resolvedNames)
+IRProgram IRCompiler::compile(
+    const Program& program,
+    const ResolvedNames& resolvedNames,
+    const DeclarationIndex& declarationIndex)
 {
     ir_ = IRProgram();
     ir_.setSources(program.sources);
     currentSpan_ = std::nullopt;
     ir_.setCurrentSpan(std::nullopt);
     resolvedNames_ = &resolvedNames;
+    declarationIndex_ = &declarationIndex;
     modules_.clear();
     compiledModules_.clear();
     loopContexts_.clear();
@@ -78,6 +80,7 @@ IRProgram IRCompiler::compile(const Program& program, const ResolvedNames& resol
     modules_.clear();
     compiledModules_.clear();
     loopContexts_.clear();
+    declarationIndex_ = nullptr;
     return std::move(ir_);
 }
 
@@ -673,10 +676,9 @@ bool IRCompiler::isBuiltinLenCall(const CallExpr& expression) const
     return variable && variable->name.lexeme == "len" && !resolvedNames_->hasVariable(*variable);
 }
 
-bool IRCompiler::isNativeStdlibCall(const CallExpr& expression) const
+bool IRCompiler::hasNativeCallMetadata(const CallExpr& expression) const
 {
-    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
-    return variable && isNativeStdlibName(variable->name.lexeme) && !resolvedNames_->hasVariable(*variable);
+    return declarationIndex_ && declarationIndex_->nativeCall(expression) != nullptr;
 }
 
 IRRegister IRCompiler::emitLenCall(const CallExpr& expression)
@@ -690,8 +692,10 @@ IRRegister IRCompiler::emitLenCall(const CallExpr& expression)
 
 IRRegister IRCompiler::emitNativeStdlibCall(const CallExpr& expression)
 {
-    const auto* variable = dynamic_cast<const VariableExpr*>(expression.callee.get());
-    if (!variable) {
+    const NativeCallRecord* nativeCall = declarationIndex_
+        ? declarationIndex_->nativeCall(expression)
+        : nullptr;
+    if (!nativeCall) {
         throw IRCompileError("native stdlib call missing variable callee");
     }
 
@@ -699,7 +703,7 @@ IRRegister IRCompiler::emitNativeStdlibCall(const CallExpr& expression)
     for (const auto& argument : expression.arguments) {
         arguments.push_back(compileExpression(*argument));
     }
-    return ir_.emitNativeCall(variable->name.lexeme, std::move(arguments));
+    return ir_.emitNativeCall(nativeCall->name, std::move(arguments));
 }
 
 IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
@@ -729,34 +733,16 @@ IRRegister IRCompiler::emitMemberCall(const MemberCallExpr& expression)
         return ir_.emitLen(receiver);
     }
 
-    if (expression.name.lexeme == "push"
-        || expression.name.lexeme == "pop"
-        || expression.name.lexeme == "remove"
-        || expression.name.lexeme == "clear"
-        || expression.name.lexeme == "merge"
-        || expression.name.lexeme == "keys"
-        || expression.name.lexeme == "values"
-        || expression.name.lexeme == "substr"
-        || expression.name.lexeme == "charAt"
-        || expression.name.lexeme == "contains"
-        || expression.name.lexeme == "slice"
-        || expression.name.lexeme == "copy"
-        || expression.name.lexeme == "concat"
-        || expression.name.lexeme == "map"
-        || expression.name.lexeme == "filter"
-        || expression.name.lexeme == "flatMap"
-        || expression.name.lexeme == "any"
-        || expression.name.lexeme == "all"
-        || expression.name.lexeme == "count"
-        || expression.name.lexeme == "find"
-        || expression.name.lexeme == "findIndex"
-        || expression.name.lexeme == "reduce") {
+    const NativeCallRecord* nativeCall = declarationIndex_
+        ? declarationIndex_->nativeCall(expression)
+        : nullptr;
+    if (nativeCall) {
         std::vector<IRRegister> arguments;
         arguments.push_back(receiver);
         for (const auto& argument : expression.arguments) {
             arguments.push_back(compileExpression(*argument));
         }
-        return ir_.emitNativeCall(expression.name.lexeme, std::move(arguments));
+        return ir_.emitNativeCall(nativeCall->name, std::move(arguments));
     }
 
     throw IRCompileError("unknown member call `" + expression.name.lexeme + "`");
@@ -781,7 +767,7 @@ IRRegister IRCompiler::emitCall(const CallExpr& expression)
         return emitLenCall(expression);
     }
 
-    if (isNativeStdlibCall(expression)) {
+    if (hasNativeCallMetadata(expression)) {
         return emitNativeStdlibCall(expression);
     }
 
