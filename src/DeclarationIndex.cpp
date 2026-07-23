@@ -588,6 +588,7 @@ private:
             for (const ExprPtr& element : array->elements) {
                 collectExpression(element.get());
             }
+            index_.arrayExpressions_.insert(array);
             return;
         }
         if (const auto* map = dynamic_cast<const MapExpr*>(expression)) {
@@ -595,12 +596,14 @@ private:
                 collectExpression(entry.key.get());
                 collectExpression(entry.value.get());
             }
+            index_.mapExpressions_.insert(map);
             return;
         }
         if (const auto* construct = dynamic_cast<const StructConstructExpr*>(expression)) {
             for (const StructField& field : construct->fields) {
                 collectExpression(field.value.get());
             }
+            index_.structConstructors_.insert(construct);
             return;
         }
         if (const auto* index = dynamic_cast<const IndexExpr*>(expression)) {
@@ -1103,6 +1106,15 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
         requireTypedExpression(*expression);
     }
     for (const IndexCompoundAssignExpr* expression : indexCompoundAssignments_) {
+        requireTypedExpression(*expression);
+    }
+    for (const ArrayExpr* expression : arrayExpressions_) {
+        requireTypedExpression(*expression);
+    }
+    for (const MapExpr* expression : mapExpressions_) {
+        requireTypedExpression(*expression);
+    }
+    for (const StructConstructExpr* expression : structConstructors_) {
         requireTypedExpression(*expression);
     }
 

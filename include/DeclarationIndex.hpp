@@ -166,6 +166,9 @@ private:
     std::unordered_set<const IndexExpr*> indexExpressions_;
     std::unordered_set<const IndexAssignExpr*> indexAssignments_;
     std::unordered_set<const IndexCompoundAssignExpr*> indexCompoundAssignments_;
+    std::unordered_set<const ArrayExpr*> arrayExpressions_;
+    std::unordered_set<const MapExpr*> mapExpressions_;
+    std::unordered_set<const StructConstructExpr*> structConstructors_;
     std::unordered_map<const Expr*, std::string> nativeCallCandidates_;
     std::unordered_map<const Expr*, TypedExpressionRecord> typedExpressions_;
     std::unordered_map<const Expr*, NativeCallRecord> nativeCalls_;

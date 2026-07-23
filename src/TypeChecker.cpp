@@ -4186,15 +4186,21 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* array = dynamic_cast<const ArrayExpr*>(&expression)) {
-        return checkArrayLiteral(*array, expectedType);
+        CheckedExpression result = checkArrayLiteral(*array, expectedType);
+        declarationIndex_.recordTypedExpression(*array, result.type);
+        return result;
     }
 
     if (const auto* map = dynamic_cast<const MapExpr*>(&expression)) {
-        return checkMapLiteral(*map, expectedType);
+        CheckedExpression result = checkMapLiteral(*map, expectedType);
+        declarationIndex_.recordTypedExpression(*map, result.type);
+        return result;
     }
 
     if (const auto* construct = dynamic_cast<const StructConstructExpr*>(&expression)) {
-        return checkStructConstructor(*construct, expectedType);
+        CheckedExpression result = checkStructConstructor(*construct, expectedType);
+        declarationIndex_.recordTypedExpression(*construct, result.type);
+        return result;
     }
 
     if (const auto* field = dynamic_cast<const FieldAccessExpr*>(&expression)) {

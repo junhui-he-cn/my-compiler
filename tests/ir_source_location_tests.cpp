@@ -570,6 +570,59 @@ void test_native_call_metadata()
     assert(index.nativeCall(*lenCall) == nullptr);
 }
 
+void test_collection_expression_metadata()
+{
+    std::istringstream input(
+        "fun id(value) { return value; }\n"
+        "struct Box { value: number }\n"
+        "let numbers: [number] = [1, 2];\n"
+        "let table: map<string, number> = {\"a\": 1};\n"
+        "let box = Box { value: 1 };\n"
+        "let dynamicArray = [id(1)];\n"
+        "let dynamicMap = {\"a\": id(1)};\n");
+    FrontendSession frontend;
+    Program program = frontend.loadStdin(input);
+
+    const auto* numbers = dynamic_cast<const LetStmt*>(program.statements[2].get());
+    const auto* table = dynamic_cast<const LetStmt*>(program.statements[3].get());
+    const auto* box = dynamic_cast<const LetStmt*>(program.statements[4].get());
+    const auto* dynamicArray = dynamic_cast<const LetStmt*>(program.statements[5].get());
+    const auto* dynamicMap = dynamic_cast<const LetStmt*>(program.statements[6].get());
+    const auto* numbersLiteral = numbers
+        ? dynamic_cast<const ArrayExpr*>(numbers->initializer.get())
+        : nullptr;
+    const auto* tableLiteral = table
+        ? dynamic_cast<const MapExpr*>(table->initializer.get())
+        : nullptr;
+    const auto* boxConstructor = box
+        ? dynamic_cast<const StructConstructExpr*>(box->initializer.get())
+        : nullptr;
+    const auto* dynamicArrayLiteral = dynamicArray
+        ? dynamic_cast<const ArrayExpr*>(dynamicArray->initializer.get())
+        : nullptr;
+    const auto* dynamicMapLiteral = dynamicMap
+        ? dynamic_cast<const MapExpr*>(dynamicMap->initializer.get())
+        : nullptr;
+    assert(numbersLiteral != nullptr && tableLiteral != nullptr && boxConstructor != nullptr);
+    assert(dynamicArrayLiteral != nullptr && dynamicMapLiteral != nullptr);
+
+    TypeChecker checker;
+    checker.check(program);
+    const DeclarationIndex& index = checker.declarationIndex();
+    assert(checker.declarationIndexMismatchCount() == 0);
+
+    const auto assertType = [&index](const Expr& expression, const std::string& expected) {
+        const TypedExpressionRecord* record = index.typedExpression(expression);
+        assert(record != nullptr);
+        assert(typeInfoName(record->type) == expected);
+    };
+    assertType(*numbersLiteral, "[number]");
+    assertType(*tableLiteral, "map<string, number>");
+    assertType(*boxConstructor, "Box");
+    assertType(*dynamicArrayLiteral, "array");
+    assertType(*dynamicMapLiteral, "map");
+}
+
 } // namespace
 
 int main()
@@ -598,5 +651,6 @@ int main()
     test_typed_expression_metadata();
     test_typed_index_expression_metadata();
     test_native_call_metadata();
+    test_collection_expression_metadata();
     return 0;
 }
