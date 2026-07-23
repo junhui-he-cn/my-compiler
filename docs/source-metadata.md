@@ -52,6 +52,17 @@ the behavior oracle; module graph resolution and materialization of imported
 value symbols are deferred to M3A. The index IDs are not serialized into
 `.cdbc` artifacts or used as cache keys.
 
+## Typed expression metadata (M1C initial slice)
+
+`DeclarationIndex::typedExpression()` exposes the `TypeInfo` produced by the
+existing checker for resolved variable reads, ordinary assignments, numeric
+compound assignments, direct calls, and field access. The records are keyed by
+the AST expression address within the current snapshot, are not persistent
+identities, and do not claim canonical type ownership. The checker requires
+these records during shadow comparison for the migrated expression families;
+IR lowering remains on the legacy AST/`ResolvedNames` path until a later M1C
+cutover slice.
+
 ## Lossless source view
 
 `FrontendSession::losslessSourceView()` groups `LosslessPiece` values by

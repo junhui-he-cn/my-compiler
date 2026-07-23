@@ -601,6 +601,7 @@ private:
         }
         if (const auto* field = dynamic_cast<const FieldAccessExpr*>(expression)) {
             collectExpression(field->object.get());
+            index_.fieldAccesses_.insert(field);
             return;
         }
         if (const auto* fieldAssign = dynamic_cast<const FieldAssignExpr*>(expression)) {
@@ -850,6 +851,17 @@ const CallTargetRecord* DeclarationIndex::callTarget(const MemberCallExpr& expre
     return found == memberCallTargets_.end() ? nullptr : &found->second;
 }
 
+const TypedExpressionRecord* DeclarationIndex::typedExpression(const Expr& expression) const
+{
+    const auto found = typedExpressions_.find(&expression);
+    return found == typedExpressions_.end() ? nullptr : &found->second;
+}
+
+void DeclarationIndex::recordTypedExpression(const Expr& expression, TypeInfo type)
+{
+    typedExpressions_.insert_or_assign(&expression, TypedExpressionRecord{std::move(type)});
+}
+
 std::optional<DeclarationId> DeclarationIndex::lookup(ScopeId scopeId, const std::string& name) const
 {
     std::optional<ScopeId> current = scopeId;
@@ -896,6 +908,11 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
 {
     std::size_t mismatches = 0;
     memberCallTargets_.clear();
+    const auto requireTypedExpression = [&](const Expr& expression) {
+        if (!typedExpression(expression)) {
+            ++mismatches;
+        }
+    };
     const auto bindingMatches = [](const TypeBinding& binding, const DeclarationRecord& target) {
         return binding.resolvedName.substr(0, binding.resolvedName.find('#')) == target.name
             && sameRange(binding.range, target.range);
@@ -912,6 +929,8 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
                 const TypeBinding& binding = resolved.binding(bindingId);
                 if (!bindingMatches(binding, *target)) {
                     ++mismatches;
+                } else {
+                    requireTypedExpression(*entry.first);
                 }
             } catch (const std::logic_error&) {
                 ++mismatches;
@@ -1019,6 +1038,8 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
             const TypeBinding& binding = resolved.binding(resolved.variableBindingId(callee));
             if (!target || !bindingMatches(binding, *target)) {
                 ++mismatches;
+            } else {
+                requireTypedExpression(*entry.first);
             }
         } catch (const std::logic_error&) {
             ++mismatches;
@@ -1049,6 +1070,10 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
             CallTargetRecord{
                 CallTargetKind::StructMethod,
                 ResolvedSymbol{target->declarationId, target->symbolId}});
+    }
+
+    for (const FieldAccessExpr* expression : fieldAccesses_) {
+        requireTypedExpression(*expression);
     }
     return mismatches;
 }

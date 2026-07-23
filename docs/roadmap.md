@@ -465,6 +465,15 @@ read by IR lowering.
 
 ### M1C: Typed expressions and assignment targets
 
+Current implementation slice: `DeclarationIndex` exposes snapshot-local
+`TypedExpressionRecord` values for resolved variable reads, ordinary and
+compound assignments, direct calls, and field access. `TypeChecker` materializes
+the existing `TypeInfo` result beside its legacy path, and shadow comparison
+requires metadata completeness for the migrated expression families. IR
+lowering still consumes `ResolvedNames` and the AST; indexing, native calls,
+collection expressions, control flow, and canonical type ownership remain
+later M1C/M1D/M1E slices.
+
 **Deliverable:** introduce typed semantic nodes for literals, variables, calls,
 indexing, field access, assignments, compound assignments, and native calls. The
 proof slice must cover both statically known and dynamic runtime-validation

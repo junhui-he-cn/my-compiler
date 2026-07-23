@@ -1,14 +1,17 @@
 #pragma once
 
 #include "Ast.hpp"
+#include "TypeUtils.hpp"
 
 #include <cstddef>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class ResolvedNames;
+class TypeChecker;
 class DeclarationIndexCollector;
 
 enum class DeclarationKind {
@@ -38,6 +41,10 @@ enum class CallTargetKind {
 struct CallTargetRecord {
     CallTargetKind kind = CallTargetKind::Direct;
     ResolvedSymbol target;
+};
+
+struct TypedExpressionRecord {
+    TypeInfo type;
 };
 
 struct DeclarationSignature {
@@ -114,6 +121,7 @@ public:
     std::optional<ResolvedSymbol> patternBinding(const VariablePattern& pattern) const;
     const CallTargetRecord* callTarget(const CallExpr& expression) const;
     const CallTargetRecord* callTarget(const MemberCallExpr& expression) const;
+    const TypedExpressionRecord* typedExpression(const Expr& expression) const;
 
     std::optional<DeclarationId> lookup(ScopeId scopeId, const std::string& name) const;
     std::optional<ResolvedSymbol> variableReference(const VariableExpr& expression) const;
@@ -127,6 +135,9 @@ public:
 
 private:
     friend class DeclarationIndexCollector;
+    friend class TypeChecker;
+
+    void recordTypedExpression(const Expr& expression, TypeInfo type);
 
     std::vector<DeclarationRecord> declarations_;
     std::vector<ScopeRecord> scopes_;
@@ -144,4 +155,6 @@ private:
     std::unordered_map<const VariableExpr*, ResolvedSymbol> variableReferences_;
     std::unordered_map<const AssignExpr*, ResolvedSymbol> assignmentReferences_;
     std::unordered_map<const CompoundAssignExpr*, ResolvedSymbol> compoundAssignmentReferences_;
+    std::unordered_set<const FieldAccessExpr*> fieldAccesses_;
+    std::unordered_map<const Expr*, TypedExpressionRecord> typedExpressions_;
 };

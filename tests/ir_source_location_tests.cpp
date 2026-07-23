@@ -369,6 +369,59 @@ void test_declaration_index_signature_shapes()
     assert(functionSignature->returnType->token.lexeme == "T");
 }
 
+void test_typed_expression_metadata()
+{
+    std::istringstream input(
+        "struct Box { value: number }\n"
+        "fun add(value: number): number { return value; }\n"
+        "let x = 1;\n"
+        "print x;\n"
+        "x = add(2);\n"
+        "x += 1;\n"
+        "let box = Box { value: 3 };\n"
+        "print box.value;\n");
+    FrontendSession frontend;
+    Program program = frontend.loadStdin(input);
+
+    const auto* printVariable = dynamic_cast<const PrintStmt*>(program.statements[3].get());
+    const auto* assignmentStatement = dynamic_cast<const ExpressionStmt*>(program.statements[4].get());
+    const auto* compoundStatement = dynamic_cast<const ExpressionStmt*>(program.statements[5].get());
+    const auto* printField = dynamic_cast<const PrintStmt*>(program.statements[7].get());
+    const auto* assignment = assignmentStatement
+        ? dynamic_cast<const AssignExpr*>(assignmentStatement->expression.get())
+        : nullptr;
+    const auto* compound = compoundStatement
+        ? dynamic_cast<const CompoundAssignExpr*>(compoundStatement->expression.get())
+        : nullptr;
+    const auto* directCall = assignment
+        ? dynamic_cast<const CallExpr*>(assignment->value.get())
+        : nullptr;
+    const auto* field = printField
+        ? dynamic_cast<const FieldAccessExpr*>(printField->expression.get())
+        : nullptr;
+    const auto* variable = printVariable
+        ? dynamic_cast<const VariableExpr*>(printVariable->expression.get())
+        : nullptr;
+    assert(variable != nullptr && assignment != nullptr && compound != nullptr);
+    assert(directCall != nullptr && field != nullptr);
+
+    TypeChecker checker;
+    checker.check(program);
+    const DeclarationIndex& index = checker.declarationIndex();
+    assert(checker.declarationIndexMismatchCount() == 0);
+
+    const auto assertType = [&index](const Expr& expression, const std::string& expected) {
+        const TypedExpressionRecord* record = index.typedExpression(expression);
+        assert(record != nullptr);
+        assert(typeInfoName(record->type) == expected);
+    };
+    assertType(*variable, "number");
+    assertType(*assignment, "number");
+    assertType(*compound, "number");
+    assertType(*directCall, "number");
+    assertType(*field, "number");
+}
+
 } // namespace
 
 int main()
@@ -394,5 +447,6 @@ int main()
     test_declaration_index_module_metadata();
     test_declaration_index_for_in_binding();
     test_declaration_index_signature_shapes();
+    test_typed_expression_metadata();
     return 0;
 }

@@ -4061,7 +4061,9 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
             throw TypeError(variable->name, "undefined variable `" + variable->name.lexeme + "`");
         }
         resolvedNames_.recordVariable(*variable, *binding);
-        return CheckedExpression{variableType(*binding)};
+        CheckedExpression result{variableType(*binding)};
+        declarationIndex_.recordTypedExpression(*variable, result.type);
+        return result;
     }
 
     if (const auto* assign = dynamic_cast<const AssignExpr*>(&expression)) {
@@ -4110,7 +4112,9 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
 
         resolvedNames_.recordBinding(*target);
         resolvedNames_.recordAssignment(*assign, *target);
-        return CheckedExpression{target->type};
+        CheckedExpression result{target->type};
+        declarationIndex_.recordTypedExpression(*assign, result.type);
+        return result;
     }
 
     if (const auto* compound = dynamic_cast<const CompoundAssignExpr*>(&expression)) {
@@ -4131,7 +4135,9 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
         }
         resolvedNames_.recordBinding(*target);
         resolvedNames_.recordCompoundAssignment(*compound, *target);
-        return CheckedExpression{simpleType(StaticType::Number)};
+        CheckedExpression result{simpleType(StaticType::Number)};
+        declarationIndex_.recordTypedExpression(*compound, result.type);
+        return result;
     }
 
     if (const auto* grouping = dynamic_cast<const GroupingExpr*>(&expression)) {
@@ -4157,7 +4163,9 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
-        return checkCall(*call);
+        CheckedExpression result = checkCall(*call);
+        declarationIndex_.recordTypedExpression(*call, result.type);
+        return result;
     }
 
     if (const auto* memberCall = dynamic_cast<const MemberCallExpr*>(&expression)) {
@@ -4185,7 +4193,9 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
                         "module namespace `" + variable->name.lexeme + "` has no exported member `" + field->name.lexeme + "`");
                 }
                 resolvedNames_.recordFieldAccess(*field, found->second.resolvedName);
-                return CheckedExpression{found->second.type};
+                CheckedExpression result{found->second.type};
+                declarationIndex_.recordTypedExpression(*field, result.type);
+                return result;
             }
         }
         const TypeInfo object = checkExpression(*field->object);
@@ -4199,10 +4209,14 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
                 throw TypeError(field->name,
                     "struct `" + *object.structName + "` has no field `" + field->name.lexeme + "`");
             }
-            return CheckedExpression{
+            CheckedExpression result{
                 structFieldTypeForValue(object, *structType, *structField)};
+            declarationIndex_.recordTypedExpression(*field, result.type);
+            return result;
         }
-        return CheckedExpression{unknownType()};
+        CheckedExpression result{unknownType()};
+        declarationIndex_.recordTypedExpression(*field, result.type);
+        return result;
     }
 
     if (const auto* fieldAssign = dynamic_cast<const FieldAssignExpr*>(&expression)) {
