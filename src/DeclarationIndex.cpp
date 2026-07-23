@@ -518,12 +518,14 @@ private:
             collectExpression(indexAssign->collection.get());
             collectExpression(indexAssign->index.get());
             collectExpression(indexAssign->value.get());
+            index_.indexAssignments_.insert(indexAssign);
             return;
         }
         if (const auto* indexCompound = dynamic_cast<const IndexCompoundAssignExpr*>(expression)) {
             collectExpression(indexCompound->collection.get());
             collectExpression(indexCompound->index.get());
             collectExpression(indexCompound->value.get());
+            index_.indexCompoundAssignments_.insert(indexCompound);
             return;
         }
         if (const auto* variable = dynamic_cast<const VariableExpr*>(expression)) {
@@ -597,6 +599,7 @@ private:
         if (const auto* index = dynamic_cast<const IndexExpr*>(expression)) {
             collectExpression(index->collection.get());
             collectExpression(index->index.get());
+            index_.indexExpressions_.insert(index);
             return;
         }
         if (const auto* field = dynamic_cast<const FieldAccessExpr*>(expression)) {
@@ -1073,6 +1076,15 @@ std::size_t DeclarationIndex::compareResolvedNames(const ResolvedNames& resolved
     }
 
     for (const FieldAccessExpr* expression : fieldAccesses_) {
+        requireTypedExpression(*expression);
+    }
+    for (const IndexExpr* expression : indexExpressions_) {
+        requireTypedExpression(*expression);
+    }
+    for (const IndexAssignExpr* expression : indexAssignments_) {
+        requireTypedExpression(*expression);
+    }
+    for (const IndexCompoundAssignExpr* expression : indexCompoundAssignments_) {
         requireTypedExpression(*expression);
     }
     return mismatches;

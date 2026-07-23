@@ -56,12 +56,13 @@ value symbols are deferred to M3A. The index IDs are not serialized into
 
 `DeclarationIndex::typedExpression()` exposes the `TypeInfo` produced by the
 existing checker for resolved variable reads, ordinary assignments, numeric
-compound assignments, direct calls, and field access. The records are keyed by
-the AST expression address within the current snapshot, are not persistent
-identities, and do not claim canonical type ownership. The checker requires
-these records during shadow comparison for the migrated expression families;
-IR lowering remains on the legacy AST/`ResolvedNames` path until a later M1C
-cutover slice.
+compound assignments, direct calls, field access, and index reads/assignments/
+compound assignments. The records include both statically known and dynamically
+validated index paths. They are keyed by the AST expression address within the
+current snapshot, are not persistent identities, and do not claim canonical
+type ownership. The checker requires these records during shadow comparison for
+the migrated expression families; IR lowering remains on the legacy
+AST/`ResolvedNames` path until a later M1C cutover slice.
 
 ## Lossless source view
 

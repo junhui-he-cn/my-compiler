@@ -4228,15 +4228,21 @@ TypeChecker::CheckedExpression TypeChecker::checkExpressionInfo(const Expr& expr
     }
 
     if (const auto* index = dynamic_cast<const IndexExpr*>(&expression)) {
-        return CheckedExpression{checkIndex(*index)};
+        CheckedExpression result{checkIndex(*index)};
+        declarationIndex_.recordTypedExpression(*index, result.type);
+        return result;
     }
 
     if (const auto* indexAssign = dynamic_cast<const IndexAssignExpr*>(&expression)) {
-        return checkIndexAssignment(*indexAssign);
+        CheckedExpression result = checkIndexAssignment(*indexAssign);
+        declarationIndex_.recordTypedExpression(*indexAssign, result.type);
+        return result;
     }
 
     if (const auto* indexCompound = dynamic_cast<const IndexCompoundAssignExpr*>(&expression)) {
-        return checkIndexCompoundAssignment(*indexCompound);
+        CheckedExpression result = checkIndexCompoundAssignment(*indexCompound);
+        declarationIndex_.recordTypedExpression(*indexCompound, result.type);
+        return result;
     }
 
     throw TypeError("unsupported expression node");

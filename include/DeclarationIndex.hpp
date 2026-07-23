@@ -96,9 +96,10 @@ struct ExportRecord {
 };
 
 // A snapshot-local declaration/symbol index collected from the existing AST.
-// It is intentionally independent of TypeChecker's type decisions: the first
-// migration slice records declarations, scopes, signatures, and lexical
-// references while the old checker remains the behavior oracle.
+// It is intentionally independent of TypeChecker's type decisions: the
+// migration slices record declarations, scopes, signatures, lexical
+// references, and typed expression results while the old checker remains the
+// behavior oracle.
 class DeclarationIndex {
 public:
     static DeclarationIndex collect(const Program& program);
@@ -156,5 +157,8 @@ private:
     std::unordered_map<const AssignExpr*, ResolvedSymbol> assignmentReferences_;
     std::unordered_map<const CompoundAssignExpr*, ResolvedSymbol> compoundAssignmentReferences_;
     std::unordered_set<const FieldAccessExpr*> fieldAccesses_;
+    std::unordered_set<const IndexExpr*> indexExpressions_;
+    std::unordered_set<const IndexAssignExpr*> indexAssignments_;
+    std::unordered_set<const IndexCompoundAssignExpr*> indexCompoundAssignments_;
     std::unordered_map<const Expr*, TypedExpressionRecord> typedExpressions_;
 };

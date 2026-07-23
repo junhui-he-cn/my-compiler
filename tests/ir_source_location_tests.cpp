@@ -422,6 +422,86 @@ void test_typed_expression_metadata()
     assertType(*field, "number");
 }
 
+void test_typed_index_expression_metadata()
+{
+    std::istringstream input(
+        "fun id(value) { return value; }\n"
+        "let xs: [number] = [1, 2];\n"
+        "let table: map<string, number> = {\"a\": 1};\n"
+        "let values = range(3);\n"
+        "print xs[0];\n"
+        "xs[0] = 2;\n"
+        "xs[0] += 3;\n"
+        "print table[\"a\"];\n"
+        "table[\"a\"] = 4;\n"
+        "print values[0];\n"
+        "print id(xs)[0];\n"
+        "id(xs)[0] = 5;\n"
+        "id(xs)[0] += 1;\n");
+    FrontendSession frontend;
+    Program program = frontend.loadStdin(input);
+
+    const auto* arrayReadStatement = dynamic_cast<const PrintStmt*>(program.statements[4].get());
+    const auto* arrayAssignStatement = dynamic_cast<const ExpressionStmt*>(program.statements[5].get());
+    const auto* arrayCompoundStatement = dynamic_cast<const ExpressionStmt*>(program.statements[6].get());
+    const auto* mapReadStatement = dynamic_cast<const PrintStmt*>(program.statements[7].get());
+    const auto* mapAssignStatement = dynamic_cast<const ExpressionStmt*>(program.statements[8].get());
+    const auto* rangeReadStatement = dynamic_cast<const PrintStmt*>(program.statements[9].get());
+    const auto* dynamicReadStatement = dynamic_cast<const PrintStmt*>(program.statements[10].get());
+    const auto* dynamicAssignStatement = dynamic_cast<const ExpressionStmt*>(program.statements[11].get());
+    const auto* dynamicCompoundStatement = dynamic_cast<const ExpressionStmt*>(program.statements[12].get());
+    const auto* arrayRead = arrayReadStatement
+        ? dynamic_cast<const IndexExpr*>(arrayReadStatement->expression.get())
+        : nullptr;
+    const auto* arrayAssign = arrayAssignStatement
+        ? dynamic_cast<const IndexAssignExpr*>(arrayAssignStatement->expression.get())
+        : nullptr;
+    const auto* arrayCompound = arrayCompoundStatement
+        ? dynamic_cast<const IndexCompoundAssignExpr*>(arrayCompoundStatement->expression.get())
+        : nullptr;
+    const auto* mapRead = mapReadStatement
+        ? dynamic_cast<const IndexExpr*>(mapReadStatement->expression.get())
+        : nullptr;
+    const auto* mapAssign = mapAssignStatement
+        ? dynamic_cast<const IndexAssignExpr*>(mapAssignStatement->expression.get())
+        : nullptr;
+    const auto* rangeRead = rangeReadStatement
+        ? dynamic_cast<const IndexExpr*>(rangeReadStatement->expression.get())
+        : nullptr;
+    const auto* dynamicRead = dynamicReadStatement
+        ? dynamic_cast<const IndexExpr*>(dynamicReadStatement->expression.get())
+        : nullptr;
+    const auto* dynamicAssign = dynamicAssignStatement
+        ? dynamic_cast<const IndexAssignExpr*>(dynamicAssignStatement->expression.get())
+        : nullptr;
+    const auto* dynamicCompound = dynamicCompoundStatement
+        ? dynamic_cast<const IndexCompoundAssignExpr*>(dynamicCompoundStatement->expression.get())
+        : nullptr;
+    assert(arrayRead != nullptr && arrayAssign != nullptr && arrayCompound != nullptr);
+    assert(mapRead != nullptr && mapAssign != nullptr && rangeRead != nullptr);
+    assert(dynamicRead != nullptr && dynamicAssign != nullptr && dynamicCompound != nullptr);
+
+    TypeChecker checker;
+    checker.check(program);
+    const DeclarationIndex& index = checker.declarationIndex();
+    assert(checker.declarationIndexMismatchCount() == 0);
+
+    const auto assertType = [&index](const Expr& expression, const std::string& expected) {
+        const TypedExpressionRecord* record = index.typedExpression(expression);
+        assert(record != nullptr);
+        assert(typeInfoName(record->type) == expected);
+    };
+    assertType(*arrayRead, "number");
+    assertType(*arrayAssign, "number");
+    assertType(*arrayCompound, "number");
+    assertType(*mapRead, "number");
+    assertType(*mapAssign, "number");
+    assertType(*rangeRead, "number");
+    assertType(*dynamicRead, "unknown");
+    assertType(*dynamicAssign, "number");
+    assertType(*dynamicCompound, "number");
+}
+
 } // namespace
 
 int main()
@@ -448,5 +528,6 @@ int main()
     test_declaration_index_for_in_binding();
     test_declaration_index_signature_shapes();
     test_typed_expression_metadata();
+    test_typed_index_expression_metadata();
     return 0;
 }
