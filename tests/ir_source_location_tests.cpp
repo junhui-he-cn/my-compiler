@@ -140,6 +140,11 @@ void test_declaration_index()
     assert(methodRecord->kind == DeclarationKind::Method);
     assert(methodRecord->ownerType == "Box");
     assert(methodRecord->parameters.size() == 1);
+    const std::optional<DeclarationSignature> methodSignature
+        = index.signature(methodRecord->declarationId);
+    assert(methodSignature.has_value());
+    assert(methodSignature->parameters.size() == 1);
+    assert(methodSignature->parameters.front().name.lexeme == "delta");
     assert(functionRecord->kind == DeclarationKind::Function);
     assert(functionRecord->parameters.size() == 1);
     assert(chooseRecord->kind == DeclarationKind::Function);
@@ -305,6 +310,65 @@ void test_declaration_index_for_in_binding()
     assert(index.variableReference(*read)->declarationId == loopRecord->declarationId);
 }
 
+void test_declaration_index_signature_shapes()
+{
+    std::istringstream input(
+        "struct Box<T> { value: T }\n"
+        "enum Result<T> { Ok(value: T), Empty }\n"
+        "fun identity<T>(value: T): T { return value; }\n"
+        "let box: Box<number> = Box { value: 1 };\n"
+        "let result: Result<number> = Result.Ok(1);\n"
+        "print identity<number>(1);\n");
+    FrontendSession frontend;
+    Program program = frontend.loadStdin(input);
+    const auto* structDecl = dynamic_cast<const StructDeclStmt*>(program.statements[0].get());
+    const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(program.statements[1].get());
+    const auto* function = dynamic_cast<const FunctionStmt*>(program.statements[2].get());
+    assert(structDecl != nullptr && enumDecl != nullptr && function != nullptr);
+
+    TypeChecker checker;
+    checker.check(program);
+    const DeclarationIndex& index = checker.declarationIndex();
+    assert(checker.declarationIndexMismatchCount() == 0);
+
+    const DeclarationRecord* structRecord = index.declaration(*structDecl);
+    const DeclarationRecord* enumRecord = index.declaration(*enumDecl);
+    const DeclarationRecord* functionRecord = index.declaration(*function);
+    assert(structRecord != nullptr && enumRecord != nullptr && functionRecord != nullptr);
+
+    const std::optional<DeclarationSignature> structSignature
+        = index.signature(structRecord->declarationId);
+    assert(structSignature.has_value());
+    assert(structSignature->typeParameters.size() == 1);
+    assert(structSignature->typeParameters.front().name.lexeme == "T");
+    const std::optional<DeclarationShape> structShape = index.shape(structRecord->declarationId);
+    assert(structShape.has_value());
+    assert(structShape->structFields.size() == 1);
+    assert(structShape->structFields.front().name.lexeme == "value");
+    assert(structShape->structFields.front().typeName.token.lexeme == "T");
+
+    const std::optional<DeclarationSignature> enumSignature
+        = index.signature(enumRecord->declarationId);
+    assert(enumSignature.has_value());
+    assert(enumSignature->typeParameters.size() == 1);
+    const std::optional<DeclarationShape> enumShape = index.shape(enumRecord->declarationId);
+    assert(enumShape.has_value());
+    assert(enumShape->enumVariants.size() == 2);
+    assert(enumShape->enumVariants.front().name.lexeme == "Ok");
+    assert(enumShape->enumVariants.front().payloadTypes.front().token.lexeme == "T");
+    assert(enumShape->enumVariants.front().payloadNames.front()->lexeme == "value");
+
+    const std::optional<DeclarationSignature> functionSignature
+        = index.signature(functionRecord->declarationId);
+    assert(functionSignature.has_value());
+    assert(functionSignature->typeParameters.size() == 1);
+    assert(functionSignature->parameters.size() == 1);
+    assert(functionSignature->parameters.front().name.lexeme == "value");
+    assert(functionSignature->parameters.front().typeName->token.lexeme == "T");
+    assert(functionSignature->returnType.has_value());
+    assert(functionSignature->returnType->token.lexeme == "T");
+}
+
 } // namespace
 
 int main()
@@ -329,5 +393,6 @@ int main()
     test_declaration_index();
     test_declaration_index_module_metadata();
     test_declaration_index_for_in_binding();
+    test_declaration_index_signature_shapes();
     return 0;
 }

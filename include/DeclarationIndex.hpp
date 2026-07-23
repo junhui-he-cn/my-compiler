@@ -40,6 +40,17 @@ struct CallTargetRecord {
     ResolvedSymbol target;
 };
 
+struct DeclarationSignature {
+    std::vector<TypeParameter> typeParameters;
+    std::vector<Parameter> parameters;
+    std::optional<TypeAnnotation> returnType;
+};
+
+struct DeclarationShape {
+    std::vector<StructFieldDecl> structFields;
+    std::vector<EnumVariantDecl> enumVariants;
+};
+
 struct DeclarationRecord {
     DeclarationId declarationId;
     SymbolId symbolId;
@@ -95,6 +106,8 @@ public:
     const DeclarationRecord* declaration(const MethodDecl& method) const;
     const DeclarationRecord* declaration(const Parameter& parameter) const;
     const DeclarationRecord* declaration(const VariablePattern& pattern) const;
+    std::optional<DeclarationSignature> signature(DeclarationId id) const;
+    std::optional<DeclarationShape> shape(DeclarationId id) const;
     const ScopeRecord* scope(ScopeId id) const;
     std::optional<ScopeId> scopeFor(const Stmt& statement) const;
     std::optional<ResolvedSymbol> forInBinding(const ForInStmt& statement) const;

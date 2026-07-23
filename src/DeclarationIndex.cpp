@@ -772,6 +772,37 @@ const DeclarationRecord* DeclarationIndex::declaration(const VariablePattern& pa
     return found == patternDeclarations_.end() ? nullptr : declaration(found->second);
 }
 
+std::optional<DeclarationSignature> DeclarationIndex::signature(DeclarationId id) const
+{
+    const DeclarationRecord* record = declaration(id);
+    if (!record
+        || (record->kind != DeclarationKind::Function
+            && record->kind != DeclarationKind::Method
+            && record->kind != DeclarationKind::Struct
+            && record->kind != DeclarationKind::Enum)) {
+        return std::nullopt;
+    }
+    return DeclarationSignature{
+        record->typeParameters,
+        record->parameters,
+        record->returnType};
+}
+
+std::optional<DeclarationShape> DeclarationIndex::shape(DeclarationId id) const
+{
+    const DeclarationRecord* record = declaration(id);
+    if (!record || !record->statement) {
+        return std::nullopt;
+    }
+    if (const auto* structDecl = dynamic_cast<const StructDeclStmt*>(record->statement)) {
+        return DeclarationShape{structDecl->fields, {}};
+    }
+    if (const auto* enumDecl = dynamic_cast<const EnumDeclStmt*>(record->statement)) {
+        return DeclarationShape{{}, enumDecl->variants};
+    }
+    return std::nullopt;
+}
+
 const ScopeRecord* DeclarationIndex::scope(ScopeId id) const
 {
     if (!id.valid() || id.value >= scopes_.size()) {

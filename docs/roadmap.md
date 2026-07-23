@@ -437,7 +437,8 @@ aliases, variable/assignment references, and local direct-call or struct-method
 targets, for-in bindings, and match pattern bindings. `TypeChecker` builds this
 index in shadow mode and compares value-reference names, source ranges, binding
 targets, and locally available call targets with its legacy `ResolvedNames`
-result. The proof slice is focused in
+result. Declaration signatures and struct/enum shapes are exposed as AST-backed
+queries without claiming canonical type ownership. The proof slice is focused in
 `tests/ir_source_location_tests.cpp`; native calls, enum constructors,
 namespace-qualified calls, and imported method targets remain external cases,
 while module graph construction and imported symbol materialization remain

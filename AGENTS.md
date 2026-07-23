@@ -38,7 +38,7 @@ This is a small C++17 Compiler Design front-end/interpreter project. It currentl
   lossless token/trivia pieces reconstructed from production token ranges and
   original source bytes.
 - `include/DeclarationIndex.hpp`, `src/DeclarationIndex.cpp`: snapshot-local
-  declaration, scope, signature, import/export, and lexical-reference metadata
+  declaration, signature/shape, scope, import/export, and lexical-reference metadata
   plus for-in/pattern bindings and local direct-call or struct-method targets
   collected beside the legacy TypeChecker name-resolution path.
 - `include/Parser.hpp`, `src/Parser.cpp`: grammar and recursive-descent parsing.

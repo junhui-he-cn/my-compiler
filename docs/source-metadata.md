@@ -38,6 +38,9 @@ target for all occurrences of an OR-pattern binding.
 Struct and enum declarations retain their AST records for field and variant
 metadata, while signatures retain their type parameters, parameters, and
 optional return annotations.
+`DeclarationIndex::signature()` and `DeclarationIndex::shape()` provide
+DeclarationId-based queries for these records without resolving annotations to
+canonical semantic types; that ownership remains with the later type model.
 
 The checker exposes the index and a shadow-comparison count. During this
 migration slice, type and namespace qualifiers are not treated as value reads,
